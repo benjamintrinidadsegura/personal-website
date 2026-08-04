@@ -251,13 +251,13 @@ test("deleted recovery migration is private, audited, and never directly public"
   assert.equal(normalized.includes("to service_role"), false);
 });
 
-test("public navigation keeps Building and adds robust Pulse and EchoWall links", () => {
+test("public navigation keeps Projects and robust Pulse and EchoWall links", () => {
   const header = readFileSync(
     new URL("../components/layout/header.tsx", import.meta.url),
     "utf8",
   );
   assert.equal(header.includes('{ label: "Pulse", href: "/#pulse" }'), true);
-  assert.equal(header.includes('{ label: "Building", href: "/#building" }'), true);
+  assert.match(header, /label: "Projects",\s+href: "\/#building"/u);
   assert.equal(header.includes('{ label: "EchoWall", href: "/echowall" }'), true);
   assert.equal(header.includes('href: "#pulse"'), false);
 });

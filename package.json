@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:echowall": "tsx --test tests/echowall-foundation.test.ts"
+    "test:echowall": "tsx --test tests/echowall-foundation.test.ts",
+    "test:discovery": "tsx --test tests/discovery-engine.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
