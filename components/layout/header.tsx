@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DiscoveryEngine } from "@/components/discovery/discovery-engine";
+import { acquireScrollLock } from "@/lib/scroll-lock";
 
 type NavigationLink = {
   label: string;
@@ -70,12 +71,7 @@ export function Header() {
 
   useEffect(() => {
     if (!open) return;
-    const body = document.body;
-    if (!("mobileMenuScrollLock" in body.dataset) && !("discoveryScrollLock" in body.dataset)) {
-      body.dataset.scrollLockPreviousOverflow = body.style.overflow;
-    }
-    body.dataset.mobileMenuScrollLock = "true";
-    body.style.overflow = "hidden";
+    const releaseScrollLock = acquireScrollLock();
     const focusable = mobileMenu.current?.querySelectorAll<HTMLElement>("a[href], button:not([disabled])");
     focusable?.[0]?.focus();
 
@@ -99,11 +95,7 @@ export function Header() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      delete body.dataset.mobileMenuScrollLock;
-      if (!("discoveryScrollLock" in body.dataset)) {
-        body.style.overflow = body.dataset.scrollLockPreviousOverflow ?? "";
-        delete body.dataset.scrollLockPreviousOverflow;
-      }
+      releaseScrollLock();
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
@@ -130,7 +122,7 @@ export function Header() {
   }, [closeDropdown, openDropdown]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#04111b]/88 backdrop-blur-xl">
+    <header data-scroll-lock-compensate className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#04111b]/88 backdrop-blur-xl">
       <div className="mx-auto flex h-20 max-w-[90rem] items-center gap-2 px-5 sm:px-8 lg:grid lg:grid-cols-[auto_minmax(11rem,20rem)_auto] lg:gap-3 xl:gap-6">
         <Link href="/#home" className="mr-auto flex shrink-0 items-center gap-3 text-lg font-black tracking-tight lg:mr-0" aria-label="bts.online – Startseite">
           <span className="grid h-8 w-8 place-items-center rounded-full border border-[#35d0e5]/40 text-[10px] tracking-widest text-[#35d0e5]">BTS</span>

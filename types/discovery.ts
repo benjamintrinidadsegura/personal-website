@@ -34,3 +34,13 @@ export interface DiscoveryMatch {
   score: number;
 }
 
+export interface AdaptiveDiscoveryGroup {
+  group: DiscoveryGroup;
+  matches: DiscoveryMatch[];
+  remainingCount: number;
+}
+
+export interface AdaptiveDiscoveryView {
+  topMatch: DiscoveryMatch | null;
+  groups: AdaptiveDiscoveryGroup[];
+}

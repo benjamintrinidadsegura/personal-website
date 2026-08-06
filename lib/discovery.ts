@@ -1,4 +1,4 @@
-import type { DiscoveryGroup, DiscoveryItem, DiscoveryMatch } from "@/types/discovery";
+import type { AdaptiveDiscoveryView, DiscoveryGroup, DiscoveryItem, DiscoveryMatch } from "@/types/discovery";
 
 const TITLE_PREFIX_SCORE = 500;
 const TITLE_SCORE = 400;
@@ -13,6 +13,8 @@ export const discoveryGroupOrder: DiscoveryGroup[] = [
   "People",
   "Pages",
 ];
+
+export const adaptiveDiscoveryGroupLimit = 4;
 
 /** Normalizes user-authored content for locale-aware, case-insensitive matching. */
 export function normalizeDiscoveryText(value: string): string {
@@ -58,4 +60,26 @@ export function groupDiscoveryItems(matches: DiscoveryMatch[]): Map<DiscoveryGro
   }
 
   return groups;
+}
+
+/**
+ * Projects the existing ranked results into the calmer homepage presentation.
+ * Ranking and grouping stay owned by Discovery Engine v1; this function only
+ * removes the first result and limits the visible cards per group.
+ */
+export function createAdaptiveDiscoveryView(matches: DiscoveryMatch[], selectedMatchId: string | null = null): AdaptiveDiscoveryView {
+  const selectedIndex = selectedMatchId ? matches.findIndex(({ item }) => item.id === selectedMatchId) : -1;
+  const topMatchIndex = selectedIndex >= 0 ? selectedIndex : 0;
+  const topMatch = matches[topMatchIndex];
+  const remainingMatches = matches.filter((_, index) => index !== topMatchIndex);
+  const groups = groupDiscoveryItems(remainingMatches);
+
+  return {
+    topMatch: topMatch ?? null,
+    groups: [...groups].map(([group, groupMatches]) => ({
+      group,
+      matches: groupMatches.slice(0, adaptiveDiscoveryGroupLimit),
+      remainingCount: Math.max(0, groupMatches.length - adaptiveDiscoveryGroupLimit),
+    })),
+  };
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DiscoveryProvider } from "@/components/discovery/discovery-context";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import "./globals.css";
@@ -37,8 +38,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <a className="skip-link" href="#main-content">
           Zum Inhalt springen
         </a>
-        <Header />
-        <main id="main-content">{children}</main>
+        <DiscoveryProvider>
+          <Header />
+          <main id="main-content">{children}</main>
+        </DiscoveryProvider>
         <Footer />
       </body>
     </html>

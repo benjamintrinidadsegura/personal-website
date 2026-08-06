@@ -1,3 +1,4 @@
+import { ContextCanvas } from "@/components/discovery/context-canvas";
 import { About } from "@/components/sections/about";
 import { Contact } from "@/components/sections/contact";
 import { CurrentlyBuilding } from "@/components/sections/currently-building";
@@ -12,7 +13,7 @@ export const revalidate = 300;
 
 export default function Home() {
   return (
-    <>
+    <ContextCanvas>
       <Hero />
       <Now />
       <HqPulse />
@@ -22,6 +23,6 @@ export default function Home() {
       <EchoWallPreview />
       <About />
       <Contact />
-    </>
+    </ContextCanvas>
   );
 }
