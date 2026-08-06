@@ -1,4 +1,5 @@
 import { careerSpotlightConfig, careerSpotlights } from "@/data/career-spotlights";
+import { discoveryDimensionsByItemId } from "@/data/discovery-curation";
 import { hqPulseItems } from "@/data/hq-pulse";
 import { interviewFormats } from "@/data/interviews";
 import { projects } from "@/data/projects";
@@ -44,7 +45,7 @@ const projectItems: DiscoveryItem[] = projects.flatMap((project) => {
     description: area.description ?? `Ein Bereich von ${project.name}.`,
     category: project.name,
     tags: [project.category, "Format"],
-    keywords: project.services ?? [],
+    keywords: [],
     status: areaStatus(area.status),
     ...(area.href ? { href: area.href } : {}),
   }));
@@ -134,7 +135,7 @@ const pageItems: DiscoveryItem[] = [
   { id: "page-career-spotlight", group: "Pages", title: "Career Spotlight Archive", description: careerSpotlightConfig.description, category: "Page", tags: [...careerSpotlightConfig.topics], keywords: ["GOATRECRUTAINER", "Interviews"], status: "Live", href: "/goatrecrutainer/career-spotlight" },
 ];
 
-export const discoveryIndex: DiscoveryItem[] = [
+const baseDiscoveryIndex: DiscoveryItem[] = [
   ...projectItems,
   ...pulseItems,
   ...writingItems,
@@ -143,3 +144,8 @@ export const discoveryIndex: DiscoveryItem[] = [
   ...toolItems,
   ...pageItems,
 ];
+
+export const discoveryIndex: DiscoveryItem[] = baseDiscoveryIndex.map((item) => {
+  const dimensions = discoveryDimensionsByItemId[item.id];
+  return dimensions ? { ...item, dimensions } : item;
+});

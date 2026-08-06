@@ -2,9 +2,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import {
+  discoveryDimensionsByItemId,
+  discoveryRelationships,
+  discoverySynonymGroups,
+  guidedDiscoveryPrompts,
+} from "../data/discovery-curation";
 import { discoveryIndex } from "../data/discovery-index";
 import { adaptiveDiscoveryGroupLimit, createAdaptiveDiscoveryView, discoverItems, groupDiscoveryItems, normalizeDiscoveryText } from "../lib/discovery";
-import type { DiscoveryItem } from "../types/discovery";
+import type { ActiveDiscoveryDimension, DiscoveryItem, DiscoveryMatch } from "../types/discovery";
 
 const knownStaticRoutes = new Set([
   "/",
@@ -33,6 +39,24 @@ test("discovery index has unique, valid records", () => {
     assert.ok(["Projects", "Insights", "Tools", "People", "Pages"].includes(item.group));
     assert.ok(["Live", "Beta", "In Development", "Coming Soon"].includes(item.status));
     assert.equal(item.href?.startsWith("/admin") ?? false, false);
+  }
+});
+
+test("Sprint 4 curation is bounded, references real items, and keeps inactive dimensions empty", () => {
+  const activeDimensions: ActiveDiscoveryDimension[] = ["intent", "goals", "problems", "useCases"];
+  const discoveryIds = new Set(discoveryIndex.map(({ id }) => id));
+
+  for (const [itemId, dimensions] of Object.entries(discoveryDimensionsByItemId)) {
+    assert.equal(discoveryIds.has(itemId), true, itemId);
+    assert.equal(dimensions.personality, undefined, itemId);
+    assert.equal(dimensions.habitats, undefined, itemId);
+
+    for (const dimension of activeDimensions) {
+      const values = dimensions[dimension] ?? [];
+      assert.ok(values.length <= 4, `${itemId}:${dimension}`);
+      assert.equal(new Set(values.map(normalizeDiscoveryText)).size, values.length, `${itemId}:${dimension}`);
+      assert.equal(values.every((value) => value.length > 0 && value.length <= 80), true, `${itemId}:${dimension}`);
+    }
   }
 });
 
@@ -131,6 +155,7 @@ test("adaptive discovery caps each group and reports hidden matches", () => {
       status: "Live" as const,
     },
     score: 500 - index,
+    reasons: [],
   }));
   const adaptiveView = createAdaptiveDiscoveryView(fixtureMatches);
   const [projects] = adaptiveView.groups;
@@ -141,19 +166,200 @@ test("adaptive discovery caps each group and reports hidden matches", () => {
   assert.equal(projects.remainingCount, 2);
 });
 
-test("reserved semantic dimensions are not searched in v1", () => {
-  const item: DiscoveryItem = {
-    id: "future",
-    group: "Tools",
-    title: "Compass",
-    description: "Orientation",
-    category: "Tool",
-    tags: [],
-    keywords: [],
-    status: "Coming Soon",
-    dimensions: { goals: ["unfindable-dimension-value"] },
-  };
-  assert.deepEqual(discoverItems([item], "unfindable-dimension-value"), []);
+test("only the four active semantic dimensions are searched", () => {
+  const fixture: DiscoveryItem[] = [
+    {
+      id: "active",
+      group: "Tools",
+      title: "Compass",
+      description: "Orientation",
+      category: "Tool",
+      tags: [],
+      keywords: [],
+      status: "Coming Soon",
+      dimensions: { goals: ["findable-goal"] },
+    },
+    {
+      id: "inactive",
+      group: "Tools",
+      title: "Atlas",
+      description: "Navigation",
+      category: "Tool",
+      tags: [],
+      keywords: [],
+      status: "Coming Soon",
+      dimensions: { personality: ["unfindable-personality"], habitats: ["unfindable-habitat"] },
+    },
+  ];
+
+  assert.deepEqual(discoverItems(fixture, "findable-goal").map(({ item }) => item.id), ["active"]);
+  assert.deepEqual(discoverItems(fixture, "unfindable-personality"), []);
+  assert.deepEqual(discoverItems(fixture, "unfindable-habitat"), []);
+});
+
+test("contextual queries keep deterministic and relevant production rankings", () => {
+  const idsFor = (query: string) => discoverItems(discoveryIndex, query).map(({ item }) => item.id);
+
+  assert.equal(idsFor("rec")[0], "project-goatrecrutainer-area-recruiting-as-a-service");
+  assert.equal(idsFor("Recruiting")[0], "project-goatrecrutainer-area-recruiting-as-a-service");
+  assert.equal(idsFor("Recruiting").includes("project-ratecom"), true);
+  assert.equal(idsFor("Recruiting").includes("project-goatrecrutainer-area-talking-cure"), false);
+  assert.equal(idsFor("Job")[0], "project-goatrecrutainer-area-career-agent");
+  assert.deepEqual(idsFor("Ich suche einen Job"), idsFor("Job"));
+  assert.equal(idsFor("Karriere").includes("project-goatrecrutainer-area-career-agent"), true);
+  assert.deepEqual(idsFor("Arbeitgeber wechseln"), ["project-goatrecrutainer-area-career-agent"]);
+  assert.deepEqual(idsFor("Ich möchte den Arbeitgeber wechseln"), idsFor("Arbeitgeber wechseln"));
+  assert.equal(idsFor("Ich brauche Unterstützung im Recruiting")[0], "project-goatrecrutainer-area-recruiting-as-a-service");
+  assert.equal(idsFor("Gründen")[0], "project-byc");
+  assert.equal(idsFor("Idee umsetzen")[0], "project-goatrecrutainer-area-konzepterstellung");
+  assert.deepEqual(idsFor("Ich will eine Idee umsetzen"), idsFor("Idee umsetzen"));
+  assert.equal(idsFor("Menschen und Geschichten").includes("interview-career-spotlight"), true);
+  assert.equal(idsFor("Menschen und Geschichten").includes("person-evgeny-vinokurov"), true);
+  assert.equal(idsFor("Ich möchte Menschen und ihre Geschichten kennenlernen").includes("interview-career-spotlight"), true);
+  assert.equal(idsFor("Community und Feedback")[0], "tool-echowall");
+  assert.deepEqual(idsFor("unbekannte Query"), []);
+});
+
+test("short queries preserve title-prefix discovery without arbitrary field substrings", () => {
+  const fixture: DiscoveryItem[] = [
+    { id: "title-r", group: "Pages", title: "Recruiting", description: "x", category: "x", tags: [], keywords: [], status: "Live" },
+    { id: "title-hr", group: "Pages", title: "HR Guide", description: "x", category: "x", tags: [], keywords: [], status: "Live" },
+    { id: "substring", group: "Pages", title: "Compass", description: "Nachricht und mehr", category: "Digital", tags: ["Wahrheit"], keywords: [], status: "Live" },
+  ];
+
+  assert.deepEqual(discoverItems(fixture, "r").map(({ item }) => item.id), ["title-r"]);
+  const hrIds = discoverItems(fixture, "hr").map(({ item }) => item.id);
+  assert.equal(hrIds[0], "title-hr");
+  assert.equal(hrIds.includes("title-r"), true);
+  assert.deepEqual(discoverItems([fixture[2]], "it"), []);
+});
+
+test("HR is an exact alias and never a substring match", () => {
+  const falsePositiveFixture: DiscoveryItem[] = [
+    { id: "more", group: "Pages", title: "Mehr erfahren", description: "Nachricht", category: "Page", tags: ["Wahrheit"], keywords: [], status: "Live" },
+  ];
+  const productionIds = discoverItems(discoveryIndex, "HR").map(({ item }) => item.id);
+
+  assert.ok(productionIds.length > 0);
+  assert.equal(productionIds.includes("project-hobbyswap"), false);
+  assert.equal(productionIds.includes("project-byc"), false);
+  assert.equal(productionIds.includes("tool-echowall"), false);
+  assert.deepEqual(discoverItems(falsePositiveFixture, "HR"), []);
+  assert.equal(discoverItems(discoveryIndex, "HR").every(({ reasons }) => reasons.some(({ kind, displayValue }) => kind === "synonym" && displayValue === "Recruiting")), true);
+});
+
+test("synonyms are explicit, one-way, and never recursively expanded", () => {
+  const fixture: DiscoveryItem[] = [
+    { id: "canonical", group: "Pages", title: "Recruiting Guide", description: "x", category: "x", tags: [], keywords: [], status: "Live" },
+    { id: "sibling-alias", group: "Pages", title: "Recruiter Guide", description: "x", category: "x", tags: [], keywords: [], status: "Live" },
+  ];
+
+  assert.equal(discoverySynonymGroups.some(({ canonical, aliases }) => canonical === "Recruiting" && aliases.some(({ value }) => value === "HR")), true);
+  assert.deepEqual(discoverItems(fixture, "HR").map(({ item }) => item.id), ["canonical"]);
+  assert.equal(discoveryRelationships.some(({ query }) => query === "Arbeitgeber wechseln"), true);
+  assert.equal(discoveryRelationships.some(({ query }) => query === "Idee umsetzen"), true);
+});
+
+test("higher ranking tiers cannot be overtaken by dimension volume or coverage", () => {
+  const fixture: DiscoveryItem[] = [
+    {
+      id: "category",
+      group: "Pages",
+      title: "Direct",
+      description: "x",
+      category: "Alpha",
+      tags: [],
+      keywords: [],
+      status: "Live",
+    },
+    {
+      id: "dimensions",
+      group: "Pages",
+      title: "Context",
+      description: "x",
+      category: "x",
+      tags: [],
+      keywords: [],
+      status: "Live",
+      dimensions: {
+        intent: ["Alpha", "Beta", "Gamma", "Delta"],
+        goals: ["Alpha Beta", "Beta Gamma", "Gamma Delta", "Delta Alpha"],
+        problems: ["Alpha problem", "Beta problem", "Gamma problem", "Delta problem"],
+        useCases: ["Alpha case", "Beta case", "Gamma case", "Delta case"],
+      },
+    },
+  ];
+  const results = discoverItems(fixture, "Alpha Beta Gamma Delta");
+
+  assert.equal(results[0].item.id, "category");
+  assert.ok(results[0].score > results[1].score);
+  assert.ok(results[1].score < 300);
+});
+
+function getReasonSourceValues(match: DiscoveryMatch): string[] {
+  const { item } = match;
+  return match.reasons.map((reason) => {
+    if (reason.source === "title" || reason.source === "category" || reason.source === "description") return item[reason.source];
+    if (reason.source === "tag") return item.tags.find((value) => value === reason.value) ?? "";
+    if (reason.source === "keyword") return item.keywords.find((value) => value === reason.value) ?? "";
+    return item.dimensions?.[reason.source]?.find((value) => value === reason.value) ?? "";
+  });
+}
+
+test("explainability is engine-owned, deduplicated, bounded, and grounded in matched fields", () => {
+  const matches = discoverItems(discoveryIndex, "Community und Feedback");
+  const echoWall = matches.find(({ item }) => item.id === "tool-echowall");
+  assert.ok(echoWall);
+  assert.ok(echoWall.reasons.length > 0 && echoWall.reasons.length <= 2);
+  assert.equal(new Set(echoWall.reasons.map(({ displayValue }) => normalizeDiscoveryText(displayValue))).size, echoWall.reasons.length);
+  assert.deepEqual(getReasonSourceValues(echoWall), echoWall.reasons.map(({ value }) => value));
+
+  for (const reason of echoWall.reasons) {
+    assert.ok(["direct", "synonym", "relationship"].includes(reason.kind));
+    assert.ok(["Passt zu", "Gefunden über", "Relevant für"].includes(reason.label));
+    assert.ok(normalizeDiscoveryText(reason.value).includes(normalizeDiscoveryText(reason.matchedTerm)));
+  }
+
+  const titleOnly: DiscoveryItem = { id: "title-only", group: "Pages", title: "Needle", description: "x", category: "x", tags: [], keywords: [], status: "Live" };
+  const descriptionOnly: DiscoveryItem = { id: "description-only", group: "Pages", title: "x", description: "Needle", category: "x", tags: [], keywords: [], status: "Live" };
+  assert.deepEqual(discoverItems([titleOnly], "Needle")[0].reasons, []);
+  assert.deepEqual(discoverItems([descriptionOnly], "Needle")[0].reasons, []);
+});
+
+test("one item and one normalized reason can appear only once", () => {
+  const results = discoverItems(discoveryIndex, "Community und Feedback");
+  assert.equal(new Set(results.map(({ item }) => item.id)).size, results.length);
+
+  for (const { reasons } of results) {
+    assert.equal(new Set(reasons.map(({ displayValue }) => normalizeDiscoveryText(displayValue))).size, reasons.length);
+  }
+});
+
+test("all guided prompts are route-free and produce curated results", () => {
+  const expectedItems = new Map([
+    ["recruiting", "project-goatrecrutainer-area-recruiting-as-a-service"],
+    ["career", "project-goatrecrutainer-area-career-agent"],
+    ["stories", "interview-career-spotlight"],
+    ["ideas", "project-goatrecrutainer-area-konzepterstellung"],
+    ["orientation", "tool-echowall"],
+    ["community", "tool-echowall"],
+  ]);
+
+  assert.equal(guidedDiscoveryPrompts.length, 6);
+  assert.equal(new Set(guidedDiscoveryPrompts.map(({ id }) => id)).size, guidedDiscoveryPrompts.length);
+
+  for (const prompt of guidedDiscoveryPrompts) {
+    assert.equal(prompt.query.startsWith("/"), false, prompt.id);
+    const results = discoverItems(discoveryIndex, prompt.query);
+    assert.ok(results.length > 0, prompt.id);
+    assert.equal(results.some(({ item }) => item.id === expectedItems.get(prompt.id)), true, prompt.id);
+  }
+});
+
+test("GOATRECRUTAINER areas no longer inherit every project service as a keyword", () => {
+  const areaItems = discoveryIndex.filter(({ id }) => id.startsWith("project-goatrecrutainer-area-"));
+  assert.ok(areaItems.length > 0);
+  assert.equal(areaItems.every(({ keywords }) => keywords.length === 0), true);
 });
 
 test("header preserves navigation and exposes desktop and mobile discovery controls", () => {
@@ -162,7 +368,14 @@ test("header preserves navigation and exposes desktop and mobile discovery contr
 
   assert.equal(header.includes("<DiscoveryEngine"), true);
   assert.equal(header.includes("setOpenDropdown(null)"), true);
-  assert.equal(engine.includes("Discover the HQ"), true);
+  assert.equal(engine.includes("Projekte, Karriere, Menschen und Tools entdecken"), true);
+  assert.equal(engine.includes("guidedDiscoveryPrompts.map"), true);
+  assert.equal(engine.includes("data-guided-discovery-prompt"), true);
+  assert.equal(engine.includes("applyGuidedPrompt(prompt.query)"), true);
+  assert.equal(engine.includes('event.key !== "Enter" && event.key !== " "'), true);
+  assert.equal(engine.includes("event.preventDefault()"), true);
+  assert.equal(engine.includes("setActiveId(null)"), true);
+  assert.equal(engine.includes("[input, ...promptButtons, ...options]"), true);
   assert.equal(engine.includes('aria-label="Discovery öffnen"'), true);
   assert.equal(engine.includes("event.metaKey || event.ctrlKey"), true);
   assert.equal(engine.includes('event.key === "Escape"'), true);
@@ -174,29 +387,31 @@ test("header preserves navigation and exposes desktop and mobile discovery contr
   assert.equal(engine.includes('event.key !== "Enter"'), true);
 });
 
-test("selection keeps global discovery state and routes only subpages to the homepage", () => {
+test("overlay results navigate directly without selecting a canvas top match", () => {
   const engine = readFileSync(new URL("../components/discovery/discovery-engine.tsx", import.meta.url), "utf8");
   const results = readFileSync(new URL("../components/discovery/discovery-results.tsx", import.meta.url), "utf8");
-  const selectionStart = engine.indexOf("const selectForCanvas");
-  const selectionEnd = engine.indexOf("\n\n  useEffect", selectionStart);
+  const context = readFileSync(new URL("../components/discovery/discovery-context.tsx", import.meta.url), "utf8");
 
-  assert.ok(selectionStart >= 0);
-  assert.ok(selectionEnd > selectionStart);
-
-  const selectionFlow = engine.slice(selectionStart, selectionEnd);
-  const selectIndex = selectionFlow.indexOf("selectMatch(item.id)");
-  const dismissIndex = selectionFlow.indexOf("dismissDiscovery(false)");
-  const navigationIndex = selectionFlow.indexOf('router.push("/", { scroll: false })');
-  assert.ok(selectIndex >= 0);
-  assert.ok(dismissIndex > selectIndex);
-  assert.ok(navigationIndex > dismissIndex);
-  assert.equal(selectionFlow.includes("clearDiscovery"), false);
-  assert.equal(selectionFlow.includes('if (!onHomepage) router.push("/", { scroll: false })'), true);
-  assert.equal(engine.includes("router.push(item.href)"), false);
-  assert.equal(engine.includes("allowUnavailableSelection"), false);
-  assert.equal(results.includes("allowUnavailableSelection"), false);
-  assert.equal(results.includes("aria-disabled"), false);
-  assert.equal(results.includes("disabled={!selectable}"), false);
+  assert.equal(engine.includes("selectForCanvas"), false);
+  assert.equal(engine.includes("selectMatch"), false);
+  assert.equal(engine.includes("router.push"), false);
+  assert.equal(engine.includes("Boolean(item.href)"), true);
+  assert.equal(engine.includes("document.getElementById(`discovery-option-${selected.id}`)?.click()"), true);
+  assert.equal(engine.includes("onBeginNavigation={beginOverlayNavigation}"), true);
+  assert.equal(engine.includes("onSettleNavigation={settleOverlayNavigation}"), true);
+  assert.equal(engine.includes("mit Enter öffnen"), true);
+  assert.equal(engine.includes("Enter Öffnen"), true);
+  assert.equal(results.includes('import Link, { useLinkStatus } from "next/link"'), true);
+  assert.equal(results.includes('role="option"'), true);
+  assert.equal(results.includes('aria-disabled="true"'), true);
+  assert.equal(results.includes("Noch nicht verfügbar"), true);
+  assert.equal(results.includes("<button"), false);
+  assert.equal(results.includes("onSelect"), false);
+  assert.equal(results.includes("onBeginNavigation(item.href as string)"), true);
+  assert.equal(results.includes("event.preventDefault()"), false);
+  assert.equal(context.includes("selectedMatchId"), true);
+  assert.equal(context.includes("selectMatch"), true);
+  assert.equal(results.includes("selectMatch"), false);
 });
 
 test("context canvas stays homepage-local while the root layout remains server-rendered", () => {
@@ -207,6 +422,7 @@ test("context canvas stays homepage-local while the root layout remains server-r
   const discoveryView = readFileSync(new URL("../components/discovery/context-discovery-view.tsx", import.meta.url), "utf8");
   const engine = readFileSync(new URL("../components/discovery/discovery-engine.tsx", import.meta.url), "utf8");
   const results = readFileSync(new URL("../components/discovery/discovery-results.tsx", import.meta.url), "utf8");
+  const explanation = readFileSync(new URL("../components/discovery/discovery-explanation.tsx", import.meta.url), "utf8");
   const header = readFileSync(new URL("../components/layout/header.tsx", import.meta.url), "utf8");
   const globals = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   const scrollLock = readFileSync(new URL("../lib/scroll-lock.ts", import.meta.url), "utf8");
@@ -223,12 +439,13 @@ test("context canvas stays homepage-local while the root layout remains server-r
   assert.equal(engine.includes("dismissDiscovery(false)"), true);
   assert.equal(engine.includes("resetDiscovery(true)"), true);
   assert.equal(engine.includes("handleCanvasEscape"), true);
-  assert.equal(engine.includes('pathname === "/"'), true);
-  assert.equal(engine.includes('router.push("/", { scroll: false })'), true);
+  assert.equal(engine.includes('router.push("/", { scroll: false })'), false);
   assert.equal(engine.includes("fixed inset-0"), false);
-  assert.equal(engine.includes("selectForCanvas"), true);
-  assert.equal(results.includes("<Link"), false);
+  assert.equal(engine.includes("selectForCanvas"), false);
+  assert.equal(results.includes("<Link"), true);
   assert.equal(results.includes('role="option"'), true);
+  assert.equal(results.includes("reasons={match.reasons}"), true);
+  assert.equal(results.includes("maxReasons={1}"), true);
   assert.equal(canvas.includes("fixed inset-x-0 bottom-0 top-20"), true);
   assert.equal(canvas.includes("inert={discoveryActive}"), true);
   assert.equal(canvas.includes("aria-hidden={discoveryActive"), true);
@@ -241,8 +458,11 @@ test("context canvas stays homepage-local while the root layout remains server-r
   assert.equal(canvas.includes("duration: reduceMotion ? 0 : 0.22"), true);
   assert.equal(canvas.includes("y: reduceMotion ? 0 : 4"), true);
   assert.equal(discoveryView.includes("adaptiveView.topMatch"), true);
+  assert.equal(discoveryView.includes("match={adaptiveView.topMatch}"), true);
+  assert.equal(discoveryView.includes("reasons={match.reasons}"), true);
+  assert.equal(discoveryView.includes("maxReasons={2}"), true);
   assert.equal(discoveryView.includes("remainingCount"), true);
-  assert.equal(discoveryView.includes("preventScroll: true"), true);
+  assert.equal(discoveryView.includes("preventScroll: true"), false);
   assert.equal(discoveryView.includes("data-top-match-id={item.id}"), true);
   assert.equal(discoveryView.includes("data-featured-result={featured || undefined}"), true);
   assert.equal(discoveryView.includes("groupMatches.length >= 3"), true);
@@ -257,6 +477,8 @@ test("context canvas stays homepage-local while the root layout remains server-r
   assert.equal(globals.includes('html[data-scroll-restoring="true"]'), true);
   assert.equal(scrollLock.includes("activeLocks"), true);
   assert.equal(scrollLock.includes("body.style.position"), false);
+  assert.equal(explanation.includes("reasons.slice(0, maxReasons)"), true);
+  assert.equal(explanation.includes("aria-live"), false);
 });
 
 test("context canvas cards navigate directly while preserving modified-link behavior", () => {
@@ -284,9 +506,35 @@ test("context canvas cards navigate directly while preserving modified-link beha
   assert.equal(discoveryView.includes("onNavigate={clearDiscovery}"), false);
 });
 
+test("top match is one full-card link or a non-interactive article", () => {
+  const discoveryView = readFileSync(new URL("../components/discovery/context-discovery-view.tsx", import.meta.url), "utf8");
+  const topMatchStart = discoveryView.indexOf("function TopMatch");
+  const topMatchEnd = discoveryView.indexOf("\n\nfunction ResultCard", topMatchStart);
+
+  assert.ok(topMatchStart >= 0);
+  assert.ok(topMatchEnd > topMatchStart);
+
+  const topMatch = discoveryView.slice(topMatchStart, topMatchEnd);
+  assert.equal(topMatch.includes("if (item.href)"), true);
+  assert.equal(topMatch.match(/<Link/g)?.length, 1);
+  assert.equal(topMatch.includes("<button"), false);
+  assert.equal(topMatch.includes("tabIndex"), false);
+  assert.equal(topMatch.includes("data-top-match-id={item.id}"), true);
+  assert.equal(topMatch.includes("group block"), true);
+  assert.equal(topMatch.includes("focus-visible:ring-2"), true);
+  assert.equal(topMatch.includes("Detailseite öffnen →"), true);
+  assert.equal(topMatch.includes("Noch nicht verfügbar"), true);
+  assert.equal(topMatch.includes("<article"), true);
+  assert.equal(topMatch.includes("beginNavigation(item.href as string)"), true);
+  assert.equal(topMatch.includes("isUnmodifiedPrimaryClick(event)"), true);
+  assert.equal(topMatch.includes("DiscoveryNavigationStatus"), true);
+});
+
 test("context canvas navigation resets only after the latest target takes over", () => {
   const context = readFileSync(new URL("../components/discovery/discovery-context.tsx", import.meta.url), "utf8");
   const discoveryView = readFileSync(new URL("../components/discovery/context-discovery-view.tsx", import.meta.url), "utf8");
+  const engine = readFileSync(new URL("../components/discovery/discovery-engine.tsx", import.meta.url), "utf8");
+  const results = readFileSync(new URL("../components/discovery/discovery-results.tsx", import.meta.url), "utf8");
 
   assert.equal(context.includes("interface CanvasNavigationHandoff"), true);
   assert.equal(context.includes("usePathname()"), true);
@@ -306,16 +554,23 @@ test("context canvas navigation resets only after the latest target takes over",
   assert.equal(context.includes('document.querySelector("[data-context-discovery-view]")'), true);
   assert.equal(context.includes("scrollIntoView()"), true);
   assert.equal(context.includes("setTimeout"), false);
-  assert.equal(discoveryView.includes("useLinkStatus"), true);
-  assert.equal(discoveryView.includes("observedPending"), true);
-  assert.equal(discoveryView.includes("CanvasNavigationStatus"), true);
+  assert.equal(results.includes("useLinkStatus"), true);
+  assert.equal(results.includes("observedPending"), true);
+  assert.equal(results.includes("DiscoveryNavigationStatus"), true);
+  assert.equal(engine.includes("useLayoutEffect"), true);
+  assert.equal(engine.includes("overlayNavigation"), true);
+  assert.equal(engine.includes("settleOverlayNavigation"), true);
+  assert.equal(engine.includes("settleCanvasNavigation(navigation.targetHref, navigation.id)"), true);
+  assert.equal(engine.includes("if (!navigationPending) overlayNavigation.current = null"), true);
+  assert.equal(engine.includes("dismissDiscovery(false)"), true);
+  assert.equal(discoveryView.includes("DiscoveryNavigationStatus"), true);
   assert.equal(discoveryView.includes("data-navigation-pending"), true);
-  assert.equal(discoveryView.includes("isUnmodifiedPrimaryClick"), true);
-  assert.equal(discoveryView.includes("event.button === 0"), true);
-  assert.equal(discoveryView.includes("!event.metaKey"), true);
-  assert.equal(discoveryView.includes("!event.ctrlKey"), true);
-  assert.equal(discoveryView.includes("!event.shiftKey"), true);
-  assert.equal(discoveryView.includes("!event.altKey"), true);
+  assert.equal(results.includes("isUnmodifiedPrimaryClick"), true);
+  assert.equal(results.includes("event.button === 0"), true);
+  assert.equal(results.includes("!event.metaKey"), true);
+  assert.equal(results.includes("!event.ctrlKey"), true);
+  assert.equal(results.includes("!event.shiftKey"), true);
+  assert.equal(results.includes("!event.altKey"), true);
   assert.equal(discoveryView.includes("onNavigate={clearDiscovery}"), false);
 });
 
@@ -327,7 +582,7 @@ test("discovery results own compact scrolling and keep keyboard movement local",
   assert.equal(engine.includes("flex-col"), true);
   assert.equal(engine.includes("min-h-0 flex-1 overflow-hidden"), true);
   assert.equal(engine.includes("shrink-0"), true);
-  assert.equal(engine.includes("↑↓ Auswahl · Enter Übernehmen · Esc Schließen"), true);
+  assert.equal(engine.includes("↑↓ Auswahl · Enter Öffnen · Esc Schließen"), true);
   assert.equal(results.includes("max-h-[min(52svh,22rem)]"), true);
   assert.equal(results.includes("lg:max-h-[min(58svh,26rem)]"), true);
   assert.equal(results.includes("overflow-y-scroll"), true);

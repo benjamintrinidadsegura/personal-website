@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import Link, { useLinkStatus } from "next/link";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type MutableRefObject } from "react";
 
-import type { DiscoveryGroup, DiscoveryItem, DiscoveryMatch, DiscoveryStatus } from "@/types/discovery";
+import { DiscoveryExplanation } from "@/components/discovery/discovery-explanation";
+import type { DiscoveryGroup, DiscoveryMatch, DiscoveryStatus } from "@/types/discovery";
 
 const statusClasses: Record<DiscoveryStatus, string> = {
   Live: "border-emerald-300/30 text-emerald-200",
@@ -13,14 +15,123 @@ const statusClasses: Record<DiscoveryStatus, string> = {
 
 const scrollAffordanceHeight = 48;
 
+export function isUnmodifiedPrimaryClick(event: MouseEvent<HTMLAnchorElement>) {
+  return event.button === 0
+    && !event.defaultPrevented
+    && !event.metaKey
+    && !event.ctrlKey
+    && !event.shiftKey
+    && !event.altKey;
+}
+
+export function DiscoveryNavigationStatus({
+  targetHref,
+  handoffIdRef,
+  onSettle,
+}: {
+  targetHref: string;
+  handoffIdRef: MutableRefObject<number | null>;
+  onSettle: (targetHref: string, handoffId: number) => void;
+}) {
+  const { pending } = useLinkStatus();
+  const observedPending = useRef(false);
+
+  useEffect(() => {
+    if (pending) {
+      observedPending.current = true;
+      return;
+    }
+
+    if (!observedPending.current) return;
+    observedPending.current = false;
+
+    const navigationId = handoffIdRef.current;
+    handoffIdRef.current = null;
+    if (navigationId !== null) onSettle(targetHref, navigationId);
+  }, [handoffIdRef, onSettle, pending, targetHref]);
+
+  return null;
+}
+
 interface DiscoveryResultsProps {
   groups: Map<DiscoveryGroup, DiscoveryMatch[]>;
   activeId: string | null;
   onActivate: (id: string) => void;
-  onSelect: (item: DiscoveryItem) => void;
+  onBeginNavigation: (targetHref: string) => number;
+  onSettleNavigation: (targetHref: string, handoffId: number) => void;
 }
 
-export function DiscoveryResults({ groups, activeId, onActivate, onSelect }: DiscoveryResultsProps) {
+function DiscoveryResultOption({
+  match,
+  activeId,
+  onActivate,
+  onBeginNavigation,
+  onSettleNavigation,
+}: {
+  match: DiscoveryMatch;
+  activeId: string | null;
+  onActivate: (id: string) => void;
+  onBeginNavigation: DiscoveryResultsProps["onBeginNavigation"];
+  onSettleNavigation: DiscoveryResultsProps["onSettleNavigation"];
+}) {
+  const { item } = match;
+  const optionId = `discovery-option-${item.id}`;
+  const handoffIdRef = useRef<number | null>(null);
+  const content = (
+    <>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-bold text-white">{item.title}</span>
+          <span className={`rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${statusClasses[item.status]}`}>
+            {item.status}
+          </span>
+        </div>
+        <p className="mt-1 line-clamp-1 text-sm leading-5 text-slate-400 sm:line-clamp-2">{item.description}</p>
+        <DiscoveryExplanation reasons={match.reasons} maxReasons={1} compact />
+      </div>
+      {item.href ? (
+        <span aria-hidden="true" className="shrink-0 text-slate-500">→</span>
+      ) : (
+        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-500">Noch nicht verfügbar</span>
+      )}
+    </>
+  );
+
+  if (item.href) {
+    return (
+      <Link
+        id={optionId}
+        href={item.href}
+        role="option"
+        aria-selected={activeId === item.id}
+        onMouseEnter={() => onActivate(item.id)}
+        onFocus={() => onActivate(item.id)}
+        onClick={(event) => {
+          if (!isUnmodifiedPrimaryClick(event)) return;
+          handoffIdRef.current = onBeginNavigation(item.href as string);
+        }}
+        className={`flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left transition focus:outline-none ${activeId === item.id ? "bg-[#35d0e5]/10 ring-1 ring-inset ring-[#35d0e5]/45" : "hover:bg-white/5"}`}
+      >
+        <DiscoveryNavigationStatus targetHref={item.href} handoffIdRef={handoffIdRef} onSettle={onSettleNavigation} />
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      id={optionId}
+      role="option"
+      aria-disabled="true"
+      aria-selected="false"
+      className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left"
+    >
+      {content}
+    </div>
+  );
+}
+
+export function DiscoveryResults({ groups, activeId, onActivate, onBeginNavigation, onSettleNavigation }: DiscoveryResultsProps) {
   const scrollArea = useRef<HTMLDivElement>(null);
   const scrollContent = useRef<HTMLDivElement>(null);
   const [canScrollDown, setCanScrollDown] = useState(false);
@@ -91,37 +202,16 @@ export function DiscoveryResults({ groups, activeId, onActivate, onSelect }: Dis
                   {group}
                 </h2>
                 <div className="grid gap-1">
-                  {matches.map(({ item }) => {
-                    const optionId = `discovery-option-${item.id}`;
-                    const content = (
-                      <>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-white">{item.title}</span>
-                            <span className={`rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${statusClasses[item.status]}`}>
-                              {item.status}
-                            </span>
-                          </div>
-                          <p className="mt-1 line-clamp-1 text-sm leading-5 text-slate-400 sm:line-clamp-2">{item.description}</p>
-                        </div>
-                        <span aria-hidden="true" className="shrink-0 text-slate-500">→</span>
-                      </>
-                    );
-
+                  {matches.map((match) => {
                     return (
-                      <button
-                        id={optionId}
-                        key={item.id}
-                        type="button"
-                        role="option"
-                        aria-selected={activeId === item.id}
-                        onMouseEnter={() => onActivate(item.id)}
-                        onFocus={() => onActivate(item.id)}
-                        onClick={() => onSelect(item)}
-                        className={`flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left transition focus:outline-none ${activeId === item.id ? "bg-[#35d0e5]/10 ring-1 ring-inset ring-[#35d0e5]/45" : "hover:bg-white/5"}`}
-                      >
-                        {content}
-                      </button>
+                      <DiscoveryResultOption
+                        key={match.item.id}
+                        match={match}
+                        activeId={activeId}
+                        onActivate={onActivate}
+                        onBeginNavigation={onBeginNavigation}
+                        onSettleNavigation={onSettleNavigation}
+                      />
                     );
                   })}
                 </div>

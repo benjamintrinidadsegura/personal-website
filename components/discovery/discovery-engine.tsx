@@ -1,17 +1,36 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { useDiscovery } from "@/components/discovery/discovery-context";
 import { DiscoveryResults } from "@/components/discovery/discovery-results";
+import { guidedDiscoveryPrompts } from "@/data/discovery-curation";
 import { acquireScrollLock } from "@/lib/scroll-lock";
-import type { DiscoveryItem } from "@/types/discovery";
+
+function isCurrentLocation(targetHref: string) {
+  const target = new URL(targetHref, window.location.href);
+
+  return target.origin === window.location.origin
+    && target.pathname === window.location.pathname
+    && target.search === window.location.search
+    && target.hash === window.location.hash;
+}
 
 export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { query, setQuery, matches, groups, overlayOpen: open, setOverlayOpen, selectMatch, clearDiscovery } = useDiscovery();
+  const {
+    query,
+    setQuery,
+    matches,
+    groups,
+    overlayOpen: open,
+    setOverlayOpen,
+    navigationPending,
+    beginCanvasNavigation,
+    settleCanvasNavigation,
+    clearDiscovery,
+  } = useDiscovery();
   const instanceId = useId().replace(/:/gu, "");
   const listboxId = `${instanceId}-discovery-results`;
   const descriptionId = `${instanceId}-discovery-description`;
@@ -22,10 +41,10 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
   const mobileInput = useRef<HTMLInputElement>(null);
   const resultsPanel = useRef<HTMLDivElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
+  const overlayNavigation = useRef<{ id: number; targetHref: string } | null>(null);
 
-  const onHomepage = pathname === "/";
   const selectableItems = useMemo(
-    () => matches.map(({ item }) => item),
+    () => matches.filter(({ item }) => Boolean(item.href)).map(({ item }) => item),
     [matches],
   );
 
@@ -66,11 +85,35 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
     dismissDiscovery(restoreFocus);
   }, [clearDiscovery, dismissDiscovery]);
 
-  const selectForCanvas = useCallback((item: DiscoveryItem) => {
-    selectMatch(item.id);
-    dismissDiscovery(false);
-    if (!onHomepage) router.push("/", { scroll: false });
-  }, [dismissDiscovery, onHomepage, router, selectMatch]);
+  const beginOverlayNavigation = useCallback((targetHref: string) => {
+    const id = beginCanvasNavigation(targetHref);
+    overlayNavigation.current = { id, targetHref };
+    return id;
+  }, [beginCanvasNavigation]);
+
+  const settleOverlayNavigation = useCallback((targetHref: string, handoffId: number) => {
+    settleCanvasNavigation(targetHref, handoffId);
+
+    const navigation = overlayNavigation.current;
+    if (!navigation || navigation.id !== handoffId || navigation.targetHref !== targetHref) return;
+
+    overlayNavigation.current = null;
+    if (isCurrentLocation(targetHref)) dismissDiscovery(false);
+  }, [dismissDiscovery, settleCanvasNavigation]);
+
+  useLayoutEffect(() => {
+    const navigation = overlayNavigation.current;
+    if (!navigation) return;
+
+    if (isCurrentLocation(navigation.targetHref)) {
+      settleCanvasNavigation(navigation.targetHref, navigation.id);
+      overlayNavigation.current = null;
+      dismissDiscovery(false);
+      return;
+    }
+
+    if (!navigationPending) overlayNavigation.current = null;
+  }, [dismissDiscovery, navigationPending, pathname, settleCanvasNavigation]);
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -98,8 +141,9 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
 
       const input = window.matchMedia("(min-width: 1024px)").matches ? desktopInput.current : mobileInput.current;
       if (!input) return;
-      const options = [...(resultsPanel.current?.querySelectorAll<HTMLElement>('button[role="option"]:not([disabled])') ?? [])];
-      const focusable = [input, ...options];
+      const promptButtons = [...(resultsPanel.current?.querySelectorAll<HTMLElement>("[data-guided-discovery-prompt]") ?? [])];
+      const options = [...(resultsPanel.current?.querySelectorAll<HTMLElement>('a[role="option"][href]') ?? [])];
+      const focusable = [input, ...promptButtons, ...options];
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
 
@@ -163,8 +207,14 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
     }
 
     const selected = selectableItems[activeIndex >= 0 ? activeIndex : 0];
-    selectForCanvas(selected);
+    document.getElementById(`discovery-option-${selected.id}`)?.click();
   };
+
+  const applyGuidedPrompt = useCallback((promptQuery: string) => {
+    setQuery(promptQuery);
+    setActiveId(null);
+    focusInput();
+  }, [focusInput, setQuery]);
 
   const inputProps = {
     type: "search" as const,
@@ -194,7 +244,7 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
         <input
           {...inputProps}
           ref={desktopInput}
-          placeholder="Discover the HQ"
+          placeholder="Projekte, Karriere, Menschen und Tools entdecken"
           onClick={(event) => openDiscovery(event.currentTarget)}
           className="h-10 w-full rounded-full border border-white/15 bg-white/[0.035] pl-9 pr-14 text-sm text-white outline-none transition placeholder:text-slate-500 hover:border-white/25 focus:border-[#35d0e5]/60 focus:bg-[#071824] focus:ring-2 focus:ring-[#35d0e5]/15"
         />
@@ -219,25 +269,44 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
               <input
                 {...inputProps}
                 ref={mobileInput}
-                placeholder="Was möchtest du entdecken?"
+                placeholder="Projekte, Karriere, Menschen und Tools entdecken"
                 className="h-12 w-full rounded-xl border border-white/15 bg-[#04111b] px-4 text-base text-white outline-none placeholder:text-slate-500 focus:border-[#35d0e5]/60 focus:ring-2 focus:ring-[#35d0e5]/15"
               />
             </div>
-            <p id={descriptionId} className="sr-only">Vorschläge erscheinen während der Eingabe. Mit den Pfeiltasten auswählen und mit Enter als Top Match übernehmen.</p>
+            <p id={descriptionId} className="sr-only">Vorschläge erscheinen während der Eingabe. Mit den Pfeiltasten ein verfügbares Ergebnis auswählen und mit Enter öffnen.</p>
             <div id={listboxId} role="listbox" aria-label="Discovery-Ergebnisse" className="min-h-0 flex-1 overflow-hidden">
               {matches.length > 0 && (
                 <DiscoveryResults
                   groups={groups}
                   activeId={activeId}
                   onActivate={setActiveId}
-                  onSelect={selectForCanvas}
+                  onBeginNavigation={beginOverlayNavigation}
+                  onSettleNavigation={settleOverlayNavigation}
                 />
               )}
             </div>
             {!query.trim() ? (
-              <div className="shrink-0 px-6 py-12 text-center">
+              <div className="min-h-0 shrink overflow-y-auto px-5 py-7 text-center sm:px-6 sm:py-9">
                 <p className="text-lg font-black text-white">Discover the Digital HQ</p>
                 <p className="mt-2 text-sm text-slate-400">Projekte, Insights, Tools, Menschen und Seiten entdecken.</p>
+                <div className="mx-auto mt-6 grid max-w-xl gap-2 text-left sm:grid-cols-2" role="group" aria-label="Beispiele für Discovery-Anfragen">
+                  {guidedDiscoveryPrompts.map((prompt) => (
+                    <button
+                      key={prompt.id}
+                      type="button"
+                      data-guided-discovery-prompt
+                      onClick={() => applyGuidedPrompt(prompt.query)}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        applyGuidedPrompt(prompt.query);
+                      }}
+                      className="min-h-11 rounded-xl border border-white/10 bg-white/[0.025] px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-[#35d0e5]/35 hover:bg-[#35d0e5]/[0.06] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5]"
+                    >
+                      {prompt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : matches.length === 0 ? (
               <div className="shrink-0 px-6 py-12 text-center" role="status">
@@ -247,7 +316,7 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
             ) : null}
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-white/10 px-4 py-2 font-mono text-[9px] uppercase tracking-wider text-slate-500">
               <span aria-live="polite">{query.trim() ? `${matches.length} Treffer` : "Eingabe ab 1 Zeichen"}</span>
-              <span>↑↓ Auswahl · Enter Übernehmen · Esc Schließen</span>
+              <span>↑↓ Auswahl · Enter Öffnen · Esc Schließen</span>
             </div>
           </div>
       )}

@@ -1,10 +1,12 @@
 "use client";
 
-import Link, { useLinkStatus } from "next/link";
-import { useEffect, useRef, type MouseEvent, type MutableRefObject, type RefObject } from "react";
+import Link from "next/link";
+import { useRef } from "react";
 
 import { useDiscovery } from "@/components/discovery/discovery-context";
-import type { DiscoveryItem, DiscoveryStatus } from "@/types/discovery";
+import { DiscoveryExplanation } from "@/components/discovery/discovery-explanation";
+import { DiscoveryNavigationStatus, isUnmodifiedPrimaryClick } from "@/components/discovery/discovery-results";
+import type { DiscoveryMatch, DiscoveryStatus } from "@/types/discovery";
 
 interface StatusStyles {
   badge: string;
@@ -45,36 +47,6 @@ interface NavigationHandoffProps {
   settleNavigation: (targetHref: string, handoffId: number) => void;
 }
 
-function isUnmodifiedPrimaryClick(event: MouseEvent<HTMLAnchorElement>) {
-  return event.button === 0
-    && !event.defaultPrevented
-    && !event.metaKey
-    && !event.ctrlKey
-    && !event.shiftKey
-    && !event.altKey;
-}
-
-function CanvasNavigationStatus({ targetHref, handoffIdRef, onSettle }: { targetHref: string; handoffIdRef: MutableRefObject<number | null>; onSettle: NavigationHandoffProps["settleNavigation"] }) {
-  const { pending } = useLinkStatus();
-  const observedPending = useRef(false);
-
-  useEffect(() => {
-    if (pending) {
-      observedPending.current = true;
-      return;
-    }
-
-    if (!observedPending.current) return;
-    observedPending.current = false;
-
-    const navigationId = handoffIdRef.current;
-    handoffIdRef.current = null;
-    if (navigationId !== null) onSettle(targetHref, navigationId);
-  }, [handoffIdRef, onSettle, pending, targetHref]);
-
-  return null;
-}
-
 function StatusBadge({ status }: { status: DiscoveryStatus }) {
   return (
     <span className={`rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider ${statusStyles[status].badge}`}>
@@ -83,18 +55,13 @@ function StatusBadge({ status }: { status: DiscoveryStatus }) {
   );
 }
 
-function TopMatch({ item, matchRef, beginNavigation, settleNavigation }: { item: DiscoveryItem; matchRef: RefObject<HTMLElement | null> } & NavigationHandoffProps) {
+function TopMatch({ match, beginNavigation, settleNavigation }: { match: DiscoveryMatch } & NavigationHandoffProps) {
+  const { item } = match;
   const styles = statusStyles[item.status];
   const handoffIdRef = useRef<number | null>(null);
-
-  return (
-    <article
-      ref={matchRef}
-      tabIndex={-1}
-      data-top-match-id={item.id}
-      aria-label={`${item.title}, Top Match, ${item.status}`}
-      className={`relative overflow-hidden rounded-[2rem] border p-6 shadow-[0_24px_80px_rgba(0,0,0,0.2)] outline-none focus-visible:ring-2 focus-visible:ring-[#35d0e5] sm:p-9 ${styles.topMatch}`}
-    >
+  const layoutClasses = `relative overflow-hidden rounded-[2rem] border p-6 shadow-[0_24px_80px_rgba(0,0,0,0.2)] sm:p-9 ${styles.topMatch}`;
+  const content = (
+    <>
       <div className="flex flex-wrap items-center gap-3">
         <span className="font-mono text-[10px] font-black uppercase tracking-[0.28em] text-[#35d0e5]">Top Match</span>
         <StatusBadge status={item.status} />
@@ -104,28 +71,50 @@ function TopMatch({ item, matchRef, beginNavigation, settleNavigation }: { item:
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-slate-500">{item.group} / {item.category}</p>
           <h2 className="mt-3 max-w-4xl text-3xl font-black tracking-[-0.035em] text-white sm:text-5xl">{item.title}</h2>
           <p className="mt-5 max-w-3xl text-base leading-7 text-slate-300 sm:text-lg">{item.description}</p>
+          <DiscoveryExplanation reasons={match.reasons} maxReasons={2} />
         </div>
         {item.href ? (
-          <Link
-            href={item.href}
-            onClick={(event) => {
-              if (!isUnmodifiedPrimaryClick(event)) return;
-              handoffIdRef.current = beginNavigation(item.href as string);
-            }}
-            className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#35d0e5]/35 px-5 py-2.5 font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#73e3f1] transition-colors hover:border-[#35d0e5]/65 hover:bg-[#35d0e5]/10"
-          >
-            <CanvasNavigationStatus targetHref={item.href} handoffIdRef={handoffIdRef} onSettle={settleNavigation} />
+          <span className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#35d0e5]/35 px-5 py-2.5 font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#73e3f1] transition-colors group-hover:border-[#35d0e5]/65 group-hover:bg-[#35d0e5]/10">
             Detailseite öffnen →
-          </Link>
+          </span>
         ) : (
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">Noch nicht verfügbar</span>
         )}
       </div>
+    </>
+  );
+
+  if (item.href) {
+    return (
+      <Link
+        href={item.href}
+        data-top-match-id={item.id}
+        aria-label={`${item.title}, Top Match, ${item.status}`}
+        onClick={(event) => {
+          if (!isUnmodifiedPrimaryClick(event)) return;
+          handoffIdRef.current = beginNavigation(item.href as string);
+        }}
+        className={`${layoutClasses} group block outline-none transition-[border-color,box-shadow] hover:border-white/30 focus-visible:ring-2 focus-visible:ring-[#35d0e5]`}
+      >
+        <DiscoveryNavigationStatus targetHref={item.href} handoffIdRef={handoffIdRef} onSettle={settleNavigation} />
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <article
+      data-top-match-id={item.id}
+      aria-label={`${item.title}, Top Match, ${item.status}`}
+      className={layoutClasses}
+    >
+      {content}
     </article>
   );
 }
 
-function ResultCard({ item, beginNavigation, settleNavigation, featured = false }: { item: DiscoveryItem; featured?: boolean } & NavigationHandoffProps) {
+function ResultCard({ match, beginNavigation, settleNavigation, featured = false }: { match: DiscoveryMatch; featured?: boolean } & NavigationHandoffProps) {
+  const { item } = match;
   const styles = statusStyles[item.status];
   const handoffIdRef = useRef<number | null>(null);
   const layoutClasses = `flex min-h-64 w-full flex-col rounded-2xl border p-5 text-left ${styles.card} ${featured ? "xl:col-span-2 xl:min-h-72 xl:p-7" : ""}`;
@@ -137,6 +126,7 @@ function ResultCard({ item, beginNavigation, settleNavigation, featured = false 
       </div>
       <h3 className={`mt-5 text-xl font-black tracking-tight text-white ${featured ? "xl:text-3xl" : ""}`}>{item.title}</h3>
       <p className={`mt-3 line-clamp-3 text-sm leading-6 text-slate-400 ${featured ? "xl:line-clamp-4 xl:max-w-2xl xl:text-base xl:leading-7" : ""}`}>{item.description}</p>
+      <DiscoveryExplanation reasons={match.reasons} maxReasons={2} />
       <span className={`mt-auto pt-6 font-mono text-[10px] uppercase tracking-[0.18em] ${item.href ? "text-slate-300 group-hover:text-white group-focus-visible:text-white" : "text-slate-500"}`}>
         {item.href ? "Ergebnis öffnen →" : "Noch nicht verfügbar"}
       </span>
@@ -155,7 +145,7 @@ function ResultCard({ item, beginNavigation, settleNavigation, featured = false 
         data-featured-result={featured || undefined}
         className={`${layoutClasses} group motion-safe:transition-[transform,background-color,border-color] motion-safe:duration-[180ms] motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:focus-visible:-translate-y-0.5 motion-reduce:transform-none motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 ${styles.interactive}`}
       >
-        <CanvasNavigationStatus targetHref={item.href} handoffIdRef={handoffIdRef} onSettle={settleNavigation} />
+        <DiscoveryNavigationStatus targetHref={item.href} handoffIdRef={handoffIdRef} onSettle={settleNavigation} />
         {content}
       </Link>
     );
@@ -173,15 +163,7 @@ function ResultCard({ item, beginNavigation, settleNavigation, featured = false 
 }
 
 export function ContextDiscoveryView() {
-  const { query, matches, adaptiveView, overlayOpen, selectedMatchId, navigationPending, beginCanvasNavigation, settleCanvasNavigation } = useDiscovery();
-  const topMatchRef = useRef<HTMLElement>(null);
-  const topMatchId = adaptiveView.topMatch?.item.id ?? null;
-
-  useEffect(() => {
-    if (!selectedMatchId || overlayOpen) return;
-    const frame = window.requestAnimationFrame(() => topMatchRef.current?.focus({ preventScroll: true }));
-    return () => window.cancelAnimationFrame(frame);
-  }, [overlayOpen, selectedMatchId, topMatchId]);
+  const { query, matches, adaptiveView, navigationPending, beginCanvasNavigation, settleCanvasNavigation } = useDiscovery();
 
   return (
     <div data-navigation-pending={navigationPending || undefined} className="mx-auto w-full max-w-[90rem] px-5 py-10 sm:px-8 sm:py-14">
@@ -205,8 +187,7 @@ export function ContextDiscoveryView() {
         <div className="mt-10">
           {adaptiveView.topMatch && (
             <TopMatch
-              item={adaptiveView.topMatch.item}
-              matchRef={topMatchRef}
+              match={adaptiveView.topMatch}
               beginNavigation={beginCanvasNavigation}
               settleNavigation={settleCanvasNavigation}
             />
@@ -228,10 +209,10 @@ export function ContextDiscoveryView() {
                       </span>
                     </div>
                     <div className={`grid gap-4 sm:grid-cols-2 ${gridColumns}`}>
-                      {groupMatches.map(({ item }, index) => (
+                      {groupMatches.map((match, index) => (
                         <ResultCard
-                          key={item.id}
-                          item={item}
+                          key={match.item.id}
+                          match={match}
                           beginNavigation={beginCanvasNavigation}
                           settleNavigation={settleCanvasNavigation}
                           featured={hasFeaturedResult && index === 0}
