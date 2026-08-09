@@ -15,6 +15,11 @@ import type { ActiveDiscoveryDimension, DiscoveryItem, DiscoveryMatch } from "..
 const knownStaticRoutes = new Set([
   "/",
   "/echowall",
+  "/find-your-next-step",
+  "/find-your-next-step/self",
+  "/find-your-next-step/career",
+  "/find-your-next-step/problem",
+  "/find-your-next-step/idea",
   "/goatrecrutainer/career-spotlight",
   "/goatrecrutainer/career-spotlight/evgeny-vinokurov",
   "/projects/goatrecrutainer",
@@ -205,6 +210,7 @@ test("contextual queries keep deterministic and relevant production rankings", (
   assert.equal(idsFor("Recruiting").includes("project-ratecom"), true);
   assert.equal(idsFor("Recruiting").includes("project-goatrecrutainer-area-talking-cure"), false);
   assert.equal(idsFor("Job")[0], "project-goatrecrutainer-area-career-agent");
+  assert.equal(idsFor("Job").includes("tool-find-your-next-step-career"), true);
   assert.deepEqual(idsFor("Ich suche einen Job"), idsFor("Job"));
   assert.equal(idsFor("Karriere").includes("project-goatrecrutainer-area-career-agent"), true);
   assert.deepEqual(idsFor("Arbeitgeber wechseln"), ["project-goatrecrutainer-area-career-agent"]);
@@ -212,12 +218,38 @@ test("contextual queries keep deterministic and relevant production rankings", (
   assert.equal(idsFor("Ich brauche Unterstützung im Recruiting")[0], "project-goatrecrutainer-area-recruiting-as-a-service");
   assert.equal(idsFor("Gründen")[0], "project-byc");
   assert.equal(idsFor("Idee umsetzen")[0], "project-goatrecrutainer-area-konzepterstellung");
+  assert.equal(idsFor("Idee umsetzen").includes("tool-find-your-next-step-idea"), true);
   assert.deepEqual(idsFor("Ich will eine Idee umsetzen"), idsFor("Idee umsetzen"));
   assert.equal(idsFor("Menschen und Geschichten").includes("interview-career-spotlight"), true);
   assert.equal(idsFor("Menschen und Geschichten").includes("person-evgeny-vinokurov"), true);
   assert.equal(idsFor("Ich möchte Menschen und ihre Geschichten kennenlernen").includes("interview-career-spotlight"), true);
   assert.equal(idsFor("Community und Feedback")[0], "tool-echowall");
   assert.deepEqual(idsFor("unbekannte Query"), []);
+});
+
+test("Sprint 5 FYNS intents stay distinct from job search and existing discovery contexts", () => {
+  const idsFor = (query: string) => discoverItems(discoveryIndex, query).map(({ item }) => item.id);
+
+  assert.equal(idsFor("Wer bin ich?")[0], "tool-find-your-next-step-self");
+  assert.equal(idsFor("Welcher Job passt zu mir?")[0], "tool-find-your-next-step-career");
+  assert.equal(idsFor("berufliche Orientierung")[0], "tool-find-your-next-step-career");
+  assert.equal(idsFor("berufliche Orientierung").includes("project-goatrecrutainer-area-career-agent"), true);
+  assert.equal(idsFor("Ich suche einen Job")[0], "project-goatrecrutainer-area-career-agent");
+  assert.equal(idsFor("Ich suche einen Job").includes("tool-find-your-next-step-career"), true);
+  assert.equal(idsFor("Job")[0], "project-goatrecrutainer-area-career-agent");
+  assert.equal(idsFor("Job").includes("tool-find-your-next-step-career"), true);
+  assert.equal(idsFor("Ich habe ein Problem")[0], "tool-find-your-next-step-problem");
+  assert.equal(idsFor("Ich weiß nicht weiter")[0], "tool-find-your-next-step");
+  assert.equal(idsFor("Ich habe eine Idee")[0], "tool-find-your-next-step-idea");
+  assert.equal(idsFor("Was mache ich mit meiner Idee?")[0], "tool-find-your-next-step-idea");
+  assert.equal(idsFor("Idee umsetzen").includes("tool-find-your-next-step-idea"), true);
+  assert.equal(idsFor("Idee umsetzen").includes("project-goatrecrutainer-area-konzepterstellung"), true);
+  assert.equal(idsFor("Was soll ich als Nächstes tun?")[0], "tool-find-your-next-step");
+  assert.equal(idsFor("Recruiting")[0], "project-goatrecrutainer-area-recruiting-as-a-service");
+  assert.equal(idsFor("HR").includes("tool-find-your-next-step"), false);
+  assert.equal(idsFor("Community und Feedback")[0], "tool-echowall");
+  assert.equal(idsFor("Menschen und Geschichten").includes("interview-career-spotlight"), true);
+  assert.equal(idsFor("Menschen und Geschichten").includes("person-evgeny-vinokurov"), true);
 });
 
 test("short queries preserve title-prefix discovery without arbitrary field substrings", () => {
@@ -341,7 +373,7 @@ test("all guided prompts are route-free and produce curated results", () => {
     ["career", "project-goatrecrutainer-area-career-agent"],
     ["stories", "interview-career-spotlight"],
     ["ideas", "project-goatrecrutainer-area-konzepterstellung"],
-    ["orientation", "tool-echowall"],
+    ["orientation", "tool-find-your-next-step"],
     ["community", "tool-echowall"],
   ]);
 
@@ -367,6 +399,8 @@ test("header preserves navigation and exposes desktop and mobile discovery contr
   const engine = readFileSync(new URL("../components/discovery/discovery-engine.tsx", import.meta.url), "utf8");
 
   assert.equal(header.includes("<DiscoveryEngine"), true);
+  assert.equal(header.includes('{ label: "Find Your Next Step", href: "/find-your-next-step" }'), true);
+  assert.equal(header.includes('{ label: "EchoWall", href: "/echowall" }'), true);
   assert.equal(header.includes("setOpenDropdown(null)"), true);
   assert.equal(engine.includes("Projekte, Karriere, Menschen und Tools entdecken"), true);
   assert.equal(engine.includes("guidedDiscoveryPrompts.map"), true);

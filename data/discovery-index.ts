@@ -1,5 +1,6 @@
 import { careerSpotlightConfig, careerSpotlights } from "@/data/career-spotlights";
 import { discoveryDimensionsByItemId } from "@/data/discovery-curation";
+import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
 import { hqPulseItems } from "@/data/hq-pulse";
 import { interviewFormats } from "@/data/interviews";
 import { projects } from "@/data/projects";
@@ -109,7 +110,33 @@ const peopleItems: DiscoveryItem[] = careerSpotlights
     href: `/goatrecrutainer/career-spotlight/${spotlight.slug}`,
   }));
 
+const findYourNextStepItems: DiscoveryItem[] = [
+  {
+    id: findYourNextStep.id,
+    group: "Tools",
+    title: findYourNextStep.name,
+    description: findYourNextStep.introduction,
+    category: findYourNextStep.discovery.category,
+    tags: [...findYourNextStep.discovery.tags],
+    keywords: [...findYourNextStep.discovery.keywords],
+    status: findYourNextStep.status,
+    href: findYourNextStep.href,
+  },
+  ...nextStepJourneys.map((journey): DiscoveryItem => ({
+    id: journey.id,
+    group: "Tools",
+    title: journey.discovery.title ?? journey.title,
+    description: journey.description,
+    category: journey.discovery.category,
+    tags: [...journey.discovery.tags],
+    keywords: [...journey.discovery.keywords],
+    status: journey.status,
+    href: journey.href,
+  })),
+];
+
 const toolItems: DiscoveryItem[] = [
+  ...findYourNextStepItems,
   {
     id: "tool-echowall",
     group: "Tools",

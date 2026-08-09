@@ -381,6 +381,11 @@ test("robots and sitemap fail closed and expose only canonical production routes
     assert.deepEqual(entries, [
       "/",
       "/echowall",
+      "/find-your-next-step",
+      "/find-your-next-step/self",
+      "/find-your-next-step/career",
+      "/find-your-next-step/problem",
+      "/find-your-next-step/idea",
       "/projects/goatrecrutainer",
       "/projects/ratecom",
       "/projects/hobbyswap",

@@ -36,8 +36,11 @@ const navigation: NavigationItem[] = [
   },
   {
     label: "Tools",
-    href: "/echowall",
-    children: [{ label: "EchoWall", href: "/echowall" }],
+    href: "/find-your-next-step",
+    children: [
+      { label: "Find Your Next Step", href: "/find-your-next-step" },
+      { label: "EchoWall", href: "/echowall" },
+    ],
   },
   { label: "Partners", href: "/#contact" },
   { label: "Contact", href: "/#contact" },

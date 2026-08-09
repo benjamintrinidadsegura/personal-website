@@ -6,10 +6,40 @@ import type {
 } from "@/types/discovery";
 
 /**
- * Editorial context for Sprint 4. Values stay short, traceable to existing
+ * Editorial context for contextual Discovery. Values stay short, traceable to
  * project copy, and capped at four entries per active dimension.
  */
 export const discoveryDimensionsByItemId: Readonly<Record<string, DiscoveryDimensions>> = {
+  "tool-find-your-next-step": {
+    intent: ["Persönlichen nächsten Schritt klären", "Orientierung gewinnen", "Eigene Situation klären"],
+    goals: ["Eine passende Richtung erkennen", "Eine Entscheidung vorbereiten"],
+    problems: ["Unklarheit über den nächsten Schritt", "Orientierungslosigkeit"],
+    useCases: ["Selbstverständnis", "Berufliche Orientierung", "Problem einordnen", "Idee strukturieren"],
+  },
+  "tool-find-your-next-step-self": {
+    intent: ["Mich selbst besser verstehen", "Selbstverständnis entwickeln"],
+    goals: ["Stärken erkennen", "Werte klären", "Bedürfnisse verstehen", "Arbeitsweise reflektieren"],
+    problems: ["Unsicherheit über die eigene Richtung"],
+    useCases: ["Persönlichkeit reflektieren", "Interessen einordnen", "Energie verstehen"],
+  },
+  "tool-find-your-next-step-career": {
+    intent: ["Berufliche Orientierung gewinnen", "Passende berufliche Richtungen finden"],
+    goals: ["Berufliche Passung klären", "Arbeitsumfeld klären", "Werte und Arbeit verbinden"],
+    problems: ["Fehlende berufliche Orientierung", "Unklarheit beim nächsten Karriereschritt"],
+    useCases: ["Jobwahl reflektieren", "Berufliche Neuorientierung", "Passenden Job finden", "Karriereentscheidung vorbereiten"],
+  },
+  "tool-find-your-next-step-problem": {
+    intent: ["Problem einordnen", "Handlungsmöglichkeiten erkennen", "Anlaufstellen verstehen"],
+    goals: ["Situation besser verstehen", "Nächsten sinnvollen Schritt erkennen"],
+    problems: ["Eine schwierige Situation einordnen", "Fehlende Klarheit über Handlungsmöglichkeiten"],
+    useCases: ["Problemfeld auswählen", "Situation strukturieren", "Mögliche nächste Schritte"],
+  },
+  "tool-find-your-next-step-idea": {
+    intent: ["Idee strukturieren", "Idee umsetzen", "Konzept entwickeln"],
+    goals: ["Nutzen und Zielgruppe klären", "Eigene Idee zu einem ersten Plan entwickeln"],
+    problems: ["Unklare Idee", "Unklarer erster Umsetzungsschritt"],
+    useCases: ["Problem und Zielgruppe verstehen", "Machbarkeit einordnen", "Nächste Schritte planen"],
+  },
   "project-goatrecrutainer": {
     intent: ["Recruiting-Unterstützung finden", "Personal Brand kennenlernen", "Karrieregeschichten entdecken"],
     goals: ["Recruiting verbessern", "Menschen und Karrierewege sichtbar machen"],
@@ -130,6 +160,13 @@ export const discoverySynonymGroups: readonly DiscoverySynonymGroup[] = [
 ];
 
 export const discoveryRelationships: readonly DiscoveryRelationship[] = [
+  { id: "understand-self", query: "Wer bin ich", terms: ["Mich selbst besser verstehen"] },
+  { id: "career-fit", query: "Welcher Job passt zu mir", terms: ["Berufliche Passung klären"] },
+  { id: "feeling-stuck", query: "Ich weiß nicht weiter", terms: ["Persönlichen nächsten Schritt klären"] },
+  { id: "have-a-problem", query: "Ich habe ein Problem", terms: ["Problem einordnen"] },
+  { id: "have-an-idea", query: "Ich habe eine Idee", terms: ["Idee strukturieren"] },
+  { id: "shape-my-idea", query: "Was mache ich mit meiner Idee", terms: ["Eigene Idee zu einem ersten Plan entwickeln"] },
+  { id: "next-step", query: "Was soll ich als Nächstes tun", terms: ["Persönlichen nächsten Schritt klären"] },
   { id: "change-employer", query: "Arbeitgeber wechseln", terms: ["Berufswechsel", "Jobwechsel"] },
   { id: "implement-idea", query: "Idee umsetzen", terms: ["Idee umsetzen", "Konzept entwickeln"] },
   { id: "people-and-stories", query: "Menschen und Geschichten", terms: ["Menschen und Geschichten", "Karrierewege", "Geschichten hinter Lebensläufen"] },
@@ -172,6 +209,6 @@ export const guidedDiscoveryPrompts: readonly GuidedDiscoveryPrompt[] = [
   { id: "career", label: "Karriere und Jobs", query: "Karriere und Jobs" },
   { id: "stories", label: "Menschen und Geschichten", query: "Menschen und Geschichten" },
   { id: "ideas", label: "Projekte und Ideen", query: "Idee umsetzen" },
-  { id: "orientation", label: "Tools und Orientierung", query: "Tools und Orientierung" },
+  { id: "orientation", label: "Nächsten Schritt finden", query: "Was soll ich als Nächstes tun?" },
   { id: "community", label: "Community und Feedback", query: "Community und Feedback" },
 ];

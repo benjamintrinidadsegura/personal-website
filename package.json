@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:echowall": "tsx --test tests/echowall-foundation.test.ts",
-    "test:discovery": "tsx --test tests/discovery-engine.test.ts"
+    "test:discovery": "tsx --test tests/discovery-engine.test.ts",
+    "test:fyns": "tsx --test tests/find-your-next-step-foundation.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

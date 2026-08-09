@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { careerSpotlights } from "@/data/career-spotlights";
+import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
 import { projects } from "@/data/projects";
 import { siteConfig } from "@/data/site";
 
@@ -35,6 +36,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     "/",
     "/echowall",
+    findYourNextStep.href,
+    ...nextStepJourneys.map(({ href }) => href),
     ...projects.map(({ slug }) => `/projects/${slug}`),
     "/goatrecrutainer/career-spotlight",
     ...careerSpotlights
