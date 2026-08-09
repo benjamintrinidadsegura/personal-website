@@ -34,9 +34,9 @@ export const findYourNextStep = {
   ],
   developmentTitle: "Ein Fundament, das bewusst offen bleibt.",
   developmentText:
-    "FYNS wird schrittweise aufgebaut. Die vier Wege haben bereits eigene Einstiegsseiten, ihre eigentlichen Journeys, Fragen und Auswertungen befinden sich jedoch noch in Entwicklung. Aktuell findet keine persönliche Analyse oder Beratung statt.",
+    "FYNS wird schrittweise aufgebaut. Die Self-Reflection ist als erste Journey in einer funktionalen Beta verfügbar. Career, Problem und Idea bleiben transparente Einstiegsseiten, bis ihre eigenen Journeys wirklich tragen.",
   privacyText:
-    "In diesem Stand werden keine persönlichen Antworten erfasst oder gespeichert. Es gibt keine Antwortformulare, keine Nutzerkonten und keine Speicherung im Browser oder in einer Datenbank.",
+    "Antworten der Self-Reflection bleiben ausschließlich im aktuellen Seitenzustand und werden weder gespeichert noch übertragen. Ein Neuladen oder Verlassen der Seite löscht sie. Nutzerkonten oder eine Datenbank sind dafür nicht im Einsatz.",
   closingText: "Du musst noch nicht die ganze Richtung kennen. Ein ehrlicher nächster Schritt reicht.",
   discovery: {
     category: "Orientation Tool",
@@ -53,29 +53,27 @@ export const nextStepJourneys: readonly NextStepJourney[] = [
     number: "01",
     title: "Wer bin ich?",
     description:
-      "Ein Weg, der dir später helfen soll, deine Persönlichkeit, Stärken, Interessen, Werte und Bedürfnisse bewusster zu verstehen.",
+      "Eine strukturierte Selbstreflexion, die Muster in deinen Werten, Bedürfnissen, deiner Energie und hilfreichen Bedingungen sichtbar macht – ohne dich in einen Typ zu pressen.",
     expectations: [
       "Ruhige Fragen statt schneller Schubladen",
-      "Mehrere Perspektiven auf das, was dich ausmacht",
-      "Eine verständliche Einordnung ohne Persönlichkeits-Score",
-      "Hinweise für eine bewusstere Selbstreflexion",
+      "15 Entscheidungen über Alltag, Energie und hilfreiche Bedingungen",
+      "Ein nachvollziehbares Reflexionsbild ohne Persönlichkeits-Score",
+      "Kombinationen von Bedürfnissen statt vermeintlicher Widersprüche",
     ],
     analysisAreas: [
-      "Persönlichkeit",
-      "Stärken",
-      "Interessen",
-      "Werte",
-      "Arbeitsweise",
-      "Energie",
-      "Bedürfnisse",
-      "Selbstverständnis",
+      "Persönliche Prioritäten und Werte",
+      "Entscheidungen und Gestaltungsspielraum",
+      "Energie, Aufmerksamkeit und Regeneration",
+      "Soziale Verbindung und Rückmeldung",
+      "Verlässlichkeit und Umgang mit Veränderung",
+      "Selbst beobachtete Stärken",
     ],
-    status: "In Development",
+    status: "Beta",
     accent: "#35d0e5",
     discovery: {
       category: "Find Your Next Step",
       tags: ["Selbstverständnis", "Selbstreflexion", "Persönliche Entwicklung"],
-      keywords: ["Persönlichkeit", "Stärken", "Interessen", "Werte", "Arbeitsweise", "Bedürfnisse"],
+      keywords: ["Stärken", "Werte", "Arbeitsweise", "Bedürfnisse", "Energie", "Entscheidungen", "Regeneration"],
     },
   },
   {

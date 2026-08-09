@@ -5,6 +5,28 @@ import { findYourNextStep } from "@/data/find-your-next-step";
 import { StatusPill } from "@/components/ui/status-pill";
 import type { NextStepJourney } from "@/types/find-your-next-step";
 
+export function FindYourNextStepJourneyBreadcrumb({ journey }: { journey: NextStepJourney }) {
+  return (
+    <nav aria-label="Breadcrumb" className="font-mono text-xs text-slate-400">
+      <ol className="flex flex-wrap items-center gap-2">
+        <li>
+          <Link href="/" className="inline-flex min-h-11 items-center transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--journey-accent)]">
+            Digital HQ
+          </Link>
+        </li>
+        <li aria-hidden="true">/</li>
+        <li>
+          <Link href={findYourNextStep.href} className="inline-flex min-h-11 items-center transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--journey-accent)]">
+            {findYourNextStep.name}
+          </Link>
+        </li>
+        <li aria-hidden="true">/</li>
+        <li aria-current="page" className="text-[var(--journey-accent)]">Weg {journey.number}</li>
+      </ol>
+    </nav>
+  );
+}
+
 export function FindYourNextStepJourney({ journey }: { journey: NextStepJourney }) {
   return (
     <article
@@ -18,23 +40,7 @@ export function FindYourNextStepJourney({ journey }: { journey: NextStepJourney 
       />
 
       <div className="relative mx-auto max-w-6xl">
-        <nav aria-label="Breadcrumb" className="font-mono text-xs text-slate-400">
-          <ol className="flex flex-wrap items-center gap-2">
-            <li>
-              <Link href="/" className="inline-flex min-h-11 items-center transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--journey-accent)]">
-                Digital HQ
-              </Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li>
-              <Link href={findYourNextStep.href} className="inline-flex min-h-11 items-center transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--journey-accent)]">
-                {findYourNextStep.name}
-              </Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li aria-current="page" className="text-[var(--journey-accent)]">Weg {journey.number}</li>
-          </ol>
-        </nav>
+        <FindYourNextStepJourneyBreadcrumb journey={journey} />
 
         <header className="grid min-h-[64svh] items-center gap-12 border-b border-white/15 py-16 lg:grid-cols-[1.12fr_0.88fr] lg:py-24">
           <div>

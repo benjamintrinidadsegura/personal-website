@@ -48,7 +48,7 @@ function JourneyCard({ journey, index }: { journey: NextStepJourney; index: numb
               </p>
             </div>
             <span className="inline-flex min-h-11 shrink-0 items-center font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[var(--journey-accent)]">
-              Weg ansehen <span aria-hidden="true" className="ml-2 transition-transform motion-safe:group-hover:translate-x-1">→</span>
+              {journey.status === "Beta" ? "Journey öffnen" : "Weg ansehen"} <span aria-hidden="true" className="ml-2 transition-transform motion-safe:group-hover:translate-x-1">→</span>
             </span>
           </div>
         </div>

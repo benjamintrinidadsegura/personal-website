@@ -17,10 +17,10 @@ export const discoveryDimensionsByItemId: Readonly<Record<string, DiscoveryDimen
     useCases: ["Selbstverständnis", "Berufliche Orientierung", "Problem einordnen", "Idee strukturieren"],
   },
   "tool-find-your-next-step-self": {
-    intent: ["Mich selbst besser verstehen", "Selbstverständnis entwickeln"],
-    goals: ["Stärken erkennen", "Werte klären", "Bedürfnisse verstehen", "Arbeitsweise reflektieren"],
+    intent: ["Mich selbst besser verstehen", "Selbstreflexion durchführen"],
+    goals: ["Eigene Stärken reflektieren", "Werte klären", "Bedürfnisse verstehen", "Arbeitsweise reflektieren"],
     problems: ["Unsicherheit über die eigene Richtung"],
-    useCases: ["Persönlichkeit reflektieren", "Interessen einordnen", "Energie verstehen"],
+    useCases: ["Prioritäten einordnen", "Energie verstehen", "Hilfreiche Bedingungen erkennen"],
   },
   "tool-find-your-next-step-career": {
     intent: ["Berufliche Orientierung gewinnen", "Passende berufliche Richtungen finden"],

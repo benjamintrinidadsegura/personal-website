@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { FindYourNextStepJourney } from "@/components/find-your-next-step/find-your-next-step-journey";
+import { FindYourNextStepSelf } from "@/components/find-your-next-step/find-your-next-step-self";
 import { getNextStepJourney, nextStepJourneys } from "@/data/find-your-next-step";
 
 interface NextStepJourneyPageProps {
@@ -43,6 +44,8 @@ export async function generateMetadata({ params }: NextStepJourneyPageProps): Pr
 export default async function NextStepJourneyPage({ params }: NextStepJourneyPageProps) {
   const journey = getNextStepJourney((await params).slug);
   if (!journey) notFound();
+
+  if (journey.slug === "self") return <FindYourNextStepSelf journey={journey} />;
 
   return <FindYourNextStepJourney journey={journey} />;
 }

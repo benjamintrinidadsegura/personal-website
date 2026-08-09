@@ -227,10 +227,15 @@ test("contextual queries keep deterministic and relevant production rankings", (
   assert.deepEqual(idsFor("unbekannte Query"), []);
 });
 
-test("Sprint 5 FYNS intents stay distinct from job search and existing discovery contexts", () => {
+test("Sprint 6 FYNS intents stay distinct while Self is a discoverable Beta", () => {
   const idsFor = (query: string) => discoverItems(discoveryIndex, query).map(({ item }) => item.id);
 
   assert.equal(idsFor("Wer bin ich?")[0], "tool-find-your-next-step-self");
+  assert.equal(idsFor("Selbstreflexion")[0], "tool-find-your-next-step-self");
+  assert.equal(idsFor("Stärken")[0], "tool-find-your-next-step-self");
+  assert.equal(idsFor("Werte")[0], "tool-find-your-next-step-self");
+  assert.equal(idsFor("Arbeitsweise")[0], "tool-find-your-next-step-self");
+  assert.equal(discoveryIndex.find(({ id }) => id === "tool-find-your-next-step-self")?.status, "Beta");
   assert.equal(idsFor("Welcher Job passt zu mir?")[0], "tool-find-your-next-step-career");
   assert.equal(idsFor("berufliche Orientierung")[0], "tool-find-your-next-step-career");
   assert.equal(idsFor("berufliche Orientierung").includes("project-goatrecrutainer-area-career-agent"), true);
