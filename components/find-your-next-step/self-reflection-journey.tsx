@@ -16,8 +16,11 @@ import {
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
 import { SelfHandbookView } from "@/components/find-your-next-step/self-handbook";
+import { SelfProfileIdentityView } from "@/components/find-your-next-step/self-profile-identity";
 import { buildSelfHandbook } from "@/lib/find-your-next-step-self-handbook";
 import type { SelfHandbook } from "@/lib/find-your-next-step-self-handbook";
+import { buildSelfProfileIdentity } from "@/lib/find-your-next-step-self-profile";
+import type { SelfProfileIdentityResult } from "@/lib/find-your-next-step-self-profile";
 import {
   buildSelfResultText,
   buildSelfShareText,
@@ -173,12 +176,14 @@ function SelfPrintDocument({ result }: { result: SelfReflectionResult }) {
 function ResultView({
   result,
   handbook,
+  profileIdentity,
   dispatch,
   headingRef,
   restartPending,
 }: {
   result: SelfReflectionResult;
   handbook: SelfHandbook;
+  profileIdentity: SelfProfileIdentityResult;
   dispatch: React.Dispatch<Parameters<typeof selfReflectionJourneyReducer>[1]>;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
   restartPending: boolean;
@@ -211,6 +216,8 @@ function ResultView({
           {result.description}
         </p>
       </div>
+
+      <SelfProfileIdentityView identity={profileIdentity} />
 
       <div className="mt-14 grid gap-16">
         {result.sections.map((section) => (
@@ -320,6 +327,11 @@ export function SelfReflectionJourney() {
   const question = selfReflectionQuestions[state.questionIndex];
   const resultState = useMemo(() => buildSelfReflectionResult(state.answers), [state.answers]);
   const handbook = useMemo(() => buildSelfHandbook(state.answers), [state.answers]);
+  const profileIdentity = useMemo(() =>
+    resultState.status === "complete"
+      ? buildSelfProfileIdentity(state.answers, resultState.result)
+      : null,
+  [resultState, state.answers]);
 
   useEffect(() => {
     if (initialRender.current) {
@@ -392,7 +404,8 @@ export function SelfReflectionJourney() {
       );
     }
     if (!handbook) return null;
-    return <ResultView result={resultState.result} handbook={handbook} dispatch={dispatch} headingRef={headingRef} restartPending={state.restartPending} />;
+    if (!profileIdentity) return null;
+    return <ResultView result={resultState.result} handbook={handbook} profileIdentity={profileIdentity} dispatch={dispatch} headingRef={headingRef} restartPending={state.restartPending} />;
   }
 
   const selectedOptionIds = state.answers[question.id] ?? [];
