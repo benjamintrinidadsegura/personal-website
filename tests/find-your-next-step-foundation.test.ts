@@ -16,7 +16,7 @@ test("FYNS defines exactly four complete and uniquely addressable journeys", () 
   assert.equal(new Set(nextStepJourneys.map(({ href }) => href)).size, 4);
 
   for (const journey of nextStepJourneys) {
-    assert.equal(journey.status, journey.slug === "self" ? "Beta" : "In Development", journey.slug);
+    assert.equal(journey.status, journey.slug === "self" || journey.slug === "career" ? "Beta" : "In Development", journey.slug);
     assert.ok(journey.title.length > 0, journey.slug);
     assert.ok(journey.description.length > 0, journey.slug);
     assert.ok(journey.expectations.length >= 3, journey.slug);
@@ -87,4 +87,6 @@ test("the dynamic journey route owns static params, metadata, canonicals, and un
   assert.equal(route.includes("nextStepJourneys.map"), true);
   assert.equal(route.includes('if (journey.slug === "self")'), true);
   assert.equal(route.includes("<FindYourNextStepSelf journey={journey} />"), true);
+  assert.equal(route.includes('if (journey.slug === "career")'), true);
+  assert.equal(route.includes("<FindYourNextStepCareer journey={journey} />"), true);
 });

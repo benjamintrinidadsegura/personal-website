@@ -11,7 +11,8 @@
     "test:echowall": "tsx --test tests/echowall-foundation.test.ts",
     "test:discovery": "tsx --test tests/discovery-engine.test.ts",
     "test:fyns": "tsx --test tests/find-your-next-step-foundation.test.ts",
-    "test:self": "tsx --test tests/find-your-next-step-self.test.ts"
+    "test:self": "tsx --test tests/find-your-next-step-self.test.ts",
+    "test:career": "tsx --test tests/find-your-next-step-career.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

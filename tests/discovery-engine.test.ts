@@ -227,7 +227,7 @@ test("contextual queries keep deterministic and relevant production rankings", (
   assert.deepEqual(idsFor("unbekannte Query"), []);
 });
 
-test("Sprint 6 FYNS intents stay distinct while Self is a discoverable Beta", () => {
+test("Sprint 7 FYNS intents keep Career orientation distinct from concrete job search", () => {
   const idsFor = (query: string) => discoverItems(discoveryIndex, query).map(({ item }) => item.id);
 
   assert.equal(idsFor("Wer bin ich?")[0], "tool-find-your-next-step-self");
@@ -236,13 +236,21 @@ test("Sprint 6 FYNS intents stay distinct while Self is a discoverable Beta", ()
   assert.equal(idsFor("Werte")[0], "tool-find-your-next-step-self");
   assert.equal(idsFor("Arbeitsweise")[0], "tool-find-your-next-step-self");
   assert.equal(discoveryIndex.find(({ id }) => id === "tool-find-your-next-step-self")?.status, "Beta");
+  assert.equal(discoveryIndex.find(({ id }) => id === "tool-find-your-next-step-career")?.status, "Beta");
   assert.equal(idsFor("Welcher Job passt zu mir?")[0], "tool-find-your-next-step-career");
+  assert.equal(idsFor("Beruf finden")[0], "tool-find-your-next-step-career");
+  assert.equal(idsFor("Karriere Orientierung")[0], "tool-find-your-next-step-career");
+  assert.equal(idsFor("Was soll ich beruflich machen?")[0], "tool-find-your-next-step-career");
+  assert.equal(idsFor("welcher Beruf passt zu mir?")[0], "tool-find-your-next-step-career");
+  assert.equal(idsFor("berufliche Richtung")[0], "tool-find-your-next-step-career");
   assert.equal(idsFor("berufliche Orientierung")[0], "tool-find-your-next-step-career");
   assert.equal(idsFor("berufliche Orientierung").includes("project-goatrecrutainer-area-career-agent"), true);
   assert.equal(idsFor("Ich suche einen Job")[0], "project-goatrecrutainer-area-career-agent");
   assert.equal(idsFor("Ich suche einen Job").includes("tool-find-your-next-step-career"), true);
   assert.equal(idsFor("Job")[0], "project-goatrecrutainer-area-career-agent");
   assert.equal(idsFor("Job").includes("tool-find-your-next-step-career"), true);
+  assert.equal(idsFor("Arbeitgeber wechseln")[0], "project-goatrecrutainer-area-career-agent");
+  assert.equal(idsFor("Recruitingprozess bewerten")[0], "project-ratecom");
   assert.equal(idsFor("Ich habe ein Problem")[0], "tool-find-your-next-step-problem");
   assert.equal(idsFor("Ich weiß nicht weiter")[0], "tool-find-your-next-step");
   assert.equal(idsFor("Ich habe eine Idee")[0], "tool-find-your-next-step-idea");

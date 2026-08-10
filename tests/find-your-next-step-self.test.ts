@@ -446,14 +446,12 @@ test("result polish exposes distinct textual and visual contracts without live a
 
 test("the journey dock is the single active-phase navigation and progress surface", () => {
   const client = readFileSync(new URL("../components/find-your-next-step/self-reflection-journey.tsx", import.meta.url), "utf8");
-  const dockStart = client.indexOf("function JourneyDock");
-  const dockEnd = client.indexOf("function EvidenceDetails");
-  const dock = client.slice(dockStart, dockEnd);
+  const dock = readFileSync(new URL("../components/find-your-next-step/journey-dock.tsx", import.meta.url), "utf8");
   const dockInvocation = client.indexOf("<JourneyDock");
   const resultBranch = client.indexOf('if (state.phase === "result")');
 
-  assert.ok(dockStart >= 0);
-  assert.ok(dockEnd > dockStart);
+  assert.equal(client.includes("function JourneyDock"), false);
+  assert.equal(client.includes('import { JourneyDock } from "@/components/find-your-next-step/journey-dock"'), true);
   assert.ok(dockInvocation > resultBranch, "intro and result return before the dock is mounted");
   assert.equal(client.includes("function Progress"), false);
   assert.equal(client.includes("<Progress"), false);
@@ -468,51 +466,69 @@ test("the journey dock is the single active-phase navigation and progress surfac
   assert.equal(dock.includes("sticky"), false);
   assert.equal(dock.includes("Nicht gespeichert"), false);
   assert.equal(dock.includes("animate-"), false);
+  assert.match(client, /accent="#35d0e5"/u);
+  assert.match(client, /accessibleLabel="Steuerung und Fortschritt der Reflexion"/u);
   assert.equal(client.includes('"Ergebnis ansehen"'), true);
   assert.equal(client.includes('"Zurück zum Ergebnis"'), true);
   assert.equal(client.includes('"Ergebnis aktualisieren"'), true);
 });
 
-test("the journey dock exposes five non-color-only segment states and local question context", () => {
+test("the journey dock exposes global, section, and local progress without gamification", () => {
   const client = readFileSync(new URL("../components/find-your-next-step/self-reflection-journey.tsx", import.meta.url), "utf8");
-  const dock = client.slice(client.indexOf("function JourneyDock"), client.indexOf("function EvidenceDetails"));
+  const dock = readFileSync(new URL("../components/find-your-next-step/journey-dock.tsx", import.meta.url), "utf8");
 
   assert.equal(selfReflectionSections.length, 5);
   assert.equal(selfReflectionSections.every((section) =>
     selfReflectionQuestions.filter(({ sectionId }) => sectionId === section.id).length === 3
   ), true);
-  assert.match(dock, /<ol aria-label="Abschnitte der Reflexion"/u);
+  assert.match(dock, /<ol aria-label="Abschnitte der Journey"/u);
   assert.equal((dock.match(/aria-current=/gu) ?? []).length, 1);
   assert.match(dock, /aria-current=\{current \? "step" : undefined\}/u);
-  assert.match(dock, /"h-1\.5 bg-\[#35d0e5\]"/u);
+  assert.match(dock, /"h-1\.5 bg-\[var\(--dock-accent\)\]"/u);
   assert.match(dock, /"h-1 bg-\[#9aaabd\]\/70"/u);
   assert.match(dock, /border-dashed border-white\/25/u);
   assert.match(dock, /"aktuell"/u);
   assert.match(dock, /"abgeschlossen"/u);
   assert.match(dock, /"noch nicht erreicht"/u);
-  assert.match(dock, /Frage \{questionInSection \+ 1\} von \{sectionQuestions\.length\}/u);
+  assert.match(dock, /Frage \{globalQuestionNumber\} von \{totalQuestionCount\}/u);
+  assert.match(dock, /Abschnitt \{currentSectionIndex \+ 1\}\/\{sections\.length\} · hier \{localQuestionNumber\}\/\{localQuestionCount\}/u);
+  assert.match(dock, /Abschnitt \{currentSectionIndex \+ 1\} von \{sections\.length\} · hier \{localQuestionNumber\} von \{localQuestionCount\}/u);
+  assert.match(client, /globalQuestionNumber=\{state\.questionIndex \+ 1\}/u);
+  assert.match(client, /totalQuestionCount=\{selfReflectionQuestions\.length\}/u);
+  assert.match(client, /localQuestionNumber=\{currentQuestionNumber\}/u);
+  assert.match(client, /localQuestionCount=\{sectionQuestions\.length\}/u);
+  assert.equal(/totalQuestionCount=\{15\}/u.test(client), false);
   assert.equal(dock.includes("<progress"), false);
   assert.equal(dock.includes("%"), false);
+  assert.equal(dock.includes("aria-live"), false);
+  assert.equal(dock.includes('role="status"'), false);
 });
 
 test("the journey dock reserves content and safe-area space at every responsive layout", () => {
   const client = readFileSync(new URL("../components/find-your-next-step/self-reflection-journey.tsx", import.meta.url), "utf8");
+  const dock = readFileSync(new URL("../components/find-your-next-step/journey-dock.tsx", import.meta.url), "utf8");
 
-  assert.match(client, /pb-\[calc\(0\.75rem\+env\(safe-area-inset-bottom\)\)\]/u);
+  assert.match(dock, /pb-\[calc\(0\.75rem\+env\(safe-area-inset-bottom\)\)\]/u);
   assert.match(client, /pb-\[calc\(12rem\+env\(safe-area-inset-bottom\)\)\]/u);
   assert.match(client, /lg:pb-\[calc\(8\.5rem\+env\(safe-area-inset-bottom\)\)\]/u);
   assert.match(client, /scroll-mb-\[calc\(12rem\+env\(safe-area-inset-bottom\)\)\]/u);
   assert.match(client, /lg:scroll-mb-\[calc\(8\.5rem\+env\(safe-area-inset-bottom\)\)\]/u);
-  assert.ok((client.match(/safe-area-inset-bottom/gu) ?? []).length >= 5);
+  assert.ok((`${client}\n${dock}`.match(/safe-area-inset-bottom/gu) ?? []).length >= 5);
   assert.match(client, /\{currentSection\?\.title\} · Reflexionsentscheidung/u);
 });
 
-test("local progress crosses section boundaries while reducer navigation preserves answers", () => {
+test("Self global and local progress cross every section boundary and preserve original indices", () => {
   for (const checkpoint of [
-    { questionIndex: 0, sectionIndex: 0, questionInSection: 0 },
-    { questionIndex: 2, sectionIndex: 0, questionInSection: 2 },
-    { questionIndex: 3, sectionIndex: 1, questionInSection: 0 },
-    { questionIndex: 14, sectionIndex: 4, questionInSection: 2 },
+    { questionIndex: 0, globalQuestionNumber: 1, sectionIndex: 0, questionInSection: 0 },
+    { questionIndex: 2, globalQuestionNumber: 3, sectionIndex: 0, questionInSection: 2 },
+    { questionIndex: 3, globalQuestionNumber: 4, sectionIndex: 1, questionInSection: 0 },
+    { questionIndex: 5, globalQuestionNumber: 6, sectionIndex: 1, questionInSection: 2 },
+    { questionIndex: 6, globalQuestionNumber: 7, sectionIndex: 2, questionInSection: 0 },
+    { questionIndex: 8, globalQuestionNumber: 9, sectionIndex: 2, questionInSection: 2 },
+    { questionIndex: 9, globalQuestionNumber: 10, sectionIndex: 3, questionInSection: 0 },
+    { questionIndex: 11, globalQuestionNumber: 12, sectionIndex: 3, questionInSection: 2 },
+    { questionIndex: 12, globalQuestionNumber: 13, sectionIndex: 4, questionInSection: 0 },
+    { questionIndex: 14, globalQuestionNumber: 15, sectionIndex: 4, questionInSection: 2 },
   ]) {
     const question = selfReflectionQuestions[checkpoint.questionIndex];
     const sectionIndex = selfReflectionSections.findIndex(({ id }) => id === question.sectionId);
@@ -521,7 +537,9 @@ test("local progress crosses section boundaries while reducer navigation preserv
       .findIndex(({ id }) => id === question.id);
     assert.equal(sectionIndex, checkpoint.sectionIndex);
     assert.equal(questionInSection, checkpoint.questionInSection);
+    assert.equal(checkpoint.questionIndex + 1, checkpoint.globalQuestionNumber);
   }
+  assert.equal(selfReflectionQuestions.length, 15);
 
   const completeAnswers = createCompleteAnswers(["agency", "orientation"]);
   let state = selfReflectionJourneyReducer(initialSelfReflectionState, { type: "start" });
@@ -545,9 +563,19 @@ test("local progress crosses section boundaries while reducer navigation preserv
   }
 
   assert.equal(state.questionIndex, 4);
-  state = selfReflectionJourneyReducer(state, { type: "back" });
-  assert.equal(state.questionIndex, 3);
+  const boundaryBackState = selfReflectionJourneyReducer({ ...state, questionIndex: 3 }, { type: "back" });
+  assert.equal(boundaryBackState.questionIndex, 2);
   assert.deepEqual(state.answers[selfReflectionQuestions[2].id], completeAnswers[selfReflectionQuestions[2].id]);
+
+  let editState = selfReflectionJourneyReducer(
+    { ...initialSelfReflectionState, phase: "result", answers: completeAnswers },
+    { type: "edit-section", sectionId: "energy" },
+  );
+  assert.equal(editState.questionIndex + 1, 7);
+  editState = selfReflectionJourneyReducer(editState, { type: "continue" });
+  assert.equal(editState.questionIndex + 1, 8);
+  editState = selfReflectionJourneyReducer(editState, { type: "continue" });
+  assert.equal(editState.questionIndex + 1, 9);
 });
 
 test("missing signals never create an opposite interpretation", () => {
@@ -622,7 +650,8 @@ test("Self remains a focused client island with native semantics and no persiste
   const shell = readFileSync(new URL("../components/find-your-next-step/find-your-next-step-self.tsx", import.meta.url), "utf8");
   const route = readFileSync(new URL("../app/find-your-next-step/[slug]/page.tsx", import.meta.url), "utf8");
   const engine = readFileSync(new URL("../lib/find-your-next-step-self.ts", import.meta.url), "utf8");
-  const implementation = [client, shell, route, engine].join("\n");
+  const dock = readFileSync(new URL("../components/find-your-next-step/journey-dock.tsx", import.meta.url), "utf8");
+  const implementation = [client, shell, route, engine, dock].join("\n");
 
   assert.equal(client.startsWith('"use client"'), true);
   assert.equal(shell.startsWith('"use client"'), false);

@@ -162,6 +162,11 @@ export const discoverySynonymGroups: readonly DiscoverySynonymGroup[] = [
 export const discoveryRelationships: readonly DiscoveryRelationship[] = [
   { id: "understand-self", query: "Wer bin ich", terms: ["Mich selbst besser verstehen"] },
   { id: "career-fit", query: "Welcher Job passt zu mir", terms: ["Berufliche Passung klären"] },
+  { id: "career-fit-profession", query: "Welcher Beruf passt zu mir", terms: ["Passende berufliche Richtungen finden"] },
+  { id: "find-profession", query: "Beruf finden", terms: ["Passende berufliche Richtungen finden"] },
+  { id: "career-orientation", query: "Karriere Orientierung", terms: ["Berufliche Orientierung gewinnen"] },
+  { id: "career-question", query: "Was soll ich beruflich machen", terms: ["Passende berufliche Richtungen finden"] },
+  { id: "career-direction", query: "Berufliche Richtung", terms: ["Passende berufliche Richtungen finden"] },
   { id: "feeling-stuck", query: "Ich weiß nicht weiter", terms: ["Persönlichen nächsten Schritt klären"] },
   { id: "have-a-problem", query: "Ich habe ein Problem", terms: ["Problem einordnen"] },
   { id: "have-an-idea", query: "Ich habe eine Idee", terms: ["Idee strukturieren"] },

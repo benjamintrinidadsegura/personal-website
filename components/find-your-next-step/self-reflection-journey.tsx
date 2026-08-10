@@ -13,6 +13,7 @@ import {
   initialSelfReflectionState,
   selfReflectionJourneyReducer,
 } from "@/lib/find-your-next-step-self";
+import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import type {
   SelfReflectionQuestion,
   SelfReflectionResult,
@@ -42,76 +43,6 @@ function selectionInstruction(question: SelfReflectionQuestion): string {
       : `Wähle genau ${question.minSelections} Antworten.`;
   }
   return `Wähle ${question.minSelections} bis ${question.maxSelections} Antworten.`;
-}
-
-function JourneyDock({
-  question,
-  backLabel,
-  nextLabel,
-  onBack,
-}: {
-  question: SelfReflectionQuestion;
-  backLabel: string;
-  nextLabel: string;
-  onBack: () => void;
-}) {
-  const sectionIndex = selfReflectionSections.findIndex(({ id }) => id === question.sectionId);
-  const sectionQuestions = selfReflectionQuestions.filter(({ sectionId }) => sectionId === question.sectionId);
-  const questionInSection = sectionQuestions.findIndex(({ id }) => id === question.id);
-
-  return (
-    <nav
-      aria-label="Steuerung und Fortschritt der Reflexion"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#061521]/95 shadow-[0_-1.25rem_3rem_rgba(0,0,0,0.28)] backdrop-blur-xl"
-    >
-      <div className="mx-auto grid max-w-4xl grid-cols-2 gap-x-3 gap-y-2.5 px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 sm:px-8 lg:grid-cols-[auto_minmax(18rem,1fr)_auto] lg:items-center lg:gap-5 lg:pt-3">
-        <div className="col-span-2 min-w-0 lg:col-span-1 lg:col-start-2 lg:row-start-1">
-          <div className="flex items-baseline justify-between gap-4 font-mono text-[10px] font-black uppercase tracking-[0.16em] sm:text-xs">
-            <p className="text-[#35d0e5]">
-              Abschnitt {sectionIndex + 1} von {selfReflectionSections.length}
-            </p>
-            <p className="shrink-0 text-slate-400">
-              Frage {questionInSection + 1} von {sectionQuestions.length}
-            </p>
-          </div>
-          <p className="mt-0.5 truncate text-sm font-black leading-5 text-white">
-            {selfReflectionSections[sectionIndex]?.title}
-          </p>
-          <ol aria-label="Abschnitte der Reflexion" className="mt-2 grid grid-cols-5 items-center gap-2">
-            {selfReflectionSections.map((section, index) => {
-              const current = section.id === question.sectionId;
-              const completed = index < sectionIndex;
-              return (
-                <li key={section.id} aria-current={current ? "step" : undefined}>
-                  <span
-                    aria-hidden="true"
-                    className={`block rounded-full ${current ? "h-1.5 bg-[#35d0e5]" : completed ? "h-1 bg-[#9aaabd]/70" : "h-1 border-t border-dashed border-white/25"}`}
-                  />
-                  <span className="sr-only">
-                    Abschnitt {index + 1}: {section.title}, {current ? "aktuell" : completed ? "abgeschlossen" : "noch nicht erreicht"}
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex min-h-12 min-w-0 items-center justify-center whitespace-nowrap rounded-full border border-white/15 px-3 py-3 text-center text-xs font-bold leading-5 text-slate-300 transition hover:border-white/35 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#35d0e5] sm:px-5 sm:text-base lg:col-start-1 lg:row-start-1"
-        >
-          <span aria-hidden="true" className="mr-2 hidden sm:inline">←</span> {backLabel}
-        </button>
-        <button
-          type="submit"
-          className="inline-flex min-h-12 min-w-0 items-center justify-center whitespace-nowrap rounded-full bg-[#35d0e5] px-3 py-3 text-center text-xs font-black leading-5 text-[#041018] transition motion-safe:hover:-translate-y-0.5 hover:bg-[#73e3f1] motion-reduce:transform-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#35d0e5] sm:px-6 sm:text-base lg:col-start-3 lg:row-start-1"
-        >
-          {nextLabel} <span aria-hidden="true" className="ml-2 hidden sm:inline">→</span>
-        </button>
-      </div>
-    </nav>
-  );
 }
 
 function EvidenceDetails({ evidence }: Pick<SelfReflectionResultStatement, "evidence">) {
@@ -385,6 +316,8 @@ export function SelfReflectionJourney() {
   const selectedOptionIds = state.answers[question.id] ?? [];
   const sectionQuestions = selfReflectionQuestions.filter(({ sectionId }) => sectionId === question.sectionId);
   const currentSection = selfReflectionSections.find(({ id }) => id === question.sectionId);
+  const currentSectionIndex = selfReflectionSections.findIndex(({ id }) => id === question.sectionId);
+  const currentQuestionNumber = sectionQuestions.findIndex(({ id }) => id === question.id) + 1;
   const lastInSection = sectionQuestions.at(-1)?.id === question.id;
   const lastInJourney = state.questionIndex === selfReflectionQuestions.length - 1;
   const nextLabel = state.editingSectionId && lastInSection
@@ -461,7 +394,14 @@ export function SelfReflectionJourney() {
         ) : null}
 
         <JourneyDock
-          question={question}
+          sections={selfReflectionSections}
+          currentSectionIndex={currentSectionIndex}
+          globalQuestionNumber={state.questionIndex + 1}
+          totalQuestionCount={selfReflectionQuestions.length}
+          localQuestionNumber={currentQuestionNumber}
+          localQuestionCount={sectionQuestions.length}
+          accent="#35d0e5"
+          accessibleLabel="Steuerung und Fortschritt der Reflexion"
           backLabel={backLabel}
           nextLabel={nextLabel}
           onBack={() => dispatch({ type: "back" })}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { FindYourNextStepJourney } from "@/components/find-your-next-step/find-your-next-step-journey";
+import { FindYourNextStepCareer } from "@/components/find-your-next-step/find-your-next-step-career";
 import { FindYourNextStepSelf } from "@/components/find-your-next-step/find-your-next-step-self";
 import { getNextStepJourney, nextStepJourneys } from "@/data/find-your-next-step";
 
@@ -46,6 +47,7 @@ export default async function NextStepJourneyPage({ params }: NextStepJourneyPag
   if (!journey) notFound();
 
   if (journey.slug === "self") return <FindYourNextStepSelf journey={journey} />;
+  if (journey.slug === "career") return <FindYourNextStepCareer journey={journey} />;
 
   return <FindYourNextStepJourney journey={journey} />;
 }
