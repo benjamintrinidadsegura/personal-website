@@ -15,6 +15,9 @@ import {
 } from "@/lib/find-your-next-step-self";
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
+import { SelfHandbookView } from "@/components/find-your-next-step/self-handbook";
+import { buildSelfHandbook } from "@/lib/find-your-next-step-self-handbook";
+import type { SelfHandbook } from "@/lib/find-your-next-step-self-handbook";
 import {
   buildSelfResultText,
   buildSelfShareText,
@@ -169,11 +172,13 @@ function SelfPrintDocument({ result }: { result: SelfReflectionResult }) {
 
 function ResultView({
   result,
+  handbook,
   dispatch,
   headingRef,
   restartPending,
 }: {
   result: SelfReflectionResult;
+  handbook: SelfHandbook;
   dispatch: React.Dispatch<Parameters<typeof selfReflectionJourneyReducer>[1]>;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
   restartPending: boolean;
@@ -234,6 +239,8 @@ function ResultView({
           </section>
         ) : null}
       </div>
+
+      <SelfHandbookView handbook={handbook} />
 
       <FynsResultActions
         accent="#35d0e5"
@@ -312,6 +319,7 @@ export function SelfReflectionJourney() {
   const initialRender = useRef(true);
   const question = selfReflectionQuestions[state.questionIndex];
   const resultState = useMemo(() => buildSelfReflectionResult(state.answers), [state.answers]);
+  const handbook = useMemo(() => buildSelfHandbook(state.answers), [state.answers]);
 
   useEffect(() => {
     if (initialRender.current) {
@@ -383,7 +391,8 @@ export function SelfReflectionJourney() {
         </section>
       );
     }
-    return <ResultView result={resultState.result} dispatch={dispatch} headingRef={headingRef} restartPending={state.restartPending} />;
+    if (!handbook) return null;
+    return <ResultView result={resultState.result} handbook={handbook} dispatch={dispatch} headingRef={headingRef} restartPending={state.restartPending} />;
   }
 
   const selectedOptionIds = state.answers[question.id] ?? [];
