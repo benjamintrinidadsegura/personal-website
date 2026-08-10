@@ -10,6 +10,7 @@ import type { NextStepJourney } from "@/types/find-your-next-step";
 export function FindYourNextStepSelf({ journey }: { journey: NextStepJourney }) {
   return (
     <article
+      data-fyns-result-page="self"
       style={{ "--journey-accent": journey.accent } as CSSProperties}
       className="section-lines relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36"
     >
@@ -18,7 +19,7 @@ export function FindYourNextStepSelf({ journey }: { journey: NextStepJourney }) 
         className="absolute inset-x-0 top-0 h-[70rem] bg-[radial-gradient(circle_at_76%_12%,rgba(53,208,229,0.17),transparent_28rem),radial-gradient(circle_at_18%_42%,rgba(53,208,229,0.06),transparent_24rem)]"
       />
 
-      <div className="relative mx-auto max-w-6xl">
+      <div data-fyns-result-page-content className="relative mx-auto max-w-6xl">
         <FindYourNextStepJourneyBreadcrumb journey={journey} />
 
         <header className="grid gap-10 border-b border-white/15 py-16 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:py-24">

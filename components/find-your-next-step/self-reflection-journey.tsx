@@ -14,6 +14,12 @@ import {
   selfReflectionJourneyReducer,
 } from "@/lib/find-your-next-step-self";
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
+import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
+import {
+  buildSelfResultText,
+  buildSelfShareText,
+  SELF_RESULT_DISCLAIMER,
+} from "@/lib/find-your-next-step-self-export";
 import type {
   SelfReflectionQuestion,
   SelfReflectionResult,
@@ -108,6 +114,59 @@ function TensionCard({ tension }: { tension: SelfReflectionTensionResult }) {
   );
 }
 
+function SelfPrintDocument({ result }: { result: SelfReflectionResult }) {
+  return (
+    <article className="fyns-print-document hidden" data-fyns-print-document="self">
+      <header className="fyns-print-header">
+        <p className="fyns-print-brand">bts.online / FYNS / Self</p>
+        <h1>{result.title}</h1>
+        <section className="fyns-print-summary" aria-labelledby="self-print-summary-title">
+          <h2 id="self-print-summary-title">Zusammenfassung</h2>
+          {result.summary.map((sentence, index) => <p key={`${index}-${sentence}`}>{sentence}</p>)}
+        </section>
+        <p className="fyns-print-description">{result.description}</p>
+      </header>
+
+      {result.sections
+        .filter((section) => section.statements.length > 0)
+        .map((section) => (
+          <section key={section.id} className="fyns-print-section" aria-labelledby={`self-print-section-${section.id}`}>
+            <h2 id={`self-print-section-${section.id}`}>{section.title}</h2>
+            <div className="fyns-print-stack">
+              {section.statements.map((statement) => (
+                <article key={statement.id} className="fyns-print-block">
+                  {statement.dimensionLabel ? <p className="fyns-print-label">{statement.dimensionLabel}</p> : null}
+                  <p>{statement.text}</p>
+                  {statement.contextual ? (
+                    <p className="fyns-print-note">
+                      Kontextabhängiger Hinweis: Dieses Muster scheint laut deiner Auswahl von Situation und Aufgabe abzuhängen.
+                    </p>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+
+      {result.tensions.length > 0 ? (
+        <section className="fyns-print-section" aria-labelledby="self-print-tensions-title">
+          <h2 id="self-print-tensions-title">Spannungsfelder</h2>
+          <div className="fyns-print-stack">
+            {result.tensions.slice(0, 2).map((tension) => (
+              <article key={tension.id} className="fyns-print-block">
+                <h3>{tension.title}</h3>
+                <p>{tension.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <p className="fyns-print-disclaimer">{SELF_RESULT_DISCLAIMER}</p>
+    </article>
+  );
+}
+
 function ResultView({
   result,
   dispatch,
@@ -119,8 +178,12 @@ function ResultView({
   headingRef: React.RefObject<HTMLHeadingElement | null>;
   restartPending: boolean;
 }) {
+  const copyText = buildSelfResultText(result);
+  const shareText = buildSelfShareText(result);
+
   return (
-    <section aria-labelledby="self-result-title" className="py-16 sm:py-24">
+    <>
+    <section aria-labelledby="self-result-title" className="py-16 sm:py-24" data-fyns-screen-result>
       <div className="grid gap-8 border-b border-white/15 pb-14 lg:grid-cols-[1fr_0.72fr] lg:items-end">
         <div>
           <p className="font-mono text-xs font-black uppercase tracking-[0.25em] text-[#35d0e5]">Deine Reflexion · Nicht gespeichert</p>
@@ -171,6 +234,14 @@ function ResultView({
           </section>
         ) : null}
       </div>
+
+      <FynsResultActions
+        accent="#35d0e5"
+        copyText={copyText}
+        shareTitle="FYNS – Self – Ergebnis"
+        shareText={shareText}
+        printTitle="FYNS – Self – Ergebnis"
+      />
 
       <section aria-labelledby="edit-answers-title" className="mt-20 border-t border-white/15 pt-14">
         <div className="grid gap-8 lg:grid-cols-[0.65fr_1fr]">
@@ -229,6 +300,8 @@ function ResultView({
         )}
       </div>
     </section>
+    <SelfPrintDocument result={result} />
+    </>
   );
 }
 

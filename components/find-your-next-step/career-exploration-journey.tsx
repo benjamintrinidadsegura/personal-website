@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useReducer, useRef } from "react";
 
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
+import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
 import { careerIntro, careerQuestions, careerSections } from "@/data/find-your-next-step-career";
+import {
+  buildCareerResultText,
+  buildCareerShareText,
+  CAREER_RESULT_DISCLAIMER,
+} from "@/lib/find-your-next-step-career-export";
 import {
   buildCareerResult,
   careerJourneyReducer,
@@ -210,6 +216,153 @@ function TensionCard({ tension }: { tension: CareerTensionResult }) {
   );
 }
 
+function CareerPrintDirection({
+  direction,
+  label,
+}: {
+  direction: CareerResultDirection;
+  label: string;
+}) {
+  return (
+    <article className="fyns-print-block">
+      <p className="fyns-print-label">{label}</p>
+      <h3>{direction.title}</h3>
+      <p>{direction.description}</p>
+      <div className="fyns-print-detail">
+        <h4>Warum diese Spur auftaucht</h4>
+        <p>{direction.why}</p>
+      </div>
+      {direction.qualificationNote ? (
+        <div className="fyns-print-note">
+          <h4>Qualifikation mitdenken</h4>
+          <p>{direction.qualificationNote}</p>
+        </div>
+      ) : null}
+      {direction.constraintNotes.length > 0 ? (
+        <div className="fyns-print-note">
+          <h4>Bei konkreten Rollen prüfen</h4>
+          <ul>{direction.constraintNotes.map((note) => <li key={note}>{note}</li>)}</ul>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function CareerPrintJobTitle({ job }: { job: CareerResultJobTitle }) {
+  return (
+    <article className="fyns-print-block">
+      <p className="fyns-print-label">
+        {job.directions.map(({ title }) => title).join(" / ")}
+      </p>
+      <h3>{job.title}</h3>
+      <p>{job.description}</p>
+      {job.qualificationNote ? (
+        <div className="fyns-print-note">
+          <h4>Qualifikation mitdenken</h4>
+          <p>{job.qualificationNote}</p>
+        </div>
+      ) : null}
+      {job.constraintNotes.length > 0 ? (
+        <div className="fyns-print-note">
+          <h4>In Stellenanzeigen prüfen</h4>
+          <ul>{job.constraintNotes.map((note) => <li key={note}>{note}</li>)}</ul>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function CareerPrintDocument({ result }: { result: CareerResult }) {
+  return (
+    <article className="fyns-print-document hidden" data-fyns-print-document="career">
+      <header className="fyns-print-header">
+        <p className="fyns-print-brand">bts.online / FYNS / Career</p>
+        <h1>{result.title}</h1>
+        <section className="fyns-print-summary" aria-labelledby="career-print-summary-title">
+          <h2 id="career-print-summary-title">Zusammenfassung</h2>
+          {result.summary.map((sentence, index) => <p key={`${index}-${sentence}`}>{sentence}</p>)}
+        </section>
+        <p className="fyns-print-description">{result.description}</p>
+      </header>
+
+      {result.primaryDirections.length > 0 ? (
+        <section className="fyns-print-section" aria-labelledby="career-print-primary-title">
+          <h2 id="career-print-primary-title">Besonders interessant zum Erkunden</h2>
+          <div className="fyns-print-stack">
+            {result.primaryDirections.map((direction, index) => (
+              <CareerPrintDirection
+                key={direction.id}
+                direction={direction}
+                label={`Primäre Richtung ${String(index + 1).padStart(2, "0")}`}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {result.additionalDirections.length > 0 ? (
+        <section className="fyns-print-section" aria-labelledby="career-print-additional-title">
+          <h2 id="career-print-additional-title">Weitere Richtungen</h2>
+          <div className="fyns-print-stack">
+            {result.additionalDirections.map((direction, index) => (
+              <CareerPrintDirection
+                key={direction.id}
+                direction={direction}
+                label={`Weitere Richtung ${String(index + 1).padStart(2, "0")}`}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {result.jobTitles.length > 0 ? (
+        <section className="fyns-print-section" aria-labelledby="career-print-jobs-title">
+          <h2 id="career-print-jobs-title">Jobtitel zum Erkunden</h2>
+          <div className="fyns-print-stack">
+            {result.jobTitles.map((job) => <CareerPrintJobTitle key={job.id} job={job} />)}
+          </div>
+        </section>
+      ) : null}
+
+      {result.conditions.length > 0 ? (
+        <section className="fyns-print-section" aria-labelledby="career-print-conditions-title">
+          <h2 id="career-print-conditions-title">Bedingungen</h2>
+          <ul className="fyns-print-list">
+            {result.conditions.map((condition) => (
+              <li key={condition.id}>
+                <strong>{condition.kind === "constraint" ? "Feste Bedingung" : condition.kind === "preference" ? "Präferenz" : "Qualifizierungsrahmen"}:</strong>{" "}
+                {condition.text}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {result.tensions.length > 0 ? (
+        <section className="fyns-print-section" aria-labelledby="career-print-tensions-title">
+          <h2 id="career-print-tensions-title">Spannungsfelder zum Mitdenken</h2>
+          <div className="fyns-print-stack">
+            {result.tensions.slice(0, 2).map((tension) => (
+              <article key={tension.id} className="fyns-print-block">
+                <h3>{tension.title}</h3>
+                <p>{tension.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="fyns-print-section fyns-print-next-step" aria-labelledby="career-print-next-step-title">
+        <p className="fyns-print-label">Dein nächster sinnvoller Schritt</p>
+        <h2 id="career-print-next-step-title">{result.nextStep.title}</h2>
+        <p>{result.nextStep.text}</p>
+      </section>
+
+      <p className="fyns-print-disclaimer">{CAREER_RESULT_DISCLAIMER}</p>
+    </article>
+  );
+}
+
 function ResultView({
   result,
   dispatch,
@@ -221,8 +374,12 @@ function ResultView({
   headingRef: React.RefObject<HTMLHeadingElement | null>;
   restartPending: boolean;
 }) {
+  const copyText = buildCareerResultText(result);
+  const shareText = buildCareerShareText(result);
+
   return (
-    <section aria-labelledby="career-result-title" className="py-16 sm:py-24">
+    <>
+    <section aria-labelledby="career-result-title" className="py-16 sm:py-24" data-fyns-screen-result>
       <div className="grid gap-8 border-b border-white/15 pb-14 lg:grid-cols-[1fr_0.72fr] lg:items-end">
         <div>
           <p className="font-mono text-xs font-black uppercase tracking-[0.25em] text-[#ffb36d]">Deine Orientierung · Nicht gespeichert</p>
@@ -323,6 +480,14 @@ function ResultView({
         </section>
       </div>
 
+      <FynsResultActions
+        accent="#ff9a3d"
+        copyText={copyText}
+        shareTitle="FYNS – Career – Ergebnis"
+        shareText={shareText}
+        printTitle="FYNS – Career – Ergebnis"
+      />
+
       <section aria-labelledby="career-edit-title" className="mt-20 border-t border-white/15 pt-14">
         <div className="grid gap-8 lg:grid-cols-[0.65fr_1fr]">
           <div>
@@ -363,6 +528,8 @@ function ResultView({
         )}
       </div>
     </section>
+    <CareerPrintDocument result={result} />
+    </>
   );
 }
 

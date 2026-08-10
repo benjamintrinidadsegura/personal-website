@@ -19,10 +19,16 @@ import {
   validateSelfReflectionData,
 } from "../lib/find-your-next-step-self";
 import type { SelfReflectionDimensionEvaluation } from "../lib/find-your-next-step-self";
+import {
+  buildSelfResultText,
+  buildSelfShareText,
+  SELF_RESULT_DISCLAIMER,
+} from "../lib/find-your-next-step-self-export";
 import type {
   SelfReflectionAnswers,
   SelfReflectionDimensionId,
   SelfReflectionQuestion,
+  SelfReflectionResult,
   SelfReflectionResultSection,
   SelfReflectionTensionResult,
   SelfReflectionVisibility,
@@ -421,6 +427,120 @@ test("results contain only supported qualitative statements and bounded explaina
   for (const tension of built.result.tensions) {
     assert.ok(tension.evidence.length >= 2);
     assert.ok(tension.evidence.length <= 3);
+  }
+});
+
+test("Self export text is deterministic, bounded, sparse-safe, and excludes internal evidence", () => {
+  const exportResult: SelfReflectionResult = {
+    title: "Dein mögliches Arbeits- und Lebens-Habitat",
+    description: "Eine lokale Momentaufnahme.",
+    summary: ["Deine Zusammenfassung bleibt fachlich und konkret."],
+    sections: [
+      {
+        id: "importance",
+        title: "Was bei dir besonders wichtig wirkt",
+        statements: [{
+          id: "internal-self-id",
+          text: "Eigenständige Entscheidungen wirken für dich wichtig.",
+          dimensionLabel: "Entscheidungsspielraum",
+          visibility: "clear",
+          evidence: [{
+            questionId: "internal-question-id",
+            optionId: "internal-option-id",
+            sectionId: "priorities",
+            answer: "EVIDENCE_SENTINEL",
+          }],
+        }],
+      },
+      { id: "energyGain", title: "LEERE SELF SECTION", statements: [] },
+    ],
+    tensions: [{
+      id: "internal-tension-id",
+      title: "Klare Richtung · eigener Weg",
+      text: "Beides darf gleichzeitig wichtig sein.",
+      evidence: [{
+        questionId: "internal-tension-question",
+        optionId: "internal-tension-option",
+        sectionId: "decisions",
+        answer: "EVIDENCE_SENTINEL",
+      }],
+    }],
+  };
+
+  const first = buildSelfResultText(exportResult);
+  const second = buildSelfResultText(exportResult);
+  const share = buildSelfShareText(exportResult);
+
+  assert.equal(first, second);
+  assert.ok(first.length <= 5_000);
+  assert.ok(share.length <= 1_000);
+  assert.ok(share.length < first.length);
+  assert.match(first, /FYNS – Self/u);
+  assert.match(first, /Was bei dir besonders wichtig wirkt:/u);
+  assert.match(first, /Spannungsfelder:/u);
+  assert.match(first, new RegExp(SELF_RESULT_DISCLAIMER, "u"));
+  assert.equal(first.includes("LEERE SELF SECTION"), false);
+  for (const prohibited of [
+    "internal-self-id", "internal-question-id", "internal-option-id", "internal-tension-id", "EVIDENCE_SENTINEL",
+  ]) {
+    assert.equal(first.includes(prohibited), false, prohibited);
+    assert.equal(share.includes(prohibited), false, prohibited);
+  }
+  assert.equal(/<\/?[a-z][^>]*>/iu.test(first), false);
+  assert.equal(/\bscore\b|\bpercentage\b|%/iu.test(first), false);
+
+  const built = buildSelfReflectionResult(createCompleteAnswers(["agency", "orientation", "growth"]));
+  assert.equal(built.status, "complete");
+  if (built.status === "complete") assert.ok(buildSelfResultText(built.result).length <= 5_000);
+});
+
+test("Self result actions and print document stay scoped, non-interactive, and privacy-safe", () => {
+  const client = readFileSync(new URL("../components/find-your-next-step/self-reflection-journey.tsx", import.meta.url), "utf8");
+  const actions = readFileSync(new URL("../components/find-your-next-step/result-actions.tsx", import.meta.url), "utf8");
+  const formatter = readFileSync(new URL("../lib/find-your-next-step-self-export.ts", import.meta.url), "utf8");
+  const shell = readFileSync(new URL("../components/find-your-next-step/find-your-next-step-self.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+  const printStart = client.indexOf("function SelfPrintDocument");
+  const printEnd = client.indexOf("function ResultView", printStart);
+  const printDocument = client.slice(printStart, printEnd);
+
+  assert.ok(client.indexOf("<FynsResultActions") < client.indexOf('aria-labelledby="edit-answers-title"'));
+  assert.match(client, /data-fyns-print-document="self"/u);
+  assert.match(client, /className="fyns-print-document hidden"/u);
+  assert.equal(printDocument.includes("<button"), false);
+  assert.equal(printDocument.includes("<details"), false);
+  assert.equal(printDocument.includes("EvidenceDetails"), false);
+  assert.equal(printDocument.includes("Worauf basiert das?"), false);
+  assert.equal(printDocument.includes("Später anschlussfähig"), false);
+  assert.match(printDocument, /result\.sections\s+\.filter\(\(section\) => section\.statements\.length > 0\)/u);
+  assert.match(shell, /data-fyns-result-page="self"/u);
+  assert.match(shell, /data-fyns-result-page-content/u);
+  assert.match(styles, /html\[data-fyns-result-print\]/u);
+  assert.match(styles, /\.fyns-print-document \{ display: none; \}/u);
+  assert.equal(styles.includes("body *"), false);
+
+  assert.equal(actions.startsWith('"use client"'), true);
+  assert.equal((actions.match(/type="button"/gu) ?? []).length, 3);
+  assert.match(actions, /onClick=\{handlePrint\}/u);
+  assert.match(actions, /onClick=\{handleCopy\}/u);
+  assert.match(actions, /onClick=\{handleShare\}/u);
+  assert.match(actions, /typeof navigator\.share !== "function"/u);
+  assert.match(actions, /navigator\.canShare\(payload\)/u);
+  assert.match(actions, /navigator\.clipboard\?\.writeText\(copyText\)/u);
+  assert.match(actions, /document\.execCommand\("copy"\)/u);
+  assert.match(actions, /Text zum manuellen Kopieren/u);
+  assert.match(actions, /role="status"/u);
+  assert.match(actions, /aria-live="polite"/u);
+  assert.match(actions, /const originalTitle = document\.title/u);
+  assert.match(actions, /finally \{\s+document\.title = originalTitle;/u);
+  assert.match(actions, /if \(!isAbortError\(error\)\)/u);
+  assert.equal(actions.includes("url:"), false);
+
+  for (const prohibited of [
+    "fetch(", "localStorage", "sessionStorage", "document.cookie", "URLSearchParams", "location.href",
+    "history.pushState", "history.replaceState", "@/lib/supabase", "mailto:", "console.log",
+  ]) {
+    assert.equal(`${client}\n${actions}\n${formatter}\n${shell}\n${styles}`.includes(prohibited), false, prohibited);
   }
 });
 

@@ -30,11 +30,17 @@ import {
   selectCareerJobDefinitions,
   validateCareerData,
 } from "../lib/find-your-next-step-career";
+import {
+  buildCareerResultText,
+  buildCareerShareText,
+  CAREER_RESULT_DISCLAIMER,
+} from "../lib/find-your-next-step-career-export";
 import type {
   CareerAnswers,
   CareerDirectionId,
   CareerNextStepMode,
   CareerQuestion,
+  CareerResult,
   CareerSignalId,
 } from "../types/find-your-next-step";
 
@@ -673,6 +679,153 @@ test("next step follows only the selected exploration mode and supports comparis
     title: "Vergleiche Aufgaben statt Titel",
     text: "Vergleiche sechs unterschiedliche Stellenanzeigen und markiere ausschließlich wiederkehrende Tätigkeiten, Bedingungen und Zugangsvoraussetzungen.",
   });
+});
+
+test("Career export text is deterministic, ordered, bounded, and excludes internal detail", () => {
+  const exportResult: CareerResult = {
+    title: "Deine Career Map",
+    description: "Eine lokale Momentaufnahme.",
+    summary: ["Deine Auswahl verbindet Analyse und Gestaltung."],
+    primaryDirections: [{
+      id: "analysis-clarity",
+      title: "Analyse & Klarheit",
+      description: "Komplexe Informationen verständlich machen.",
+      why: "Mehrere Antworten tragen diese Richtung.",
+      evidence: [{
+        questionId: "internal-primary-question",
+        optionId: "internal-primary-option",
+        sectionId: "activities",
+        answer: "EVIDENCE_SENTINEL",
+      }],
+      fields: [],
+      environments: [],
+      constraintNotes: [],
+    }],
+    additionalDirections: [{
+      id: "product-experience",
+      title: "Produkt & Experience",
+      description: "Lösungen entlang realer Bedürfnisse gestalten.",
+      why: "Diese Richtung ergänzt dein sichtbares Muster.",
+      evidence: [],
+      fields: [],
+      environments: [],
+      constraintNotes: [],
+    }],
+    jobTitles: [{
+      id: "internal-job-id",
+      title: "Customer Insights Analyst",
+      description: "Verbindet Recherche und strukturierte Auswertung.",
+      directions: [{ id: "analysis-clarity", title: "Analyse & Klarheit", tier: "primary" }],
+      why: "Dieser Suchbegriff konkretisiert eine sichtbare Spur.",
+      aliases: ["ALIAS_SENTINEL"],
+      constraintNotes: [],
+    }],
+    conditions: [{ id: "internal-condition-id", kind: "constraint", text: "Planbare Arbeitszeiten" }],
+    tensions: [{
+      id: "internal-career-tension-id",
+      title: "Eigenständigkeit · Austausch",
+      text: "Beides darf gleichzeitig wichtig sein.",
+      evidence: [{
+        questionId: "internal-tension-question",
+        optionId: "internal-tension-option",
+        sectionId: "workstyle",
+        answer: "EVIDENCE_SENTINEL",
+      }],
+    }],
+    nextStep: {
+      mode: "role-comparison",
+      title: "Vergleiche konkrete Aufgaben",
+      text: "Lies sechs Stellenanzeigen und markiere wiederkehrende Tätigkeiten.",
+    },
+  };
+
+  const first = buildCareerResultText(exportResult);
+  const second = buildCareerResultText(exportResult);
+  const share = buildCareerShareText(exportResult);
+
+  assert.equal(first, second);
+  assert.ok(first.length <= 5_000);
+  assert.ok(share.length <= 1_000);
+  assert.ok(share.length < first.length);
+  assert.ok(first.indexOf("Besonders interessant zum Erkunden:") < first.indexOf("Weitere Richtungen:"));
+  for (const expected of [
+    "Customer Insights Analyst", "Planbare Arbeitszeiten", "Eigenständigkeit · Austausch",
+    "Vergleiche konkrete Aufgaben", CAREER_RESULT_DISCLAIMER,
+  ]) {
+    assert.match(first, new RegExp(expected, "u"));
+  }
+  for (const prohibited of [
+    "internal-job-id", "internal-condition-id", "internal-primary-question", "internal-primary-option",
+    "internal-career-tension-id", "EVIDENCE_SENTINEL", "ALIAS_SENTINEL",
+  ]) {
+    assert.equal(first.includes(prohibited), false, prohibited);
+    assert.equal(share.includes(prohibited), false, prohibited);
+  }
+  assert.equal(/<\/?[a-z][^>]*>/iu.test(first), false);
+  assert.equal(/\bscore\b|\bpercentage\b|%/iu.test(first), false);
+
+  const sparse = buildCareerResultText({
+    ...exportResult,
+    summary: [],
+    primaryDirections: [],
+    additionalDirections: [],
+    jobTitles: [],
+    conditions: [],
+    tensions: [],
+  });
+  for (const absentHeading of [
+    "Zusammenfassung:", "Besonders interessant zum Erkunden:", "Weitere Richtungen:",
+    "Jobtitel zum Erkunden:", "Bedingungen:", "Spannungsfelder:",
+  ]) {
+    assert.equal(sparse.includes(absentHeading), false, absentHeading);
+  }
+
+  const actual = completeCareerResult(createProfileAnswers(["analysis-clarity", "product-experience"]));
+  const actualText = buildCareerResultText(actual);
+  assert.ok(actualText.length <= 5_000);
+  for (const job of actual.jobTitles) assert.equal(actualText.includes(job.title), true, job.title);
+});
+
+test("Career result actions and print document preserve scoped content and privacy boundaries", () => {
+  const client = readFileSync(new URL("../components/find-your-next-step/career-exploration-journey.tsx", import.meta.url), "utf8");
+  const actions = readFileSync(new URL("../components/find-your-next-step/result-actions.tsx", import.meta.url), "utf8");
+  const formatter = readFileSync(new URL("../lib/find-your-next-step-career-export.ts", import.meta.url), "utf8");
+  const shell = readFileSync(new URL("../components/find-your-next-step/find-your-next-step-career.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+  const printStart = client.indexOf("function CareerPrintDirection");
+  const printEnd = client.indexOf("function ResultView", printStart);
+  const printDocument = client.slice(printStart, printEnd);
+
+  assert.ok(client.indexOf("<FynsResultActions") < client.indexOf('aria-labelledby="career-edit-title"'));
+  assert.match(client, /data-fyns-print-document="career"/u);
+  assert.match(client, /className="fyns-print-document hidden"/u);
+  assert.match(client, /buildCareerResultText\(result\)/u);
+  assert.match(client, /buildCareerShareText\(result\)/u);
+  assert.match(client, /CAREER_RESULT_DISCLAIMER/u);
+  assert.equal(printDocument.includes("<button"), false);
+  assert.equal(printDocument.includes("<details"), false);
+  assert.equal(printDocument.includes("EvidenceDetails"), false);
+  assert.equal(printDocument.includes(".evidence"), false);
+  assert.equal(printDocument.includes(".aliases"), false);
+  assert.equal(/\bscore\b|%/iu.test(printDocument), false);
+  for (const expected of [
+    "Besonders interessant zum Erkunden", "Weitere Richtungen", "Jobtitel zum Erkunden", "Bedingungen",
+    "Spannungsfelder zum Mitdenken", "Dein nächster sinnvoller Schritt", "Qualifikation mitdenken",
+    "Bei konkreten Rollen prüfen", "In Stellenanzeigen prüfen",
+  ]) {
+    assert.equal(printDocument.includes(expected), true, expected);
+  }
+  assert.match(shell, /data-fyns-result-page="career"/u);
+  assert.match(shell, /data-fyns-result-page-content/u);
+  assert.match(styles, /data-fyns-print-document="career"/u);
+  assert.match(styles, /html\[data-fyns-result-print\]/u);
+
+  for (const prohibited of [
+    "fetch(", "localStorage", "sessionStorage", "document.cookie", "URLSearchParams", "location.href",
+    "history.pushState", "history.replaceState", "@/lib/supabase", "mailto:", "console.log",
+  ]) {
+    assert.equal(`${client}\n${actions}\n${formatter}\n${shell}\n${styles}`.includes(prohibited), false, prohibited);
+  }
 });
 
 test("selection counter stays neutral across all supported formats", () => {
