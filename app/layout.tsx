@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { DiscoveryProvider } from "@/components/discovery/discovery-context";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { createPublishedWritingDiscoveryItems, discoveryIndex } from "@/data/discovery-index";
+import { getAccountState } from "@/lib/account/state";
+import { getPublishedWriting } from "@/lib/writing/queries";
 import "./globals.css";
 
 const title = "Benjamin Trinidad Segura | Digital HQ";
@@ -31,15 +34,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const [publishedWriting, accountState] = await Promise.all([
+    getPublishedWriting(),
+    getAccountState(),
+  ]);
+  const staticDiscoveryItems = publishedWriting.length > 0
+    ? discoveryIndex.filter((item) => !item.id.match(/^writing-\d+$/u))
+    : discoveryIndex;
+  const discoveryItems = [...staticDiscoveryItems, ...createPublishedWritingDiscoveryItems(publishedWriting)];
   return (
     <html lang="de">
       <body className="min-h-full">
         <a className="skip-link" href="#main-content">
           Zum Inhalt springen
         </a>
-        <DiscoveryProvider>
-          <Header />
+        <DiscoveryProvider items={discoveryItems}>
+          <Header accountState={accountState} />
           <main id="main-content">{children}</main>
         </DiscoveryProvider>
         <Footer />

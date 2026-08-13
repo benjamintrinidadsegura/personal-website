@@ -4,6 +4,8 @@ import { careerSpotlights } from "@/data/career-spotlights";
 import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
 import { projects } from "@/data/projects";
 import { siteConfig } from "@/data/site";
+import { getPublishedWriting } from "@/lib/writing/queries";
+import type { PublicWritingSummary } from "@/types/writing";
 
 function getCanonicalProductionUrl(): URL | null {
   if (process.env.NODE_ENV !== "production" || !process.env.SITE_URL) return null;
@@ -29,13 +31,15 @@ function getCanonicalProductionUrl(): URL | null {
   }
 }
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export function createSitemap(publishedWriting: PublicWritingSummary[]): MetadataRoute.Sitemap {
   const siteUrl = getCanonicalProductionUrl();
   if (!siteUrl) return [];
 
   const routes = [
     "/",
     "/echowall",
+    "/writing",
+    ...publishedWriting.map(({ slug }) => `/writing/${slug}`),
     findYourNextStep.href,
     ...nextStepJourneys.map(({ href }) => href),
     ...projects.map(({ slug }) => `/projects/${slug}`),
@@ -48,4 +52,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return routes.map((route) => ({
     url: new URL(route, siteUrl).toString(),
   }));
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  return createSitemap(await getPublishedWriting());
 }

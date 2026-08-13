@@ -15,6 +15,7 @@ import type { ActiveDiscoveryDimension, DiscoveryItem, DiscoveryMatch } from "..
 const knownStaticRoutes = new Set([
   "/",
   "/echowall",
+  "/writing",
   "/find-your-next-step",
   "/find-your-next-step/self",
   "/find-your-next-step/career",
@@ -475,12 +476,12 @@ test("context canvas stays homepage-local while the root layout remains server-r
   const scrollLock = readFileSync(new URL("../lib/scroll-lock.ts", import.meta.url), "utf8");
 
   assert.equal(layout.startsWith('"use client"'), false);
-  assert.equal(layout.includes("<DiscoveryProvider>"), true);
+  assert.equal(layout.includes("<DiscoveryProvider items={discoveryItems}>"), true);
   assert.equal(layout.includes("<ContextCanvas"), false);
   assert.ok(page.indexOf("<ContextCanvas>") < page.indexOf("<Hero />"));
   assert.ok(page.indexOf("<Hero />") < page.indexOf("<Now />"));
   assert.ok(page.indexOf("<Now />") < page.indexOf("</ContextCanvas>"));
-  assert.equal(context.includes("discoverItems(discoveryIndex, query)"), true);
+  assert.equal(context.includes("discoverItems(items, query)"), true);
   assert.equal(context.includes("createAdaptiveDiscoveryView(matches, selectedMatchId)"), true);
   assert.equal(context.includes("selectedMatchId"), true);
   assert.equal(engine.includes("dismissDiscovery(false)"), true);

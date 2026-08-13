@@ -275,7 +275,7 @@ test("application hardening config sets only the approved global headers and bod
     'value: "camera=(), microphone=(), geolocation=()"',
     'key: "x-frame-options", value: "deny"',
     'key: "content-security-policy", value: "frame-ancestors \'none\';"',
-    'bodysizelimit: "32kb"',
+    'bodysizelimit: "192kb"',
     'source: "/:path*"',
   ]) {
     assert.equal(lower.includes(required), true, required);
@@ -334,20 +334,20 @@ test("robots and sitemap fail closed and expose only canonical production routes
       writable: true,
     });
     const { default: createRobots } = await import("../app/robots");
-    const { default: createSitemap } = await import("../app/sitemap");
+    const { createSitemap } = await import("../app/sitemap");
 
-    const isBlocked = () => {
+    const isBlocked = async () => {
       const result = createRobots();
       const rules = Array.isArray(result.rules) ? result.rules : [result.rules];
       return rules.some((rule) => rule.disallow === "/") &&
         result.host === undefined && result.sitemap === undefined &&
-        createSitemap().length === 0;
+        createSitemap([]).length === 0;
     };
 
     for (const siteUrl of [undefined, "not-a-url", "https://preview.invalid"]) {
       if (siteUrl === undefined) delete process.env.SITE_URL;
       else process.env.SITE_URL = siteUrl;
-      assert.equal(isBlocked(), true, siteUrl ?? "missing SITE_URL");
+      assert.equal(await isBlocked(), true, siteUrl ?? "missing SITE_URL");
     }
 
     Object.defineProperty(process.env, "NODE_ENV", {
@@ -357,7 +357,7 @@ test("robots and sitemap fail closed and expose only canonical production routes
       writable: true,
     });
     process.env.SITE_URL = "https://bts.online";
-    assert.equal(isBlocked(), true, "development");
+    assert.equal(await isBlocked(), true, "development");
 
     Object.defineProperty(process.env, "NODE_ENV", {
       value: "production",
@@ -376,11 +376,12 @@ test("robots and sitemap fail closed and expose only canonical production routes
     assert.equal(typeof productionRobots.host, "string");
     assert.equal(typeof productionRobots.sitemap, "string");
 
-    const entries = createSitemap().map(({ url }) => new URL(url).pathname);
+    const entries = createSitemap([]).map(({ url }) => new URL(url).pathname);
 
     assert.deepEqual(entries, [
       "/",
       "/echowall",
+      "/writing",
       "/find-your-next-step",
       "/find-your-next-step/self",
       "/find-your-next-step/career",
@@ -412,7 +413,7 @@ test("robots and sitemap fail closed and expose only canonical production routes
     new URL("../app/sitemap.ts", import.meta.url),
     "utf8",
   );
-  assert.equal(source.includes('status === "published"'), true);
+  assert.equal(source.includes("getPublishedWriting"), true);
   assert.equal(source.includes("lastModified"), false);
   assert.equal(source.includes("changeFrequency"), false);
   assert.equal(source.includes("priority"), false);

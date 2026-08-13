@@ -7,6 +7,7 @@ import { projects } from "@/data/projects";
 import { writingEntries } from "@/data/writing";
 import type { ProjectArea, ProjectStatus } from "@/types/content";
 import type { DiscoveryItem, DiscoveryStatus } from "@/types/discovery";
+import type { PublicWritingSummary } from "@/types/writing";
 
 function projectStatus(status: ProjectStatus): DiscoveryStatus {
   if (status === "Active" || status === "Active / Growing" || status === "Digital HQ") return "Live";
@@ -154,7 +155,7 @@ const pageItems: DiscoveryItem[] = [
   { id: "page-home", group: "Pages", title: "Digital HQ", description: "Das zentrale Zuhause von Benjamin Trinidad Segura.", category: "Page", tags: ["Home", "bts.online"], keywords: ["Startseite", "Übersicht"], status: "Live", href: "/#home" },
   { id: "page-now", group: "Pages", title: "Now", description: "Aktuelle Projekte, Entwicklungen und Themen im Fokus.", category: "Page", tags: ["Aktuell", "Building"], keywords: ["Developing", "Rebuilding", "Exploring"], status: "Live", href: "/#now" },
   { id: "page-projects", group: "Pages", title: "Currently Building", description: "Alle Projekte und Ideen des wachsenden Ökosystems.", category: "Page", tags: ["Projects", "Portfolio"], keywords: ["Building", "Projekte"], status: "Live", href: "/#building" },
-  { id: "page-writing", group: "Pages", title: "Writing", description: "Field Notes über Arbeit, Identität, Mut und Entwicklung.", category: "Page", tags: ["Insights", "Artikel"], keywords: ["Texte", "Magazin"], status: "Coming Soon", href: "/#writing" },
+  { id: "page-writing", group: "Pages", title: "Writing", description: "Field Notes über Arbeit, Identität, Mut und Entwicklung.", category: "Page", tags: ["Insights", "Artikel"], keywords: ["Texte", "Magazin"], status: "Live", href: "/writing" },
   { id: "page-interviews", group: "Pages", title: "Interviews", description: "Gespräche über Herkunft, Arbeit, Wendepunkte und Potenzial.", category: "Page", tags: ["Insights", "Human Archive"], keywords: ["Gespräche", "Menschen"], status: "Live", href: "/#interviews" },
   { id: "page-pulse", group: "Pages", title: "HQ Pulse", description: "Aktuelle Stories, Formate und Projektupdates.", category: "Page", tags: ["Insights", "Updates"], keywords: ["Aktuell", "Pulse"], status: "Live", href: "/#pulse" },
   { id: "page-about", group: "Pages", title: "About Benjamin", description: "Die Person, Haltung und Prinzipien hinter dem Digital HQ.", category: "Page", tags: ["Benjamin Trinidad Segura", "About"], keywords: ["Person", "Werte"], status: "Live", href: "/#about" },
@@ -176,3 +177,17 @@ export const discoveryIndex: DiscoveryItem[] = baseDiscoveryIndex.map((item) => 
   const dimensions = discoveryDimensionsByItemId[item.id];
   return dimensions ? { ...item, dimensions } : item;
 });
+
+export function createPublishedWritingDiscoveryItems(articles: PublicWritingSummary[]): DiscoveryItem[] {
+  return articles.map((article) => ({
+    id: `writing-${article.id}`,
+    group: "Insights",
+    title: article.title,
+    description: article.excerpt,
+    category: article.contentType === "essay" ? "Writing / Essay" : "Writing / Note",
+    tags: ["Writing", ...article.topics],
+    keywords: [article.deck, "Artikel", "Gedanken"].filter(Boolean),
+    status: "Live",
+    href: `/writing/${article.slug}`,
+  }));
+}

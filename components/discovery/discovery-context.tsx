@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { discoveryIndex } from "@/data/discovery-index";
 import { createAdaptiveDiscoveryView, discoverItems, groupDiscoveryItems } from "@/lib/discovery";
-import type { AdaptiveDiscoveryView, DiscoveryGroup, DiscoveryMatch } from "@/types/discovery";
+import type { AdaptiveDiscoveryView, DiscoveryGroup, DiscoveryItem, DiscoveryMatch } from "@/types/discovery";
 
 interface DiscoveryContextValue {
   query: string;
@@ -40,7 +40,7 @@ function isCurrentLocation(targetHref: string) {
 
 const DiscoveryContext = createContext<DiscoveryContextValue | null>(null);
 
-export function DiscoveryProvider({ children }: { children: ReactNode }) {
+export function DiscoveryProvider({ children, items = discoveryIndex }: { children: ReactNode; items?: DiscoveryItem[] }) {
   const pathname = usePathname();
   const [query, setQueryState] = useState("");
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -175,7 +175,7 @@ export function DiscoveryProvider({ children }: { children: ReactNode }) {
     };
   }, [pendingAnchorId]);
 
-  const matches = useMemo(() => discoverItems(discoveryIndex, query), [query]);
+  const matches = useMemo(() => discoverItems(items, query), [items, query]);
   const groups = useMemo(() => groupDiscoveryItems(matches), [matches]);
   const adaptiveView = useMemo(() => createAdaptiveDiscoveryView(matches, selectedMatchId), [matches, selectedMatchId]);
   const value = useMemo(

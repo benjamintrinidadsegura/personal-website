@@ -1,38 +1,121 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const adminCookieOptions = {
-  path: "/admin",
-  sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
-  httpOnly: true,
-};
+import {
+  accountAuthStorageKey,
+  authCookieOptions,
+  getSupabaseAuthStorageKey,
+  isSupabaseAuthCookie,
+  legacyAdminCookieOptions,
+  rootAuthCookieOptions,
+} from "@/lib/supabase/auth-cookies";
+
+type CookieItem = { name: string; value: string; options: CookieOptions };
+
+function createResponse(request: NextRequest) {
+  return NextResponse.next({ request });
+}
+
+function applyResponseHeaders(response: NextResponse, headers: Record<string, string>) {
+  for (const [name, value] of Object.entries(headers)) response.headers.set(name, value);
+}
 
 export async function proxy(request: NextRequest) {
   const url = process.env.SUPABASE_URL;
   const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !publishableKey) return NextResponse.next({ request });
+  if (!url || !publishableKey) return createResponse(request);
 
-  let response = NextResponse.next({ request });
+  const initialRootCookieNames = request.cookies.getAll()
+    .filter(({ name }) => isSupabaseAuthCookie(name, accountAuthStorageKey))
+    .map(({ name }) => name);
+  let response = createResponse(request);
+  const setCookies = (items: CookieItem[], responseHeaders: Record<string, string>) => {
+    for (const { name, value } of items) request.cookies.set(name, value);
+    response = createResponse(request);
+    for (const { name, value, options } of items) {
+      response.cookies.set(name, value, { ...options, ...rootAuthCookieOptions });
+    }
+    applyResponseHeaders(response, responseHeaders);
+  };
+
   const supabase = createServerClient(url, publishableKey, {
-    cookieOptions: adminCookieOptions,
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (items) => {
-        for (const { name, value } of items) request.cookies.set(name, value);
-        response = NextResponse.next({ request });
-        for (const { name, value, options } of items) {
-          response.cookies.set(name, value, { ...options, ...adminCookieOptions });
-        }
-      },
-    },
+    cookieOptions: authCookieOptions,
+    cookies: { getAll: () => request.cookies.getAll(), setAll: setCookies },
   });
+  let { data } = await supabase.auth.getUser();
 
-  const { data } = await supabase.auth.getUser();
-  if (!data.user && request.nextUrl.pathname !== "/admin/login") {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
+  const legacyStorageKey = getSupabaseAuthStorageKey(url);
+  const legacyCookies = legacyStorageKey
+    ? request.cookies.getAll().filter(({ name }) => isSupabaseAuthCookie(name, legacyStorageKey))
+    : [];
+
+  if (!data.user && request.nextUrl.pathname.startsWith("/admin") && legacyStorageKey && legacyCookies.length > 0) {
+    const setLegacyCookies = (items: CookieItem[], responseHeaders: Record<string, string>) => {
+      for (const { name, value } of items) request.cookies.set(name, value);
+      response = createResponse(request);
+      for (const { name, value, options } of items) {
+        response.cookies.set(name, value, { ...options, ...legacyAdminCookieOptions });
+      }
+      applyResponseHeaders(response, responseHeaders);
+    };
+    const legacySupabase = createServerClient(url, publishableKey, {
+      cookieOptions: legacyAdminCookieOptions,
+      cookies: { getAll: () => request.cookies.getAll(), setAll: setLegacyCookies },
+    });
+    const legacyResult = await legacySupabase.auth.getUser();
+
+    if (legacyResult.data.user) {
+      const refreshedLegacyCookies = request.cookies.getAll()
+        .filter(({ name, value }) => value.length > 0 && isSupabaseAuthCookie(name, legacyStorageKey));
+      const migratedRootNames = new Set<string>();
+      for (const cookie of refreshedLegacyCookies) {
+        const suffix = cookie.name.slice(legacyStorageKey.length);
+        const rootName = `${accountAuthStorageKey}${suffix}`;
+        migratedRootNames.add(rootName);
+        request.cookies.set(rootName, cookie.value);
+      }
+      response = createResponse(request);
+      for (const cookie of refreshedLegacyCookies) {
+        const suffix = cookie.name.slice(legacyStorageKey.length);
+        response.cookies.set(`${accountAuthStorageKey}${suffix}`, cookie.value, rootAuthCookieOptions);
+      }
+      for (const name of initialRootCookieNames) {
+        if (!migratedRootNames.has(name)) {
+          response.cookies.set(name, "", { ...rootAuthCookieOptions, maxAge: 0 });
+        }
+      }
+      response.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate, max-age=0");
+      data = legacyResult.data;
+    }
   }
+
+  if (request.nextUrl.pathname.startsWith("/admin") && legacyStorageKey) {
+    const cookiesToClear = request.cookies.getAll()
+      .filter(({ name }) => isSupabaseAuthCookie(name, legacyStorageKey));
+    for (const { name } of cookiesToClear) {
+      response.cookies.set(name, "", { ...legacyAdminCookieOptions, maxAge: 0 });
+    }
+  }
+
+  if (
+    request.nextUrl.pathname.startsWith("/admin")
+    && request.nextUrl.pathname !== "/admin/login"
+    && !data.user
+  ) {
+    const redirectResponse = NextResponse.redirect(new URL("/account/login", request.url));
+    for (const cookie of response.cookies.getAll()) redirectResponse.cookies.set(cookie);
+    for (const header of ["cache-control", "expires", "pragma"]) {
+      const value = response.headers.get(header);
+      if (value) redirectResponse.headers.set(header, value);
+    }
+    return redirectResponse;
+  }
+
   return response;
 }
 
-export const config = { matcher: ["/admin/:path*"] };
+export const config = {
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|map|woff2?|ttf)$).*)",
+  ],
+};

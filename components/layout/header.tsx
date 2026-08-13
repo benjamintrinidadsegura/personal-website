@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AccountMenu } from "@/components/account/account-menu";
 import { DiscoveryEngine } from "@/components/discovery/discovery-engine";
+import type { AccountState } from "@/lib/account/state";
 import { acquireScrollLock } from "@/lib/scroll-lock";
 
 type NavigationLink = {
@@ -30,7 +32,7 @@ const navigation: NavigationItem[] = [
     href: "/#pulse",
     children: [
       { label: "Pulse", href: "/#pulse" },
-      { label: "Writing", href: "/#writing" },
+      { label: "Writing", href: "/writing" },
       { label: "Interviews", href: "/#interviews" },
     ],
   },
@@ -46,9 +48,10 @@ const navigation: NavigationItem[] = [
   { label: "Contact", href: "/#contact" },
 ];
 
-export function Header() {
+export function Header({ accountState }: { accountState: AccountState }) {
   const [open, setOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const mobileMenu = useRef<HTMLElement>(null);
   const desktopNavigation = useRef<HTMLElement>(null);
@@ -70,13 +73,14 @@ export function Header() {
   const handleDiscoveryOpen = useCallback(() => {
     setOpen(false);
     setOpenDropdown(null);
+    setAccountOpen(false);
   }, []);
 
   useEffect(() => {
     if (!open) return;
     const releaseScrollLock = acquireScrollLock();
-    const focusable = mobileMenu.current?.querySelectorAll<HTMLElement>("a[href], button:not([disabled])");
-    focusable?.[0]?.focus();
+    const getFocusable = () => mobileMenu.current?.querySelectorAll<HTMLElement>("a[href], button:not([disabled])");
+    getFocusable()?.[0]?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -84,6 +88,7 @@ export function Header() {
         closeMenu();
         return;
       }
+      const focusable = getFocusable();
       if (event.key !== "Tab" || !focusable?.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -126,7 +131,7 @@ export function Header() {
 
   return (
     <header data-scroll-lock-compensate className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#04111b]/88 backdrop-blur-xl">
-      <div className="mx-auto flex h-20 max-w-[90rem] items-center gap-2 px-5 sm:px-8 lg:grid lg:grid-cols-[auto_minmax(11rem,20rem)_auto] lg:gap-3 xl:gap-6">
+      <div className="mx-auto flex h-20 max-w-[90rem] items-center gap-2 px-5 sm:px-8 lg:grid lg:grid-cols-[auto_minmax(11rem,20rem)_auto_auto] lg:gap-3 xl:gap-5">
         <Link href="/#home" className="mr-auto flex shrink-0 items-center gap-3 text-lg font-black tracking-tight lg:mr-0" aria-label="bts.online – Startseite">
           <span className="grid h-8 w-8 place-items-center rounded-full border border-[#35d0e5]/40 text-[10px] tracking-widest text-[#35d0e5]">BTS</span>
           <span>Digital HQ</span>
@@ -144,10 +149,14 @@ export function Header() {
                       className="flex items-center gap-1 rounded-full px-2.5 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5] xl:px-3 xl:text-sm"
                       aria-expanded={openDropdown === item.label}
                       aria-controls={`desktop-${item.label.toLowerCase()}-menu`}
-                      onClick={() => setOpenDropdown((current) => current === item.label ? null : item.label)}
+                      onClick={() => {
+                        setAccountOpen(false);
+                        setOpenDropdown((current) => current === item.label ? null : item.label);
+                      }}
                       onKeyDown={(event) => {
                         if (event.key !== "ArrowDown") return;
                         event.preventDefault();
+                        setAccountOpen(false);
                         setOpenDropdown(item.label);
                         window.requestAnimationFrame(() => {
                           document.querySelector<HTMLElement>(`#desktop-${item.label.toLowerCase()}-menu a`)?.focus();
@@ -182,6 +191,12 @@ export function Header() {
             ))}
           </ul>
         </nav>
+        <AccountMenu
+          initialState={accountState}
+          open={accountOpen}
+          setOpen={setAccountOpen}
+          onOpening={() => setOpenDropdown(null)}
+        />
         <button ref={menuButton} type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5] lg:hidden" aria-controls="mobile-navigation" aria-expanded={open} aria-label={open ? "Menü schließen" : "Menü öffnen"} onClick={() => open ? closeMenu() : setOpen(true)}>
           <span aria-hidden="true" className="text-xl leading-none">{open ? "×" : "≡"}</span>
         </button>
@@ -214,6 +229,7 @@ export function Header() {
             </li>
           ))}
         </ul>
+        <AccountMenu initialState={accountState} mobile active={open} onNavigate={closeMenu} />
       </nav>
     </header>
   );
