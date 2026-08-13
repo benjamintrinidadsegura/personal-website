@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { processGuestCommentSubmission } from "../app/writing/comments/actions";
-import { mapDiscussionState, mapPublicGuestComment, resolvePublicDiscussionRead } from "../lib/comments/domain";
+import { mapDiscussionState, mapPublicWritingComment, resolvePublicDiscussionRead } from "../lib/comments/domain";
 import { COMMENTS_READ_TIMEOUT_MS, withCommentsReadDeadline } from "../lib/comments/read-deadline";
 import {
   createCommentFormToken,
@@ -148,14 +148,15 @@ test("network identifiers are privacy-reduced before hashing", () => {
 });
 
 test("public mapping and query expose only visible top-level public fields", () => {
-  const mapped = mapPublicGuestComment({ id: ARTICLE_ID, guest_display_name: "Ada", body: "Hello", created_at: new Date(NOW).toISOString(), network_hash: "private", moderation_status: "visible" });
-  assert.deepEqual(mapped, { id: ARTICLE_ID, displayName: "Ada", body: "Hello", createdAt: new Date(NOW).toISOString() });
+  const mapped = mapPublicWritingComment({ id: ARTICLE_ID, identity_kind: "guest", display_name: "Ada", is_author: false, body: "Hello", created_at: new Date(NOW).toISOString(), network_hash: "private", moderation_status: "visible" });
+  assert.deepEqual(mapped, { id: ARTICLE_ID, identity: "guest", displayName: "Ada", isAuthor: false, body: "Hello", createdAt: new Date(NOW).toISOString() });
   assert.equal(JSON.stringify(mapped).includes("private"), false);
   const queries = source("../lib/comments/queries.ts");
-  assert.equal(queries.includes('.select("id, guest_display_name, body, created_at")'), true);
+  assert.equal(queries.includes('.rpc("list_public_writing_comments"'), true);
   assert.equal(queries.includes('.eq("status", "published")'), true);
-  assert.equal(queries.includes('.eq("moderation_status", "visible")'), true);
-  assert.equal(queries.includes('.is("parent_comment_id", null)'), true);
+  const migration = source("../supabase/migrations/20260815000000_writing_account_identity.sql");
+  assert.equal(migration.includes("comment.moderation_status = 'visible'"), true);
+  assert.equal(migration.includes("comment.parent_comment_id is null"), true);
   for (const privateField of ["network_hash", "message_hash", "form_token_hash", "moderation_notes", "auth.uid"]) assert.equal(queries.includes(privateField), false, privateField);
 });
 
@@ -171,7 +172,7 @@ test("Comments reads use one bounded abort signal and clear successful deadlines
   assert.equal((successfulSignal as AbortSignal | null)?.aborted, false);
 
   const queries = source("../lib/comments/queries.ts");
-  assert.equal((queries.match(/\.abortSignal\(signal\)/gu) ?? []).length, 3);
+  assert.equal((queries.match(/\.abortSignal\(signal\)/gu) ?? []).length, 4);
   assert.equal(queries.includes("withCommentsReadDeadline"), true);
 });
 
@@ -194,10 +195,10 @@ test("stalled and aborted Comments reads settle at unavailable without blocking 
 
   const page = source("../app/writing/[slug]/page.tsx");
   const articleAt = page.indexOf("if (!article) notFound()");
-  const commentsAt = page.indexOf("getPublicWritingDiscussion(article.id)");
+  const commentsAt = page.indexOf("getWritingDiscussionPageData(article.id)");
   const renderAt = page.indexOf("return (");
   assert.ok(articleAt >= 0 && articleAt < commentsAt && commentsAt < renderAt);
-  assert.equal(source("../lib/comments/queries.ts").includes('catch {\n    return { status: "unavailable"'), true);
+  assert.equal(source("../lib/comments/queries.ts").includes("catch {\n    return unavailable"), true);
 });
 
 test("controlled Comments read failures and successful reads retain existing result shapes", async () => {
@@ -212,12 +213,12 @@ test("controlled Comments read failures and successful reads retain existing res
   const successfulRead = resolvePublicDiscussionRead(
     { data: { id: ARTICLE_ID }, error: null },
     { data: null, error: null },
-    { data: [{ id: ARTICLE_ID, guest_display_name: "Ada", body: "Hello", created_at: createdAt }], error: null },
+    { data: [{ id: ARTICLE_ID, identity_kind: "guest", display_name: "Ada", is_author: false, body: "Hello", created_at: createdAt }], error: null },
   );
   assert.deepEqual(successfulRead, {
     status: "data",
     state: "open",
-    comments: [{ id: ARTICLE_ID, displayName: "Ada", body: "Hello", createdAt }],
+    comments: [{ id: ARTICLE_ID, identity: "guest", displayName: "Ada", isAuthor: false, body: "Hello", createdAt }],
   });
 });
 
@@ -248,7 +249,7 @@ test("Writing article rendering isolates Comments failures and supports all publ
   const domain = source("../lib/comments/domain.ts");
   const discussion = source("../components/writing/comments/discussion.tsx");
   const componentBody = page.slice(page.indexOf("export default async function WritingArticlePage"));
-  assert.ok(componentBody.indexOf("getPublishedWritingBySlug") < componentBody.indexOf("getPublicWritingDiscussion"));
+  assert.ok(componentBody.indexOf("getPublishedWritingBySlug") < componentBody.indexOf("getWritingDiscussionPageData"));
   assert.equal(queries.includes('status: "unavailable", state: null, comments: []'), true);
   assert.equal(domain.includes('settingsResult.data === null\n    ? "open"'), true);
   assert.equal(discussion.includes('discussion.status === "disabled"'), true);

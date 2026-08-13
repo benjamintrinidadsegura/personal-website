@@ -17,6 +17,7 @@ const errorMessages: Record<SubmitGuestCommentErrorCode, string> = {
   ARTICLE_UNAVAILABLE: "This article is not available for discussion.",
   DISCUSSION_CLOSED: "This discussion has been closed.",
   DISCUSSION_DISABLED: "Comments are disabled for this article.",
+  PROFILE_REQUIRED: "Your account profile is required for this action.",
   SERVICE_UNAVAILABLE: "Comments are temporarily unavailable. Please try again later.",
 };
 

@@ -35,26 +35,9 @@ function normalizeBody(value: string): string {
     .trim();
 }
 
-export function validateGuestCommentSubmission(raw: RawGuestCommentSubmission): ValidationResult {
-  const fieldErrors: Partial<Record<GuestCommentField, string>> = {};
-  const honeypot = asString(raw.website);
-  if (honeypot === null || honeypot.length > 0) {
-    return { success: false, fieldErrors, isHoneypot: true };
-  }
-
-  const displayNameValue = asString(raw.displayName);
-  const bodyValue = asString(raw.body);
-  const formToken = asString(raw.formToken);
-  const displayName = displayNameValue ? normalizeName(displayNameValue) : "";
+export function validateCommentBody(value: unknown): string | null {
+  const bodyValue = asString(value);
   const body = bodyValue ? normalizeBody(bodyValue) : "";
-
-  if (
-    characterLength(displayName) < 2
-    || characterLength(displayName) > 40
-    || /[\r\n]/u.test(displayName)
-    || CONTROL_OR_BIDI_CHARACTERS.test(displayName)
-  ) fieldErrors.displayName = "Display name must contain 2 to 40 valid characters.";
-
   const lines = body ? body.split("\n") : [];
   const paragraphs = body ? body.split(/\n{2,}/u).filter((part) => part.trim().length > 0) : [];
   if (
@@ -63,7 +46,30 @@ export function validateGuestCommentSubmission(raw: RawGuestCommentSubmission): 
     || lines.length > MAX_LINES
     || paragraphs.length > MAX_PARAGRAPHS
     || CONTROL_OR_BIDI_CHARACTERS.test(body)
-  ) fieldErrors.body = "Comment must contain 2 to 3,000 valid characters in at most 20 paragraphs.";
+  ) return null;
+  return body;
+}
+
+export function validateGuestCommentSubmission(raw: RawGuestCommentSubmission): ValidationResult {
+  const fieldErrors: Partial<Record<GuestCommentField, string>> = {};
+  const honeypot = asString(raw.website);
+  if (honeypot === null || honeypot.length > 0) {
+    return { success: false, fieldErrors, isHoneypot: true };
+  }
+
+  const displayNameValue = asString(raw.displayName);
+  const formToken = asString(raw.formToken);
+  const displayName = displayNameValue ? normalizeName(displayNameValue) : "";
+  const body = validateCommentBody(raw.body);
+
+  if (
+    characterLength(displayName) < 2
+    || characterLength(displayName) > 40
+    || /[\r\n]/u.test(displayName)
+    || CONTROL_OR_BIDI_CHARACTERS.test(displayName)
+  ) fieldErrors.displayName = "Display name must contain 2 to 40 valid characters.";
+
+  if (body === null) fieldErrors.body = "Comment must contain 2 to 3,000 valid characters in at most 20 paragraphs.";
 
   if (!formToken) fieldErrors.body ??= "The comment form is no longer valid.";
   if (Object.keys(fieldErrors).length > 0) {
@@ -72,7 +78,7 @@ export function validateGuestCommentSubmission(raw: RawGuestCommentSubmission): 
 
   return {
     success: true,
-    data: { displayName, body },
+    data: { displayName, body: body ?? "" },
     formToken: formToken ?? "",
   };
 }

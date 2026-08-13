@@ -2,54 +2,93 @@ import "server-only";
 
 import { resolvePublicDiscussionRead } from "@/lib/comments/domain";
 import { withCommentsReadDeadline } from "@/lib/comments/read-deadline";
+import { createAccountCommentFormToken, createCommentFormToken } from "@/lib/comments/security";
+import { createSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { PublicDiscussionResult } from "@/types/comments";
+import type { DiscussionParticipation, WritingDiscussionPageData } from "@/types/comments";
 
 const PUBLIC_ROOT_LIMIT = 50;
 
-export async function getPublicWritingDiscussion(articleId: string): Promise<PublicDiscussionResult> {
+const unavailable: WritingDiscussionPageData = {
+  discussion: { status: "unavailable", state: null, comments: [] },
+  participation: { kind: "unavailable" },
+};
+
+function guestParticipation(articleId: string): DiscussionParticipation {
+  const secret = process.env.WRITING_COMMENTS_FORM_TOKEN_SECRET;
+  return { kind: "guest", formToken: secret ? createCommentFormToken(articleId, secret) : null };
+}
+
+export async function getWritingDiscussionPageData(articleId: string): Promise<WritingDiscussionPageData> {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(articleId)) {
-    return { status: "unavailable", state: null, comments: [] };
+    return unavailable;
   }
 
   try {
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
-      return { status: "unavailable", state: null, comments: [] };
+      return unavailable;
     }
     const supabase = getSupabaseServerClient();
     const results = await withCommentsReadDeadline(
-      (signal) => Promise.all([
-        supabase
-          .from("writing_articles")
-          .select("id")
-          .eq("id", articleId)
-          .eq("status", "published")
-          .not("published_at", "is", null)
+      async (signal) => {
+        const auth = await createSupabaseAuthServerClient();
+        const [articleResult, settingsResult, commentsResult, userResult] = await Promise.all([
+          supabase
+            .from("writing_articles")
+            .select("id")
+            .eq("id", articleId)
+            .eq("status", "published")
+            .not("published_at", "is", null)
+            .abortSignal(signal)
+            .maybeSingle(),
+          supabase
+            .from("writing_discussions")
+            .select("state")
+            .eq("article_id", articleId)
+            .abortSignal(signal)
+            .maybeSingle(),
+          supabase
+            .rpc("list_public_writing_comments", { p_article_id: articleId })
+            .limit(PUBLIC_ROOT_LIMIT)
+            .abortSignal(signal),
+          auth.auth.getUser(),
+        ]);
+
+        const discussion = resolvePublicDiscussionRead(articleResult, settingsResult, commentsResult);
+        if (discussion.status === "unavailable") return { discussion, participation: { kind: "unavailable" } as const };
+        if (userResult.error || !userResult.data.user) {
+          return { discussion, participation: guestParticipation(articleId) };
+        }
+
+        const profileResult = await supabase
+          .from("bts_account_profiles")
+          .select("display_name")
+          .eq("user_id", userResult.data.user.id)
           .abortSignal(signal)
-          .maybeSingle(),
-        supabase
-          .from("writing_discussions")
-          .select("state")
-          .eq("article_id", articleId)
-          .abortSignal(signal)
-          .maybeSingle(),
-        supabase
-          .from("writing_comments")
-          .select("id, guest_display_name, body, created_at")
-          .eq("article_id", articleId)
-          .eq("moderation_status", "visible")
-          .is("parent_comment_id", null)
-          .order("created_at", { ascending: true })
-          .order("id", { ascending: true })
-          .limit(PUBLIC_ROOT_LIMIT)
-          .abortSignal(signal),
-      ]),
+          .maybeSingle();
+        if (profileResult.error) {
+          return { discussion, participation: { kind: "unavailable" } as const };
+        }
+        if (!profileResult.data) {
+          return { discussion, participation: { kind: "profile-setup" } as const };
+        }
+
+        const secret = process.env.WRITING_COMMENTS_FORM_TOKEN_SECRET;
+        return {
+          discussion,
+          participation: {
+            kind: "account" as const,
+            displayName: profileResult.data.display_name,
+            formToken: secret
+              ? createAccountCommentFormToken(articleId, userResult.data.user.id, secret)
+              : null,
+          },
+        };
+      },
       null,
     );
-    if (!results) return { status: "unavailable", state: null, comments: [] };
-    const [articleResult, settingsResult, commentsResult] = results;
-    return resolvePublicDiscussionRead(articleResult, settingsResult, commentsResult);
+    return results ?? unavailable;
   } catch {
-    return { status: "unavailable", state: null, comments: [] };
+    return unavailable;
   }
 }

@@ -15,7 +15,8 @@
     "test:career": "tsx --test tests/find-your-next-step-career.test.ts",
     "test:account": "tsx --test tests/account-entry.test.ts",
     "test:writing": "tsx --test tests/writing-foundation.test.ts",
-    "test:comments": "tsx --test tests/writing-comments-foundation.test.ts"
+    "test:comments": "tsx --test tests/writing-comments-foundation.test.ts",
+    "test:comments-account": "tsx --test tests/writing-account-comments.test.ts"
   },
   "dependencies": {
     "@blocknote/ariakit": "0.52.1",

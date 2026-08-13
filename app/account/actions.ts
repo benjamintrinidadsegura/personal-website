@@ -4,9 +4,11 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getAccountState, resolveAccount, type AccountState } from "@/lib/account/state";
+import { processDisplayNameSetup } from "@/lib/account/profile";
 import { isAllowedRequestOrigin } from "@/lib/echowall/security";
 import { getSupabaseAuthStorageKey, legacyAdminCookieOptions } from "@/lib/supabase/auth-cookies";
 import { createSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
+import type { DisplayNameActionState } from "@/types/comments";
 
 export type AuthActionState = { message: string } | null;
 
@@ -80,4 +82,32 @@ export async function logoutAction() {
 
 export async function refreshAccountStateAction(): Promise<AccountState> {
   return getAccountState();
+}
+
+export async function setAccountDisplayNameAction(
+  _state: DisplayNameActionState,
+  formData: FormData,
+): Promise<Exclude<DisplayNameActionState, null>> {
+  let actorUserId: string | null = null;
+  try {
+    const auth = await createSupabaseAuthServerClient();
+    const { data, error } = await auth.auth.getUser();
+    if (!error && data.user) actorUserId = data.user.id;
+  } catch {
+    actorUserId = null;
+  }
+
+  return processDisplayNameSetup(
+    formData.get("displayName"),
+    actorUserId,
+    await validRequest(),
+    async (verifiedUserId, displayName) => {
+      const { getSupabaseServerClient } = await import("@/lib/supabase/server");
+      const { data, error } = await getSupabaseServerClient().rpc("set_bts_account_display_name", {
+        p_actor_user_id: verifiedUserId,
+        p_display_name: displayName,
+      });
+      return !error && data === displayName;
+    },
+  );
 }

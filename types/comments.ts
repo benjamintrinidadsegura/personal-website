@@ -15,15 +15,17 @@ export type GuestCommentSubmission = {
   body: string;
 };
 
-export type PublicGuestComment = {
+export type PublicWritingComment = {
   id: string;
+  identity: "guest" | "account";
   displayName: string;
+  isAuthor: boolean;
   body: string;
   createdAt: string;
 };
 
 export type PublicDiscussionResult =
-  | { status: "data"; state: "open" | "closed"; comments: PublicGuestComment[] }
+  | { status: "data"; state: "open" | "closed"; comments: PublicWritingComment[] }
   | { status: "empty"; state: "open" | "closed"; comments: [] }
   | { status: "disabled"; state: "disabled"; comments: [] }
   | { status: "unavailable"; state: null; comments: [] };
@@ -38,6 +40,7 @@ export type SubmitGuestCommentErrorCode =
   | "ARTICLE_UNAVAILABLE"
   | "DISCUSSION_CLOSED"
   | "DISCUSSION_DISABLED"
+  | "PROFILE_REQUIRED"
   | "SERVICE_UNAVAILABLE";
 
 export type SubmitGuestCommentResult =
@@ -49,3 +52,21 @@ export type SubmitGuestCommentResult =
     };
 
 export type GuestCommentActionState = SubmitGuestCommentResult | null;
+
+export type DiscussionParticipation =
+  | { kind: "guest"; formToken: string | null }
+  | { kind: "profile-setup" }
+  | { kind: "account"; displayName: string; formToken: string | null }
+  | { kind: "unavailable" };
+
+export type WritingDiscussionPageData = {
+  discussion: PublicDiscussionResult;
+  participation: DiscussionParticipation;
+};
+
+export type AccountCommentActionState = SubmitGuestCommentResult | null;
+
+export type DisplayNameActionState =
+  | { ok: true }
+  | { ok: false; message: string }
+  | null;

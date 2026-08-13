@@ -1,4 +1,4 @@
-import type { DiscussionState, PublicDiscussionResult, PublicGuestComment } from "@/types/comments";
+import type { DiscussionState, PublicDiscussionResult, PublicWritingComment } from "@/types/comments";
 
 type UnknownRow = Record<string, unknown>;
 
@@ -6,10 +6,12 @@ export function mapDiscussionState(value: unknown): DiscussionState | null {
   return value === "open" || value === "closed" || value === "disabled" ? value : null;
 }
 
-export function mapPublicGuestComment(row: UnknownRow): PublicGuestComment | null {
+export function mapPublicWritingComment(row: UnknownRow): PublicWritingComment | null {
   if (
     typeof row.id !== "string"
-    || typeof row.guest_display_name !== "string"
+    || (row.identity_kind !== "guest" && row.identity_kind !== "account")
+    || typeof row.display_name !== "string"
+    || typeof row.is_author !== "boolean"
     || typeof row.body !== "string"
     || typeof row.created_at !== "string"
     || Number.isNaN(Date.parse(row.created_at))
@@ -17,7 +19,9 @@ export function mapPublicGuestComment(row: UnknownRow): PublicGuestComment | nul
 
   return {
     id: row.id,
-    displayName: row.guest_display_name,
+    identity: row.identity_kind,
+    displayName: row.display_name,
+    isAuthor: row.identity_kind === "account" && row.is_author,
     body: row.body,
     createdAt: row.created_at,
   };
@@ -45,8 +49,8 @@ export function resolvePublicDiscussionRead(
   if (state === "disabled") return { status: "disabled", state, comments: [] };
 
   const comments = commentsResult.data
-    .map((row) => mapPublicGuestComment(row as UnknownRow))
-    .filter((comment): comment is PublicGuestComment => comment !== null);
+    .map((row) => mapPublicWritingComment(row as UnknownRow))
+    .filter((comment): comment is PublicWritingComment => comment !== null);
   return comments.length > 0
     ? { status: "data", state, comments }
     : { status: "empty", state, comments: [] };

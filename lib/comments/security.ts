@@ -13,6 +13,10 @@ export function commentTokenPurpose(articleId: string): string {
   return `writing-comment:${articleId}`;
 }
 
+export function accountCommentTokenPurpose(articleId: string, userId: string): string {
+  return `writing-account-comment:${articleId}:${userId}`;
+}
+
 export function createCommentFormToken(articleId: string, secret: string, now = Date.now()): string {
   return createFormToken(secret, now, commentTokenPurpose(articleId));
 }
@@ -24,6 +28,25 @@ export function verifyCommentFormToken(
   now = Date.now(),
 ) {
   return verifyFormToken(token, secret, now, commentTokenPurpose(articleId));
+}
+
+export function createAccountCommentFormToken(
+  articleId: string,
+  userId: string,
+  secret: string,
+  now = Date.now(),
+): string {
+  return createFormToken(secret, now, accountCommentTokenPurpose(articleId, userId));
+}
+
+export function verifyAccountCommentFormToken(
+  articleId: string,
+  userId: string,
+  token: string,
+  secret: string,
+  now = Date.now(),
+) {
+  return verifyFormToken(token, secret, now, accountCommentTokenPurpose(articleId, userId));
 }
 
 function ipv6Prefix(value: string): string | null {
@@ -56,4 +79,13 @@ export function createCommentNetworkHash(value: string, secret: string): string 
 
 export function createCommentMessageHash(articleId: string, body: string, secret: string): string {
   return createContextHash("writing-comment-message-v1", `${articleId}:${body}`, secret);
+}
+
+export function createAccountCommentMessageHash(
+  articleId: string,
+  userId: string,
+  body: string,
+  secret: string,
+): string {
+  return createContextHash("writing-account-comment-message-v1", `${userId}:${articleId}:${body}`, secret);
 }
