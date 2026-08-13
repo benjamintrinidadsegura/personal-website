@@ -2,12 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { issueGuestCommentFormToken } from "@/app/writing/comments/actions";
 import { ArticleBody } from "@/components/writing/article-body";
+import { Discussion } from "@/components/writing/comments/discussion";
 import { WritingDocument } from "@/components/writing/writing-document";
 import { siteConfig } from "@/data/site";
+import { getPublicWritingDiscussion } from "@/lib/comments/queries";
 import { getPublishedWritingBySlug } from "@/lib/writing/queries";
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const article = await getPublishedWritingBySlug((await params).slug);
@@ -20,6 +25,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function WritingArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const article = await getPublishedWritingBySlug((await params).slug);
   if (!article) notFound();
+  const discussion = await getPublicWritingDiscussion(article.id);
+  let formToken: string | null = null;
+  if (discussion.state === "open") {
+    try {
+      formToken = await issueGuestCommentFormToken(article.id);
+    } catch {
+      formToken = null;
+    }
+  }
   return (
     <article className="relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36">
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[58rem] bg-[radial-gradient(circle_at_72%_15%,rgba(53,208,229,0.16),transparent_30rem),radial-gradient(circle_at_18%_42%,rgba(255,122,0,0.07),transparent_22rem)]" />
@@ -34,6 +48,7 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
         <section aria-label="Article content" className="mx-auto max-w-[72ch] py-16 sm:py-24">
           {article.bodyJson ? <WritingDocument document={article.bodyJson} /> : <ArticleBody body={article.body} />}
         </section>
+        <Discussion articleId={article.id} discussion={discussion} formToken={formToken} />
         <footer className="border-t border-white/15 py-14"><Link href="/writing" className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 font-bold text-slate-200 hover:border-[#35d0e5]/50">Back to Writing</Link></footer>
       </div>
     </article>
