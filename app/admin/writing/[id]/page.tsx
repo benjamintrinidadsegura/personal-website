@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
+import { WritingDiscussionAdmin, WritingDiscussionAdminFallback } from "@/components/admin/writing-discussion-admin";
 import { WritingForm } from "@/components/admin/writing-form";
 import { requireAdminPage } from "@/lib/admin/authorization";
 import { mapAdminWritingArticle } from "@/lib/writing/domain";
@@ -25,6 +27,9 @@ export default async function AdminWritingDetailPage({ params }: { params: Promi
           {article.slug ? <Link href={`/writing/${article.slug}`} className="inline-flex min-h-11 items-center text-sm font-bold text-[#35d0e5] hover:text-white">Open public article</Link> : null}
         </header>
         <WritingForm article={article} />
+        <Suspense fallback={<WritingDiscussionAdminFallback />}>
+          <WritingDiscussionAdmin articleId={article.id} published={article.status === "published"} />
+        </Suspense>
       </div>
     </div>
   );
