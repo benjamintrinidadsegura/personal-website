@@ -76,7 +76,7 @@ test("script-looking input crosses the persistence boundary as unchanged inert t
   }, NOW);
   assert.deepEqual(result, { ok: true });
   assert.equal(capturedBody, body);
-  const renderer = source("../components/writing/comments/comment-list.tsx");
+  const renderer = source("../components/writing/comments/comment-list.tsx") + source("../components/writing/comments/comment-body.tsx");
   assert.equal(renderer.includes("{paragraph}"), true);
   assert.equal(renderer.includes("dangerouslySetInnerHTML"), false);
   assert.equal(renderer.includes("sanitize"), false);
@@ -148,11 +148,11 @@ test("network identifiers are privacy-reduced before hashing", () => {
 });
 
 test("public mapping and query expose only visible top-level public fields", () => {
-  const mapped = mapPublicWritingComment({ id: ARTICLE_ID, identity_kind: "guest", display_name: "Ada", is_author: false, body: "Hello", created_at: new Date(NOW).toISOString(), network_hash: "private", moderation_status: "visible" });
-  assert.deepEqual(mapped, { id: ARTICLE_ID, identity: "guest", displayName: "Ada", isAuthor: false, body: "Hello", createdAt: new Date(NOW).toISOString() });
+  const mapped = mapPublicWritingComment({ id: ARTICLE_ID, identity_kind: "guest", display_name: "Ada", is_author: false, is_edited: false, is_author_deleted: false, can_edit: false, can_delete: false, owner_version: null, body: "Hello", created_at: new Date(NOW).toISOString(), network_hash: "private", moderation_status: "visible" });
+  assert.deepEqual(mapped, { deletion: "active", id: ARTICLE_ID, identity: "guest", displayName: "Ada", isAuthor: false, isEdited: false, body: "Hello", createdAt: new Date(NOW).toISOString(), canEdit: false, canDelete: false, ownerVersion: null });
   assert.equal(JSON.stringify(mapped).includes("private"), false);
   const queries = source("../lib/comments/queries.ts");
-  assert.equal(queries.includes('.rpc("list_public_writing_comments"'), true);
+  assert.equal(queries.includes('.rpc("list_public_writing_comments_for_viewer"'), true);
   assert.equal(queries.includes('.eq("status", "published")'), true);
   const migration = source("../supabase/migrations/20260815000000_writing_account_identity.sql");
   assert.equal(migration.includes("comment.moderation_status = 'visible'"), true);
@@ -213,12 +213,12 @@ test("controlled Comments read failures and successful reads retain existing res
   const successfulRead = resolvePublicDiscussionRead(
     { data: { id: ARTICLE_ID }, error: null },
     { data: null, error: null },
-    { data: [{ id: ARTICLE_ID, identity_kind: "guest", display_name: "Ada", is_author: false, body: "Hello", created_at: createdAt }], error: null },
+    { data: [{ id: ARTICLE_ID, identity_kind: "guest", display_name: "Ada", is_author: false, is_edited: false, is_author_deleted: false, can_edit: false, can_delete: false, owner_version: null, body: "Hello", created_at: createdAt }], error: null },
   );
   assert.deepEqual(successfulRead, {
     status: "data",
     state: "open",
-    comments: [{ id: ARTICLE_ID, identity: "guest", displayName: "Ada", isAuthor: false, body: "Hello", createdAt }],
+    comments: [{ deletion: "active", id: ARTICLE_ID, identity: "guest", displayName: "Ada", isAuthor: false, isEdited: false, body: "Hello", createdAt, canEdit: false, canDelete: false, ownerVersion: null }],
   });
 });
 

@@ -10,20 +10,66 @@ export function mapPublicWritingComment(row: UnknownRow): PublicWritingComment |
   if (
     typeof row.id !== "string"
     || (row.identity_kind !== "guest" && row.identity_kind !== "account")
-    || typeof row.display_name !== "string"
+    || typeof row.is_author_deleted !== "boolean"
+    || typeof row.is_edited !== "boolean"
     || typeof row.is_author !== "boolean"
-    || typeof row.body !== "string"
+    || typeof row.can_edit !== "boolean"
+    || typeof row.can_delete !== "boolean"
     || typeof row.created_at !== "string"
     || Number.isNaN(Date.parse(row.created_at))
   ) return null;
 
+  if (row.is_author_deleted) {
+    if (
+      row.identity_kind !== "account"
+      || row.display_name !== null
+      || row.body !== null
+      || row.is_edited
+      || row.is_author
+      || row.can_edit
+      || row.can_delete
+      || row.owner_version !== null
+    ) return null;
+    return {
+      deletion: "author",
+      id: row.id,
+      identity: "account",
+      createdAt: row.created_at,
+      isAuthor: false,
+      isEdited: false,
+      canEdit: false,
+      canDelete: false,
+      ownerVersion: null,
+    };
+  }
+
+  if (
+    typeof row.display_name !== "string"
+    || typeof row.body !== "string"
+    || (row.owner_version !== null && (
+      typeof row.owner_version !== "string" || Number.isNaN(Date.parse(row.owner_version))
+    ))
+    || ((row.can_edit || row.can_delete) && (
+      row.identity_kind !== "account" || typeof row.owner_version !== "string"
+    ))
+    || (row.owner_version !== null && !row.can_edit && !row.can_delete)
+    || (row.identity_kind === "guest" && (
+      row.is_author || row.is_edited || row.can_edit || row.can_delete || row.owner_version !== null
+    ))
+  ) return null;
+
   return {
+    deletion: "active",
     id: row.id,
     identity: row.identity_kind,
     displayName: row.display_name,
     isAuthor: row.identity_kind === "account" && row.is_author,
+    isEdited: row.is_edited,
     body: row.body,
     createdAt: row.created_at,
+    canEdit: row.can_edit,
+    canDelete: row.can_delete,
+    ownerVersion: row.owner_version,
   };
 }
 

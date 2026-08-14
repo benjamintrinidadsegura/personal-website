@@ -15,14 +15,33 @@ export type GuestCommentSubmission = {
   body: string;
 };
 
-export type PublicWritingComment = {
+export type ActivePublicWritingComment = {
+  deletion: "active";
   id: string;
   identity: "guest" | "account";
   displayName: string;
   isAuthor: boolean;
+  isEdited: boolean;
   body: string;
   createdAt: string;
+  canEdit: boolean;
+  canDelete: boolean;
+  ownerVersion: string | null;
 };
+
+export type AuthorDeletedPublicWritingComment = {
+  deletion: "author";
+  id: string;
+  identity: "account";
+  createdAt: string;
+  isAuthor: false;
+  isEdited: false;
+  canEdit: false;
+  canDelete: false;
+  ownerVersion: null;
+};
+
+export type PublicWritingComment = ActivePublicWritingComment | AuthorDeletedPublicWritingComment;
 
 export type PublicDiscussionResult =
   | { status: "data"; state: "open" | "closed"; comments: PublicWritingComment[] }
@@ -69,4 +88,24 @@ export type AccountCommentActionState = SubmitGuestCommentResult | null;
 export type DisplayNameActionState =
   | { ok: true }
   | { ok: false; message: string }
+  | null;
+
+export type OwnerCommentMutationErrorCode =
+  | "INVALID_INPUT"
+  | "INVALID_REQUEST"
+  | "UNAUTHORIZED"
+  | "UNAVAILABLE"
+  | "STALE"
+  | "NO_CHANGE"
+  | "COOLDOWN"
+  | "SERVICE_UNAVAILABLE";
+
+export type EditOwnCommentActionState =
+  | { ok: true; version: string }
+  | { ok: false; code: OwnerCommentMutationErrorCode; fieldError?: string }
+  | null;
+
+export type DeleteOwnCommentActionState =
+  | { ok: true; outcome: "deleted" | "tombstoned" | "absent" }
+  | { ok: false; code: OwnerCommentMutationErrorCode }
   | null;

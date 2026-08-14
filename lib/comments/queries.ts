@@ -32,7 +32,7 @@ export async function getWritingDiscussionPageData(articleId: string): Promise<W
     const results = await withCommentsReadDeadline(
       async (signal) => {
         const auth = await createSupabaseAuthServerClient();
-        const [articleResult, settingsResult, commentsResult, userResult] = await Promise.all([
+        const [articleResult, settingsResult, userResult] = await Promise.all([
           supabase
             .from("writing_articles")
             .select("id")
@@ -47,25 +47,37 @@ export async function getWritingDiscussionPageData(articleId: string): Promise<W
             .eq("article_id", articleId)
             .abortSignal(signal)
             .maybeSingle(),
+          auth.auth.getUser(),
+        ]);
+
+        const actorUserId = !userResult.error && userResult.data.user
+          ? userResult.data.user.id
+          : null;
+        const [commentsResult, profileResult] = await Promise.all([
           supabase
-            .rpc("list_public_writing_comments", { p_article_id: articleId })
+            .rpc("list_public_writing_comments_for_viewer", {
+              p_article_id: articleId,
+              p_actor_user_id: actorUserId,
+            })
             .limit(PUBLIC_ROOT_LIMIT)
             .abortSignal(signal),
-          auth.auth.getUser(),
+          actorUserId
+            ? supabase
+                .from("bts_account_profiles")
+                .select("display_name")
+                .eq("user_id", actorUserId)
+                .is("deleted_at", null)
+                .abortSignal(signal)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
         ]);
 
         const discussion = resolvePublicDiscussionRead(articleResult, settingsResult, commentsResult);
         if (discussion.status === "unavailable") return { discussion, participation: { kind: "unavailable" } as const };
-        if (userResult.error || !userResult.data.user) {
+        if (!actorUserId) {
           return { discussion, participation: guestParticipation(articleId) };
         }
 
-        const profileResult = await supabase
-          .from("bts_account_profiles")
-          .select("display_name")
-          .eq("user_id", userResult.data.user.id)
-          .abortSignal(signal)
-          .maybeSingle();
         if (profileResult.error) {
           return { discussion, participation: { kind: "unavailable" } as const };
         }
@@ -80,7 +92,7 @@ export async function getWritingDiscussionPageData(articleId: string): Promise<W
             kind: "account" as const,
             displayName: profileResult.data.display_name,
             formToken: secret
-              ? createAccountCommentFormToken(articleId, userResult.data.user.id, secret)
+              ? createAccountCommentFormToken(articleId, actorUserId, secret)
               : null,
           },
         };

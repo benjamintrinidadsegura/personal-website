@@ -14,7 +14,10 @@ import {
 import { validateCommentBody, validateGuestCommentSubmission } from "@/lib/comments/validation";
 import type {
   AccountCommentActionState,
+  DeleteOwnCommentActionState,
+  EditOwnCommentActionState,
   GuestCommentActionState,
+  OwnerCommentMutationErrorCode,
   RawGuestCommentSubmission,
   SubmitGuestCommentErrorCode,
   SubmitGuestCommentResult,
@@ -56,6 +59,19 @@ type SubmitAccountToDatabase = (
   submission: AccountDatabaseSubmission,
 ) => Promise<{ commentId: string | null; errorCode?: string }>;
 
+type EditOwnCommentInDatabase = (input: {
+  actorUserId: string;
+  commentId: string;
+  expectedVersion: string;
+  body: string;
+}) => Promise<{ version: string | null; errorCode?: string }>;
+
+type DeleteOwnCommentInDatabase = (input: {
+  actorUserId: string;
+  commentId: string;
+  expectedVersion: string;
+}) => Promise<{ outcome: "deleted" | "tombstoned" | "absent" | null; errorCode?: string }>;
+
 function configuration(): CommentSecrets | null {
   const networkHashSecret = process.env.WRITING_COMMENTS_IP_HASH_SECRET;
   const formTokenSecret = process.env.WRITING_COMMENTS_FORM_TOKEN_SECRET;
@@ -81,6 +97,115 @@ function mapDatabaseError(errorCode?: string): SubmitGuestCommentErrorCode {
     case "WRITING_ACCOUNT_COMMENT_PROFILE_REQUIRED": return "PROFILE_REQUIRED";
     default: return "SERVICE_UNAVAILABLE";
   }
+}
+
+function mapOwnerMutationError(errorCode?: string): OwnerCommentMutationErrorCode {
+  switch (errorCode) {
+    case "WRITING_COMMENT_OWNER_INVALID_INPUT": return "INVALID_INPUT";
+    case "WRITING_COMMENT_OWNER_UNAUTHORIZED": return "UNAUTHORIZED";
+    case "WRITING_COMMENT_OWNER_UNAVAILABLE":
+    case "WRITING_COMMENT_ARTICLE_UNAVAILABLE":
+    case "WRITING_COMMENT_DISCUSSION_DISABLED": return "UNAVAILABLE";
+    case "WRITING_COMMENT_OWNER_STALE": return "STALE";
+    case "WRITING_COMMENT_OWNER_NO_CHANGE": return "NO_CHANGE";
+    case "WRITING_COMMENT_OWNER_EDIT_COOLDOWN": return "COOLDOWN";
+    default: return "SERVICE_UNAVAILABLE";
+  }
+}
+
+function validVersion(value: unknown): value is string {
+  return typeof value === "string"
+    && value.length > 0
+    && value.length <= 64
+    && !Number.isNaN(Date.parse(value));
+}
+
+export async function processOwnCommentEdit(
+  raw: { commentId: unknown; expectedVersion: unknown; body: unknown },
+  requestIsValid: boolean,
+  actorUserId: string | null,
+  editInDatabase: EditOwnCommentInDatabase,
+): Promise<Exclude<EditOwnCommentActionState, null>> {
+  if (
+    !requestIsValid
+    || !actorUserId
+    || !UUID_PATTERN.test(actorUserId)
+    || typeof raw.commentId !== "string"
+    || !UUID_PATTERN.test(raw.commentId)
+    || !validVersion(raw.expectedVersion)
+  ) return { ok: false, code: "INVALID_REQUEST" };
+
+  const body = validateCommentBody(raw.body);
+  if (!body) {
+    return {
+      ok: false,
+      code: "INVALID_INPUT",
+      fieldError: "Comment must contain 2 to 3,000 valid characters in at most 20 paragraphs.",
+    };
+  }
+
+  try {
+    const result = await editInDatabase({
+      actorUserId,
+      commentId: raw.commentId,
+      expectedVersion: raw.expectedVersion,
+      body,
+    });
+    return result.version && !result.errorCode && validVersion(result.version)
+      ? { ok: true, version: result.version }
+      : { ok: false, code: mapOwnerMutationError(result.errorCode) };
+  } catch {
+    return { ok: false, code: "SERVICE_UNAVAILABLE" };
+  }
+}
+
+export async function processOwnCommentDelete(
+  raw: { commentId: unknown; expectedVersion: unknown },
+  requestIsValid: boolean,
+  actorUserId: string | null,
+  deleteInDatabase: DeleteOwnCommentInDatabase,
+): Promise<Exclude<DeleteOwnCommentActionState, null>> {
+  if (
+    !requestIsValid
+    || !actorUserId
+    || !UUID_PATTERN.test(actorUserId)
+    || typeof raw.commentId !== "string"
+    || !UUID_PATTERN.test(raw.commentId)
+    || !validVersion(raw.expectedVersion)
+  ) return { ok: false, code: "INVALID_REQUEST" };
+
+  try {
+    const result = await deleteInDatabase({
+      actorUserId,
+      commentId: raw.commentId,
+      expectedVersion: raw.expectedVersion,
+    });
+    return result.outcome && !result.errorCode
+      ? { ok: true, outcome: result.outcome }
+      : { ok: false, code: mapOwnerMutationError(result.errorCode) };
+  } catch {
+    return { ok: false, code: "SERVICE_UNAVAILABLE" };
+  }
+}
+
+async function verifiedActorUserId(): Promise<string | null> {
+  try {
+    const { createSupabaseAuthServerClient } = await import("@/lib/supabase/auth-server");
+    const auth = await createSupabaseAuthServerClient();
+    const { data, error } = await auth.auth.getUser();
+    return !error && data.user ? data.user.id : null;
+  } catch {
+    return null;
+  }
+}
+
+function validMutationOrigin(requestHeaders: Awaited<ReturnType<typeof headers>>): boolean {
+  const siteUrl = process.env.SITE_URL;
+  return Boolean(siteUrl && isAllowedRequestOrigin(
+    requestHeaders.get("origin"),
+    requestHeaders.get("host"),
+    siteUrl,
+  ));
 }
 
 export async function processAccountCommentSubmission(
@@ -256,15 +381,7 @@ export async function submitAccountCommentAction(
   const articleId = formData.get("articleId");
   if (typeof articleId !== "string") return { ok: false, code: "INVALID_REQUEST" };
 
-  let actorUserId: string | null = null;
-  try {
-    const { createSupabaseAuthServerClient } = await import("@/lib/supabase/auth-server");
-    const auth = await createSupabaseAuthServerClient();
-    const { data, error } = await auth.auth.getUser();
-    if (!error && data.user) actorUserId = data.user.id;
-  } catch {
-    actorUserId = null;
-  }
+  const actorUserId = await verifiedActorUserId();
 
   return processAccountCommentSubmission(
     articleId,
@@ -291,6 +408,59 @@ export async function submitAccountCommentAction(
         p_form_token_hash: submission.formTokenHash,
       });
       return { commentId: typeof data === "string" ? data : null, errorCode: error?.message };
+    },
+  );
+}
+
+export async function editOwnCommentAction(
+  _previousState: EditOwnCommentActionState,
+  formData: FormData,
+): Promise<Exclude<EditOwnCommentActionState, null>> {
+  const requestHeaders = await headers();
+  const actorUserId = await verifiedActorUserId();
+  return processOwnCommentEdit(
+    {
+      commentId: formData.get("commentId"),
+      expectedVersion: formData.get("expectedVersion"),
+      body: formData.get("body"),
+    },
+    validMutationOrigin(requestHeaders),
+    actorUserId,
+    async (input) => {
+      const { getSupabaseServerClient } = await import("@/lib/supabase/server");
+      const { data, error } = await getSupabaseServerClient().rpc("edit_own_writing_comment", {
+        p_actor_user_id: input.actorUserId,
+        p_comment_id: input.commentId,
+        p_expected_updated_at: input.expectedVersion,
+        p_body: input.body,
+      });
+      return { version: typeof data === "string" ? data : null, errorCode: error?.message };
+    },
+  );
+}
+
+export async function deleteOwnCommentAction(
+  _previousState: DeleteOwnCommentActionState,
+  formData: FormData,
+): Promise<Exclude<DeleteOwnCommentActionState, null>> {
+  const requestHeaders = await headers();
+  const actorUserId = await verifiedActorUserId();
+  return processOwnCommentDelete(
+    {
+      commentId: formData.get("commentId"),
+      expectedVersion: formData.get("expectedVersion"),
+    },
+    validMutationOrigin(requestHeaders),
+    actorUserId,
+    async (input) => {
+      const { getSupabaseServerClient } = await import("@/lib/supabase/server");
+      const { data, error } = await getSupabaseServerClient().rpc("delete_own_writing_comment", {
+        p_actor_user_id: input.actorUserId,
+        p_comment_id: input.commentId,
+        p_expected_updated_at: input.expectedVersion,
+      });
+      const outcome = data === "deleted" || data === "tombstoned" || data === "absent" ? data : null;
+      return { outcome, errorCode: error?.message };
     },
   );
 }

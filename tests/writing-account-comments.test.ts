@@ -106,7 +106,7 @@ test("account submission preserves inert plain text and enforces honeypot and or
   assert.equal(stored, body);
   assert.equal((await processAccountCommentSubmission(ARTICLE_ID, validRaw({ website: "bot" }), request, USER_ID, secrets, async () => ({ commentId: "unexpected" }), NOW)).ok, false);
   assert.equal((await processAccountCommentSubmission(ARTICLE_ID, validRaw(), { ...request, origin: "https://evil.example" }, USER_ID, secrets, async () => ({ commentId: "unexpected" }), NOW)).ok, false);
-  const renderer = source("../components/writing/comments/comment-list.tsx");
+  const renderer = source("../components/writing/comments/comment-list.tsx") + source("../components/writing/comments/comment-body.tsx");
   assert.equal(renderer.includes("dangerouslySetInnerHTML"), false);
   assert.equal(renderer.includes("{paragraph}"), true);
 });
@@ -143,13 +143,13 @@ test("account database failures remain controlled", async () => {
 
 test("public projection discriminates guest, account, and AUTHOR without private identity", () => {
   const createdAt = new Date(NOW).toISOString();
-  assert.deepEqual(mapPublicWritingComment({ id: ARTICLE_ID, identity_kind: "guest", display_name: "Visitor", body: "Hello", created_at: createdAt, is_author: false }), {
-    id: ARTICLE_ID, identity: "guest", displayName: "Visitor", isAuthor: false, body: "Hello", createdAt,
+  assert.deepEqual(mapPublicWritingComment({ id: ARTICLE_ID, identity_kind: "guest", display_name: "Visitor", body: "Hello", created_at: createdAt, is_author: false, is_edited: false, is_author_deleted: false, can_edit: false, can_delete: false, owner_version: null }), {
+    deletion: "active", id: ARTICLE_ID, identity: "guest", displayName: "Visitor", isAuthor: false, isEdited: false, body: "Hello", createdAt, canEdit: false, canDelete: false, ownerVersion: null,
   });
-  assert.deepEqual(mapPublicWritingComment({ id: ARTICLE_ID, identity_kind: "account", display_name: "Ada", body: "Hello", created_at: createdAt, is_author: true, user_id: USER_ID, email: "private@example.test" }), {
-    id: ARTICLE_ID, identity: "account", displayName: "Ada", isAuthor: true, body: "Hello", createdAt,
+  assert.deepEqual(mapPublicWritingComment({ id: ARTICLE_ID, identity_kind: "account", display_name: "Ada", body: "Hello", created_at: createdAt, is_author: true, is_edited: false, is_author_deleted: false, can_edit: false, can_delete: false, owner_version: null, user_id: USER_ID, email: "private@example.test" }), {
+    deletion: "active", id: ARTICLE_ID, identity: "account", displayName: "Ada", isAuthor: true, isEdited: false, body: "Hello", createdAt, canEdit: false, canDelete: false, ownerVersion: null,
   });
-  assert.equal(mapPublicWritingComment({ id: ARTICLE_ID, identity_kind: "guest", display_name: "Fake", body: "Hello", created_at: createdAt, is_author: true })?.isAuthor, false);
+  assert.equal(mapPublicWritingComment({ id: ARTICLE_ID, identity_kind: "guest", display_name: "Fake", body: "Hello", created_at: createdAt, is_author: true, is_edited: false, is_author_deleted: false, can_edit: false, can_delete: false, owner_version: null }), null);
   const query = source("../lib/comments/queries.ts");
   for (const privateField of ["email", "account_profile_id", "network_hash", "message_hash", "form_token_hash"]) {
     assert.equal(query.includes(privateField), false, privateField);
