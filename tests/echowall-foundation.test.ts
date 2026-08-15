@@ -382,6 +382,8 @@ test("robots and sitemap fail closed and expose only canonical production routes
       "/",
       "/echowall",
       "/writing",
+      "/newsletter",
+      "/privacy",
       "/find-your-next-step",
       "/find-your-next-step/self",
       "/find-your-next-step/career",

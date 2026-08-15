@@ -15,6 +15,11 @@ Anschließend ist die Website unter <http://localhost:3000> erreichbar.
 Das verbindliche Betriebs- und Production-Readiness-Handbuch liegt unter
 [`docs/echowall-production-readiness.md`](docs/echowall-production-readiness.md).
 
+## Newsletter-Betrieb
+
+Die Production- und Datenschutz-Gates für Newsletter V1 liegen unter
+[`docs/newsletter-production-readiness.md`](docs/newsletter-production-readiness.md).
+
 ## Prüfungen
 
 ```powershell

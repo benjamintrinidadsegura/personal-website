@@ -40,6 +40,8 @@ export function createSitemap(publishedWriting: PublicWritingSummary[]): Metadat
     "/echowall",
     "/writing",
     ...publishedWriting.map(({ slug }) => `/writing/${slug}`),
+    "/newsletter",
+    "/privacy",
     findYourNextStep.href,
     ...nextStepJourneys.map(({ href }) => href),
     ...projects.map(({ slug }) => `/projects/${slug}`),

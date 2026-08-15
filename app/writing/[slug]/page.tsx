@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ArticleBody } from "@/components/writing/article-body";
+import { NewsletterCta } from "@/components/newsletter/newsletter-cta";
 import { Discussion } from "@/components/writing/comments/discussion";
 import { WritingDocument } from "@/components/writing/writing-document";
 import { siteConfig } from "@/data/site";
@@ -39,6 +40,7 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
         <section aria-label="Article content" className="mx-auto max-w-[72ch] py-16 sm:py-24">
           {article.bodyJson ? <WritingDocument document={article.bodyJson} /> : <ArticleBody body={article.body} />}
         </section>
+        <NewsletterCta />
         <Discussion articleId={article.id} discussion={discussion} participation={participation} />
         <footer className="border-t border-white/15 py-14"><Link href="/writing" className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 font-bold text-slate-200 hover:border-[#35d0e5]/50">Back to Writing</Link></footer>
       </div>

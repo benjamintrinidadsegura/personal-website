@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
       source: "/:path*",
       headers: [...securityHeaders],
     },
+    {
+      source: "/newsletter/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+      ],
+    },
   ],
 };
 
