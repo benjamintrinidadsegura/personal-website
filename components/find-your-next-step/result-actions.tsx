@@ -151,10 +151,12 @@ export function FynsResultActions({
           Für später
         </p>
         <h3 id="fyns-result-actions-title" className="mt-4 text-2xl font-black text-white sm:text-4xl">
-          Ergebnis mitnehmen
+          Kurzfassung mitnehmen
         </h3>
         <p className="mt-4 max-w-3xl leading-7 text-slate-300">
-          Dein Ergebnis wird nicht gespeichert. Wenn du es später nutzen möchtest, kannst du es jetzt drucken, kopieren oder – wenn verfügbar – über dein Gerät teilen.
+          Dein Ergebnis wird nicht gespeichert. Diese Kurzfassung enthält die zentralen Aussagen, aber nicht jede
+          zusätzliche Ansicht oder Alltagshypothese. Du kannst sie jetzt drucken, kopieren oder – wenn verfügbar –
+          über dein Gerät teilen.
         </p>
 
         <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -171,7 +173,7 @@ export function FynsResultActions({
             onClick={handleCopy}
             className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/20 px-6 py-3 text-center font-bold text-slate-200 transition hover:border-[var(--result-actions-accent)]/65 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--result-actions-accent)] disabled:cursor-wait disabled:opacity-60 sm:w-auto"
           >
-            {busyAction === "copy" ? "Wird kopiert …" : "Zusammenfassung kopieren"}
+            {busyAction === "copy" ? "Wird kopiert …" : "Kurzfassung kopieren"}
           </button>
           {shareAvailable ? (
             <button

@@ -834,6 +834,30 @@ test("selection counter stays neutral across all supported formats", () => {
   assert.equal(formatCareerSelectionCount(1, 1), "1 von 1 ausgewählt");
 });
 
+test("Career result polish keeps Human Context non-scored, priorities unordered, and failures recoverable", () => {
+  const client = readFileSync(new URL("../components/find-your-next-step/career-exploration-journey.tsx", import.meta.url), "utf8");
+  const context = readFileSync(new URL("../components/find-your-next-step/human-context-reflection.tsx", import.meta.url), "utf8");
+  const recovery = readFileSync(new URL("../components/find-your-next-step/result-recovery.tsx", import.meta.url), "utf8");
+  const actions = readFileSync(new URL("../components/find-your-next-step/result-actions.tsx", import.meta.url), "utf8");
+
+  assert.match(client, /<HumanContextReflection accent="#ff9a3d"/u);
+  assert.match(context, /Deine Deutung zählt/u);
+  assert.match(context, /nicht mit deinem BTS Account/u);
+  assert.equal(/score|punkte|prozent/iu.test(context), false);
+  assert.equal(context.includes("aria-live"), false);
+
+  assert.match(client, /question\.format === "priority"/u);
+  assert.match(client, /Die Auswahl wird nicht in eine Reihenfolge gebracht\./u);
+  assert.match(client, /safelyBuildCareerResult/u);
+  assert.match(client, /status: "unavailable"/u);
+  assert.match(client, /<FynsResultRecovery/u);
+  assert.match(recovery, /aria-labelledby=\{titleId\}/u);
+  assert.match(recovery, /headingRef/u);
+
+  assert.match(actions, /Kurzfassung mitnehmen/u);
+  assert.match(actions, /Kurzfassung kopieren/u);
+});
+
 test("Career dock derives global progress while keeping section and local positions separate", () => {
   const client = readFileSync(new URL("../components/find-your-next-step/career-exploration-journey.tsx", import.meta.url), "utf8");
   const dock = readFileSync(new URL("../components/find-your-next-step/journey-dock.tsx", import.meta.url), "utf8");

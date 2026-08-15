@@ -14,7 +14,12 @@ import {
   selfReflectionJourneyReducer,
 } from "@/lib/find-your-next-step-self";
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
+import { HumanContextReflection } from "@/components/find-your-next-step/human-context-reflection";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
+import {
+  FynsResultRecovery,
+  FynsResultSupplementFallback,
+} from "@/components/find-your-next-step/result-recovery";
 import { SelfHandbookView } from "@/components/find-your-next-step/self-handbook";
 import { SelfProfileIdentityView } from "@/components/find-your-next-step/self-profile-identity";
 import { buildSelfHandbook } from "@/lib/find-your-next-step-self-handbook";
@@ -49,12 +54,45 @@ const resultVisibilityStyles: Record<
 };
 
 function selectionInstruction(question: SelfReflectionQuestion): string {
+  let instruction: string;
   if (question.minSelections === question.maxSelections) {
-    return question.minSelections === 1
+    instruction = question.minSelections === 1
       ? "Wähle eine Antwort."
       : `Wähle genau ${question.minSelections} Antworten.`;
+  } else {
+    instruction = `Wähle ${question.minSelections} bis ${question.maxSelections} Antworten.`;
   }
-  return `Wähle ${question.minSelections} bis ${question.maxSelections} Antworten.`;
+  return question.format === "priority"
+    ? `${instruction} Die Auswahl wird nicht in eine Reihenfolge gebracht.`
+    : instruction;
+}
+
+type SafeSelfResultState = ReturnType<typeof buildSelfReflectionResult> | { status: "unavailable" };
+
+function safelyBuildSelfResult(...args: Parameters<typeof buildSelfReflectionResult>): SafeSelfResultState {
+  try {
+    return buildSelfReflectionResult(...args);
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
+function safelyBuildSelfHandbook(...args: Parameters<typeof buildSelfHandbook>): SelfHandbook | null {
+  try {
+    return buildSelfHandbook(...args);
+  } catch {
+    return null;
+  }
+}
+
+function safelyBuildSelfProfile(
+  ...args: Parameters<typeof buildSelfProfileIdentity>
+): SelfProfileIdentityResult | null {
+  try {
+    return buildSelfProfileIdentity(...args);
+  } catch {
+    return null;
+  }
 }
 
 function EvidenceDetails({ evidence }: Pick<SelfReflectionResultStatement, "evidence">) {
@@ -182,8 +220,8 @@ function ResultView({
   restartPending,
 }: {
   result: SelfReflectionResult;
-  handbook: SelfHandbook;
-  profileIdentity: SelfProfileIdentityResult;
+  handbook: SelfHandbook | null;
+  profileIdentity: SelfProfileIdentityResult | null;
   dispatch: React.Dispatch<Parameters<typeof selfReflectionJourneyReducer>[1]>;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
   restartPending: boolean;
@@ -217,7 +255,17 @@ function ResultView({
         </p>
       </div>
 
-      <SelfProfileIdentityView identity={profileIdentity} />
+      <HumanContextReflection accent="#35d0e5" titleId="self-human-context-title" />
+
+      {profileIdentity ? (
+        <SelfProfileIdentityView identity={profileIdentity} />
+      ) : (
+        <FynsResultSupplementFallback
+          accent="#35d0e5"
+          titleId="self-profile-unavailable-title"
+          title="Die zusätzliche Profil-Linse ist gerade nicht verfügbar."
+        />
+      )}
 
       <div className="mt-14 grid gap-16">
         {result.sections.map((section) => (
@@ -247,7 +295,15 @@ function ResultView({
         ) : null}
       </div>
 
-      <SelfHandbookView handbook={handbook} />
+      {handbook ? (
+        <SelfHandbookView handbook={handbook} />
+      ) : (
+        <FynsResultSupplementFallback
+          accent="#35d0e5"
+          titleId="self-handbook-unavailable-title"
+          title="Das persönliche Handbuch ist gerade nicht verfügbar."
+        />
+      )}
 
       <FynsResultActions
         accent="#35d0e5"
@@ -325,11 +381,11 @@ export function SelfReflectionJourney() {
   const errorRef = useRef<HTMLParagraphElement>(null);
   const initialRender = useRef(true);
   const question = selfReflectionQuestions[state.questionIndex];
-  const resultState = useMemo(() => buildSelfReflectionResult(state.answers), [state.answers]);
-  const handbook = useMemo(() => buildSelfHandbook(state.answers), [state.answers]);
+  const resultState = useMemo(() => safelyBuildSelfResult(state.answers), [state.answers]);
+  const handbook = useMemo(() => safelyBuildSelfHandbook(state.answers), [state.answers]);
   const profileIdentity = useMemo(() =>
     resultState.status === "complete"
-      ? buildSelfProfileIdentity(state.answers, resultState.result)
+      ? safelyBuildSelfProfile(state.answers, resultState.result)
       : null,
   [resultState, state.answers]);
 
@@ -393,18 +449,32 @@ export function SelfReflectionJourney() {
   }
 
   if (state.phase === "result") {
-    if (resultState.status !== "complete") {
+    if (resultState.status === "unavailable") {
       return (
-        <section className="py-20" aria-labelledby="incomplete-result-title">
-          <h2 ref={headingRef} tabIndex={-1} style={{ outline: "none" }} id="incomplete-result-title" className="text-3xl font-black text-white outline-none">Deine Reflexion ist noch nicht vollständig.</h2>
-          <button type="button" onClick={() => dispatch({ type: "edit-section", sectionId: selfReflectionSections[0].id })} className="mt-8 min-h-12 rounded-full bg-[#35d0e5] px-6 py-3 font-black text-[#041018]">
-            Zurück zu den Fragen
-          </button>
-        </section>
+        <FynsResultRecovery
+          accent="#35d0e5"
+          titleId="self-result-unavailable-title"
+          title="Dein Kernergebnis konnte gerade nicht aufgebaut werden."
+          message="Deine Antworten bleiben im aktuellen Seitenzustand erhalten. Kehre zu den Fragen zurück und versuche es nach einer kleinen Anpassung erneut."
+          actionLabel="Zurück zu den Fragen"
+          onAction={() => dispatch({ type: "edit-section", sectionId: selfReflectionSections[0].id })}
+          headingRef={headingRef}
+        />
       );
     }
-    if (!handbook) return null;
-    if (!profileIdentity) return null;
+    if (resultState.status !== "complete") {
+      return (
+        <FynsResultRecovery
+          accent="#35d0e5"
+          titleId="incomplete-result-title"
+          title="Deine Reflexion ist noch nicht vollständig."
+          message="Beantworte die noch offenen Fragen, bevor FYNS dein Ergebnis erneut aufbaut."
+          actionLabel="Zurück zu den Fragen"
+          onAction={() => dispatch({ type: "edit-section", sectionId: selfReflectionSections[0].id })}
+          headingRef={headingRef}
+        />
+      );
+    }
     return <ResultView result={resultState.result} handbook={handbook} profileIdentity={profileIdentity} dispatch={dispatch} headingRef={headingRef} restartPending={state.restartPending} />;
   }
 

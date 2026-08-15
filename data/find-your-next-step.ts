@@ -34,9 +34,9 @@ export const findYourNextStep = {
   ],
   developmentTitle: "Ein Fundament, das bewusst offen bleibt.",
   developmentText:
-    "FYNS wird schrittweise aufgebaut. Self-Reflection und Career sind als eigenständige funktionale Betas verfügbar. Problem und Idea bleiben transparente Einstiegsseiten, bis ihre eigenen Journeys wirklich tragen.",
+    "FYNS V1 verbindet vier eigenständige funktionale Betas: Self-Reflection, Career, Problem und Idea. Alle vier arbeiten mit deinen Angaben im aktuellen Seitenzustand und lassen ihre Einordnung bewusst revidierbar.",
   privacyText:
-    "Antworten in Self und Career bleiben ausschließlich im aktuellen Seitenzustand und werden weder gespeichert noch übertragen. Ein Neuladen oder Verlassen der Seite löscht sie. Nutzerkonten oder eine Datenbank sind dafür nicht im Einsatz.",
+    "Antworten in allen vier Journeys bleiben ausschließlich im aktuellen Seitenzustand und werden weder gespeichert noch übertragen. Ein Neuladen oder Verlassen der Seite löscht sie. Nutzerkonten oder eine Datenbank sind dafür nicht im Einsatz.",
   closingText: "Du musst noch nicht die ganze Richtung kennen. Ein ehrlicher nächster Schritt reicht.",
   discovery: {
     category: "Orientation Tool",
@@ -114,7 +114,7 @@ export const nextStepJourneys: readonly NextStepJourney[] = [
     number: "03",
     title: "Ich habe ein Problem – was kann ich tun?",
     description:
-      "Ein Weg, der später dabei helfen soll, eine schwierige Situation zu strukturieren, Handlungsmöglichkeiten zu erkennen und passende nächste Schritte einzuordnen.",
+      "Eine strukturierte Journey, die eine schwierige Situation eingrenzt, Handlungsmöglichkeiten sichtbar macht und einen tragfähigen nächsten Schritt vorbereitet.",
     expectations: [
       "Eine ruhige Eingrenzung des Problemfelds",
       "Wenige strukturierte Fragen zu deiner Situation",
@@ -128,7 +128,7 @@ export const nextStepJourneys: readonly NextStepJourney[] = [
       "Eigene Handlungsmöglichkeiten",
       "Unterstützung und mögliche Anlaufstellen",
     ],
-    status: "In Development",
+    status: "Beta",
     accent: "#b8a5ff",
     discovery: {
       category: "Find Your Next Step",
@@ -136,7 +136,7 @@ export const nextStepJourneys: readonly NextStepJourney[] = [
       keywords: ["Problem einordnen", "Situation strukturieren", "Nächste Schritte", "Anlaufstellen"],
     },
     professionalBoundary:
-      "Die spätere Orientierung in diesem Bereich wird keine professionelle medizinische, psychologische, rechtliche oder andere fachliche Beratung ersetzen. Sie soll dabei helfen, eine Situation zu ordnen und mögliche nächste Anlaufpunkte bewusster zu erkennen.",
+      "Diese Orientierung ersetzt keine professionelle medizinische, psychologische, rechtliche oder andere fachliche Beratung. Sie hilft dabei, eine Situation zu ordnen und mögliche nächste Anlaufpunkte bewusster zu erkennen.",
   },
   {
     id: "tool-find-your-next-step-idea",
@@ -145,7 +145,7 @@ export const nextStepJourneys: readonly NextStepJourney[] = [
     number: "04",
     title: "Ich habe eine Idee – wie setze ich sie um?",
     description:
-      "Ein Weg, der später aus einer unscharfen Idee einen ersten umsetzbaren Plan entwickeln soll – ausgehend von Problem, Zielgruppe, Nutzen und Machbarkeit.",
+      "Eine strukturierte Journey, die aus einer unscharfen Idee ein kleines, überprüfbares Lernexperiment entwickelt – ausgehend von Problem, Zielgruppe, Nutzen und Machbarkeit.",
     expectations: [
       "Die Idee in verständliche Teile zerlegen",
       "Problem, Zielgruppe und Nutzen schärfen",
@@ -159,7 +159,7 @@ export const nextStepJourneys: readonly NextStepJourney[] = [
       "Ressourcen und Machbarkeit",
       "Erste Tests und nächste Schritte",
     ],
-    status: "In Development",
+    status: "Beta",
     accent: "#77e5b5",
     discovery: {
       category: "Find Your Next Step",

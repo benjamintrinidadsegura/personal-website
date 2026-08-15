@@ -1,10 +1,12 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 
+import { ContextScene } from "@/components/find-your-next-step/context-scene";
 import { FindYourNextStepJourneyBreadcrumb } from "@/components/find-your-next-step/find-your-next-step-journey";
 import { SelfReflectionJourney } from "@/components/find-your-next-step/self-reflection-journey";
 import { StatusPill } from "@/components/ui/status-pill";
 import { findYourNextStep } from "@/data/find-your-next-step";
+import { getFynsContextScene } from "@/data/find-your-next-step-figures";
 import type { NextStepJourney } from "@/types/find-your-next-step";
 
 export function FindYourNextStepSelf({ journey }: { journey: NextStepJourney }) {
@@ -38,6 +40,10 @@ export function FindYourNextStepSelf({ journey }: { journey: NextStepJourney }) 
             {journey.description}
           </p>
         </header>
+
+        <div className="py-10 sm:py-14">
+          <ContextScene scene={getFynsContextScene("self")} priority />
+        </div>
 
         <SelfReflectionJourney />
 

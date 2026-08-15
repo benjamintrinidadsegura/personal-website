@@ -1,7 +1,9 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 
+import { ContextScene } from "@/components/find-your-next-step/context-scene";
 import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
+import { getFynsContextScene } from "@/data/find-your-next-step-figures";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { StatusPill } from "@/components/ui/status-pill";
 import type { NextStepJourney } from "@/types/find-your-next-step";
@@ -106,6 +108,10 @@ export function FindYourNextStepOverview() {
             <p className="mt-6 leading-7 text-slate-400">{findYourNextStep.principleText}</p>
           </aside>
         </header>
+
+        <div className="border-b border-white/15 py-10 sm:py-14">
+          <ContextScene scene={getFynsContextScene("overview")} priority />
+        </div>
 
         <section aria-labelledby="fyns-paths-title" className="border-b border-white/15 py-20 sm:py-28">
           <div id="fyns-paths-title">

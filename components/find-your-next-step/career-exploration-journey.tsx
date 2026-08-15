@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useReducer, useRef } from "react";
 
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
+import { HumanContextReflection } from "@/components/find-your-next-step/human-context-reflection";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
+import { FynsResultRecovery } from "@/components/find-your-next-step/result-recovery";
 import { careerIntro, careerQuestions, careerSections } from "@/data/find-your-next-step-career";
 import {
   buildCareerResultText,
@@ -26,12 +28,27 @@ import type {
 } from "@/types/find-your-next-step";
 
 function selectionInstruction(question: CareerQuestion): string {
+  let instruction: string;
   if (question.minSelections === question.maxSelections) {
-    return question.minSelections === 1
+    instruction = question.minSelections === 1
       ? "Wähle eine Antwort."
       : `Wähle genau ${question.minSelections} Antworten.`;
+  } else {
+    instruction = `Wähle ${question.minSelections} bis ${question.maxSelections} Antworten.`;
   }
-  return `Wähle ${question.minSelections} bis ${question.maxSelections} Antworten.`;
+  return question.format === "priority"
+    ? `${instruction} Die Auswahl wird nicht in eine Reihenfolge gebracht.`
+    : instruction;
+}
+
+type SafeCareerResultState = ReturnType<typeof buildCareerResult> | { status: "unavailable" };
+
+function safelyBuildCareerResult(...args: Parameters<typeof buildCareerResult>): SafeCareerResultState {
+  try {
+    return buildCareerResult(...args);
+  } catch {
+    return { status: "unavailable" };
+  }
 }
 
 function MapLayers({ currentSectionIndex }: { currentSectionIndex?: number }) {
@@ -399,6 +416,8 @@ function ResultView({
         <p className="border-l border-[#ff9a3d] pl-7 text-base leading-7 text-slate-300 sm:pl-9">{result.description}</p>
       </div>
 
+      <HumanContextReflection accent="#ff9a3d" titleId="career-human-context-title" />
+
       <div className="mt-16 grid gap-20">
         {result.primaryDirections.length > 0 ? (
           <section aria-labelledby="career-primary-title">
@@ -539,7 +558,7 @@ export function CareerExplorationJourney() {
   const errorRef = useRef<HTMLParagraphElement>(null);
   const initialRender = useRef(true);
   const question = careerQuestions[state.questionIndex];
-  const resultState = useMemo(() => buildCareerResult(state.answers), [state.answers]);
+  const resultState = useMemo(() => safelyBuildCareerResult(state.answers), [state.answers]);
 
   useEffect(() => {
     if (initialRender.current) {
@@ -590,12 +609,30 @@ export function CareerExplorationJourney() {
   }
 
   if (state.phase === "result") {
+    if (resultState.status === "unavailable") {
+      return (
+        <FynsResultRecovery
+          accent="#ff9a3d"
+          titleId="career-result-unavailable-title"
+          title="Deine Career Map konnte gerade nicht aufgebaut werden."
+          message="Deine Antworten bleiben im aktuellen Seitenzustand erhalten. Kehre zu den Fragen zurück und versuche es nach einer kleinen Anpassung erneut."
+          actionLabel="Zurück zu den Fragen"
+          onAction={() => dispatch({ type: "edit-section", sectionId: careerSections[0].id })}
+          headingRef={headingRef}
+        />
+      );
+    }
     if (resultState.status !== "complete") {
       return (
-        <section className="py-20" aria-labelledby="career-incomplete-title">
-          <h2 ref={headingRef} tabIndex={-1} style={{ outline: "none" }} id="career-incomplete-title" className="text-3xl font-black text-white outline-none">Deine Career Map ist noch nicht vollständig.</h2>
-          <button type="button" onClick={() => dispatch({ type: "edit-section", sectionId: careerSections[0].id })} className="mt-8 min-h-12 rounded-full bg-[#ff9a3d] px-6 py-3 font-black text-[#241204]">Zurück zu den Fragen</button>
-        </section>
+        <FynsResultRecovery
+          accent="#ff9a3d"
+          titleId="career-incomplete-title"
+          title="Deine Career Map ist noch nicht vollständig."
+          message="Beantworte die noch offenen Fragen, bevor FYNS deine Career Map erneut aufbaut."
+          actionLabel="Zurück zu den Fragen"
+          onAction={() => dispatch({ type: "edit-section", sectionId: careerSections[0].id })}
+          headingRef={headingRef}
+        />
       );
     }
     return <ResultView result={resultState.result} dispatch={dispatch} headingRef={headingRef} restartPending={state.restartPending} />;

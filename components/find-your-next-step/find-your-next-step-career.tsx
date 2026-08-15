@@ -2,9 +2,11 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { CareerExplorationJourney } from "@/components/find-your-next-step/career-exploration-journey";
+import { ContextScene } from "@/components/find-your-next-step/context-scene";
 import { FindYourNextStepJourneyBreadcrumb } from "@/components/find-your-next-step/find-your-next-step-journey";
 import { StatusPill } from "@/components/ui/status-pill";
 import { findYourNextStep } from "@/data/find-your-next-step";
+import { getFynsContextScene } from "@/data/find-your-next-step-figures";
 import type { NextStepJourney } from "@/types/find-your-next-step";
 
 export function FindYourNextStepCareer({ journey }: { journey: NextStepJourney }) {
@@ -38,6 +40,10 @@ export function FindYourNextStepCareer({ journey }: { journey: NextStepJourney }
             {journey.description}
           </p>
         </header>
+
+        <div className="py-10 sm:py-14">
+          <ContextScene scene={getFynsContextScene("career")} priority />
+        </div>
 
         <CareerExplorationJourney />
 

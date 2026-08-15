@@ -800,3 +800,40 @@ test("Self remains a focused client island with native semantics and no persiste
     assert.equal(implementation.includes(prohibited), false, prohibited);
   }
 });
+
+test("Self result polish preserves interpretive authority, honest export scope, and recoverable core output", () => {
+  const client = readFileSync(new URL("../components/find-your-next-step/self-reflection-journey.tsx", import.meta.url), "utf8");
+  const context = readFileSync(new URL("../components/find-your-next-step/human-context-reflection.tsx", import.meta.url), "utf8");
+  const recovery = readFileSync(new URL("../components/find-your-next-step/result-recovery.tsx", import.meta.url), "utf8");
+  const actions = readFileSync(new URL("../components/find-your-next-step/result-actions.tsx", import.meta.url), "utf8");
+  const routeError = readFileSync(new URL("../app/find-your-next-step/[slug]/error.tsx", import.meta.url), "utf8");
+
+  assert.match(client, /<HumanContextReflection accent="#35d0e5"/u);
+  assert.match(context, /Deine Deutung zählt/u);
+  assert.match(context, /Was davon möchtest du selbst\?/u);
+  assert.match(context, /werden nicht ausgewertet und verändern dein Ergebnis nicht/u);
+  assert.match(context, /nicht mit deinem BTS Account/u);
+  assert.equal(/score|punkte|prozent/iu.test(context), false);
+  assert.equal(context.includes("<input"), false);
+  assert.equal(context.includes("aria-live"), false);
+
+  assert.match(client, /question\.format === "priority"/u);
+  assert.match(client, /Die Auswahl wird nicht in eine Reihenfolge gebracht\./u);
+  assert.match(client, /safelyBuildSelfResult/u);
+  assert.match(client, /safelyBuildSelfHandbook/u);
+  assert.match(client, /safelyBuildSelfProfile/u);
+  assert.match(client, /status: "unavailable"/u);
+  assert.match(client, /<FynsResultSupplementFallback/u);
+  assert.equal(client.includes("if (!handbook) return null"), false);
+  assert.equal(client.includes("if (!profileIdentity) return null"), false);
+  assert.match(recovery, /Dein Kernergebnis bleibt verfügbar/u);
+
+  assert.match(actions, /Kurzfassung mitnehmen/u);
+  assert.match(actions, /nicht jede\s+zusätzliche Ansicht oder Alltagshypothese/u);
+  assert.match(actions, /Kurzfassung kopieren/u);
+
+  assert.equal(routeError.startsWith('"use client"'), true);
+  assert.match(routeError, /onClick=\{reset\}/u);
+  assert.match(routeError, /href="\/find-your-next-step"/u);
+  assert.match(routeError, /keine Verknüpfung zu deinem BTS Account/u);
+});
