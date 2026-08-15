@@ -21,7 +21,14 @@
     "test:comments-moderation": "tsx --test tests/writing-comment-moderation.test.ts",
     "test:comments-moderation-ui": "tsx --test tests/writing-comment-moderation-ui.test.ts",
     "test:newsletter": "tsx --test tests/newsletter-foundation.test.ts tests/newsletter-delivery.test.ts",
-    "test:newsletter-delivery": "tsx --test tests/newsletter-delivery.test.ts"
+    "test:newsletter-delivery": "tsx --test tests/newsletter-delivery.test.ts",
+    "test:runner": "tsx --test tests/bts-engineering-runner.test.ts",
+    "bts:local": "node scripts/bts-engineering/runner.mjs local",
+    "bts:preflight": "node scripts/bts-engineering/runner.mjs preflight",
+    "bts:verify": "node scripts/bts-engineering/runner.mjs verify",
+    "bts:smoke-dev": "node scripts/bts-engineering/runner.mjs smoke-dev",
+    "bts:post": "node scripts/bts-engineering/runner.mjs post",
+    "bts:checkpoint": "node scripts/bts-engineering/runner.mjs checkpoint"
   },
   "dependencies": {
     "@blocknote/ariakit": "0.52.1",

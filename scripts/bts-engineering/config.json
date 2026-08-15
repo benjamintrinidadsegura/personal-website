@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "environment": "DEV",
+    "projectName": "bts-online-dev",
+    "projectRef": "fnnhosdwldjhyfoezkot",
+    "databaseHost": "db.fnnhosdwldjhyfoezkot.supabase.co",
+    "databasePort": 5432,
+    "databaseName": "postgres"
+  },
+  "timeoutsMs": {
+    "localCommand": 180000,
+    "databaseCommand": 120000,
+    "build": 300000,
+    "git": 120000
+  },
+  "verification": {
+    "defaultFile": "supabase/tests/newsletter_delivery_rollback.sql",
+    "failureSmokeFile": "supabase/tests/bts_engineering_runner_failure_rollback.sql",
+    "successSentinel": "BTS_VERIFICATION_PASSED_ROLLED_BACK",
+    "residueSentinel": "BTS_ENGINEERING_RESIDUE_ZERO",
+    "failureSentinel": "BTS_EXPECTED_ASSERTION_FAILURE"
+  }
+}

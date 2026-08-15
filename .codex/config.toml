@@ -1,0 +1,13 @@
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = true
+
+[features.network_proxy]
+enabled = true
+domains = { "db.fnnhosdwldjhyfoezkot.supabase.co" = "allow", "github.com" = "allow" }
+
+[shell_environment_policy]
+set = { SUPABASE_TELEMETRY_DISABLED = "1" }

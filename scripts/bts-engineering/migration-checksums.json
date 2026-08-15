@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "sha256",
+  "migrations": {
+    "20260721_001_echowall_foundation.sql": "c5bb78e1ad5d10ffa779d5707a158934b472ebb7de9e5fd351dccdcdc16acdd2",
+    "20260722_002_grant_echowall_service_role.sql": "a9b526050ae365c9fa7e2c8a40784ce8e4501472c537b0f510794ce817fa695e",
+    "20260723000000_echowall_admin_moderation.sql": "f578b0917034d95add9c3389af54b007349703359aa0b62bf67b20db9587fb44",
+    "20260723010000_echowall_deleted_recovery.sql": "52c5c622d622148b813d58528161fd05dc01356da0f31685f73fdc8ebcd84606",
+    "20260813000000_writing_foundation.sql": "aa6487c8d65e6c7ffe76ef8adeff3350fb046bcc6076294f87879df660f88166",
+    "20260813010000_writing_visual_editor.sql": "3cf025a09360e13a18a15ec857493b43a317247c975d5874303fd88f13247895",
+    "20260814000000_writing_comments_foundation.sql": "1a179b1d7503ebf1a527b85b87e06714a3d19c96404dd751a1b00a6a35c69aff",
+    "20260815000000_writing_account_identity.sql": "cb64d84b7c6bf594176f86a565278a0c3813d3272595f00ee5a6ce3e89005334",
+    "20260816000000_writing_comment_ownership_lifecycle.sql": "4a25d93dcd19290fe527e26665bcb54c9f238295eee9a73cc4ab222ea3e8b4ee",
+    "20260817000000_writing_comment_moderation.sql": "069443cda9a03e0b1617d51f29f6eda699c276164f7e370acd4dedacf3bcf84d",
+    "20260818000000_newsletter_subscription_foundation.sql": "2d56d4e9a90bb51cb565109dda828cbaa125551e136ea6396f033bab4c5781d6",
+    "20260819000000_newsletter_delivery.sql": "1d1e10587d776f2d796b8bc7e6747dbc77483c3b681d60d706b31c55aa292d8b",
+    "20260819010000_newsletter_delivery_runtime_fix.sql": "26e0390b81a2882b5a67fe5c29d2a09b6cc708aee29fd723d6cad48025b3bff6"
+  }
+}
