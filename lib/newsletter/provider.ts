@@ -1,4 +1,5 @@
 import type { NewsletterRuntimeConfiguration } from "@/lib/newsletter/config";
+import { createNewsletterEditionEmailContent, type NewsletterEditionEmail } from "@/lib/newsletter/template";
 
 const BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
 export const NEWSLETTER_PROVIDER_TIMEOUT_MS = 5_000;
@@ -10,6 +11,15 @@ export type ConfirmationEmail = {
 };
 
 export type SendConfirmationEmail = (email: ConfirmationEmail) => Promise<boolean>;
+
+export type NewsletterProviderResult =
+  | { status: "accepted"; messageReference: string }
+  | { status: "rejected"; code: string }
+  | { status: "ambiguous"; code: "timeout_or_network" | "provider_uncertain" };
+
+export type SendNewsletterEditionEmail = (
+  email: NewsletterEditionEmail & { to: string; deliveryId: string },
+) => Promise<NewsletterProviderResult>;
 
 function escapeHtml(value: string): string {
   return value
@@ -73,6 +83,54 @@ export function createBrevoConfirmationSender(
       return response.status === 201;
     } catch {
       return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}
+
+export function createBrevoNewsletterSender(
+  configuration: NewsletterRuntimeConfiguration,
+  fetcher: typeof fetch = fetch,
+  timeoutMs = NEWSLETTER_PROVIDER_TIMEOUT_MS,
+): SendNewsletterEditionEmail {
+  return async (email) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const content = createNewsletterEditionEmailContent(email);
+      const response = await fetcher(BREVO_ENDPOINT, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "api-key": configuration.providerApiKey,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          sender: { name: "bts.online", email: configuration.fromEmail },
+          replyTo: { name: "bts.online", email: configuration.replyToEmail },
+          to: [{ email: email.to }],
+          subject: content.subject,
+          textContent: content.textContent,
+          htmlContent: content.htmlContent,
+          tags: ["newsletter-writing"],
+          headers: { "X-BTS-Delivery-ID": email.deliveryId },
+        }),
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (response.status === 201) {
+        const payload = await response.json().catch(() => null) as { messageId?: unknown } | null;
+        return typeof payload?.messageId === "string" && payload.messageId.length <= 300
+          ? { status: "accepted", messageReference: payload.messageId }
+          : { status: "ambiguous", code: "provider_uncertain" };
+      }
+      if (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429) {
+        return { status: "rejected", code: `provider_http_${response.status}` };
+      }
+      return { status: "ambiguous", code: "provider_uncertain" };
+    } catch {
+      return { status: "ambiguous", code: "timeout_or_network" };
     } finally {
       clearTimeout(timer);
     }

@@ -20,6 +20,12 @@ export type NewsletterLifecycleConfiguration = {
   hashSecret: string;
 };
 
+export type NewsletterWebhookConfiguration = {
+  secret: string;
+};
+
+export type NewsletterDeliveryConfiguration = NewsletterRuntimeConfiguration & NewsletterWebhookConfiguration;
+
 function canonicalSiteUrl(value: string): string | null {
   try {
     const url = new URL(value);
@@ -78,4 +84,19 @@ export function newsletterControllerAddress(
 ): string | null {
   const value = environment.NEWSLETTER_CONTROLLER_ADDRESS?.trim();
   return value && value.length <= 500 ? value : null;
+}
+
+export function newsletterWebhookConfiguration(
+  environment: NodeJS.ProcessEnv = process.env,
+): NewsletterWebhookConfiguration | null {
+  const secret = environment.NEWSLETTER_WEBHOOK_SECRET;
+  return secret && secret.length >= 32 && secret.length <= 512 ? { secret } : null;
+}
+
+export function newsletterDeliveryConfiguration(
+  environment: NodeJS.ProcessEnv = process.env,
+): NewsletterDeliveryConfiguration | null {
+  const runtime = newsletterRuntimeConfiguration(environment);
+  const webhook = newsletterWebhookConfiguration(environment);
+  return runtime && webhook ? { ...runtime, ...webhook } : null;
 }

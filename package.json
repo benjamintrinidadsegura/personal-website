@@ -20,7 +20,8 @@
     "test:comments-owner": "tsx --test tests/writing-comment-ownership-lifecycle.test.ts",
     "test:comments-moderation": "tsx --test tests/writing-comment-moderation.test.ts",
     "test:comments-moderation-ui": "tsx --test tests/writing-comment-moderation-ui.test.ts",
-    "test:newsletter": "tsx --test tests/newsletter-foundation.test.ts"
+    "test:newsletter": "tsx --test tests/newsletter-foundation.test.ts tests/newsletter-delivery.test.ts",
+    "test:newsletter-delivery": "tsx --test tests/newsletter-delivery.test.ts"
   },
   "dependencies": {
     "@blocknote/ariakit": "0.52.1",

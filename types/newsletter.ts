@@ -35,3 +35,40 @@ export type NewsletterLifecycleResult =
   | { ok: false; code: "INVALID_REQUEST" | "INVALID_OR_EXPIRED" | "SERVICE_UNAVAILABLE" };
 
 export type NewsletterLifecycleActionState = NewsletterLifecycleResult | null;
+
+export const newsletterEditionStates = ["draft", "sending", "sent", "failed"] as const;
+export type NewsletterEditionState = (typeof newsletterEditionStates)[number];
+
+export type NewsletterEdition = {
+  id: string;
+  writingArticleId: string;
+  articleTitle: string;
+  articleExcerpt: string;
+  canonicalUrl: string;
+  subject: string;
+  preheader: string;
+  introduction: string;
+  state: NewsletterEditionState;
+  version: number;
+  createdAt: string;
+  sendStartedAt: string | null;
+  sentAt: string | null;
+  recipientCount: number;
+  sentCount: number;
+  failedCount: number;
+  reconciliationCount: number;
+};
+
+export type NewsletterEditionInput = {
+  writingArticleId: string;
+  subject: string;
+  preheader: string;
+  introduction: string;
+};
+
+export type NewsletterEditionActionState = {
+  ok: boolean;
+  message: string;
+  code?: "validation" | "conflict" | "configuration" | "error";
+  fieldErrors?: Partial<Record<"article" | "subject" | "preheader" | "introduction", string>>;
+} | null;
