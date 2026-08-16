@@ -9,7 +9,7 @@ import { lifeAlignmentHub } from "@/data/life-alignment-modules";
 import { partnerModule } from "@/data/life-alignment-partner";
 import { projects } from "@/data/projects";
 import { writingEntries } from "@/data/writing";
-import type { ProjectArea, ProjectStatus } from "@/types/content";
+import type { HqPulseItem, ProjectArea, ProjectStatus } from "@/types/content";
 import type { DiscoveryItem, DiscoveryStatus } from "@/types/discovery";
 import type { PublicWritingSummary } from "@/types/writing";
 
@@ -59,19 +59,21 @@ const projectItems: DiscoveryItem[] = projects.flatMap((project) => {
   return [projectItem, ...areaItems];
 });
 
-const pulseItems: DiscoveryItem[] = hqPulseItems.map((item) => ({
+export function createHqPulseDiscoveryItems(items: readonly HqPulseItem[]): DiscoveryItem[] {
+  return items.map((item) => ({
   id: `pulse-${item.id}`,
   group: "Insights",
   title: item.title,
   description: item.teaser,
   category: item.type,
-  tags: [item.source, item.status].filter((value): value is string => Boolean(value)),
+  tags: [item.kind, item.source, item.status].filter((value): value is string => Boolean(value)),
   keywords: ["HQ Pulse", "Update"],
-  status: item.status === "Published" || item.status === "Available" || item.status === "Active / Growing"
-    ? "Live"
-    : "In Development",
+  status: "Live",
   href: item.href,
-}));
+  }));
+}
+
+const pulseItems = createHqPulseDiscoveryItems(hqPulseItems);
 
 const writingItems: DiscoveryItem[] = writingEntries.map((entry, index) => ({
   id: `writing-${index + 1}`,

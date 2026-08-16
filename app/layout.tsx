@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { DiscoveryProvider } from "@/components/discovery/discovery-context";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
-import { createPublishedWritingDiscoveryItems, discoveryIndex } from "@/data/discovery-index";
+import { createHqPulseDiscoveryItems, createPublishedWritingDiscoveryItems, discoveryIndex } from "@/data/discovery-index";
+import { createHqPulseItems } from "@/data/hq-pulse";
 import { getAccountState } from "@/lib/account/state";
 import { getPublishedWriting } from "@/lib/writing/queries";
 import "./globals.css";
@@ -39,10 +40,16 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     getPublishedWriting(),
     getAccountState(),
   ]);
-  const staticDiscoveryItems = publishedWriting.length > 0
-    ? discoveryIndex.filter((item) => !item.id.match(/^writing-\d+$/u))
-    : discoveryIndex;
-  const discoveryItems = [...staticDiscoveryItems, ...createPublishedWritingDiscoveryItems(publishedWriting)];
+  const hasPublishedWriting = publishedWriting.length > 0;
+  const staticDiscoveryItems = discoveryIndex.filter((item) => (
+    !item.id.startsWith("pulse-") && (!hasPublishedWriting || !item.id.match(/^writing-\d+$/u))
+  ));
+  const resolvedPulseItems = createHqPulseItems({ publishedWriting });
+  const discoveryItems = [
+    ...staticDiscoveryItems,
+    ...createPublishedWritingDiscoveryItems(publishedWriting),
+    ...createHqPulseDiscoveryItems(resolvedPulseItems),
+  ];
   return (
     <html lang="de">
       <body className="min-h-full">

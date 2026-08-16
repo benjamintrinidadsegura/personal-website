@@ -8,17 +8,19 @@ import { HqPulse } from "@/components/sections/hq-pulse";
 import { Interviews } from "@/components/sections/interviews";
 import { Now } from "@/components/sections/now";
 import { Writing } from "@/components/sections/writing";
+import { getPublishedWriting } from "@/lib/writing/queries";
 
 export const revalidate = 300;
 
-export default function Home() {
+export default async function Home() {
+  const publishedWriting = await getPublishedWriting();
   return (
     <ContextCanvas>
       <Hero />
       <Now />
-      <HqPulse />
+      <HqPulse publishedWriting={publishedWriting} />
       <CurrentlyBuilding />
-      <Writing />
+      <Writing publishedWriting={publishedWriting} />
       <Interviews />
       <EchoWallPreview />
       <About />

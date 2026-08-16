@@ -85,15 +85,33 @@ export interface NowItem {
   accent: "cyan" | "orange";
 }
 
+export type HqPulseKind = "ecosystem" | "project" | "tool" | "content";
+export type HqPulseOrigin = "canonical" | "editorial";
+export type HqPulseVisibility = "public" | "unpublished" | "internal";
+
 export interface HqPulseItem {
   id: string;
-  type: "Career Spotlight" | "Interview" | "Writing" | "YouTube" | "Spotify" | "Projektupdate" | "Formatupdate";
+  kind: HqPulseKind;
+  type: string;
   title: string;
   teaser: string;
   href: string;
+  ctaLabel: string;
   date?: string;
   source?: string;
   status?: string;
+}
+
+export interface HqPulseCandidate extends HqPulseItem {
+  identity: string;
+  origin: HqPulseOrigin;
+  visibility: HqPulseVisibility;
+  sequence?: number;
+}
+
+export interface HqPulseUpdate extends HqPulseCandidate {
+  origin: "editorial";
+  sequence: number;
 }
 
 export interface WritingEntry {

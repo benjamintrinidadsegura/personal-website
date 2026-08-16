@@ -3,9 +3,10 @@ import { writingEntries } from "@/data/writing";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/ui/reveal";
 import { getPublishedWriting } from "@/lib/writing/queries";
+import type { PublicWritingSummary } from "@/types/writing";
 
-export async function Writing() {
-  const published = (await getPublishedWriting()).slice(0, 3);
+export async function Writing({ publishedWriting }: { publishedWriting?: readonly PublicWritingSummary[] }) {
+  const published = (publishedWriting ?? await getPublishedWriting()).slice(0, 3);
   return (
     <section id="writing" aria-labelledby="writing-title" className="border-t border-white/10 bg-[#081a28] px-5 py-24 sm:px-8 sm:py-32">
       <Reveal className="mx-auto max-w-[90rem]">
