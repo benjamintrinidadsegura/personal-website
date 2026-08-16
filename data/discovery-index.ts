@@ -1,4 +1,4 @@
-import { careerSpotlightConfig, careerSpotlights } from "@/data/career-spotlights";
+import { publishedSpotlights, spotlightConfig } from "@/data/spotlights";
 import { discoveryDimensionsByItemId } from "@/data/discovery-curation";
 import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
 import { hqPulseItems } from "@/data/hq-pulse";
@@ -87,8 +87,8 @@ const writingItems: DiscoveryItem[] = writingEntries.map((entry, index) => ({
 }));
 
 const interviewDestinations: Record<(typeof interviewFormats)[number]["title"], Pick<DiscoveryItem, "status" | "href">> = {
-  "Career Spotlight": { status: "Live", href: "/goatrecrutainer/career-spotlight" },
-  "Service Spotlight": { status: "In Development" },
+  "Career Spotlight": { status: "Live", href: "/people" },
+  "Service Spotlight": { status: "Live", href: "/people" },
   "Personal Conversations": { status: "Coming Soon" },
 };
 
@@ -103,18 +103,17 @@ const interviewItems: DiscoveryItem[] = interviewFormats.map((format) => ({
   ...interviewDestinations[format.title],
 }));
 
-const peopleItems: DiscoveryItem[] = careerSpotlights
-  .filter(({ status }) => status === "published")
+const peopleItems: DiscoveryItem[] = publishedSpotlights
   .map((spotlight) => ({
-    id: `person-${spotlight.slug}`,
+    id: spotlight.id,
     group: "People",
-    title: spotlight.name,
+    title: spotlight.fullName,
     description: spotlight.teaser,
-    category: "Career Spotlight",
-    tags: [spotlight.professionalContext, ...careerSpotlightConfig.topics],
-    keywords: [spotlight.title, spotlight.subtitle, "Interview"].filter((value): value is string => Boolean(value)),
+    category: spotlight.format,
+    tags: [spotlight.professionalContext, ...spotlight.discovery.tags],
+    keywords: [spotlight.displayName, ...spotlight.discovery.keywords, "Interview"],
     status: "Live",
-    href: `/goatrecrutainer/career-spotlight/${spotlight.slug}`,
+    href: `/people/${spotlight.slug}`,
   }));
 
 const findYourNextStepItems: DiscoveryItem[] = [
@@ -206,11 +205,11 @@ const pageItems: DiscoveryItem[] = [
   { id: "page-now", group: "Pages", title: "Now", description: "Aktuelle Projekte, Entwicklungen und Themen im Fokus.", category: "Page", tags: ["Aktuell", "Building"], keywords: ["Developing", "Rebuilding", "Exploring"], status: "Live", href: "/#now" },
   { id: "page-projects", group: "Pages", title: "Currently Building", description: "Alle Projekte und Ideen des wachsenden Ökosystems.", category: "Page", tags: ["Projects", "Portfolio"], keywords: ["Building", "Projekte"], status: "Live", href: "/#building" },
   { id: "page-writing", group: "Pages", title: "Writing", description: "Field Notes über Arbeit, Identität, Mut und Entwicklung.", category: "Page", tags: ["Insights", "Artikel"], keywords: ["Texte", "Magazin"], status: "Live", href: "/writing" },
-  { id: "page-interviews", group: "Pages", title: "Interviews", description: "Gespräche über Herkunft, Arbeit, Wendepunkte und Potenzial.", category: "Page", tags: ["Insights", "Human Archive"], keywords: ["Gespräche", "Menschen"], status: "Live", href: "/#interviews" },
+  { id: "page-interviews", group: "Pages", title: "People / Spotlight", description: spotlightConfig.description, category: "Page", tags: ["Insights", "Human Archive"], keywords: ["Gespräche", "Menschen", "Interviews"], status: "Live", href: "/people" },
   { id: "page-pulse", group: "Pages", title: "HQ Pulse", description: "Aktuelle Stories, Formate und Projektupdates.", category: "Page", tags: ["Insights", "Updates"], keywords: ["Aktuell", "Pulse"], status: "Live", href: "/#pulse" },
-  { id: "page-about", group: "Pages", title: "About Benjamin", description: "Die Person, Haltung und Prinzipien hinter dem Digital HQ.", category: "Page", tags: ["Benjamin Trinidad Segura", "About"], keywords: ["Person", "Werte"], status: "Live", href: "/#about" },
+  { id: "page-about", group: "Pages", title: "Benjamin Trinidad Segura — About & Work", description: "Wie Benjamin Recruiting, Talent Acquisition, Storytelling und Product Thinking verbindet, um fehlenden menschlichen Kontext sichtbar zu machen.", category: "ProfilePage", tags: ["Benjamin Trinidad Segura", "Personal Positioning", "Human Context"], keywords: ["GOATRECRUTAINER", "RateCom", "Recruiting", "Talent Acquisition", "Product Thinking", "AI-assisted reflection", "Community", "Discovery"], status: "Live", href: "/about" },
   { id: "page-contact", group: "Pages", title: "Contact & Social", description: "Kontakt, Projekte und verifizierte Social-Profile von Benjamin und GOATRECRUTAINER.", category: "Page", tags: ["Partners", "Kontakt", "Social"], keywords: ["Collaborations", "Recruiting", "LinkedIn", "TikTok", "Instagram", "YouTube", "Termin buchen"], status: "Live", href: "/#contact" },
-  { id: "page-career-spotlight", group: "Pages", title: "Career Spotlight Archive", description: careerSpotlightConfig.description, category: "Page", tags: [...careerSpotlightConfig.topics], keywords: ["GOATRECRUTAINER", "Interviews"], status: "Live", href: "/goatrecrutainer/career-spotlight" },
+  { id: "page-career-spotlight", group: "Pages", title: "Career & Service Spotlight Archive", description: spotlightConfig.description, category: "Page", tags: ["Career Spotlight", "Service Spotlight", "People"], keywords: ["GOATRECRUTAINER", "Interviews"], status: "Live", href: "/people" },
 ];
 
 const baseDiscoveryIndex: DiscoveryItem[] = [

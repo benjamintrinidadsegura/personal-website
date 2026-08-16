@@ -51,7 +51,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     ...createHqPulseDiscoveryItems(resolvedPulseItems),
   ];
   return (
-    <html lang="de">
+    <html lang="de" data-scroll-behavior="smooth">
       <body className="min-h-full">
         <a className="skip-link" href="#main-content">
           Zum Inhalt springen

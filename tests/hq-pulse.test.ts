@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { findYourNextStep } from "../data/find-your-next-step";
 import {
   HQ_PULSE_LIMIT,
   createHqPulseItems,
@@ -12,10 +11,8 @@ import {
   hqPulseUpdates,
   resolveHqPulseItems,
 } from "../data/hq-pulse";
-import { lifeAlignment } from "../data/life-alignment";
-import { getProject } from "../data/projects";
 import { mapPublicWritingSummary } from "../lib/writing/domain";
-import type { CareerSpotlightEntry, HqPulseCandidate, HqPulseUpdate } from "../types/content";
+import type { HqPulseCandidate, HqPulseUpdate, SpotlightPulseSource } from "../types/content";
 import type { PublicWritingSummary } from "../types/writing";
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
@@ -57,14 +54,13 @@ function candidate(overrides: Partial<HqPulseCandidate> = {}): HqPulseCandidate 
   };
 }
 
-function interview(overrides: Partial<CareerSpotlightEntry> = {}): CareerSpotlightEntry {
+function interview(overrides: Partial<SpotlightPulseSource> = {}): SpotlightPulseSource {
   return {
     slug: "public-interview",
-    name: "Public Person",
-    professionalContext: "Public professional context",
     teaser: "A published interview with canonical public context.",
     status: "published",
     title: "A public Career Spotlight",
+    format: "Career Spotlight",
     publishedAt: "2026-08-15T09:00:00.000Z",
     ...overrides,
   };
@@ -95,8 +91,8 @@ test("published interviews are automatic while planned and draft interviews stay
     interview({ slug: "draft", status: "draft", title: "Draft interview" }),
   ]);
   assert.equal(candidates.length, 1);
-  assert.equal(candidates[0]?.identity, `career-spotlight:${published.slug}`);
-  assert.equal(candidates[0]?.href, `/goatrecrutainer/career-spotlight/${published.slug}`);
+  assert.equal(candidates[0]?.identity, `spotlight:${published.slug}`);
+  assert.equal(candidates[0]?.href, `/people/${published.slug}`);
   assert.equal(candidates[0]?.date, published.publishedAt);
 });
 
@@ -159,7 +155,7 @@ test("published edits retain canonical identity and original publication chronol
   assert.equal(after.title, "Updated public title");
 });
 
-test("current editorial releases and canonical destinations remain represented", () => {
+test("current editorial releases remain available while dated Spotlights enter the resolved pulse", () => {
   assert.deepEqual(hqPulseUpdates.map(({ id }) => id), [
     "ecosystem-contact-social-v1",
     "goatrecrutainer-ecosystem-v1",
@@ -168,11 +164,11 @@ test("current editorial releases and canonical destinations remain represented",
     "find-your-next-step-v1",
   ]);
   assert.deepEqual(hqPulseItems.map(({ href }) => href), [
-    "/#contact",
-    `/projects/${getProject("goatrecrutainer")?.slug}`,
-    `/projects/${getProject("ratecom")?.slug}`,
-    lifeAlignment.href,
-    findYourNextStep.href,
+    "/people/evgeny-vinokurov",
+    "/people/kiki-radicke",
+    "/people/johanna-geisler",
+    "/people/melanie-kleinhenz",
+    "/people/kevin-schweisfurth",
   ]);
   assert.equal(hqPulseUpdates.every(({ visibility }) => visibility === "public"), true);
 });

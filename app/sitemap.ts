@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { careerSpotlights } from "@/data/career-spotlights";
+import { publishedSpotlights } from "@/data/spotlights";
 import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
 import { lifeAlignment } from "@/data/life-alignment";
 import { availableLifeAlignmentModules } from "@/data/life-alignment-modules";
@@ -44,15 +44,14 @@ export function createSitemap(publishedWriting: PublicWritingSummary[]): Metadat
     ...publishedWriting.map(({ slug }) => `/writing/${slug}`),
     "/newsletter",
     "/privacy",
+    "/about",
+    "/people",
     lifeAlignment.href,
     ...availableLifeAlignmentModules.map(({ href }) => href),
     findYourNextStep.href,
     ...nextStepJourneys.map(({ href }) => href),
     ...projects.map(({ slug }) => `/projects/${slug}`),
-    "/goatrecrutainer/career-spotlight",
-    ...careerSpotlights
-      .filter(({ status }) => status === "published")
-      .map(({ slug }) => `/goatrecrutainer/career-spotlight/${slug}`),
+    ...publishedSpotlights.map(({ slug }) => `/people/${slug}`),
   ];
 
   return routes.map((route) => ({

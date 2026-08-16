@@ -23,8 +23,8 @@ export const projects: Project[] = [
     ],
     values: ["Authentizität", "Gemeinschaft", "Entwicklung", "Potenzial", "Mut"],
     areas: [
-      { title: "Career Spotlight", description: "Menschen, Karrierewege und die Geschichten hinter Lebensläufen.", href: "/goatrecrutainer/career-spotlight", status: "Available" },
-      { title: "Service Spotlight", description: "Gründer, Unternehmen, Dienstleistungen und die Menschen hinter Angeboten.", status: "In development" },
+      { title: "Career Spotlight", description: "Menschen, Karrierewege und die Geschichten hinter Lebensläufen.", href: "/people", status: "Available" },
+      { title: "Service Spotlight", description: "Gründer, Unternehmen, Dienstleistungen und die Menschen hinter Angeboten.", href: "/people", status: "Available" },
       { title: "Career Agent", description: "Persönliche Begleitung für Arbeitnehmer bei beruflicher Positionierung, Jobwechsel, Bewerbungsstrategie, Verhandlungen und Karriereentscheidungen.", status: "Coming soon" },
       { title: "Talking Cure", description: "Ein offenes Gesprächsformat über Arbeit, persönliche Entwicklung, Wendepunkte und die Geschichten, die Menschen sonst selten erzählen.", status: "Coming soon" },
       { title: "Recruiting as a Service", description: "Flexible Recruiting-Unterstützung für Unternehmen – von der Suche und Ansprache bis zur Prozessgestaltung und Zusammenarbeit mit Hiring Managern.", status: "In development" },

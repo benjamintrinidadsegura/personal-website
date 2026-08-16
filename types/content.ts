@@ -7,27 +7,65 @@ export interface ProjectArea {
   status?: "Available" | "In development" | "Coming soon";
 }
 
-export interface CareerSpotlightEntry {
+export type SpotlightStatus = "planned" | "draft" | "published";
+export type SpotlightFormat = "Career Spotlight" | "Service Spotlight" | "Spotlight Conversation";
+export type PublicRelationshipType =
+  | "interviewed"
+  | "partner"
+  | "worked-with"
+  | "recommended"
+  | "advertising-partner";
+
+export interface SpotlightChapter {
+  title: string;
+  summary?: string;
+  timestamp?: string;
+  seconds?: number;
+}
+
+export interface SpotlightPerson {
+  id: string;
   slug: string;
-  name: string;
+  fullName: string;
+  displayName: string;
+  format: SpotlightFormat;
+  role: string;
+  organization?: string;
   professionalContext: string;
+  shortIntroduction: string;
+  editorialIntroduction: string[];
   teaser: string;
-  status: "planned" | "draft" | "published";
-  title?: string;
-  subtitle?: string;
-  introduction?: string[];
+  status: SpotlightStatus;
+  title: string;
+  subtitle: string;
   editionLabel?: string;
   cover?: { src: string; alt: string };
-  youtubeUrl?: string;
+  location?: { city?: string; region?: string; country: string; context: "origin" | "based-in" };
+  industries: string[];
+  expertise: string[];
+  language: "de" | "en";
+  video?: { youtubeId: string; url: string; title: string; duration: string };
   spotifyUrl?: string;
   publishedAt?: string;
   guidingAnswer?: string;
   featuredStatement?: string;
-  sections?: Array<{ title: string; body: string[] }>;
-  questions?: Array<{ question: string; answer: string }>;
-  takeaways?: string[];
-  seo?: { title: string; description: string };
+  chapters: SpotlightChapter[];
+  sections: Array<{ title: string; body: string[] }>;
+  takeaways: string[];
+  externalLinks?: Array<{ label: string; url: string }>;
+  discovery: { tags: string[]; keywords: string[] };
+  worldMap: {
+    ready: boolean;
+    relationshipTypes: PublicRelationshipType[];
+    interviewStatus: "published" | "unpublished";
+  };
+  seo: { title: string; description: string };
 }
+
+export type SpotlightPulseSource = Pick<
+  SpotlightPerson,
+  "slug" | "status" | "title" | "teaser" | "publishedAt" | "format"
+>;
 
 export interface ProjectMedia {
   type: "image" | "video";

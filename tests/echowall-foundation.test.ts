@@ -384,6 +384,8 @@ test("robots and sitemap fail closed and expose only canonical production routes
       "/writing",
       "/newsletter",
       "/privacy",
+      "/about",
+      "/people",
       "/life-alignment",
       "/life-alignment/self",
       "/life-alignment/partner",
@@ -399,8 +401,12 @@ test("robots and sitemap fail closed and expose only canonical production routes
       "/projects/streamory",
       "/projects/byc",
       "/projects/bts-online",
-      "/goatrecrutainer/career-spotlight",
-      "/goatrecrutainer/career-spotlight/evgeny-vinokurov",
+      "/people/evgeny-vinokurov",
+      "/people/kiki-radicke",
+      "/people/johanna-geisler",
+      "/people/kevin-schweisfurth",
+      "/people/amr-medhat",
+      "/people/melanie-kleinhenz",
     ]);
     assert.equal(entries.some((route) => route.startsWith("/admin")), false);
     assert.equal(entries.includes("/projects/influsa"), false);

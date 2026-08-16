@@ -25,8 +25,14 @@ const knownStaticRoutes = new Set([
   "/find-your-next-step/career",
   "/find-your-next-step/problem",
   "/find-your-next-step/idea",
-  "/goatrecrutainer/career-spotlight",
-  "/goatrecrutainer/career-spotlight/evgeny-vinokurov",
+  "/people",
+  "/about",
+  "/people/evgeny-vinokurov",
+  "/people/kiki-radicke",
+  "/people/johanna-geisler",
+  "/people/kevin-schweisfurth",
+  "/people/amr-medhat",
+  "/people/melanie-kleinhenz",
   "/projects/goatrecrutainer",
   "/projects/ratecom",
   "/projects/hobbyswap",
@@ -82,7 +88,7 @@ test("every discovery destination is a verified route or home anchor", () => {
 });
 
 test("unfinished content without a page remains discoverable but not navigable", () => {
-  for (const title of ["Service Spotlight", "Career Agent", "Talking Cure", "Personal Conversations", "Leidenschaft"] as const) {
+  for (const title of ["Career Agent", "Talking Cure", "Personal Conversations", "Leidenschaft"] as const) {
     const item = discoveryIndex.find((candidate) => candidate.title === title);
     assert.ok(item, title);
     assert.equal(item.href, undefined, title);

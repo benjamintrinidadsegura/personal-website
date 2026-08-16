@@ -1,12 +1,12 @@
-import { careerSpotlights } from "@/data/career-spotlights";
+import { spotlights } from "@/data/spotlights";
 import { findYourNextStep } from "@/data/find-your-next-step";
 import { lifeAlignment } from "@/data/life-alignment";
 import { getProject } from "@/data/projects";
 import type {
-  CareerSpotlightEntry,
   HqPulseCandidate,
   HqPulseItem,
   HqPulseUpdate,
+  SpotlightPulseSource,
 } from "@/types/content";
 import type { PublicWritingSummary } from "@/types/writing";
 
@@ -133,21 +133,21 @@ export function createWritingPulseCandidates(
 }
 
 export function createInterviewPulseCandidates(
-  interviews: readonly CareerSpotlightEntry[],
+  interviews: readonly SpotlightPulseSource[],
 ): HqPulseCandidate[] {
   return interviews.flatMap((interview) => {
     if (interview.status !== "published" || !interview.title) return [];
     return [{
-      id: `career-spotlight-${interview.slug}`,
-      identity: `career-spotlight:${interview.slug}`,
+      id: `spotlight-${interview.slug}`,
+      identity: `spotlight:${interview.slug}`,
       origin: "canonical" as const,
       visibility: "public" as const,
       kind: "content" as const,
       type: "Interview",
       title: interview.title,
       teaser: interview.teaser,
-      href: `/goatrecrutainer/career-spotlight/${interview.slug}`,
-      ctaLabel: "Career Spotlight lesen",
+      href: `/people/${interview.slug}`,
+      ctaLabel: `${interview.format} öffnen`,
       ...(validPublicDate(interview.publishedAt) ? { date: interview.publishedAt } : {}),
       source: "GOATRECRUTAINER",
       status: "Published",
@@ -218,14 +218,14 @@ export function resolveHqPulseItems(
 
 type HqPulseAggregationInput = {
   publishedWriting?: readonly PublicWritingSummary[];
-  interviews?: readonly CareerSpotlightEntry[];
+  interviews?: readonly SpotlightPulseSource[];
   editorialUpdates?: readonly HqPulseUpdate[];
   limit?: number;
 };
 
 export function createHqPulseItems({
   publishedWriting = [],
-  interviews = careerSpotlights,
+  interviews = spotlights,
   editorialUpdates = hqPulseUpdates,
   limit = HQ_PULSE_LIMIT,
 }: HqPulseAggregationInput = {}): HqPulseItem[] {

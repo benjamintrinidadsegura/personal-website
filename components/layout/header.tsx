@@ -18,7 +18,7 @@ type NavigationItem = NavigationLink & {
 
 const navigation: NavigationItem[] = [
   { label: "Home", href: "/#home" },
-  { label: "About", href: "/#about" },
+  { label: "About", href: "/about" },
   {
     label: "Projects",
     href: "/#building",
@@ -34,7 +34,7 @@ const navigation: NavigationItem[] = [
     children: [
       { label: "Pulse", href: "/#pulse" },
       { label: "Writing", href: "/writing" },
-      { label: "Interviews", href: "/#interviews" },
+      { label: "People / Interviews", href: "/people" },
     ],
   },
   {
