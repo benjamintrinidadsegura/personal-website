@@ -3,6 +3,10 @@ import { discoveryDimensionsByItemId } from "@/data/discovery-curation";
 import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
 import { hqPulseItems } from "@/data/hq-pulse";
 import { interviewFormats } from "@/data/interviews";
+import { lifeAlignment } from "@/data/life-alignment";
+import { lifeVision } from "@/data/life-alignment-life-vision";
+import { lifeAlignmentHub } from "@/data/life-alignment-modules";
+import { partnerModule } from "@/data/life-alignment-partner";
 import { projects } from "@/data/projects";
 import { writingEntries } from "@/data/writing";
 import type { ProjectArea, ProjectStatus } from "@/types/content";
@@ -137,6 +141,50 @@ const findYourNextStepItems: DiscoveryItem[] = [
 ];
 
 const toolItems: DiscoveryItem[] = [
+  {
+    id: lifeAlignment.id,
+    group: "Tools",
+    title: lifeAlignment.name,
+    description: lifeAlignmentHub.description,
+    category: lifeAlignment.discovery.category,
+    tags: ["ME", "WE", "WHERE I AM GOING", ...lifeAlignment.discovery.tags],
+    keywords: ["Self", "Partner", "Relationship", "Life Vision", ...lifeAlignment.discovery.keywords],
+    status: lifeAlignment.status,
+    href: lifeAlignmentHub.href,
+  },
+  {
+    id: "tool-life-alignment-self",
+    group: "Tools",
+    title: "Self / Persönliche Momentaufnahme",
+    description: lifeAlignment.description,
+    category: lifeAlignment.discovery.category,
+    tags: [...lifeAlignment.discovery.tags, "ME"],
+    keywords: [...lifeAlignment.discovery.keywords, "Self", "Momentaufnahme"],
+    status: lifeAlignment.status,
+    href: "/life-alignment/self",
+  },
+  {
+    id: "tool-life-alignment-partner",
+    group: "Tools",
+    title: partnerModule.name,
+    description: partnerModule.description,
+    category: "Life Alignment Tool",
+    tags: ["WE", "Beziehung", "Zwei Perspektiven", "Same-device"],
+    keywords: ["Partner", "Relationship", "Erwartungen vergleichen", "Gesprächsbedarf"],
+    status: "Beta",
+    href: partnerModule.href,
+  },
+  {
+    id: "tool-life-alignment-life-vision",
+    group: "Tools",
+    title: lifeVision.name,
+    description: lifeVision.description,
+    category: "Life Alignment Tool",
+    tags: ["WHERE I AM GOING", "Zukunft", "Prioritäten", "Trade-offs"],
+    keywords: ["Lebensvision", "Life Vision", "Zukünftige Richtung", "Mögliche Wege"],
+    status: "Beta",
+    href: lifeVision.href,
+  },
   ...findYourNextStepItems,
   {
     id: "tool-echowall",

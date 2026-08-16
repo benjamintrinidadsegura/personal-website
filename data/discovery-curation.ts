@@ -10,6 +10,30 @@ import type {
  * project copy, and capped at four entries per active dimension.
  */
 export const discoveryDimensionsByItemId: Readonly<Record<string, DiscoveryDimensions>> = {
+  "tool-life-alignment": {
+    intent: ["Life Alignment Perspektive wählen", "Mein heutiges Leben einordnen", "Lebensbereiche ausrichten", "Heutige Lage und zukünftige Richtung verstehen"],
+    goals: ["Passendes Life Alignment Modul finden", "ME WE und WHERE I AM GOING unterscheiden"],
+    problems: ["Unklarheit welche Perspektive gerade hilft"],
+    useCases: ["Self Partner oder Life Vision auswählen"],
+  },
+  "tool-life-alignment-self": {
+    intent: ["Mein heutiges Leben einordnen", "Lebensbereiche ausrichten", "Prioritäten und Spielraum verstehen"],
+    goals: ["Aktuelle Lebenskonfiguration reflektieren", "Gewünschte Veränderung erkennen", "Einen kleinen Versuch wählen"],
+    problems: ["Lebensbereiche passen nicht zusammen", "Zu wenig Raum für wichtige Lebensbereiche", "Unklarheit über heutige Prioritäten"],
+    useCases: ["Lebensbereiche vergleichen", "Energie und Aufmerksamkeit einordnen", "Reale Grenzen berücksichtigen"],
+  },
+  "tool-life-alignment-partner": {
+    intent: ["Zwei Beziehungsperspektiven vergleichen", "Erwartungen in einer Beziehung klären"],
+    goals: ["Gemeinsamen Boden und Unterschiede sehen", "Ein Gespräch vorbereiten"],
+    problems: ["Unklare Beziehungserwartungen", "Unterschiedliche gewünschte Richtungen"],
+    useCases: ["Unabhängig reflektieren und später vergleichen", "Themen für ein Gespräch erkennen"],
+  },
+  "tool-life-alignment-life-vision": {
+    intent: ["Meine zukünftige Richtung erkunden", "Eine Lebensvision reflektieren"],
+    goals: ["Geschützte Prioritäten klären", "Mögliche Wege und Trade-offs sehen"],
+    problems: ["Konkurrierende Zukunftswünsche", "Unsicherheit über eigene oder übernommene Ziele"],
+    useCases: ["Future Direction Landscape erstellen", "Richtung testen ohne sich festzulegen"],
+  },
   "tool-find-your-next-step": {
     intent: ["Persönlichen nächsten Schritt klären", "Orientierung gewinnen", "Eigene Situation klären"],
     goals: ["Eine passende Richtung erkennen", "Eine Entscheidung vorbereiten"],
@@ -160,6 +184,8 @@ export const discoverySynonymGroups: readonly DiscoverySynonymGroup[] = [
 ];
 
 export const discoveryRelationships: readonly DiscoveryRelationship[] = [
+  { id: "life-alignment", query: "Passt mein Leben zu dem was mir wichtig ist", terms: ["Mein heutiges Leben einordnen", "Lebensbereiche ausrichten"] },
+  { id: "life-balance", query: "Lebensbalance", terms: ["Aktuelle Lebenskonfiguration reflektieren", "Lebensbereiche vergleichen"] },
   { id: "understand-self", query: "Wer bin ich", terms: ["Mich selbst besser verstehen"] },
   { id: "career-fit", query: "Welcher Job passt zu mir", terms: ["Berufliche Passung klären"] },
   { id: "career-fit-profession", query: "Welcher Beruf passt zu mir", terms: ["Passende berufliche Richtungen finden"] },
@@ -210,6 +236,7 @@ export const discoveryNeutralTerms: readonly string[] = [
 ];
 
 export const guidedDiscoveryPrompts: readonly GuidedDiscoveryPrompt[] = [
+  { id: "life-alignment", label: "Leben und Prioritäten", query: "Passt mein Leben zu dem was mir wichtig ist?" },
   { id: "recruiting", label: "Recruiting entdecken", query: "Recruiting" },
   { id: "career", label: "Karriere und Jobs", query: "Karriere und Jobs" },
   { id: "stories", label: "Menschen und Geschichten", query: "Menschen und Geschichten" },

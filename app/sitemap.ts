@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 
 import { careerSpotlights } from "@/data/career-spotlights";
 import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
+import { lifeAlignment } from "@/data/life-alignment";
+import { availableLifeAlignmentModules } from "@/data/life-alignment-modules";
 import { projects } from "@/data/projects";
 import { siteConfig } from "@/data/site";
 import { getPublishedWriting } from "@/lib/writing/queries";
@@ -42,6 +44,8 @@ export function createSitemap(publishedWriting: PublicWritingSummary[]): Metadat
     ...publishedWriting.map(({ slug }) => `/writing/${slug}`),
     "/newsletter",
     "/privacy",
+    lifeAlignment.href,
+    ...availableLifeAlignmentModules.map(({ href }) => href),
     findYourNextStep.href,
     ...nextStepJourneys.map(({ href }) => href),
     ...projects.map(({ slug }) => `/projects/${slug}`),

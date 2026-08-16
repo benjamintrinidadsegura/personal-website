@@ -40,6 +40,7 @@ const navigation: NavigationItem[] = [
     label: "Tools",
     href: "/find-your-next-step",
     children: [
+      { label: "Life Alignment", href: "/life-alignment" },
       { label: "Find Your Next Step", href: "/find-your-next-step" },
       { label: "EchoWall", href: "/echowall" },
     ],

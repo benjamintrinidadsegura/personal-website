@@ -16,6 +16,10 @@ const knownStaticRoutes = new Set([
   "/",
   "/echowall",
   "/writing",
+  "/life-alignment",
+  "/life-alignment/self",
+  "/life-alignment/partner",
+  "/life-alignment/life-vision",
   "/find-your-next-step",
   "/find-your-next-step/self",
   "/find-your-next-step/career",
@@ -383,6 +387,7 @@ test("one item and one normalized reason can appear only once", () => {
 
 test("all guided prompts are route-free and produce curated results", () => {
   const expectedItems = new Map([
+    ["life-alignment", "tool-life-alignment"],
     ["recruiting", "project-goatrecrutainer-area-recruiting-as-a-service"],
     ["career", "project-goatrecrutainer-area-career-agent"],
     ["stories", "interview-career-spotlight"],
@@ -391,7 +396,7 @@ test("all guided prompts are route-free and produce curated results", () => {
     ["community", "tool-echowall"],
   ]);
 
-  assert.equal(guidedDiscoveryPrompts.length, 6);
+  assert.equal(guidedDiscoveryPrompts.length, 7);
   assert.equal(new Set(guidedDiscoveryPrompts.map(({ id }) => id)).size, guidedDiscoveryPrompts.length);
 
   for (const prompt of guidedDiscoveryPrompts) {
@@ -414,6 +419,7 @@ test("header preserves navigation and exposes desktop and mobile discovery contr
 
   assert.equal(header.includes("<DiscoveryEngine"), true);
   assert.equal(header.includes('{ label: "Find Your Next Step", href: "/find-your-next-step" }'), true);
+  assert.equal(header.includes('{ label: "Life Alignment", href: "/life-alignment" }'), true);
   assert.equal(header.includes('{ label: "EchoWall", href: "/echowall" }'), true);
   assert.equal(header.includes("setOpenDropdown(null)"), true);
   assert.equal(engine.includes("Projekte, Karriere, Menschen und Tools entdecken"), true);
