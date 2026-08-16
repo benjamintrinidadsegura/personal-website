@@ -25,6 +25,7 @@ const navigation: NavigationItem[] = [
     children: [
       { label: "All projects", href: "/#building" },
       { label: "GOATRECRUTAINER", href: "/projects/goatrecrutainer" },
+      { label: "RateCom", href: "/projects/ratecom" },
     ],
   },
   {

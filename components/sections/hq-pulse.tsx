@@ -19,7 +19,7 @@ export function HqPulse() {
           </div>
         </header>
 
-        <ol className="grid border-l border-white/10 md:grid-cols-2 lg:grid-cols-12">
+        <ol className="grid grid-cols-1 border-l border-white/10 md:grid-cols-2 lg:grid-cols-12">
           {items.map((item, index) => {
             const editorial = isEditorial(item.type);
             const featured = index === 0;
@@ -28,7 +28,7 @@ export function HqPulse() {
             return (
               <li
                 key={item.id}
-                className={`border-b border-r border-white/10 ${featured ? "md:col-span-2 lg:col-span-7 lg:row-span-2" : index < 3 ? "lg:col-span-5" : "lg:col-span-6"}`}
+                className={`min-w-0 border-b border-r border-white/10 ${featured ? "md:col-span-2 lg:col-span-7 lg:row-span-2" : index < 3 ? "lg:col-span-5" : "lg:col-span-6"}`}
               >
                 <Link
                   href={item.href}

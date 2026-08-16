@@ -43,6 +43,8 @@ export const projects: Project[] = [
     region: "DACH und international",
     mediaNote: "Projektmedien, Screenshots und weitere Einblicke folgen mit kommenden Updates.",
     contactCta: "Let’s build something meaningful.",
+    externalUrl: "https://www.goatrec.com",
+    externalLabel: "GOATRECRUTAINER auf goatrec.com besuchen",
   },
   {
     slug: "ratecom", name: "RateCom", monogram: "RC",
@@ -54,6 +56,8 @@ export const projects: Project[] = [
     goal: "RateCom als unabhängige Recruiting-Bewertungsplattform neu denken.",
     currentState: "Das Konzept wird derzeit grundlegend neu aufgebaut.",
     nextSteps: sharedUpdate,
+    externalUrl: "https://www.ratecom.online",
+    externalLabel: "RateCom auf ratecom.online besuchen",
   },
   {
     slug: "hobbyswap", name: "HobbySwap", monogram: "HS",

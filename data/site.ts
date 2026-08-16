@@ -6,8 +6,13 @@ export const siteConfig = {
   // TODO: Vor Veröffentlichung mit Benjamin bestätigen.
   email: "hello@bts.online",
   socialLinks: [
-    { label: "LinkedIn", url: null, placeholder: true },
-    { label: "YouTube", url: null, placeholder: true },
-    { label: "Spotify", url: null, placeholder: true },
+    { label: "TikTok", url: "https://www.tiktok.com/@goatrecrutainer", context: "GOATRECRUTAINER" },
+    { label: "Instagram", url: "https://www.instagram.com/goatrecrutainer", context: "GOATRECRUTAINER" },
+    { label: "YouTube", url: "https://www.youtube.com/@goatrecrutainer", context: "GOATRECRUTAINER" },
+    { label: "LinkedIn", url: "https://www.linkedin.com/in/benjamín-trinidad-segura-590760158/", context: "Benjamin Trinidad Segura" },
   ] satisfies SocialLink[],
+  booking: {
+    label: "Termin buchen",
+    url: null as string | null,
+  },
 };

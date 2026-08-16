@@ -19,7 +19,7 @@ export function CurrentlyBuilding() {
                 </div>
                 <div className="relative z-10 mt-auto max-w-2xl pt-16">
                   <p className="font-mono text-xs uppercase tracking-[0.24em] text-[var(--project-accent)]">0{index + 1} / {project.category}</p>
-                  <h3 className={`mt-4 font-black tracking-tight text-white ${project.featured ? "text-4xl sm:text-5xl" : "text-3xl"}`}>{project.name}</h3>
+                  <h3 className={`mt-4 [overflow-wrap:anywhere] font-black tracking-tight text-white ${project.featured ? "text-4xl sm:text-5xl" : "text-3xl"}`}>{project.name}</h3>
                   <p className="mt-3 text-lg font-bold text-white">{project.pitch}</p>
                   <p className="mt-4 max-w-xl leading-7 text-slate-300">{project.description}</p>
                   <span className="mt-7 inline-flex items-center font-bold text-[var(--project-accent)]">Enter project <span aria-hidden="true" className="ml-2 transition group-hover:translate-x-1">↗</span></span>

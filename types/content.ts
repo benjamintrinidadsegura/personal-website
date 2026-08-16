@@ -75,6 +75,8 @@ export interface Project {
   updates?: ProjectUpdate[];
   mediaNote?: string;
   contactCta?: string;
+  externalUrl?: string;
+  externalLabel?: string;
 }
 
 export interface NowItem {
@@ -113,7 +115,7 @@ export interface Value {
 }
 
 export interface SocialLink {
-  label: "LinkedIn" | "YouTube" | "Spotify";
-  url: string | null;
-  placeholder: boolean;
+  label: "TikTok" | "Instagram" | "YouTube" | "LinkedIn";
+  url: string;
+  context: string;
 }

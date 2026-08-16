@@ -207,7 +207,7 @@ const pageItems: DiscoveryItem[] = [
   { id: "page-interviews", group: "Pages", title: "Interviews", description: "Gespräche über Herkunft, Arbeit, Wendepunkte und Potenzial.", category: "Page", tags: ["Insights", "Human Archive"], keywords: ["Gespräche", "Menschen"], status: "Live", href: "/#interviews" },
   { id: "page-pulse", group: "Pages", title: "HQ Pulse", description: "Aktuelle Stories, Formate und Projektupdates.", category: "Page", tags: ["Insights", "Updates"], keywords: ["Aktuell", "Pulse"], status: "Live", href: "/#pulse" },
   { id: "page-about", group: "Pages", title: "About Benjamin", description: "Die Person, Haltung und Prinzipien hinter dem Digital HQ.", category: "Page", tags: ["Benjamin Trinidad Segura", "About"], keywords: ["Person", "Werte"], status: "Live", href: "/#about" },
-  { id: "page-contact", group: "Pages", title: "Contact", description: "Kontakt für Recruiting, Interviews, Kooperationen und Ideen.", category: "Page", tags: ["Partners", "Kontakt"], keywords: ["Collaborations", "Recruiting"], status: "Live", href: "/#contact" },
+  { id: "page-contact", group: "Pages", title: "Contact & Social", description: "Kontakt, Projekte und verifizierte Social-Profile von Benjamin und GOATRECRUTAINER.", category: "Page", tags: ["Partners", "Kontakt", "Social"], keywords: ["Collaborations", "Recruiting", "LinkedIn", "TikTok", "Instagram", "YouTube", "Termin buchen"], status: "Live", href: "/#contact" },
   { id: "page-career-spotlight", group: "Pages", title: "Career Spotlight Archive", description: careerSpotlightConfig.description, category: "Page", tags: [...careerSpotlightConfig.topics], keywords: ["GOATRECRUTAINER", "Interviews"], status: "Live", href: "/goatrecrutainer/career-spotlight" },
 ];
 

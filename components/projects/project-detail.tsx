@@ -21,10 +21,11 @@ export function ProjectDetail({ project }: { project: Project }) {
             <span className="grid h-16 min-w-16 place-items-center rounded-2xl border border-[var(--project-accent)] px-3 font-mono text-sm font-black tracking-widest text-[var(--project-accent)]">{project.monogram}</span>
             <div><p className="font-mono text-xs uppercase tracking-[0.22em] text-[var(--project-accent)]">{project.category}</p><p className="mt-2 text-sm font-bold text-slate-400">Status / {project.status}</p></div>
           </div>
-          <h1 className="mt-10 text-[clamp(2.1rem,9vw,6rem)] font-black leading-[0.92] tracking-[-0.05em] text-white">{project.name}</h1>
+          <h1 className="mt-10 [overflow-wrap:anywhere] text-[clamp(2.1rem,9vw,6rem)] font-black leading-[0.92] tracking-[-0.05em] text-white">{project.name}</h1>
           {project.longName ? <p className="mt-4 text-lg font-bold uppercase tracking-[0.16em] text-[var(--project-accent)]">{project.longName}</p> : null}
           <p className="mt-7 max-w-4xl text-2xl font-black leading-snug text-white sm:text-3xl">{project.claim ?? project.pitch}</p>
           {project.positioning ? <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-200">{project.positioning}</p> : <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{project.description}</p>}
+          {project.externalUrl ? <div className="mt-9"><a href={project.externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center gap-3 rounded-full border border-[var(--project-accent)]/55 bg-[var(--project-accent)]/[0.07] px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:border-[var(--project-accent)] focus-visible:outline-[var(--project-accent)]"><span>{project.externalLabel}</span><span className="font-mono text-xs uppercase tracking-[0.14em] text-[var(--project-accent)]">Externe Website ↗</span></a></div> : null}
         </header>
 
         <section aria-labelledby="vision-title" className="grid gap-7 border-b border-white/15 py-14 lg:grid-cols-[0.4fr_1fr] sm:py-20">
