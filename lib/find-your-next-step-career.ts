@@ -1,17 +1,23 @@
 import {
   careerActivitySignalIds,
   careerConstraintIds,
-  careerConstraintSummaryCopy,
   careerDirections,
   careerEnvironmentSignalIds,
   careerJobTitles,
   careerMotivationSignalIds,
   careerQuestions,
   careerSections,
-  careerSignalCopy,
   careerSignalIds,
-  careerTensionDefinitions,
+  getCareerConstraintSummaryCopy,
+  getCareerDirections,
+  getCareerJobTitles,
+  getCareerQuestions,
+  getCareerSignalCopy,
+  getCareerTensionDefinitions,
 } from "@/data/find-your-next-step-career";
+import { careerGeneratedCopy } from "@/data/find-your-next-step-career-generated-locales";
+import type { CareerGeneratedCopy } from "@/data/find-your-next-step-career-generated-locales";
+import type { Locale } from "@/lib/i18n/config";
 import type {
   CareerActivitySignalId,
   CareerAnswers,
@@ -66,6 +72,26 @@ export const initialCareerState: CareerJourneyState = {
   restartPending: false,
 };
 
+const careerResultCopyByLocale: Record<Locale, CareerGeneratedCopy> = {
+  de: {
+    and: "und", title: "Deine Career Map", description: "Eine lokale Momentaufnahme möglicher beruflicher Erkundungsräume – keine Bewertung deiner Person und keine Entscheidung über einen Beruf.", selected: (n, m) => `${n} von ${m} ausgewählt`, one: "Wähle eine Antwort aus.", exact: (n) => `Wähle genau ${n} Antworten aus.`, range: (a, b) => `Wähle ${a} bis ${b} Antworten aus.`, maximum: (n) => `Du kannst höchstens ${n} Antworten auswählen.`, incomplete: "Beantworte bitte alle Fragen, bevor du deine Career Map öffnest.",
+    whyOne: (a) => `In deiner Auswahl zeigt sich als Anknüpfungspunkt besonders: ${a}.`, whyTwo: (a, b) => `In deiner Auswahl zeigen sich besonders ${a} und ${b}.`, summaryTwo: (a, b) => `Deine Auswahl zieht dich besonders zu Arbeit hin, in der diese Tätigkeiten zusammenkommen: ${a} sowie ${b}.`, summaryOne: (a) => `In deiner Auswahl zeigt sich vorsichtig ein Interesse an dieser Tätigkeit: ${a}.`, summaryOpen: "Deine Auswahl öffnet mehrere berufliche Spuren, ohne dass ein einzelnes Tätigkeitsmuster klar dominiert.", contextTwo: (a, b) => `Dabei wirken ${a} und ${b} wichtig.`, contextOne: (a) => `Dabei wirkt ${a} als wiederkehrender Anknüpfungspunkt.`, constraint: (v) => `Für deine weitere Erkundung sollte diese Bedingung von Anfang an mitgedacht werden: ${v}.`,
+    qualification: { short: "Du hast aktuell einen kurzen Qualifizierungsrahmen gewählt.", "several-months": "Mehrere Monate Qualifizierung sind für dich realistisch.", "formal-open": "Du kannst auch längere Qualifizierungswege grundsätzlich prüfen.", undecided: "Dein Qualifizierungsrahmen ist noch offen." }, jobHybrid: "Diese Rolle verbindet zwei deiner besonders sichtbaren Erkundungsspuren.", jobTwo: (a, b) => `Diese Rolle berührt die sichtbaren Spuren „${a}“ und „${b}“.`, jobOpen: "Dieser Titel ist ein offener Suchbegriff für deine weitere Recherche.", jobPrimary: (d) => `Dieser Suchbegriff konkretisiert deine sichtbare Spur „${d}“.`, jobAdditional: (d) => `Dieser Suchbegriff öffnet eine konkrete Recherche innerhalb der zusätzlich sichtbaren Spur „${d}“.`,
+    next: { conversation: { title: "Führe ein Feldgespräch", generic: "Sprich über zwei konkrete Tätigkeiten.", withDirections: (a, b) => `Sprich mit einer Person aus „${a}“${b ? ` und einer aus „${b}“` : ""}.` }, "role-comparison": { title: "Vergleiche reale Aufgaben", generic: "Vergleiche Aufgaben statt Titel.", withDirections: (a, b) => `Vergleiche reale Aufgaben aus „${a}“${b ? ` und „${b}“` : ""}.` }, "mini-project": { title: "Teste ein Mini-Projekt", generic: "Probiere zwei kleine Arbeitsproben.", withDirections: (a, b) => `Teste eine kleine Arbeitsprobe für „${a}“${b ? ` und „${b}“` : ""}.` }, "skill-test": { title: "Teste einen Skill", generic: "Teste eine wiederkehrende Fähigkeit.", withDirections: (a, b) => `Teste eine typische Fähigkeit aus „${a}“${b ? ` und „${b}“` : ""}.` }, "work-observation": { title: "Beobachte einen Arbeitsablauf", generic: "Beobachte einen echten Arbeitsablauf.", withDirections: (a, b) => `Beobachte Arbeitsabläufe in „${a}“${b ? ` und „${b}“` : ""}.` } },
+  },
+  en: {
+    and: "and", title: "Your Career Map", description: "A local snapshot of possible spaces for career exploration — not an assessment of you or a decision about a career.", selected: (n, m) => `${n} of ${m} selected`, one: "Choose one answer.", exact: (n) => `Choose exactly ${n} answers.`, range: (a, b) => `Choose between ${a} and ${b} answers.`, maximum: (n) => `You can select no more than ${n} answers.`, incomplete: "Please answer every question before opening your Career Map.",
+    whyOne: (a) => `One connection point appears especially strongly in your choices: ${a}.`, whyTwo: (a, b) => `Your choices especially reflect ${a} and ${b}.`, summaryTwo: (a, b) => `Your choices draw you especially towards work that combines these activities: ${a} and ${b}.`, summaryOne: (a) => `Your choices tentatively show an interest in this activity: ${a}.`, summaryOpen: "Your choices open several career paths without one activity pattern clearly dominating.", contextTwo: (a, b) => `${a} and ${b} appear important in that context.`, contextOne: (a) => `${a} appears as a recurring connection point.`, constraint: (v) => `Your further exploration should include this condition from the beginning: ${v}.`,
+    qualification: { short: "You selected a short qualification scope.", "several-months": "Several months of qualification are realistic for you.", "formal-open": "You can also consider longer qualification routes.", undecided: "Your qualification scope remains open." }, jobHybrid: "This role connects two of your especially visible exploration paths.", jobTwo: (a, b) => `This role touches the visible paths “${a}” and “${b}”.`, jobOpen: "This title is an open search term for further research.", jobPrimary: (d) => `This search term makes your visible path “${d}” more concrete.`, jobAdditional: (d) => `This search term opens concrete research within the additionally visible path “${d}”.`,
+    next: { conversation: { title: "Have a field conversation", generic: "Discuss two concrete activities.", withDirections: (a, b) => `Speak with someone from “${a}”${b ? ` and someone from “${b}”` : ""}.` }, "role-comparison": { title: "Compare real tasks", generic: "Compare tasks rather than titles.", withDirections: (a, b) => `Compare real tasks in “${a}”${b ? ` and “${b}”` : ""}.` }, "mini-project": { title: "Try a mini-project", generic: "Try two small work samples.", withDirections: (a, b) => `Try a small work sample for “${a}”${b ? ` and “${b}”` : ""}.` }, "skill-test": { title: "Test a skill", generic: "Test a recurring skill.", withDirections: (a, b) => `Test a typical skill from “${a}”${b ? ` and “${b}”` : ""}.` }, "work-observation": { title: "Observe a workflow", generic: "Observe a real workflow.", withDirections: (a, b) => `Observe work in “${a}”${b ? ` and “${b}”` : ""}.` } },
+  },
+  ...careerGeneratedCopy,
+};
+
+const careerQuotationCopy: Record<Locale, { open: string; close: string; fallbackDirection: string; fallbackJob: string }> = {
+  de: { open: "„", close: "“", fallbackDirection: "einer deiner sichtbaren Richtungen", fallbackJob: "einen passenden Jobtitel" }, en: { open: "“", close: "”", fallbackDirection: "one of your visible directions", fallbackJob: "a suitable job title" }, es: { open: "«", close: "»", fallbackDirection: "una de tus direcciones visibles", fallbackJob: "un puesto adecuado" }, tr: { open: "“", close: "”", fallbackDirection: "görünür yönlerinden biri", fallbackJob: "uygun bir iş unvanı" }, pl: { open: "„", close: "”", fallbackDirection: "jeden z widocznych kierunków", fallbackJob: "odpowiednią nazwę stanowiska" }, el: { open: "«", close: "»", fallbackDirection: "μία από τις ορατές κατευθύνσεις σου", fallbackJob: "έναν κατάλληλο τίτλο εργασίας" }, ru: { open: "«", close: "»", fallbackDirection: "одно из видимых направлений", fallbackJob: "подходящее название должности" },
+};
+
 export function enumerateValidCareerSelections(question: CareerQuestion): readonly (readonly string[])[] {
   const selections: string[][] = [];
   const optionIds = question.options.map(({ id }) => id);
@@ -105,8 +131,8 @@ export function isCareerQuestionComplete(
   return true;
 }
 
-export function getMissingCareerQuestionIds(answers: CareerAnswers): string[] {
-  return careerQuestions
+export function getMissingCareerQuestionIds(answers: CareerAnswers, locale: Locale = "de"): string[] {
+  return getCareerQuestions(locale)
     .filter((question) => !isCareerQuestionComplete(question, answers[question.id]))
     .map(({ id }) => id);
 }
@@ -155,8 +181,10 @@ function compareCareerEvaluations(
 
 export function calculateCareerDirectionEvaluations(
   answers: CareerAnswers,
+  locale: Locale = "de",
 ): readonly CareerDirectionEvaluation[] {
-  return careerDirections.map((direction) => {
+  const questions = getCareerQuestions(locale);
+  return getCareerDirections(locale).map((direction) => {
     let weightedContribution = 0;
     let availableWeight = 0;
     const evidence: WeightedCareerEvidence[] = [];
@@ -164,7 +192,7 @@ export function calculateCareerDirectionEvaluations(
     const evidenceSections = new Set<CareerSectionId>();
     const coreActivityQuestions = new Set<string>();
 
-    for (const question of careerQuestions) {
+    for (const question of questions) {
       if (question.matchingWeight === 0) continue;
       const capacity = calculateCareerQuestionCapacity(question, direction);
       if (capacity <= 0) continue;
@@ -222,9 +250,9 @@ function isAdditionalEvaluation(evaluation: CareerDirectionEvaluation): boolean 
     && evaluation.coreActivityQuestionCount >= 1;
 }
 
-function selectedConstraints(answers: CareerAnswers): Set<CareerConstraintId> {
+function selectedConstraints(answers: CareerAnswers, locale: Locale): Set<CareerConstraintId> {
   const constraints = new Set<CareerConstraintId>();
-  for (const question of careerQuestions) {
+  for (const question of getCareerQuestions(locale)) {
     for (const optionId of answers[question.id] ?? []) {
       const option = question.options.find(({ id }) => id === optionId);
       for (const constraint of option?.constraints ?? []) constraints.add(constraint);
@@ -233,8 +261,8 @@ function selectedConstraints(answers: CareerAnswers): Set<CareerConstraintId> {
   return constraints;
 }
 
-function selectedQualificationScope(answers: CareerAnswers): CareerQualificationScope {
-  for (const question of careerQuestions) {
+function selectedQualificationScope(answers: CareerAnswers, locale: Locale): CareerQualificationScope {
+  for (const question of getCareerQuestions(locale)) {
     for (const optionId of answers[question.id] ?? []) {
       const scope = question.options.find(({ id }) => id === optionId)?.qualificationScope;
       if (scope) return scope;
@@ -243,8 +271,8 @@ function selectedQualificationScope(answers: CareerAnswers): CareerQualification
   return "undecided";
 }
 
-function selectedNextStepMode(answers: CareerAnswers): CareerNextStepMode {
-  for (const question of careerQuestions) {
+function selectedNextStepMode(answers: CareerAnswers, locale: Locale): CareerNextStepMode {
+  for (const question of getCareerQuestions(locale)) {
     for (const optionId of answers[question.id] ?? []) {
       const mode = question.options.find(({ id }) => id === optionId)?.nextStepMode;
       if (mode) return mode;
@@ -253,11 +281,12 @@ function selectedNextStepMode(answers: CareerAnswers): CareerNextStepMode {
   return "role-comparison";
 }
 
-function takeDirectionEvidence(evaluation: CareerDirectionEvaluation, limit = 4): CareerEvidence[] {
+function takeDirectionEvidence(evaluation: CareerDirectionEvaluation, limit = 4, locale: Locale = "de"): CareerEvidence[] {
+  const questions = getCareerQuestions(locale);
   const remaining = [...evaluation.evidence].sort((left, right) => {
     if (left.contribution !== right.contribution) return right.contribution - left.contribution;
-    const leftQuestionIndex = careerQuestions.findIndex(({ id }) => id === left.questionId);
-    const rightQuestionIndex = careerQuestions.findIndex(({ id }) => id === right.questionId);
+    const leftQuestionIndex = questions.findIndex(({ id }) => id === left.questionId);
+    const rightQuestionIndex = questions.findIndex(({ id }) => id === right.questionId);
     return leftQuestionIndex - rightQuestionIndex;
   });
   const chosen: WeightedCareerEvidence[] = [];
@@ -274,8 +303,8 @@ function takeDirectionEvidence(evaluation: CareerDirectionEvaluation, limit = 4)
       const rightNewQuestion = chosenQuestions.has(right.questionId) ? 0 : 1;
       if (leftNewQuestion !== rightNewQuestion) return rightNewQuestion - leftNewQuestion;
       if (left.contribution !== right.contribution) return right.contribution - left.contribution;
-      const leftQuestionIndex = careerQuestions.findIndex(({ id }) => id === left.questionId);
-      const rightQuestionIndex = careerQuestions.findIndex(({ id }) => id === right.questionId);
+      const leftQuestionIndex = questions.findIndex(({ id }) => id === left.questionId);
+      const rightQuestionIndex = questions.findIndex(({ id }) => id === right.questionId);
       return leftQuestionIndex - rightQuestionIndex;
     });
     chosen.push(remaining.shift() as WeightedCareerEvidence);
@@ -289,11 +318,13 @@ function takeDirectionEvidence(evaluation: CareerDirectionEvaluation, limit = 4)
   }));
 }
 
-function directionWhy(direction: CareerDirection, answers: CareerAnswers): string {
+function directionWhy(direction: CareerDirection, answers: CareerAnswers, locale: Locale): string {
+  const questions = getCareerQuestions(locale);
+  const signalCopy = getCareerSignalCopy(locale);
   const profileWeights = new Map(direction.profile.map(({ signalId, weight }) => [signalId, weight]));
   const support = new Map<CareerSignalId, { contribution: number; questions: Set<string> }>();
 
-  for (const question of careerQuestions) {
+  for (const question of questions) {
     if (question.matchingWeight === 0) continue;
     for (const optionId of answers[question.id] ?? []) {
       const option = question.options.find(({ id }) => id === optionId);
@@ -315,11 +346,11 @@ function directionWhy(direction: CareerDirection, answers: CareerAnswers): strin
       return careerSignalIds.indexOf(left[0]) - careerSignalIds.indexOf(right[0]);
     })
     .slice(0, 2)
-    .map(([signalId]) => careerSignalCopy[signalId].evidence);
+    .map(([signalId]) => signalCopy[signalId].evidence);
 
   if (strongest.length === 0) return direction.rationale;
-  if (strongest.length === 1) return `In deiner Auswahl zeigt sich als Anknüpfungspunkt besonders: ${strongest[0]}.`;
-  return `In deiner Auswahl zeigen sich besonders ${strongest[0]} und ${strongest[1]}.`;
+  const copy = careerResultCopyByLocale[locale];
+  return strongest.length === 1 ? copy.whyOne(strongest[0]) : copy.whyTwo(strongest[0], strongest[1]);
 }
 
 function orderedFields(direction: CareerDirection, scope: CareerQualificationScope): string[] {
@@ -338,18 +369,9 @@ function orderedFields(direction: CareerDirection, scope: CareerQualificationSco
     .map(({ field }) => field.label);
 }
 
-function qualificationNote(direction: CareerDirection, scope: CareerQualificationScope): string | undefined {
+function qualificationNote(direction: CareerDirection, scope: CareerQualificationScope, locale: Locale): string | undefined {
   if (!direction.qualificationNote) return undefined;
-  if (scope === "short") {
-    return `Du hast aktuell einen kurzen Qualifizierungsrahmen gewählt. ${direction.qualificationNote}`;
-  }
-  if (scope === "several-months") {
-    return `Mehrere Monate Qualifizierung sind für dich realistisch. ${direction.qualificationNote}`;
-  }
-  if (scope === "formal-open") {
-    return `Du kannst auch längere Qualifizierungswege grundsätzlich prüfen. ${direction.qualificationNote}`;
-  }
-  return `Dein Qualifizierungsrahmen ist noch offen. ${direction.qualificationNote}`;
+  return `${careerResultCopyByLocale[locale].qualification[scope]} ${direction.qualificationNote}`;
 }
 
 function buildResultDirection(
@@ -357,26 +379,27 @@ function buildResultDirection(
   answers: CareerAnswers,
   constraints: ReadonlySet<CareerConstraintId>,
   scope: CareerQualificationScope,
+  locale: Locale,
 ): CareerResultDirection {
-  const direction = careerDirections.find(({ id }) => id === evaluation.directionId) as CareerDirection;
+  const direction = getCareerDirections(locale).find(({ id }) => id === evaluation.directionId) as CareerDirection;
   return {
     id: direction.id,
     title: direction.title,
     description: direction.description,
-    why: directionWhy(direction, answers),
-    evidence: takeDirectionEvidence(evaluation),
+    why: directionWhy(direction, answers, locale),
+    evidence: takeDirectionEvidence(evaluation, 4, locale),
     fields: orderedFields(direction, scope),
     environments: direction.environments,
-    qualificationNote: qualificationNote(direction, scope),
+    qualificationNote: qualificationNote(direction, scope, locale),
     constraintNotes: direction.constraintNotes
       .filter(({ constraintId }) => constraints.has(constraintId))
       .map(({ text }) => text),
   };
 }
 
-function selectedSignalEvidence(answers: CareerAnswers): Map<CareerSignalId, CareerEvidence[]> {
+function selectedSignalEvidence(answers: CareerAnswers, locale: Locale): Map<CareerSignalId, CareerEvidence[]> {
   const bySignal = new Map<CareerSignalId, CareerEvidence[]>();
-  for (const question of careerQuestions) {
+  for (const question of getCareerQuestions(locale)) {
     for (const optionId of answers[question.id] ?? []) {
       const option = question.options.find(({ id }) => id === optionId);
       if (!option) continue;
@@ -390,9 +413,11 @@ function selectedSignalEvidence(answers: CareerAnswers): Map<CareerSignalId, Car
   return bySignal;
 }
 
-export function buildCareerSummary(answers: CareerAnswers, constraints: ReadonlySet<CareerConstraintId> = new Set()): readonly string[] {
+export function buildCareerSummary(answers: CareerAnswers, constraints: ReadonlySet<CareerConstraintId> = new Set(), locale: Locale = "de"): readonly string[] {
+  const questions = getCareerQuestions(locale);
+  const signalCopy = getCareerSignalCopy(locale);
   const signalTotals = new Map<CareerSignalId, { score: number; questions: Set<string> }>();
-  for (const question of careerQuestions) {
+  for (const question of questions) {
     if (question.matchingWeight === 0) continue;
     for (const optionId of answers[question.id] ?? []) {
       const option = question.options.find(({ id }) => id === optionId);
@@ -420,32 +445,33 @@ export function buildCareerSummary(answers: CareerAnswers, constraints: Readonly
   const motivations = strongest(careerMotivationSignalIds, 1);
   const environments = strongest(careerEnvironmentSignalIds, 1);
   const summary: string[] = [];
+  const copy = careerResultCopyByLocale[locale];
 
   if (activities.length >= 2) {
-    summary.push(`Deine Auswahl zieht dich besonders zu Arbeit hin, in der diese Tätigkeiten zusammenkommen: ${careerSignalCopy[activities[0]].summary} sowie ${careerSignalCopy[activities[1]].summary}.`);
+    summary.push(copy.summaryTwo(signalCopy[activities[0]].summary, signalCopy[activities[1]].summary));
   } else if (activities.length === 1) {
-    summary.push(`In deiner Auswahl zeigt sich vorsichtig ein Interesse an dieser Tätigkeit: ${careerSignalCopy[activities[0]].summary}.`);
+    summary.push(copy.summaryOne(signalCopy[activities[0]].summary));
   } else {
-    summary.push("Deine Auswahl öffnet mehrere berufliche Spuren, ohne dass ein einzelnes Tätigkeitsmuster klar dominiert.");
+    summary.push(copy.summaryOpen);
   }
 
   const contextParts = [
-    motivations[0] ? careerSignalCopy[motivations[0]].summary : null,
-    environments[0] ? careerSignalCopy[environments[0]].summary : null,
+    motivations[0] ? signalCopy[motivations[0]].summary : null,
+    environments[0] ? signalCopy[environments[0]].summary : null,
   ].filter((value): value is string => Boolean(value));
-  if (contextParts.length === 2) summary.push(`Dabei wirken ${contextParts[0]} und ${contextParts[1]} wichtig.`);
-  else if (contextParts.length === 1) summary.push(`Dabei wirkt ${contextParts[0]} als wiederkehrender Anknüpfungspunkt.`);
+  if (contextParts.length === 2) summary.push(copy.contextTwo(contextParts[0], contextParts[1]));
+  else if (contextParts.length === 1) summary.push(copy.contextOne(contextParts[0]));
 
   const firstConstraint = careerConstraintIds.find((constraintId) => constraints.has(constraintId));
   if (firstConstraint) {
-    summary.push(`Für deine weitere Erkundung sollte diese Bedingung von Anfang an mitgedacht werden: ${careerConstraintSummaryCopy[firstConstraint]}.`);
+    summary.push(copy.constraint(getCareerConstraintSummaryCopy(locale)[firstConstraint]));
   }
   return summary.slice(0, 3);
 }
 
-function buildConditions(answers: CareerAnswers): CareerCondition[] {
+function buildConditions(answers: CareerAnswers, locale: Locale): CareerCondition[] {
   const conditions: CareerCondition[] = [];
-  for (const question of careerQuestions) {
+  for (const question of getCareerQuestions(locale)) {
     for (const optionId of answers[question.id] ?? []) {
       const option = question.options.find(({ id }) => id === optionId);
       if (!option) continue;
@@ -478,10 +504,12 @@ function buildTensions(
   answers: CareerAnswers,
   constraints: ReadonlySet<CareerConstraintId>,
   scope: CareerQualificationScope,
+  locale: Locale,
 ): CareerTensionResult[] {
-  const evidenceBySignal = selectedSignalEvidence(answers);
+  const questions = getCareerQuestions(locale);
+  const evidenceBySignal = selectedSignalEvidence(answers, locale);
   const constraintEvidence = new Map<CareerConstraintId, CareerEvidence>();
-  for (const question of careerQuestions) {
+  for (const question of questions) {
     for (const optionId of answers[question.id] ?? []) {
       const option = question.options.find(({ id }) => id === optionId);
       if (!option) continue;
@@ -491,7 +519,7 @@ function buildTensions(
     }
   }
 
-  return careerTensionDefinitions.flatMap((definition) => {
+  return getCareerTensionDefinitions(locale).flatMap((definition) => {
     const leftEvidence = definition.leftSignals.flatMap((signalId) => evidenceBySignal.get(signalId) ?? []);
     const rightSignalEvidence = definition.rightSignals.flatMap((signalId) => evidenceBySignal.get(signalId) ?? []);
     const rightConstraintEvidence = definition.rightConstraints
@@ -501,7 +529,7 @@ function buildTensions(
     const rightSupported = rightSignalEvidence.length > 0 || rightConstraintEvidence.length > 0 || qualificationMatches;
     if (leftEvidence.length === 0 || !rightSupported) return [];
 
-    const qualificationQuestion = careerQuestions.find(({ purpose }) => purpose === "qualification");
+    const qualificationQuestion = questions.find(({ purpose }) => purpose === "qualification");
     const qualificationOptionId = qualificationQuestion
       ? (answers[qualificationQuestion.id] ?? []).find((optionId) => qualificationQuestion.options.find(({ id }) => id === optionId)?.qualificationScope === scope)
       : undefined;
@@ -524,8 +552,9 @@ function buildTensions(
   }).slice(0, 2);
 }
 
-function directionName(direction: CareerDirection | undefined): string {
-  return direction ? `„${direction.title}“` : "einer deiner sichtbaren Richtungen";
+function directionName(direction: CareerDirection | undefined, locale: Locale = "de"): string {
+  const copy = careerQuotationCopy[locale];
+  return direction ? `${copy.open}${direction.title}${copy.close}` : copy.fallbackDirection;
 }
 
 export function normalizeCareerJobTerm(value: string): string {
@@ -565,13 +594,15 @@ function hybridPairKey(directionIds: readonly CareerDirectionId[]): string {
 export function selectCareerJobDefinitions(
   primaryDirectionIds: readonly CareerDirectionId[],
   additionalDirectionIds: readonly CareerDirectionId[],
+  locale: Locale = "de",
 ): readonly CareerJobTitleDefinition[] {
+  const jobTitles = getCareerJobTitles(locale);
   const primaryIds = new Set(primaryDirectionIds);
   const additionalIds = new Set(additionalDirectionIds);
   const selectedIds = new Set<string>();
 
   if (primaryDirectionIds.length === 0) {
-    const additionalCandidates = careerJobTitles.filter((job) =>
+    const additionalCandidates = jobTitles.filter((job) =>
       job.directionIds.some((directionId) => additionalIds.has(directionId)),
     );
     return roundRobinCareerJobs(
@@ -597,7 +628,7 @@ export function selectCareerJobDefinitions(
   while (selected.length < CAREER_HYBRID_JOB_LIMIT && hybridProgress) {
     hybridProgress = false;
     for (const pairKey of primaryPairKeys) {
-      const next = careerJobTitles.find((job) =>
+      const next = jobTitles.find((job) =>
         job.hybridDirectionIds
         && hybridPairKey(job.hybridDirectionIds) === pairKey
         && job.hybridDirectionIds.every((directionId) => primaryIds.has(directionId))
@@ -611,7 +642,7 @@ export function selectCareerJobDefinitions(
     }
   }
 
-  const primaryCandidates = careerJobTitles.filter((job) =>
+  const primaryCandidates = jobTitles.filter((job) =>
     job.directionIds.some((directionId) => primaryIds.has(directionId)),
   );
   selected.push(...roundRobinCareerJobs(
@@ -621,7 +652,7 @@ export function selectCareerJobDefinitions(
     Math.max(0, 6 - selected.length),
   ));
 
-  const additionalOnlyCandidates = careerJobTitles.filter((job) =>
+  const additionalOnlyCandidates = jobTitles.filter((job) =>
     job.directionIds.some((directionId) => additionalIds.has(directionId))
     && !job.directionIds.some((directionId) => primaryIds.has(directionId)),
   );
@@ -638,33 +669,23 @@ export function selectCareerJobDefinitions(
 function jobQualificationNote(
   definition: CareerJobTitleDefinition,
   scope: CareerQualificationScope,
+  locale: Locale,
 ): string | undefined {
   if (!definition.qualificationNote) return undefined;
-  const prefix: Record<CareerQualificationScope, string> = {
-    short: "Du hast aktuell einen kurzen Qualifizierungsrahmen gewählt.",
-    "several-months": "Mehrere Monate Qualifizierung sind für dich realistisch.",
-    "formal-open": "Du kannst auch längere Qualifizierungswege grundsätzlich prüfen.",
-    undecided: "Dein Qualifizierungsrahmen ist noch offen.",
-  };
-  return `${prefix[scope]} ${definition.qualificationNote}`;
+  return `${careerResultCopyByLocale[locale].qualification[scope]} ${definition.qualificationNote}`;
 }
 
 function buildCareerJobWhy(
   definition: CareerJobTitleDefinition,
   directions: CareerResultJobTitle["directions"],
+  locale: Locale,
 ): string {
-  if (directions.length >= 2 && definition.hybridDirectionIds) {
-    return "Diese Rolle verbindet zwei deiner besonders sichtbaren Erkundungsspuren.";
-  }
-  if (directions.length >= 2) {
-    return `Diese Rolle berührt die sichtbaren Spuren „${directions[0].title}“ und „${directions[1].title}“.`;
-  }
+  const copy = careerResultCopyByLocale[locale];
+  if (directions.length >= 2 && definition.hybridDirectionIds) return copy.jobHybrid;
+  if (directions.length >= 2) return copy.jobTwo(directions[0].title, directions[1].title);
   const direction = directions[0];
-  if (!direction) return "Dieser Titel ist ein offener Suchbegriff für deine weitere Recherche.";
-  if (direction.tier === "primary") {
-    return `Dieser Suchbegriff konkretisiert deine sichtbare Spur „${direction.title}“.`;
-  }
-  return `Dieser Suchbegriff öffnet eine konkrete Recherche innerhalb der zusätzlich sichtbaren Spur „${direction.title}“.`;
+  if (!direction) return copy.jobOpen;
+  return direction.tier === "primary" ? copy.jobPrimary(direction.title) : copy.jobAdditional(direction.title);
 }
 
 function buildCareerResultJobTitles(
@@ -672,11 +693,14 @@ function buildCareerResultJobTitles(
   additionalDirections: readonly CareerResultDirection[],
   constraints: ReadonlySet<CareerConstraintId>,
   scope: CareerQualificationScope,
+  locale: Locale,
 ): CareerResultJobTitle[] {
+  const careerDirections = getCareerDirections(locale);
   const primaryIds = new Set(primaryDirections.map(({ id }) => id));
   const definitions = selectCareerJobDefinitions(
     primaryDirections.map(({ id }) => id),
     additionalDirections.map(({ id }) => id),
+    locale,
   );
   const usedTerms = new Set(definitions.map(({ title }) => normalizeCareerJobTerm(title)));
 
@@ -708,9 +732,9 @@ function buildCareerResultJobTitles(
       title: definition.title,
       description: definition.description,
       directions,
-      why: buildCareerJobWhy(definition, directions),
+      why: buildCareerJobWhy(definition, directions, locale),
       aliases,
-      qualificationNote: jobQualificationNote(definition, scope),
+      qualificationNote: jobQualificationNote(definition, scope, locale),
       constraintNotes: (definition.constraintHints ?? [])
         .filter(({ constraintId }) => constraints.has(constraintId))
         .map(({ text }) => text),
@@ -718,18 +742,57 @@ function buildCareerResultJobTitles(
   });
 }
 
-function quotedJobTitles(jobTitles: readonly CareerResultJobTitle[], limit: number): string {
-  const titles = jobTitles.slice(0, limit).map(({ title }) => `„${title}“`);
-  if (titles.length <= 1) return titles[0] ?? "einen passenden Jobtitel";
-  return `${titles.slice(0, -1).join(", ")} und ${titles.at(-1)}`;
+function quotedJobTitles(jobTitles: readonly CareerResultJobTitle[], limit: number, locale: Locale): string {
+  const quote = careerQuotationCopy[locale];
+  const titles = jobTitles.slice(0, limit).map(({ title }) => `${quote.open}${title}${quote.close}`);
+  if (titles.length <= 1) return titles[0] ?? quote.fallbackJob;
+  return `${titles.slice(0, -1).join(", ")} ${careerResultCopyByLocale[locale].and} ${titles.at(-1)}`;
 }
 
-export function buildCareerNextStep(
+function buildCareerNextStepEnglish(
   answers: CareerAnswers,
   visibleEvaluations: readonly CareerDirectionEvaluation[],
-  jobTitles: readonly CareerResultJobTitle[] = [],
+  jobTitles: readonly CareerResultJobTitle[],
 ): CareerNextStep {
-  const mode = selectedNextStepMode(answers);
+  const mode = selectedNextStepMode(answers, "en");
+  const directions = getCareerDirections("en");
+  const first = directions.find(({ id }) => id === visibleEvaluations[0]?.directionId);
+  const second = directions.find(({ id }) => id === visibleEvaluations[1]?.directionId);
+  if (jobTitles.length > 0 && mode === "role-comparison") return { mode, title: "Compare concrete job titles through real tasks", text: `Search for ${quotedJobTitles(jobTitles, 3, "en")} and compare six job descriptions only by activities, conditions and entry requirements — not first by employer or title.` };
+  if (jobTitles.length > 0 && mode === "conversation") return { mode, title: "Have a conversation about concrete roles", text: `Use ${quotedJobTitles(jobTitles, 2, "en")} as search terms to find someone to speak with. Ask about typical activities, working rhythm, entry routes, difficult aspects and a realistic start.` };
+  if (jobTitles.length > 0 && mode === "work-observation") return { mode, title: "Observe concrete workflows", text: `Use ${quotedJobTitles(jobTitles, 2, "en")} as a starting point and ask someone to show you a typical workflow.` };
+  if (!first) {
+    const generic: Record<CareerNextStepMode, CareerNextStep> = { conversation: { mode, title: "Discuss two concrete activities", text: "Choose two activities from your answers and speak with someone who knows both from their work." }, "role-comparison": { mode, title: "Compare tasks rather than titles", text: "Compare six job descriptions and mark recurring activities, conditions and entry requirements." }, "mini-project": { mode, title: "Try two small work samples", text: "Simulate two selected activities for 45 minutes each, then note interest, energy and open learning questions." }, "skill-test": { mode, title: "Test a recurring skill", text: "Choose an activity that appears repeatedly and complete a small practical exercise." }, "work-observation": { mode, title: "Observe a real workflow", text: "Ask someone to show you a typical workflow and watch activities, interruptions, contact and conditions." } };
+    return generic[mode];
+  }
+  const compare = Boolean(second && (mode === "role-comparison" || Math.abs(visibleEvaluations[0].score - visibleEvaluations[1].score) <= 0.07));
+  if (mode === "conversation") return compare ? { mode, title: "Have two comparable field conversations", text: `Speak with one person from ${directionName(first, "en")} and one from ${directionName(second, "en")} using the same questions.` } : { mode, title: `Speak with someone from ${directionName(first, "en")}`, text: first.conversationPrompt };
+  if (mode === "role-comparison") return compare ? { mode, title: "Compare two directions through real tasks", text: `Compare six job descriptions from ${directionName(first, "en")} and ${directionName(second, "en")} by tasks, conditions and entry requirements.` } : { mode, title: `Compare roles in ${directionName(first, "en")}`, text: "Read six job descriptions and mark recurring activities, conditions and entry requirements." };
+  if (mode === "mini-project") return compare ? { mode, title: "Try two short comparative experiments", text: `Plan one 45-minute mini-experiment for ${directionName(first, "en")} and one for ${directionName(second, "en")} and compare your observations.` } : { mode, title: `Try ${directionName(first, "en")} in practice`, text: first.microExperiment };
+  if (mode === "skill-test") return compare ? { mode, title: "Compare two typical skills", text: `Test one small practical task from ${directionName(first, "en")} and one from ${directionName(second, "en")} and observe curiosity, concentration and willingness to learn.` } : { mode, title: `Test a skill from ${directionName(first, "en")}`, text: first.skillExperiment };
+  return compare ? { mode, title: "Observe two different working realities", text: `Ask one person from each direction to show you a typical workflow and compare activities, contact, focus, rhythm and entry requirements.` } : { mode, title: `Observe everyday work in ${directionName(first, "en")}`, text: first.observationPrompt };
+}
+
+function buildCareerNextStepExtended(
+  answers: CareerAnswers,
+  visibleEvaluations: readonly CareerDirectionEvaluation[],
+  locale: Exclude<Locale, "de" | "en">,
+): CareerNextStep {
+  const mode = selectedNextStepMode(answers, locale);
+  const directions = getCareerDirections(locale);
+  const first = directions.find(({ id }) => id === visibleEvaluations[0]?.directionId);
+  const second = directions.find(({ id }) => id === visibleEvaluations[1]?.directionId);
+  const template = careerResultCopyByLocale[locale].next[mode];
+  return { mode, title: template.title, text: first ? template.withDirections(first.title, second?.title) : template.generic };
+}
+
+function buildCareerNextStepGerman(
+  answers: CareerAnswers,
+  visibleEvaluations: readonly CareerDirectionEvaluation[],
+  jobTitles: readonly CareerResultJobTitle[],
+): CareerNextStep {
+  const locale = "de" as const;
+  const mode = selectedNextStepMode(answers, locale);
   const first = careerDirections.find(({ id }) => id === visibleEvaluations[0]?.directionId);
   const second = careerDirections.find(({ id }) => id === visibleEvaluations[1]?.directionId);
   const similarlyRelevant = Boolean(
@@ -752,21 +815,21 @@ export function buildCareerNextStep(
     return {
       mode,
       title: "Vergleiche konkrete Jobtitel anhand realer Aufgaben",
-      text: `Suche zum Beispiel nach ${quotedJobTitles(jobTitles, 3)} und vergleiche insgesamt sechs Stellenanzeigen ausschließlich nach Tätigkeiten, Bedingungen und Zugangsvoraussetzungen – nicht zuerst nach Arbeitgeber oder Titelwirkung.`,
+      text: `Suche zum Beispiel nach ${quotedJobTitles(jobTitles, 3, locale)} und vergleiche insgesamt sechs Stellenanzeigen ausschließlich nach Tätigkeiten, Bedingungen und Zugangsvoraussetzungen – nicht zuerst nach Arbeitgeber oder Titelwirkung.`,
     };
   }
   if (jobTitles.length > 0 && mode === "conversation") {
     return {
       mode,
       title: "Führe ein Gespräch zu konkreten Rollen",
-      text: `Nutze ${quotedJobTitles(jobTitles, 2)} als Suchbegriffe, um Gesprächspartner zu finden. Frage nach typischen Tätigkeiten, Arbeitsrhythmus, Zugang, schwierigen Seiten und einem realistischen Einstieg.`,
+      text: `Nutze ${quotedJobTitles(jobTitles, 2, locale)} als Suchbegriffe, um Gesprächspartner zu finden. Frage nach typischen Tätigkeiten, Arbeitsrhythmus, Zugang, schwierigen Seiten und einem realistischen Einstieg.`,
     };
   }
   if (jobTitles.length > 0 && mode === "work-observation") {
     return {
       mode,
       title: "Beobachte konkrete Arbeitsabläufe",
-      text: `Nutze ${quotedJobTitles(jobTitles, 2)} als Ausgangspunkt und bitte eine Person, dir einen typischen Arbeitsablauf zu zeigen. Achte auf Tätigkeiten, Unterbrechungen, Menschenkontakt und Rahmenbedingungen.`,
+      text: `Nutze ${quotedJobTitles(jobTitles, 2, locale)} als Ausgangspunkt und bitte eine Person, dir einen typischen Arbeitsablauf zu zeigen. Achte auf Tätigkeiten, Unterbrechungen, Menschenkontakt und Rahmenbedingungen.`,
     };
   }
 
@@ -795,63 +858,84 @@ export function buildCareerNextStep(
     : { mode, title: `Beobachte den Alltag in ${directionName(first)}`, text: first.observationPrompt };
 }
 
-export function buildCareerResult(answers: CareerAnswers):
+type CareerNextStepBuilder = (answers: CareerAnswers, visibleEvaluations: readonly CareerDirectionEvaluation[], jobTitles: readonly CareerResultJobTitle[]) => CareerNextStep;
+const careerNextStepFactories: Record<Locale, CareerNextStepBuilder> = {
+  de: buildCareerNextStepGerman,
+  en: buildCareerNextStepEnglish,
+  es: (answers, evaluations) => buildCareerNextStepExtended(answers, evaluations, "es"),
+  tr: (answers, evaluations) => buildCareerNextStepExtended(answers, evaluations, "tr"),
+  pl: (answers, evaluations) => buildCareerNextStepExtended(answers, evaluations, "pl"),
+  el: (answers, evaluations) => buildCareerNextStepExtended(answers, evaluations, "el"),
+  ru: (answers, evaluations) => buildCareerNextStepExtended(answers, evaluations, "ru"),
+};
+
+export function buildCareerNextStep(
+  answers: CareerAnswers,
+  visibleEvaluations: readonly CareerDirectionEvaluation[],
+  jobTitles: readonly CareerResultJobTitle[] = [],
+  locale: Locale = "de",
+): CareerNextStep {
+  return careerNextStepFactories[locale](answers, visibleEvaluations, jobTitles);
+}
+
+export function buildCareerResult(answers: CareerAnswers, locale: Locale = "de"):
   | { status: "incomplete"; missingQuestionIds: readonly string[] }
   | { status: "complete"; result: CareerResult } {
-  const missingQuestionIds = getMissingCareerQuestionIds(answers);
+  const missingQuestionIds = getMissingCareerQuestionIds(answers, locale);
   if (missingQuestionIds.length > 0) return { status: "incomplete", missingQuestionIds };
 
-  const evaluations = calculateCareerDirectionEvaluations(answers);
+  const evaluations = calculateCareerDirectionEvaluations(answers, locale);
   const primaryEvaluations = evaluations.filter(isPrimaryEvaluation).slice(0, 3);
   const primaryIds = new Set(primaryEvaluations.map(({ directionId }) => directionId));
   const additionalEvaluations = evaluations
     .filter((evaluation) => !primaryIds.has(evaluation.directionId) && isAdditionalEvaluation(evaluation))
     .slice(0, 3);
-  const constraints = selectedConstraints(answers);
-  const scope = selectedQualificationScope(answers);
+  const constraints = selectedConstraints(answers, locale);
+  const scope = selectedQualificationScope(answers, locale);
   const visibleEvaluations = [...primaryEvaluations, ...additionalEvaluations].sort(compareCareerEvaluations);
-  const primaryDirections = primaryEvaluations.map((evaluation) => buildResultDirection(evaluation, answers, constraints, scope));
-  const additionalDirections = additionalEvaluations.map((evaluation) => buildResultDirection(evaluation, answers, constraints, scope));
-  const jobTitles = buildCareerResultJobTitles(primaryDirections, additionalDirections, constraints, scope);
+  const primaryDirections = primaryEvaluations.map((evaluation) => buildResultDirection(evaluation, answers, constraints, scope, locale));
+  const additionalDirections = additionalEvaluations.map((evaluation) => buildResultDirection(evaluation, answers, constraints, scope, locale));
+  const jobTitles = buildCareerResultJobTitles(primaryDirections, additionalDirections, constraints, scope, locale);
 
   return {
     status: "complete",
     result: {
-      title: "Deine Career Map",
-      description: "Eine lokale Momentaufnahme möglicher beruflicher Erkundungsräume – keine Bewertung deiner Person und keine Entscheidung über einen Beruf.",
-      summary: buildCareerSummary(answers, constraints),
+      title: careerResultCopyByLocale[locale].title,
+      description: careerResultCopyByLocale[locale].description,
+      summary: buildCareerSummary(answers, constraints, locale),
       primaryDirections,
       additionalDirections,
       jobTitles,
-      conditions: buildConditions(answers),
-      tensions: buildTensions(answers, constraints, scope),
-      nextStep: buildCareerNextStep(answers, visibleEvaluations, jobTitles),
+      conditions: buildConditions(answers, locale),
+      tensions: buildTensions(answers, constraints, scope, locale),
+      nextStep: buildCareerNextStep(answers, visibleEvaluations, jobTitles, locale),
     },
   };
 }
 
-export function formatCareerSelectionCount(selectedCount: number, maxSelections: number): string {
-  return `${selectedCount} von ${maxSelections} ausgewählt`;
+export function formatCareerSelectionCount(selectedCount: number, maxSelections: number, locale: Locale = "de"): string {
+  return careerResultCopyByLocale[locale].selected(selectedCount, maxSelections);
 }
 
-function selectionInstruction(question: CareerQuestion): string {
+function selectionInstruction(question: CareerQuestion, locale: Locale): string {
+  const copy = careerResultCopyByLocale[locale];
   if (question.minSelections === question.maxSelections) {
-    return question.minSelections === 1
-      ? "Wähle eine Antwort aus."
-      : `Wähle genau ${question.minSelections} Antworten aus.`;
+    return question.minSelections === 1 ? copy.one : copy.exact(question.minSelections);
   }
-  return `Wähle ${question.minSelections} bis ${question.maxSelections} Antworten aus.`;
+  return copy.range(question.minSelections, question.maxSelections);
 }
 
-function isLastQuestionOfCareerSection(questionIndex: number, sectionId: CareerSectionId): boolean {
-  const nextQuestion = careerQuestions[questionIndex + 1];
+function isLastQuestionOfCareerSection(questionIndex: number, sectionId: CareerSectionId, locale: Locale): boolean {
+  const nextQuestion = getCareerQuestions(locale)[questionIndex + 1];
   return !nextQuestion || nextQuestion.sectionId !== sectionId;
 }
 
 export function careerJourneyReducer(
   state: CareerJourneyState,
   action: CareerJourneyAction,
+  locale: Locale = "de",
 ): CareerJourneyState {
+  const questions = getCareerQuestions(locale);
   if (action.type === "confirm-restart") return initialCareerState;
   if (action.type === "request-restart") return { ...state, restartPending: true };
   if (action.type === "cancel-restart") return { ...state, restartPending: false };
@@ -859,13 +943,13 @@ export function careerJourneyReducer(
     return { ...state, phase: "journey", questionIndex: 0, validationMessage: null, restartPending: false };
   }
   if (action.type === "edit-section") {
-    const questionIndex = careerQuestions.findIndex(({ sectionId }) => sectionId === action.sectionId);
+    const questionIndex = questions.findIndex(({ sectionId }) => sectionId === action.sectionId);
     if (questionIndex < 0) return state;
     return { ...state, phase: "journey", questionIndex, validationMessage: null, editingSectionId: action.sectionId, restartPending: false };
   }
   if (action.type === "toggle-option") {
     if (state.phase !== "journey") return state;
-    const question = careerQuestions[state.questionIndex];
+    const question = questions[state.questionIndex];
     if (!question || question.id !== action.questionId) return state;
     const option = question.options.find(({ id }) => id === action.optionId);
     if (!option) return state;
@@ -879,7 +963,7 @@ export function careerJourneyReducer(
     else {
       const withoutExclusive = current.filter((optionId) => !question.options.find(({ id }) => id === optionId)?.exclusive);
       if (withoutExclusive.length >= question.maxSelections) {
-        return { ...state, validationMessage: `Du kannst höchstens ${question.maxSelections} Antworten auswählen.` };
+        return { ...state, validationMessage: careerResultCopyByLocale[locale].maximum(question.maxSelections) };
       }
       selected = [...withoutExclusive, option.id];
     }
@@ -891,7 +975,7 @@ export function careerJourneyReducer(
   if (action.type === "back") {
     if (state.phase !== "journey") return state;
     const firstEditingIndex = state.editingSectionId
-      ? careerQuestions.findIndex(({ sectionId }) => sectionId === state.editingSectionId)
+      ? questions.findIndex(({ sectionId }) => sectionId === state.editingSectionId)
       : -1;
     if (state.editingSectionId && state.questionIndex === firstEditingIndex) {
       return { ...state, phase: "result", editingSectionId: null, validationMessage: null };
@@ -901,20 +985,20 @@ export function careerJourneyReducer(
   }
   if (action.type === "continue") {
     if (state.phase !== "journey") return state;
-    const question = careerQuestions[state.questionIndex];
+    const question = questions[state.questionIndex];
     if (!question) return state;
     if (!isCareerQuestionComplete(question, state.answers[question.id])) {
-      return { ...state, validationMessage: selectionInstruction(question) };
+      return { ...state, validationMessage: selectionInstruction(question, locale) };
     }
 
-    const atJourneyEnd = state.questionIndex === careerQuestions.length - 1;
+    const atJourneyEnd = state.questionIndex === questions.length - 1;
     const atEditedSectionEnd = state.editingSectionId
-      ? isLastQuestionOfCareerSection(state.questionIndex, state.editingSectionId)
+      ? isLastQuestionOfCareerSection(state.questionIndex, state.editingSectionId, locale)
       : false;
     if (atJourneyEnd || atEditedSectionEnd) {
-      if (getMissingCareerQuestionIds(state.answers).length > 0) {
+      if (getMissingCareerQuestionIds(state.answers, locale).length > 0) {
         return atJourneyEnd
-          ? { ...state, validationMessage: "Beantworte bitte alle Fragen, bevor du deine Career Map öffnest." }
+          ? { ...state, validationMessage: careerResultCopyByLocale[locale].incomplete }
           : { ...state, questionIndex: state.questionIndex + 1, editingSectionId: null, validationMessage: null };
       }
       return { ...state, phase: "result", editingSectionId: null, validationMessage: null };

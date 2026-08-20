@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { fynsFoundationUiCopy, fynsOverviewUiCopy } from "../data/find-your-next-step-ui-locales";
 
 import { findYourNextStep, getNextStepJourney, nextStepJourneys } from "../data/find-your-next-step";
 
@@ -53,8 +54,10 @@ test("FYNS overview and unfinished journey shell stay semantic, server-rendered,
 
   assert.equal(overview.match(/<h1\b/gu)?.length, 1);
   assert.equal(journey.match(/<h1\b/gu)?.length, 1);
-  assert.equal(overview.includes('<nav aria-label="Breadcrumb"'), true);
-  assert.equal(journey.includes('<nav aria-label="Breadcrumb"'), true);
+  assert.match(overview, /aria-label=\{copy\.breadcrumb\}/u);
+  assert.match(journey, /aria-label=\{copy\.breadcrumb\}/u);
+  assert.equal(fynsOverviewUiCopy.de.breadcrumb, "Brotkrümelnavigation");
+  assert.equal(fynsFoundationUiCopy.en.breadcrumb, "Breadcrumb");
   assert.equal(overview.includes("<ol"), true);
   assert.equal(overview.includes("nextStepJourneys.map"), true);
   assert.equal(journey.includes("journey.expectations.map"), true);
@@ -82,11 +85,13 @@ test("the dynamic journey route owns static params, metadata, canonicals, and un
 
   assert.equal(route.includes("generateStaticParams"), true);
   assert.equal(route.includes("generateMetadata"), true);
-  assert.equal(route.includes("alternates: { canonical: journey.href }"), true);
+  assert.equal(route.includes("createLocalizedMetadata"), true);
+  assert.equal(route.includes("pathname: journey.href"), true);
+  assert.equal(route.includes("getLocale"), true);
   assert.equal(route.includes("if (!journey) notFound()"), true);
   assert.equal(route.includes("nextStepJourneys.map"), true);
   assert.equal(route.includes('if (journey.slug === "self")'), true);
-  assert.equal(route.includes("<FindYourNextStepSelf journey={journey} />"), true);
+  assert.equal(route.includes("<FindYourNextStepSelf journey={journey} locale={locale} />"), true);
   assert.equal(route.includes('if (journey.slug === "career")'), true);
-  assert.equal(route.includes("<FindYourNextStepCareer journey={journey} />"), true);
+  assert.equal(route.includes("<FindYourNextStepCareer journey={journey} locale={locale} />"), true);
 });

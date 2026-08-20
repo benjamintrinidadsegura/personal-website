@@ -9,6 +9,9 @@ import { isAllowedRequestOrigin } from "@/lib/echowall/security";
 import { getSupabaseAuthStorageKey, legacyAdminCookieOptions } from "@/lib/supabase/auth-cookies";
 import { createSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
 import type { DisplayNameActionState } from "@/types/comments";
+import { getLocale } from "@/lib/i18n/server";
+import { localizeHref } from "@/lib/i18n/routing";
+import { getAccountDictionary } from "@/data/i18n/account";
 
 export type AuthActionState = { message: string } | null;
 
@@ -38,7 +41,8 @@ export async function loginAction(
   _state: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const failure = { message: "Anmeldung nicht möglich." };
+  const locale = await getLocale();
+  const failure = { message: getAccountDictionary(locale).loginFailure };
   if (!(await validRequest())) return failure;
 
   const email = formData.get("email");
@@ -63,21 +67,22 @@ export async function loginAction(
   try {
     account = await resolveAccount(supabase);
   } catch {
-    redirect("/");
+    redirect(localizeHref("/", locale));
   }
   if (account.state.kind === "admin") {
     redirect(account.state.aal === "aal2" ? "/admin" : "/admin/mfa");
   }
-  redirect("/");
+  redirect(localizeHref("/", locale));
 }
 
 export async function logoutAction() {
-  if (!(await validRequest())) redirect("/");
+  const locale = await getLocale();
+  if (!(await validRequest())) redirect(localizeHref("/", locale));
 
   const supabase = await createSupabaseAuthServerClient();
   await supabase.auth.signOut();
   await clearLegacyAdminSession();
-  redirect("/");
+  redirect(localizeHref("/", locale));
 }
 
 export async function refreshAccountStateAction(): Promise<AccountState> {
@@ -88,6 +93,7 @@ export async function setAccountDisplayNameAction(
   _state: DisplayNameActionState,
   formData: FormData,
 ): Promise<Exclude<DisplayNameActionState, null>> {
+  const locale = await getLocale();
   let actorUserId: string | null = null;
   try {
     const auth = await createSupabaseAuthServerClient();
@@ -109,5 +115,6 @@ export async function setAccountDisplayNameAction(
       });
       return !error && data === displayName;
     },
+    locale,
   );
 }

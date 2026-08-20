@@ -5,7 +5,10 @@ import test from "node:test";
 import { ownerStories } from "../data/about";
 import { discoveryIndex } from "../data/discovery-index";
 import { createInterviewPulseCandidates } from "../data/hq-pulse";
+import { getLocalizedPublishedSpotlights } from "../data/i18n/people";
 import { filterPublishedSpotlights, getPublishedSpotlight, publishedSpotlights, spotlights } from "../data/spotlights";
+import { locales } from "../lib/i18n/config";
+import { getLocalizedPathname } from "../lib/i18n/routing";
 
 const expectedGuests = [
   "evgeny-vinokurov",
@@ -22,6 +25,21 @@ test("the V1 inventory contains exactly the six expected published guests", () =
   assert.deepEqual(publishedSpotlights.map(({ slug }) => slug), expectedGuests);
   assert.equal(publishedSpotlights.length, 6);
   assert.equal(publishedSpotlights.every(({ status }) => status === "published"), true);
+});
+
+test("localized Spotlight editorial layers preserve every canonical source boundary", () => {
+  for (const locale of locales) {
+    const localized = getLocalizedPublishedSpotlights(locale);
+    assert.equal(localized.length, 6);
+    assert.deepEqual(localized.map(({ id }) => id), publishedSpotlights.map(({ id }) => id));
+    assert.deepEqual(localized.map(({ slug }) => slug), publishedSpotlights.map(({ slug }) => slug));
+    assert.deepEqual(localized.map(({ language }) => language), publishedSpotlights.map(({ language }) => language));
+    assert.deepEqual(localized.map(({ video }) => video), publishedSpotlights.map(({ video }) => video));
+    assert.deepEqual(
+      localized.map(({ chapters }) => chapters.map(({ timestamp, seconds }) => ({ timestamp, seconds }))),
+      publishedSpotlights.map(({ chapters }) => chapters.map(({ timestamp, seconds }) => ({ timestamp, seconds }))),
+    );
+  }
 });
 
 test("guest identities, slugs, publication timestamps, and videos are canonical and unique", () => {
@@ -93,8 +111,10 @@ test("People index, detail routes, and privacy-aware video surface are integrate
   assert.match(detail, /grid min-w-0 grid-cols-1/u);
   assert.match(detail, /\[overflow-wrap:anywhere\]/u);
   assert.match(video, /youtube-nocookie\.com/u);
-  assert.match(video, /Video laden/u);
-  assert.match(video, /Das Video startet nicht automatisch/u);
+  assert.match(video, /privacyCopy: Record<Locale/u);
+  assert.match(video, /const copy = privacyCopy\[useLocale\(\)\]/u);
+  assert.match(video, /\{copy\.load\}/u);
+  assert.match(video, /\{copy\.consent\}/u);
   assert.match(video, /aspect-video/u);
 });
 
@@ -145,6 +165,39 @@ test("sitemap and metadata use canonical People routes, with legacy routes redir
   assert.match(sitemap, /"\/people"/u);
   assert.match(sitemap, /publishedSpotlights/u);
   assert.doesNotMatch(sitemap, /"\/goatrecrutainer\/career-spotlight"/u);
-  assert.match(legacyIndex, /permanentRedirect\("\/people"\)/u);
-  assert.match(legacyDetail, /permanentRedirect\(`\/people\//u);
+  assert.match(legacyIndex, /permanentRedirect\(getLocalizedPathname\("\/people", await getLocale\(\)\)\)/u);
+  assert.match(legacyDetail, /permanentRedirect\(getLocalizedPathname\(`\/people\//u);
+
+  const detail = source("../app/people/[slug]/page.tsx");
+  assert.match(detail, /getLocalizedPathname\(`\/people\/\$\{spotlight\.slug\}`, locale\)/u);
+  assert.match(detail, /inLanguage: locale/u);
+  assert.match(detail, /description: sourceSpotlight\?\.teaser \?\? spotlight\.teaser/u);
+  assert.match(detail, /inLanguage: spotlight\.language/u);
+});
+
+test("sitemap pairs all seven People routes with complete locale alternates", async () => {
+  const previousSiteUrl = process.env.SITE_URL;
+  const previousNodeEnv = process.env.NODE_ENV;
+
+  try {
+    Object.defineProperty(process.env, "NODE_ENV", { value: "production", configurable: true, enumerable: true, writable: true });
+    process.env.SITE_URL = "https://bts.online";
+    const { createSitemap } = await import("../app/sitemap");
+    const peopleRoutes = ["/people", ...expectedGuests.map((slug) => `/people/${slug}`)];
+    const entries = createSitemap([]);
+
+    for (const route of peopleRoutes) {
+      const deUrl = `https://bts.online${route}`;
+      const localeUrls = Object.fromEntries(locales.map((locale) => [locale, `https://bts.online${getLocalizedPathname(route, locale)}`]));
+      for (const url of Object.values(localeUrls)) {
+        const entry = entries.find((candidate) => candidate.url === url);
+        assert.ok(entry, url);
+        assert.deepEqual(entry.alternates?.languages, { ...localeUrls, "x-default": deUrl });
+      }
+    }
+  } finally {
+    if (previousSiteUrl === undefined) delete process.env.SITE_URL;
+    else process.env.SITE_URL = previousSiteUrl;
+    Object.defineProperty(process.env, "NODE_ENV", { value: previousNodeEnv, configurable: true, enumerable: true, writable: true });
+  }
 });

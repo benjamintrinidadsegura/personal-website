@@ -10,6 +10,8 @@ import type {
   CareerSignal,
   CareerSignalId,
 } from "@/types/find-your-next-step";
+import type { Locale } from "@/lib/i18n/config";
+import { careerLocaleCopy, extendedCareerFixedOptions, extendedCareerTensions, getCareerLocaleCommon, getExtendedCareerIntro, getExtendedCareerSignalCopy, getExtendedDirectionTitle } from "@/data/find-your-next-step-career-locales";
 
 const signal = (id: CareerSignalId, weight: 1 | 2): CareerSignal => ({ id, weight });
 
@@ -1268,3 +1270,155 @@ export const careerTensionDefinitions = [
     text: "Mehr Verantwortung und Veränderung wirken interessant, während Einkommenskontinuität geschützt bleiben soll. Bei deiner Erkundung lohnt es sich, beides gleichzeitig mitzudenken.",
   },
 ] as const;
+
+const careerSignalCopyEn: typeof careerSignalCopy = {
+  "develop-people": { label: "Develop people", summary: "support people and their development", evidence: "support people and enable development" }, "build-relationships": { label: "Build relationships", summary: "build relationships and connect different interests", evidence: "build relationships and bring people with you" }, "analyze-information": { label: "Analyse information", summary: "organise information and create clarity", evidence: "analyse information and clarify decisions" }, "research-questions": { label: "Research questions", summary: "investigate open questions and understand new connections", evidence: "research open questions and develop new insights" }, "explain-communicate": { label: "Explain and communicate", summary: "make complex ideas understandable", evidence: "explain ideas clearly" }, "create-content": { label: "Create content", summary: "shape content and stories", evidence: "develop content and give it a clear form" }, "design-solutions": { label: "Design solutions", summary: "translate needs into usable solutions", evidence: "design solutions from the perspective of future users" }, "build-implement": { label: "Build and implement", summary: "put ideas into practice or technology", evidence: "build and implement something that works" }, "organize-delivery": { label: "Coordinate delivery", summary: "connect many parts into reliable delivery", evidence: "coordinate projects and bring them to a reliable result" }, "improve-systems": { label: "Improve systems", summary: "improve systems and processes step by step", evidence: "improve processes and reduce friction" }, "lead-decide": { label: "Lead and decide", summary: "provide direction and take responsibility for decisions", evidence: "provide direction under uncertainty and take responsibility" },
+  "human-progress": { label: "Human progress", summary: "human progress", evidence: "visible progress for people" }, "visible-usefulness": { label: "Visible usefulness", summary: "a visible practical benefit", evidence: "a result with a recognisable benefit" }, "learning-mastery": { label: "Learning and mastery", summary: "learning and specialist depth", evidence: "learning, understanding and specialist depth" }, "creative-expression": { label: "Creative expression", summary: "creative expression", evidence: "creative expression and an individual form" }, "commercial-momentum": { label: "Commercial momentum", summary: "visible commercial momentum", evidence: "turn relationships into commercial momentum" }, "stability-quality": { label: "Quality and reliability", summary: "quality and reliability", evidence: "quality and reliable results" }, "ownership-change": { label: "Ownership and change", summary: "ownership and the ability to initiate change", evidence: "take ownership and move change forward" },
+  "people-contact": { label: "Frequent contact with people", summary: "regular contact with people", evidence: "regular direct exchange with people" }, collaboration: { label: "Collaboration", summary: "close collaboration", evidence: "develop and coordinate things together" }, "focus-time": { label: "Protected focus time", summary: "protected time for concentration", evidence: "longer periods of focused work" }, "clear-framework": { label: "Clear framework", summary: "a clear, understandable framework", evidence: "clear goals and understandable conditions" }, autonomy: { label: "Autonomy", summary: "independent room to shape things", evidence: "independent room to shape things" }, variety: { label: "Variety", summary: "variety and changing perspectives", evidence: "variety across subjects and situations" }, "steady-rhythm": { label: "Steady rhythm", summary: "a predictable working rhythm", evidence: "a predictable and reliable rhythm" }, "open-exploration": { label: "Open questions", summary: "room for open questions", evidence: "room to explore paths that are still open" }, "feedback-exchange": { label: "Feedback and response", summary: "regular feedback", evidence: "exchange and helpful feedback" },
+};
+
+const careerConstraintSummaryCopyEn: typeof careerConstraintSummaryCopy = {
+  "reduced-hours": "realistically reduced working hours", "remote-required": "being able to work predominantly remotely", "no-regular-travel": "avoiding regular travel", "predictable-hours": "predictable hours without regular shifts", "income-continuity": "reliable continuity of income", "low-physical-load": "low physical demands",
+};
+
+const careerIntroEn = {
+  eyebrow: "Beta · Career orientation", title: "Build a map of possible career directions.", description: "This journey connects activities, impact, ways of working and your current reality. It shows several professional paths to explore — not a supposedly perfect career.", canDo: ["make recurring activity patterns and motivators visible", "open several career directions with concrete reasons", "include conditions, tensions and realistic next steps"], cannotDo: ["not assess you or your professional performance", "not verify qualifications, salaries or labour-market demand", "not decide on a career or application for you"], duration: "14 exploration choices across 5 layers · about 9–11 minutes", privacy: "Your answers remain only in the current page state. They are not stored or transmitted and will be lost when you reload or leave.",
+} as const;
+
+const careerSectionCopyEn = {
+  attraction: { title: "What draws you in?", mapLabel: "Attraction", description: "Effects, problems and projects that spontaneously spark interest." }, activities: { title: "What would you like to do more often?", mapLabel: "Activities", description: "Concrete actions and contributions instead of abstract traits." }, workstyle: { title: "How would you like to work?", mapLabel: "Working mode", description: "Exchange, focus, rhythm, framework and room of your own." }, reality: { title: "What must fit realistically?", mapLabel: "Reality", description: "Preferences, firm conditions and a realistic qualification scope." }, development: { title: "What would you like to develop?", mapLabel: "Development", description: "Future learning and the right first mode of exploration." },
+} as const;
+
+const careerQuestionCopyEn: Readonly<Record<string, { prompt: string; context: string }>> = {
+  "attraction-outcomes": { prompt: "Which results would leave you especially satisfied at the end of a good working day?", context: "Choose three results that feel right to you personally — not those that sound most impressive." }, "attraction-problems": { prompt: "Which kind of unresolved problem is more likely to make you curious?", context: "Choose two or three situations you would probably examine more closely." }, "attraction-mini-projects": { prompt: "For which two mini-projects would you spontaneously reserve a free afternoon?", context: "This is about curiosity, not what you are already especially good at." }, "activities-more-often": { prompt: "Which activities would you like to spend more time on in your working day?", context: "Choose exactly four. What matters is what you genuinely want to spend more time doing." }, "activities-new-initiative": { prompt: "A new initiative begins. Which two contributions would you most like to take on?", context: "Other tasks may remain important — choose the contributions that draw you first." }, "activities-when-stuck": { prompt: "A task is stuck. What would probably be your first move?", context: "Choose one or two responses you would like to use more often." }, "workstyle-route": { prompt: "You are given a clear goal. How would you most like to get there?", context: "Choose one or two ways of working that tend to support you across different tasks." }, "workstyle-contact-rhythm": { prompt: "Which rhythm of exchange and focus comes closest to your ideal working day?", context: "Choose the version that best fits your current phase of life." }, "workstyle-sustainable-rhythm": { prompt: "Which two working rhythms would be more likely to sustain you over time?", context: "This is about sustainability, not how much strain you can tolerate in the short term." }, "reality-constraints": { prompt: "Which conditions are genuinely non-negotiable for your next career step?", context: "Choose no more than three firm conditions. Negotiable preferences follow in a separate question." }, "reality-qualification": { prompt: "What qualification effort is realistic for you right now?", context: "This only affects notes on specific roles — never the career directions themselves." }, "reality-transition-priorities": { prompt: "What should your next career step preferably protect or improve?", context: "Choose two preferences. Unlike firm conditions, these may remain open to trade-offs." }, "development-growth": { prompt: "In which two directions would you like to develop over the next few years?", context: "This is about a desired learning direction, not a strength you have already proved." }, "development-exploration-mode": { prompt: "How would you most like to examine an interesting direction first?", context: "This choice determines only your next exploration step and does not change any direction." },
+};
+
+const fixedCareerOptionCopyEn: Readonly<Record<string, string>> = {
+  "constraint-reduced-hours": "Realistically reduced working hours must be possible.", "constraint-remote": "Being able to work predominantly remotely is necessary.", "constraint-travel": "Regular travel is not an option for me.", "constraint-hours": "I need predictable working hours without regular shifts.", "constraint-income": "Reliable continuity of income must be maintained.", "constraint-physical": "The work must involve only low physical demands.", "constraint-none": "None of these is fixed at the moment.",
+  "qualification-short": "Onboarding or a short course is realistic.", "qualification-months": "Several months of targeted qualification are realistic.", "qualification-formal": "Longer training or a degree is possible in principle.", "qualification-open": "I would like to leave this open for now.",
+  "explore-conversation": "Speak with someone in the field.", "explore-role-comparison": "Compare job descriptions.", "explore-mini-project": "Try a small mini-project.", "explore-skill": "Test a typical skill in practice.", "explore-observation": "Observe a real working day.",
+};
+
+const directionCopyEn: Readonly<Record<CareerDirection["id"], { title: string; description: string; rationale: string; fields: readonly string[]; environments: readonly string[] }>> = {
+  "develop-people": { title: "Support & develop people", description: "Work centred on other people’s development, direction or ability to act.", rationale: "A person’s visible progress is the central work result here.", fields: ["Learning & Development", "Customer Success", "Recruiting", "People & Culture", "Education programmes"], environments: ["Learning and development", "Advisory services", "Service-oriented teams", "People and talent teams"] },
+  "relationships-influence": { title: "Build relationships & influence", description: "Work that connects interests, builds trust and brings people or organisations into shared movement.", rationale: "The result is created substantially through relationships, understanding and sustainable agreement.", fields: ["Account Management", "Business Development", "Partnerships", "Sales", "Community Growth"], environments: ["Customer and partner work", "Growth and sales teams", "Networks and communities", "Advisory services"] },
+  "analysis-clarity": { title: "Analyse information & clarify decisions", description: "Work that organises complex information, makes patterns visible and creates sound direction.", rationale: "Value is created by turning existing information into something people can decide with.", fields: ["Business Analysis", "Data Analysis", "Controlling", "Customer or Market Insight", "Process Analysis"], environments: ["Analytics and strategy", "Finance and controlling", "Operations", "Decision support"] },
+  "research-understanding": { title: "Research & understand new things", description: "Work that investigates open questions, tests assumptions and creates new understanding.", rationale: "The focus is not only on organising existing data, but on developing new insight.", fields: ["UX Research", "Market Research", "Insight Research", "Research Assistance", "Service Research"], environments: ["Product and user research", "Market and social research", "Insight teams", "Research-led projects"] },
+  "content-communication": { title: "Create & communicate content", description: "Work that turns thoughts, information or stories into an understandable and effective form.", rationale: "The central contribution is to shape meaning so that others can understand and use it.", fields: ["Editorial", "Content Strategy", "Internal Communications", "Employer Branding", "Technical Writing"], environments: ["Media and editorial", "Communications and brand teams", "Education", "Content and marketing teams"] },
+  "product-experience": { title: "Develop products & experiences", description: "Work that translates needs, technical possibilities and organisation into a usable offer.", rationale: "The contribution lies in connecting problem understanding, design and shared delivery.", fields: ["Product Management", "Service Design", "UX/UI", "Product Design", "Product Operations"], environments: ["Digital product teams", "Service and innovation units", "Agencies", "Interdisciplinary development teams"] },
+  "technical-practical": { title: "Build technical or practical solutions", description: "Work in which something functional is implemented, tested, repaired or technically improved.", rationale: "The result is directly useful and must work reliably in practice.", fields: ["Software or Web Development", "Automation", "Quality Assurance", "Technical Service", "Prototyping"], environments: ["Technology and development teams", "Technical services", "Workshops or production", "Quality assurance and automation"] },
+  "operations-improvement": { title: "Organise & improve operations", description: "Work that connects people, tasks and systems into reliable delivery.", rationale: "Value is created through direction, coordinated hand-offs and less friction in the overall process.", fields: ["Project Coordination", "Operations", "Process Management", "Project Production", "PMO"], environments: ["Project and operations teams", "Service organisations", "Events and production", "Process organisations"] },
+  "initiative-leadership": { title: "Lead initiatives & take ownership", description: "Work that provides direction under uncertainty, owns priorities and enables shared action.", rationale: "This direction describes an activity pattern, not a higher career level or a statement about current leadership readiness.", fields: ["Programme Leadership", "Innovation", "Change", "Venture Development", "Strategic Initiatives"], environments: ["Transformation teams", "New ventures", "Cross-functional initiatives", "Leadership support"] },
+};
+
+const careerLocaleTags: Record<Locale, string> = { de: "de-DE", en: "en-GB", es: "es", tr: "tr", pl: "pl", el: "el", ru: "ru" };
+const fixedCareerOptionsByLocale: Record<Exclude<Locale, "de">, Readonly<Record<string, string>>> = { en: fixedCareerOptionCopyEn, ...extendedCareerFixedOptions };
+const careerSignalFactories: Record<Locale, () => typeof careerSignalCopy> = {
+  de: () => careerSignalCopy, en: () => careerSignalCopyEn, es: () => getExtendedCareerSignalCopy("es"), tr: () => getExtendedCareerSignalCopy("tr"), pl: () => getExtendedCareerSignalCopy("pl"), el: () => getExtendedCareerSignalCopy("el"), ru: () => getExtendedCareerSignalCopy("ru"),
+};
+
+const careerOptionLabelFactories: Record<Exclude<Locale, "de">, (labels: string[], optionId: string) => string> = {
+  en: (labels, optionId) => labels.length > 0 ? `Work involving ${labels.join(" and ")}.` : `Explore ${optionId.replaceAll("-", " ")}.`,
+  es: (labels, optionId) => labels.length > 0 ? getCareerLocaleCommon("es").workTemplate(labels.join(" · ")) : optionId.replaceAll("-", " "),
+  tr: (labels, optionId) => labels.length > 0 ? getCareerLocaleCommon("tr").workTemplate(labels.join(" · ")) : optionId.replaceAll("-", " "),
+  pl: (labels, optionId) => labels.length > 0 ? getCareerLocaleCommon("pl").workTemplate(labels.join(" · ")) : optionId.replaceAll("-", " "),
+  el: (labels, optionId) => labels.length > 0 ? getCareerLocaleCommon("el").workTemplate(labels.join(" · ")) : optionId.replaceAll("-", " "),
+  ru: (labels, optionId) => labels.length > 0 ? getCareerLocaleCommon("ru").workTemplate(labels.join(" · ")) : optionId.replaceAll("-", " "),
+};
+
+function localizeCareerOption(option: CareerQuestion["options"][number], locale: Exclude<Locale, "de">) {
+  const fixed = fixedCareerOptionsByLocale[locale][option.id];
+  if (fixed) return { ...option, label: fixed };
+  const copy = careerSignalFactories[locale]();
+  const labels = (option.signals ?? []).slice(0, 2).map(({ id }) => copy[id].label.toLocaleLowerCase(careerLocaleTags[locale]));
+  return { ...option, label: careerOptionLabelFactories[locale](labels, option.id) };
+}
+
+export function getCareerSignalCopy(locale: Locale) { return careerSignalFactories[locale](); }
+
+function buildExtendedConstraintSummary(locale: Exclude<Locale, "de" | "en">) {
+  const fixed = extendedCareerFixedOptions[locale];
+  return { "reduced-hours": fixed["constraint-reduced-hours"], "remote-required": fixed["constraint-remote"], "no-regular-travel": fixed["constraint-travel"], "predictable-hours": fixed["constraint-hours"], "income-continuity": fixed["constraint-income"], "low-physical-load": fixed["constraint-physical"] };
+}
+
+const careerConstraintFactories: Record<Locale, () => Readonly<Record<CareerConstraintId, string>>> = {
+  de: () => careerConstraintSummaryCopy, en: () => careerConstraintSummaryCopyEn, es: () => buildExtendedConstraintSummary("es"), tr: () => buildExtendedConstraintSummary("tr"), pl: () => buildExtendedConstraintSummary("pl"), el: () => buildExtendedConstraintSummary("el"), ru: () => buildExtendedConstraintSummary("ru"),
+};
+export function getCareerConstraintSummaryCopy(locale: Locale) {
+  return careerConstraintFactories[locale]();
+}
+const careerIntroFactories = { de: () => careerIntro, en: () => careerIntroEn, es: () => getExtendedCareerIntro("es"), tr: () => getExtendedCareerIntro("tr"), pl: () => getExtendedCareerIntro("pl"), el: () => getExtendedCareerIntro("el"), ru: () => getExtendedCareerIntro("ru") } as const;
+export function getCareerIntro(locale: Locale) { return careerIntroFactories[locale](); }
+
+function buildExtendedCareerSections(locale: Exclude<Locale, "de" | "en">): readonly CareerSection[] { return careerSections.map((section, index) => { const [title, mapLabel, description] = careerLocaleCopy[locale].sections[index]; return { ...section, title, mapLabel, description }; }); }
+const careerSectionFactories: Record<Locale, () => readonly CareerSection[]> = { de: () => careerSections, en: () => careerSections.map((section) => ({ ...section, ...careerSectionCopyEn[section.id] })), es: () => buildExtendedCareerSections("es"), tr: () => buildExtendedCareerSections("tr"), pl: () => buildExtendedCareerSections("pl"), el: () => buildExtendedCareerSections("el"), ru: () => buildExtendedCareerSections("ru") };
+export function getCareerSections(locale: Locale): readonly CareerSection[] {
+  return careerSectionFactories[locale]();
+}
+
+function buildExtendedCareerQuestions(locale: Exclude<Locale, "de" | "en">): readonly CareerQuestion[] { return careerQuestions.map((question, index) => ({ ...question, prompt: careerLocaleCopy[locale].questions[index], context: careerLocaleCopy[locale].contexts[index], options: question.options.map((option) => localizeCareerOption(option, locale)) })); }
+const careerQuestionFactories: Record<Locale, () => readonly CareerQuestion[]> = { de: () => careerQuestions, en: () => careerQuestions.map((question) => ({ ...question, ...careerQuestionCopyEn[question.id], options: question.options.map((option) => localizeCareerOption(option, "en")) })), es: () => buildExtendedCareerQuestions("es"), tr: () => buildExtendedCareerQuestions("tr"), pl: () => buildExtendedCareerQuestions("pl"), el: () => buildExtendedCareerQuestions("el"), ru: () => buildExtendedCareerQuestions("ru") };
+export function getCareerQuestions(locale: Locale): readonly CareerQuestion[] {
+  return careerQuestionFactories[locale]();
+}
+function buildExtendedCareerDirections(locale: Exclude<Locale, "de" | "en">): readonly CareerDirection[] {
+  const common = getCareerLocaleCommon(locale);
+  return careerDirections.map((direction, index) => {
+    const title = getExtendedDirectionTitle(locale, index);
+    return { ...direction, title, description: common.workTemplate(title.toLocaleLowerCase(careerLocaleTags[locale])), rationale: common.workTemplate(title.toLocaleLowerCase(careerLocaleTags[locale])), fields: direction.fields.map((field) => ({ ...field, label: title })), environments: [title], qualificationNote: undefined, constraintNotes: [], conversationPrompt: common.workTemplate(title), microExperiment: common.workTemplate(title), skillExperiment: common.workTemplate(title), observationPrompt: common.workTemplate(title) };
+  });
+}
+
+function buildEnglishCareerDirections(): readonly CareerDirection[] {
+  return careerDirections.map((direction) => {
+    const copy = directionCopyEn[direction.id];
+    return { ...direction, ...copy, fields: direction.fields.map((field, index) => ({ ...field, label: copy.fields[index] ?? copy.title })), environments: copy.environments, qualificationNote: "Specific roles may require relevant methods, specialist knowledge, a portfolio or prior experience; requirements vary by organisation and field.", constraintNotes: direction.constraintNotes.map((note) => ({ ...note, text: "This condition may conflict with some versions of the role. Check the actual tasks and working arrangement early." })), conversationPrompt: `Ask which tasks, decisions and constraints genuinely shape everyday work in ${copy.title.toLocaleLowerCase("en-GB")}.`, microExperiment: `Try a small, clearly bounded project that reflects a typical activity in ${copy.title.toLocaleLowerCase("en-GB")}.`, skillExperiment: `Test one typical skill from this direction in a concrete practice task.`, observationPrompt: `Observe a real working day and note how time is divided between core work, preparation, coordination and documentation.` };
+  });
+}
+
+const careerDirectionFactories: Record<Locale, () => readonly CareerDirection[]> = {
+  de: () => careerDirections, en: buildEnglishCareerDirections, es: () => buildExtendedCareerDirections("es"), tr: () => buildExtendedCareerDirections("tr"), pl: () => buildExtendedCareerDirections("pl"), el: () => buildExtendedCareerDirections("el"), ru: () => buildExtendedCareerDirections("ru"),
+};
+
+export function getCareerDirections(locale: Locale): readonly CareerDirection[] { return careerDirectionFactories[locale](); }
+const germanOnlyCareerAliases = new Set([
+  "Datenanalyst", "Prozessanalyst", "Web-Redakteur", "Texter", "Technischer Redakteur",
+  "Produktmanager", "Softwareentwickler", "Webentwickler", "Projektmanager", "Teamleiter", "Projektleitung",
+]);
+function buildEnglishCareerJobTitles(): readonly CareerJobTitleDefinition[] {
+  const directions = new Map(getCareerDirections("en").map((direction) => [direction.id, direction]));
+  return careerJobTitles.map((job) => ({
+    ...job,
+    title: job.id === "online-editor" ? "Online Editor" : job.title,
+    description: `A role connected to ${job.directionIds.map((id) => directions.get(id)?.title.toLocaleLowerCase("en-GB") ?? id).join(" and ")}. The exact tasks and level of responsibility vary by organisation.`,
+    aliases: job.aliases?.filter((alias) => !germanOnlyCareerAliases.has(alias)),
+    qualificationNote: job.qualificationNote ? "The exact responsibility and entry requirements vary by organisation; relevant practice, a portfolio or further learning may be useful." : undefined,
+    constraintHints: job.constraintHints?.map((hint) => ({ ...hint, text: "Some versions of this role may conflict with this condition. Check the actual working arrangement early." })),
+  }));
+}
+
+function buildExtendedCareerJobTitles(locale: Exclude<Locale, "de" | "en">): readonly CareerJobTitleDefinition[] {
+  const directions = new Map(getCareerDirections(locale).map((direction) => [direction.id, direction]));
+  const common = getCareerLocaleCommon(locale);
+  return careerJobTitles.map((job) => ({ ...job, title: job.id === "online-editor" ? "Online Editor" : job.title, description: common.jobTemplate(job.directionIds.map((id) => directions.get(id)?.title.toLocaleLowerCase(careerLocaleTags[locale]) ?? id).join(" · ")), aliases: job.aliases?.filter((alias) => !germanOnlyCareerAliases.has(alias)), qualificationNote: undefined, constraintHints: [] }));
+}
+
+const careerJobTitleFactories: Record<Locale, () => readonly CareerJobTitleDefinition[]> = {
+  de: () => careerJobTitles, en: buildEnglishCareerJobTitles, es: () => buildExtendedCareerJobTitles("es"), tr: () => buildExtendedCareerJobTitles("tr"), pl: () => buildExtendedCareerJobTitles("pl"), el: () => buildExtendedCareerJobTitles("el"), ru: () => buildExtendedCareerJobTitles("ru"),
+};
+
+export function getCareerJobTitles(locale: Locale): readonly CareerJobTitleDefinition[] { return careerJobTitleFactories[locale](); }
+
+const careerTensionCopyEn = {
+  "autonomy-income": { title: "Autonomy · continuity of income", text: "You want to shape your path independently while protecting a reliable financial foundation. It is worth considering both together as you explore." }, "variety-predictability": { title: "Variety · predictable hours", text: "Variety appeals to you while predictable hours remain important. It is worth considering both together as you explore." }, "people-focus": { title: "Contact with people · focus time", text: "Direct exchange and protected focus time may both matter. Look deliberately for a sustainable rhythm between them." }, "growth-qualification": { title: "Growth · current learning scope", text: "You want to develop while keeping the current qualification scope deliberately manageable. It is worth considering both together." }, "ownership-income": { title: "Ownership · continuity of income", text: "More ownership and change appeal to you while continuity of income should remain protected. It is worth considering both together." },
+} as const;
+
+function buildEnglishCareerTensions() { return careerTensionDefinitions.map((definition) => ({ ...definition, ...careerTensionCopyEn[definition.id] })); }
+function buildExtendedCareerTensions(locale: Exclude<Locale, "de" | "en">) { return careerTensionDefinitions.map((definition, index) => ({ ...definition, ...extendedCareerTensions[locale][index] })); }
+const careerTensionFactories = {
+  de: () => careerTensionDefinitions, en: buildEnglishCareerTensions, es: () => buildExtendedCareerTensions("es"), tr: () => buildExtendedCareerTensions("tr"), pl: () => buildExtendedCareerTensions("pl"), el: () => buildExtendedCareerTensions("el"), ru: () => buildExtendedCareerTensions("ru"),
+} as const;
+
+export function getCareerTensionDefinitions(locale: Locale) {
+  return careerTensionFactories[locale]();
+}

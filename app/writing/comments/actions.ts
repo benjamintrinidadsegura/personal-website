@@ -11,7 +11,9 @@ import {
   verifyAccountCommentFormToken,
   verifyCommentFormToken,
 } from "@/lib/comments/security";
-import { validateCommentBody, validateGuestCommentSubmission } from "@/lib/comments/validation";
+import { getCommentBodyValidationMessage, validateCommentBody, validateGuestCommentSubmission } from "@/lib/comments/validation";
+import { getLocale } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
 import type {
   AccountCommentActionState,
   DeleteOwnCommentActionState,
@@ -125,6 +127,7 @@ export async function processOwnCommentEdit(
   requestIsValid: boolean,
   actorUserId: string | null,
   editInDatabase: EditOwnCommentInDatabase,
+  locale: Locale = "en",
 ): Promise<Exclude<EditOwnCommentActionState, null>> {
   if (
     !requestIsValid
@@ -140,7 +143,7 @@ export async function processOwnCommentEdit(
     return {
       ok: false,
       code: "INVALID_INPUT",
-      fieldError: "Comment must contain 2 to 3,000 valid characters in at most 20 paragraphs.",
+      fieldError: getCommentBodyValidationMessage(locale),
     };
   }
 
@@ -216,6 +219,7 @@ export async function processAccountCommentSubmission(
   secrets: CommentSecrets | null,
   submitToDatabase: SubmitAccountToDatabase,
   now = Date.now(),
+  locale: Locale = "en",
 ): Promise<SubmitGuestCommentResult> {
   if (
     !UUID_PATTERN.test(articleId)
@@ -232,7 +236,7 @@ export async function processAccountCommentSubmission(
   const body = validateCommentBody(raw.body);
   const formToken = typeof raw.formToken === "string" ? raw.formToken : "";
   if (!body || !formToken) {
-    return { ok: false, code: "INVALID_INPUT", fieldErrors: { body: "Comment must contain 2 to 3,000 valid characters in at most 20 paragraphs." } };
+    return { ok: false, code: "INVALID_INPUT", fieldErrors: { body: getCommentBodyValidationMessage(locale) } };
   }
 
   const networkHash = createCommentNetworkHash(request.networkIdentifier, secrets.networkHashSecret);
@@ -272,6 +276,7 @@ export async function processGuestCommentSubmission(
   secrets: CommentSecrets | null,
   submitToDatabase: SubmitToDatabase,
   now = Date.now(),
+  locale: Locale = "en",
 ): Promise<SubmitGuestCommentResult> {
   if (
     !UUID_PATTERN.test(articleId)
@@ -283,7 +288,7 @@ export async function processGuestCommentSubmission(
   const networkHash = createCommentNetworkHash(request.networkIdentifier, secrets.networkHashSecret);
   if (!networkHash) return { ok: false, code: "INVALID_REQUEST" };
 
-  const validation = validateGuestCommentSubmission(raw);
+  const validation = validateGuestCommentSubmission(raw, locale);
   if (!validation.success) {
     return validation.isHoneypot
       ? { ok: false, code: "INVALID_REQUEST" }
@@ -369,6 +374,8 @@ export async function submitGuestCommentAction(
       });
       return { commentId: typeof data === "string" ? data : null, errorCode: error?.message };
     },
+    Date.now(),
+    await getLocale(),
   );
 }
 
@@ -409,6 +416,8 @@ export async function submitAccountCommentAction(
       });
       return { commentId: typeof data === "string" ? data : null, errorCode: error?.message };
     },
+    Date.now(),
+    await getLocale(),
   );
 }
 
@@ -436,6 +445,7 @@ export async function editOwnCommentAction(
       });
       return { version: typeof data === "string" ? data : null, errorCode: error?.message };
     },
+    await getLocale(),
   );
 }
 

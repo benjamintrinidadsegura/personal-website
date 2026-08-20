@@ -2,6 +2,8 @@ import type {
   SelfReflectionDimensionId,
   SelfReflectionEvidenceRole,
 } from "@/types/find-your-next-step";
+import { getSelfReflectionDimensions } from "@/data/find-your-next-step-self";
+import type { Locale } from "@/lib/i18n/config";
 
 export type SelfHandbookTextKind =
   | "decision"
@@ -395,3 +397,124 @@ export const selfHandbookExperimentDefinitions: readonly SelfHandbookExperimentD
   { id: "experiment-purpose", semanticKey: "experiment-purpose", patternId: "single-purpose", roles: positiveRoles, area: "activity", title: "Den Beitrag vorher benennen", action: "Schreibe vor einer Aufgabe einen Satz dazu auf, wem oder was das Ergebnis dienen soll.", scope: "Eine Aufgabe", observe: "Verändert die sichtbare Verbindung zur Wirkung, wie du die Aufgabe angehst?" },
   { id: "experiment-feedback", semanticKey: "experiment-feedback", patternId: "single-feedback", roles: positiveRoles, area: "activity", title: "Eine präzise Rückmeldung", action: "Bitte zu einem kleinen Zwischenstand um Rückmeldung zu genau einer vorher formulierten Frage.", scope: "Ein Zwischenstand", observe: "Ist diese gezielte Resonanz hilfreicher als allgemeines Feedback?" },
 ] as const;
+
+function patternLabel(dimensions: readonly SelfReflectionDimensionId[], locale: Locale): string {
+  const copy = getSelfReflectionDimensions(locale);
+  return dimensions.map((dimension) => copy[dimension].label).join(" · ");
+}
+
+function localizedText(kind: SelfHandbookTextKind, label: string, locale: Locale): string {
+  const lower = label.toLocaleLowerCase({ de: "de-DE", en: "en-GB", es: "es", tr: "tr", pl: "pl", el: "el", ru: "ru" }[locale]);
+  const templates: Record<Locale, Record<SelfHandbookTextKind, string>> = {
+    de: { decision: `Gibt diese Option genug Raum für ${lower}?`, environment: `Das Umfeld schafft bewusst praktischen Raum für ${lower}.`, energySupport: `Plane einen begrenzten Moment, der ${lower} aktiv unterstützt.`, energyWatchout: `Beobachte, ob zu wenig Raum für ${lower} mit der Zeit Energie kostet.`, work: `Gestalte einen Arbeitsblock so, dass ${lower} darin einen klaren Platz hat.`, learning: `Wähle eine kleine Lernfrage, die Praxis und ${lower} verbindet.` },
+    en: { decision: `Would this option give enough room for ${lower}?`, environment: `The environment makes deliberate, practical room for ${lower}.`, energySupport: `Plan one bounded moment that actively supports ${lower}.`, energyWatchout: `Observe whether too little room for ${lower} drains your energy over time.`, work: `Shape one work block so that ${lower} has a clear place in it.`, learning: `Choose one small learning question that combines practice with ${lower}.` },
+    es: { decision: `¿Esta opción deja suficiente espacio para ${lower}?`, environment: `El entorno crea un espacio práctico y deliberado para ${lower}.`, energySupport: `Planifica un momento limitado que apoye activamente ${lower}.`, energyWatchout: `Observa si dejar poco espacio para ${lower} consume tu energía con el tiempo.`, work: `Organiza un bloque de trabajo para que ${lower} tenga un lugar claro.`, learning: `Elige una pequeña pregunta de aprendizaje que una la práctica con ${lower}.` },
+    tr: { decision: `Bu seçenek ${lower} için yeterli alan sağlıyor mu?`, environment: `Ortam, ${lower} için bilinçli ve pratik alan yaratır.`, energySupport: `${lower} özelliğini etkin biçimde destekleyen sınırlı bir an planla.`, energyWatchout: `${lower} için çok az alanın zamanla enerjini azaltıp azaltmadığını gözlemle.`, work: `Bir çalışma bloğunu ${lower} için net bir yer olacak şekilde düzenle.`, learning: `Uygulamayla ${lower} özelliğini birleştiren küçük bir öğrenme sorusu seç.` },
+    pl: { decision: `Czy ta opcja daje dość miejsca na: ${lower}?`, environment: `Otoczenie świadomie i praktycznie tworzy miejsce na: ${lower}.`, energySupport: `Zaplanuj ograniczony moment, który aktywnie wspiera: ${lower}.`, energyWatchout: `Obserwuj, czy zbyt mało miejsca na ${lower} z czasem odbiera Ci energię.`, work: `Ułóż jeden blok pracy tak, aby ${lower} miało w nim jasne miejsce.`, learning: `Wybierz małe pytanie uczące, które łączy praktykę z obszarem: ${lower}.` },
+    el: { decision: `Αφήνει αυτή η επιλογή αρκετό χώρο για «${label}»;`, environment: `Το περιβάλλον δημιουργεί σκόπιμο και πρακτικό χώρο για «${label}».`, energySupport: `Σχεδίασε μία οριοθετημένη στιγμή που υποστηρίζει ενεργά το «${label}».`, energyWatchout: `Παρατήρησε αν ο πολύ λίγος χώρος για «${label}» αφαιρεί ενέργεια με τον χρόνο.`, work: `Διαμόρφωσε ένα τμήμα εργασίας ώστε το «${label}» να έχει σαφή θέση.`, learning: `Επίλεξε ένα μικρό ερώτημα μάθησης που συνδέει την πράξη με το «${label}».` },
+    ru: { decision: `Даёт ли этот вариант достаточно места для фактора «${label}»?`, environment: `Среда намеренно и практически создаёт место для фактора «${label}».`, energySupport: `Запланируй один ограниченный момент, который активно поддерживает «${label}».`, energyWatchout: `Наблюдай, не отнимает ли со временем энергию недостаток места для «${label}».`, work: `Организуй один рабочий блок так, чтобы у фактора «${label}» было ясное место.`, learning: `Выбери небольшой учебный вопрос, соединяющий практику с фактором «${label}».` },
+  };
+  return templates[locale][kind];
+}
+
+function buildLocalizedPatterns(locale: Exclude<Locale, "de">): readonly SelfHandbookPatternDefinition[] {
+  return selfHandbookPatterns.map((pattern) => ({ ...pattern, label: patternLabel(pattern.dimensions, locale) }));
+}
+
+const handbookPatternFactories: Record<Locale, () => readonly SelfHandbookPatternDefinition[]> = {
+  de: () => selfHandbookPatterns, en: () => buildLocalizedPatterns("en"), es: () => buildLocalizedPatterns("es"), tr: () => buildLocalizedPatterns("tr"), pl: () => buildLocalizedPatterns("pl"), el: () => buildLocalizedPatterns("el"), ru: () => buildLocalizedPatterns("ru"),
+};
+
+export function getSelfHandbookPatterns(locale: Locale): readonly SelfHandbookPatternDefinition[] { return handbookPatternFactories[locale](); }
+
+const handbookFollowUp: Record<Exclude<Locale, "de">, (label: string) => string> = {
+  en: (label) => `What would be one small, observable sign that ${label.toLocaleLowerCase("en-GB")} is supported well enough?`,
+  es: (label) => `¿Qué pequeña señal observable mostraría que ${label.toLocaleLowerCase("es")} tiene suficiente apoyo?`,
+  tr: (label) => `${label.toLocaleLowerCase("tr")} yeterince desteklendiğinde hangi küçük ve gözlenebilir işareti görürdün?`,
+  pl: (label) => `Jaki mały, zauważalny znak pokaże, że obszar „${label}” ma wystarczające wsparcie?`,
+  el: (label) => `Ποια μικρή, παρατηρήσιμη ένδειξη θα έδειχνε ότι το «${label}» υποστηρίζεται αρκετά;`,
+  ru: (label) => `Какой небольшой наблюдаемый признак покажет, что «${label}» поддерживается достаточно?`,
+};
+
+function buildLocalizedTextDefinitions(locale: Exclude<Locale, "de">): readonly SelfHandbookTextDefinition[] {
+  const patterns = new Map(getSelfHandbookPatterns(locale).map((pattern) => [pattern.id, pattern]));
+  return selfHandbookTextDefinitions.map((definition) => {
+    const pattern = patterns.get(definition.patternId);
+    const dimensions = [...(pattern?.dimensions ?? []), ...(definition.requiredDimensions ?? [])];
+    const label = patternLabel([...new Set(dimensions)], locale);
+    const followUp = handbookFollowUp[locale](label);
+    return {
+      ...definition,
+      text: localizedText(definition.kind, label, locale),
+      sourceLabel: definition.sourceLabel ? label : undefined,
+      followUp: definition.followUp ? { ...definition.followUp, text: followUp } : undefined,
+    };
+  });
+}
+
+const handbookTextFactories: Record<Locale, () => readonly SelfHandbookTextDefinition[]> = {
+  de: () => selfHandbookTextDefinitions, en: () => buildLocalizedTextDefinitions("en"), es: () => buildLocalizedTextDefinitions("es"), tr: () => buildLocalizedTextDefinitions("tr"), pl: () => buildLocalizedTextDefinitions("pl"), el: () => buildLocalizedTextDefinitions("el"), ru: () => buildLocalizedTextDefinitions("ru"),
+};
+
+export function getSelfHandbookTextDefinitions(locale: Locale): readonly SelfHandbookTextDefinition[] { return handbookTextFactories[locale](); }
+
+type ActivityLocaleCopy = { title: string; properties: string[]; why: string; example: (index: number) => { activity: string; why: string } };
+
+const activityCopyFactory: Record<Exclude<Locale, "de">, (label: string) => ActivityLocaleCopy> = {
+  en: (label) => ({ title: `Activities with ${label}`, properties: [`lets ${label.toLocaleLowerCase("en-GB")} become observable`, "can be tried on a small scale", "leaves the interpretation with you"], why: `This direction combines ${label.toLocaleLowerCase("en-GB")} without presenting it as a fixed hobby or aptitude recommendation.`, example: (index) => ({ activity: `${label} practice ${index + 1}`, why: `A bounded example in which you can observe how ${label.toLocaleLowerCase("en-GB")} feels in practice.` }) }),
+  es: (label) => ({ title: `Actividades con ${label}`, properties: [`hace observable ${label.toLocaleLowerCase("es")}`, "puede probarse a pequeña escala", "deja la interpretación en tus manos"], why: `Esta dirección combina ${label.toLocaleLowerCase("es")} sin convertirlo en una afición fija ni una recomendación de aptitud.`, example: (index) => ({ activity: `Práctica ${index + 1} · ${label}`, why: `Un ejemplo limitado para observar cómo se siente ${label.toLocaleLowerCase("es")} en la práctica.` }) }),
+  tr: (label) => ({ title: `${label} içeren faaliyetler`, properties: [`${label.toLocaleLowerCase("tr")} gözlenebilir olur`, "küçük ölçekte denenebilir", "yorumlama sende kalır"], why: `Bu yön ${label.toLocaleLowerCase("tr")} birleşimini sabit hobi veya yetenek önerisi olarak sunmaz.`, example: (index) => ({ activity: `${label} denemesi ${index + 1}`, why: `${label.toLocaleLowerCase("tr")} özelliğinin pratikte nasıl hissettirdiğini görebileceğin sınırlı bir örnek.` }) }),
+  pl: (label) => ({ title: `Działania wspierające: ${label}`, properties: [`pozwala zaobserwować: ${label.toLocaleLowerCase("pl")}`, "można sprawdzić w małej skali", "pozostawia interpretację po Twojej stronie"], why: `Ten kierunek łączy ${label.toLocaleLowerCase("pl")} bez przedstawiania go jako stałego hobby lub rekomendacji predyspozycji.`, example: (index) => ({ activity: `${label} · próba ${index + 1}`, why: `Ograniczony przykład, w którym sprawdzisz, jak ${label.toLocaleLowerCase("pl")} działa w praktyce.` }) }),
+  el: (label) => ({ title: `Δραστηριότητες με «${label}»`, properties: [`κάνει το «${label}» παρατηρήσιμο`, "δοκιμάζεται σε μικρή κλίμακα", "αφήνει την ερμηνεία σε εσένα"], why: `Αυτή η κατεύθυνση συνδυάζει το «${label}» χωρίς να το παρουσιάζει ως σταθερό χόμπι ή σύσταση καταλληλότητας.`, example: (index) => ({ activity: `${label} · δοκιμή ${index + 1}`, why: `Οριοθετημένο παράδειγμα για να παρατηρήσεις πώς λειτουργεί το «${label}» στην πράξη.` }) }),
+  ru: (label) => ({ title: `Занятия с фактором «${label}»`, properties: [`позволяет наблюдать «${label}»`, "можно проверить в небольшом масштабе", "оставляет интерпретацию за тобой"], why: `Это направление соединяет «${label}», не превращая его в фиксированное хобби или рекомендацию способностей.`, example: (index) => ({ activity: `${label} · проба ${index + 1}`, why: `Ограниченный пример, позволяющий заметить, как «${label}» ощущается на практике.` }) }),
+};
+
+function buildLocalizedActivityDefinitions(locale: Exclude<Locale, "de">): readonly SelfHandbookActivityDefinition[] {
+  const patterns = new Map(getSelfHandbookPatterns(locale).map((pattern) => [pattern.id, pattern]));
+  return selfHandbookActivityDefinitions.map((definition) => {
+    const label = patterns.get(definition.patternId)?.label ?? definition.id;
+    const copy = activityCopyFactory[locale](label);
+    return {
+      ...definition,
+      title: copy.title, properties: copy.properties, why: copy.why,
+      examples: definition.examples.map((example, index) => ({ ...example, ...copy.example(index) })),
+    };
+  });
+}
+
+const handbookActivityFactories: Record<Locale, () => readonly SelfHandbookActivityDefinition[]> = {
+  de: () => selfHandbookActivityDefinitions, en: () => buildLocalizedActivityDefinitions("en"), es: () => buildLocalizedActivityDefinitions("es"), tr: () => buildLocalizedActivityDefinitions("tr"), pl: () => buildLocalizedActivityDefinitions("pl"), el: () => buildLocalizedActivityDefinitions("el"), ru: () => buildLocalizedActivityDefinitions("ru"),
+};
+
+export function getSelfHandbookActivityDefinitions(locale: Locale): readonly SelfHandbookActivityDefinition[] { return handbookActivityFactories[locale](); }
+
+type ExperimentLocaleCopy = { title: string; action: string; work: string; energy: string; activity: string; observe: string };
+
+const experimentCopyFactory: Record<Exclude<Locale, "de">, (label: string) => ExperimentLocaleCopy> = {
+  en: (label) => ({ title: `A small test for ${label}`, action: `Choose one ordinary situation and deliberately create a little more room for ${label.toLocaleLowerCase("en-GB")}.`, work: "One task within the next seven days", energy: "Two short trials within one week", activity: "One small activity within the next seven days", observe: `What changes, and what remains difficult, when ${label.toLocaleLowerCase("en-GB")} is supported more deliberately?` }),
+  es: (label) => ({ title: `Una pequeña prueba de ${label}`, action: `Elige una situación cotidiana y crea deliberadamente algo más de espacio para ${label.toLocaleLowerCase("es")}.`, work: "Una tarea en los próximos siete días", energy: "Dos pruebas breves en una semana", activity: "Una actividad pequeña en los próximos siete días", observe: `¿Qué cambia y qué sigue siendo difícil cuando apoyas con más intención ${label.toLocaleLowerCase("es")}?` }),
+  tr: (label) => ({ title: `${label} için küçük bir deneme`, action: `Gündelik bir durum seç ve ${label.toLocaleLowerCase("tr")} için bilinçli olarak biraz daha alan yarat.`, work: "Önümüzdeki yedi günde bir görev", energy: "Bir hafta içinde iki kısa deneme", activity: "Önümüzdeki yedi günde küçük bir faaliyet", observe: `${label.toLocaleLowerCase("tr")} daha bilinçli desteklendiğinde ne değişiyor, ne zor kalıyor?` }),
+  pl: (label) => ({ title: `Mała próba: ${label}`, action: `Wybierz zwykłą sytuację i świadomie stwórz trochę więcej miejsca na ${label.toLocaleLowerCase("pl")}.`, work: "Jedno zadanie w ciągu siedmiu dni", energy: "Dwie krótkie próby w ciągu tygodnia", activity: "Jedna mała aktywność w ciągu siedmiu dni", observe: `Co się zmienia, a co pozostaje trudne, gdy świadomiej wspierasz ${label.toLocaleLowerCase("pl")}?` }),
+  el: (label) => ({ title: `Μικρή δοκιμή για «${label}»`, action: `Επίλεξε μια συνηθισμένη κατάσταση και δημιούργησε σκόπιμα λίγο περισσότερο χώρο για «${label}».`, work: "Ένα έργο μέσα στις επόμενες επτά ημέρες", energy: "Δύο σύντομες δοκιμές μέσα σε μία εβδομάδα", activity: "Μία μικρή δραστηριότητα μέσα στις επόμενες επτά ημέρες", observe: `Τι αλλάζει και τι παραμένει δύσκολο όταν το «${label}» υποστηρίζεται πιο συνειδητά;` }),
+  ru: (label) => ({ title: `Небольшая проба для «${label}»`, action: `Выбери обычную ситуацию и намеренно создай немного больше места для фактора «${label}».`, work: "Одна задача в ближайшие семь дней", energy: "Две короткие пробы за неделю", activity: "Одно небольшое занятие в ближайшие семь дней", observe: `Что меняется, а что остаётся трудным, когда «${label}» поддерживается более осознанно?` }),
+};
+
+function buildLocalizedExperimentDefinitions(locale: Exclude<Locale, "de">): readonly SelfHandbookExperimentDefinition[] {
+  const patterns = new Map(getSelfHandbookPatterns(locale).map((pattern) => [pattern.id, pattern]));
+  return selfHandbookExperimentDefinitions.map((definition) => {
+    const label = patterns.get(definition.patternId)?.label ?? definition.id;
+    const copy = experimentCopyFactory[locale](label);
+    return {
+      ...definition,
+      title: copy.title, action: copy.action,
+      scope: definition.area === "work" ? copy.work : definition.area === "energy" ? copy.energy : copy.activity,
+      observe: copy.observe,
+    };
+  });
+}
+
+const handbookExperimentFactories: Record<Locale, () => readonly SelfHandbookExperimentDefinition[]> = {
+  de: () => selfHandbookExperimentDefinitions, en: () => buildLocalizedExperimentDefinitions("en"), es: () => buildLocalizedExperimentDefinitions("es"), tr: () => buildLocalizedExperimentDefinitions("tr"), pl: () => buildLocalizedExperimentDefinitions("pl"), el: () => buildLocalizedExperimentDefinitions("el"), ru: () => buildLocalizedExperimentDefinitions("ru"),
+};
+
+export function getSelfHandbookExperimentDefinitions(locale: Locale): readonly SelfHandbookExperimentDefinition[] { return handbookExperimentFactories[locale](); }

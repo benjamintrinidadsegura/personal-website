@@ -1,11 +1,15 @@
 import type { CSSProperties } from "react";
 
+import type { Locale } from "@/lib/i18n/config";
+import { fynsDockCopy } from "@/data/find-your-next-step-ui-locales";
+
 interface JourneyDockSection {
   id: string;
   title: string;
 }
 
 interface JourneyDockProps {
+  locale: Locale;
   sections: readonly JourneyDockSection[];
   currentSectionIndex: number;
   globalQuestionNumber: number;
@@ -20,6 +24,7 @@ interface JourneyDockProps {
 }
 
 export function JourneyDock({
+  locale,
   sections,
   currentSectionIndex,
   globalQuestionNumber,
@@ -33,6 +38,7 @@ export function JourneyDock({
   onBack,
 }: JourneyDockProps) {
   const currentSection = sections[currentSectionIndex];
+  const copy = fynsDockCopy[locale];
 
   return (
     <nav
@@ -44,17 +50,17 @@ export function JourneyDock({
         <div className="col-span-2 min-w-0 lg:col-span-1 lg:col-start-2 lg:row-start-1">
           <div className="flex items-baseline justify-between gap-4 font-mono text-[10px] font-black uppercase tracking-[0.16em] sm:text-xs">
             <p className="text-[var(--dock-accent)]">
-              Frage {globalQuestionNumber} von {totalQuestionCount}
+              {copy.question} {globalQuestionNumber} {copy.of} {totalQuestionCount}
             </p>
             <p className="shrink-0 whitespace-nowrap text-slate-400">
-              <span className="lg:hidden">Abschnitt {currentSectionIndex + 1}/{sections.length} · hier {localQuestionNumber}/{localQuestionCount}</span>
-              <span className="hidden lg:inline">Abschnitt {currentSectionIndex + 1} von {sections.length} · hier {localQuestionNumber} von {localQuestionCount}</span>
+              <span className="lg:hidden">{copy.section} {currentSectionIndex + 1}/{sections.length} · {copy.here} {localQuestionNumber}/{localQuestionCount}</span>
+              <span className="hidden lg:inline">{copy.section} {currentSectionIndex + 1} {copy.of} {sections.length} · {copy.here} {localQuestionNumber} {copy.of} {localQuestionCount}</span>
             </p>
           </div>
           <p className="mt-0.5 truncate text-sm font-black leading-5 text-white">
             {currentSection?.title}
           </p>
-          <ol aria-label="Abschnitte der Journey" className="mt-2 grid items-center gap-2" style={{ gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))` }}>
+          <ol aria-label={copy.sections} className="mt-2 grid items-center gap-2" style={{ gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))` }}>
             {sections.map((section, index) => {
               const current = index === currentSectionIndex;
               const completed = index < currentSectionIndex;
@@ -65,7 +71,7 @@ export function JourneyDock({
                     className={`block rounded-full ${current ? "h-1.5 bg-[var(--dock-accent)]" : completed ? "h-1 bg-[#9aaabd]/70" : "h-1 border-t border-dashed border-white/25"}`}
                   />
                   <span className="sr-only">
-                    Abschnitt {index + 1}: {section.title}, {current ? "aktuell" : completed ? "abgeschlossen" : "noch nicht erreicht"}
+                    {copy.section} {index + 1}: {section.title}, {current ? copy.current : completed ? copy.completed : copy.pending}
                   </span>
                 </li>
               );

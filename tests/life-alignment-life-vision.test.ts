@@ -175,7 +175,7 @@ test("visual result and journey expose semantic structure, focus targets, eviden
   assert.match(journey, /restartPending/);
   assert.match(journey, /Verwendete Antworten ansehen/);
   assert.match(landscape, /<ol/);
-  assert.match(landscape, /aria-label="Qualitative Räume der Future Direction Map"/);
+  assert.match(landscape, /Qualitative Räume der Future Direction Map/);
   assert.match(landscape, /keine Achse und keine Rangfolge/i);
   assert.match(landscape, /Mögliche Alltagsbilder/);
   assert.match(landscape, /Kleinste passende Hilfe/);
@@ -195,4 +195,33 @@ test("Life Vision files have no persistence, network, account, or opaque persona
   const source = files.map((file) => readFileSync(new URL(file, import.meta.url), "utf8")).join("\n");
   for (const prohibited of ["localStorage", "sessionStorage", "document.cookie", "@/lib/supabase", "fetch(", "sendBeacon", "useUser", "accountId"]) assert.equal(source.includes(prohibited), false, prohibited);
   assert.doesNotMatch(source, /life\s*score|alignment\s*percentage|ideal\s+life/i);
+});
+
+test("DE and EN Life Vision results preserve selected directions and evidence structure", () => {
+  const de = buildLifeVisionResult(completeAnswers, "de");
+  const en = buildLifeVisionResult(completeAnswers, "en");
+  assert.equal(de.status, "complete");
+  assert.equal(en.status, "complete");
+  if (de.status !== "complete" || en.status !== "complete") return;
+
+  assert.deepEqual(en.result.areas.map(({ id, emphasis, protected: isProtected, signals }) => ({ id, emphasis, protected: isProtected, signals })), de.result.areas.map(({ id, emphasis, protected: isProtected, signals }) => ({ id, emphasis, protected: isProtected, signals })));
+  assert.deepEqual(en.result.competingAreas.map(({ id }) => id), de.result.competingAreas.map(({ id }) => id));
+  assert.deepEqual(en.result.directionMap.lanes.map(({ id, areaIds }) => ({ id, areaIds })), de.result.directionMap.lanes.map(({ id, areaIds }) => ({ id, areaIds })));
+  assert.deepEqual(en.result.insights.map(({ id, evidence }) => ({ id, evidenceCount: evidence.length })), de.result.insights.map(({ id, evidence }) => ({ id, evidenceCount: evidence.length })));
+  assert.deepEqual(en.result.actionPaths.map(({ mode, evidence }) => ({ mode, evidenceCount: evidence.length })), de.result.actionPaths.map(({ mode, evidence }) => ({ mode, evidenceCount: evidence.length })));
+  assert.equal(en.result.closingOrientation.evidence.length, de.result.closingOrientation.evidence.length);
+
+  assert.equal(en.result.title, "Your Future Direction Landscape");
+  assert.equal(en.result.horizonLabel, "The next 3–5 years");
+  assert.equal(en.result.areas[0]?.title, "Work and contribution");
+  assert.match(en.result.visualSnapshot.headline, /Movement with explicitly protected conditions/);
+  assert.notEqual(en.result.closingOrientation.orientation, de.result.closingOrientation.orientation);
+
+  const full = buildLifeVisionResultText(en.result, "en");
+  const clipboard = buildLifeVisionClipboardSummary(en.result, "en");
+  assert.match(full, /DESCRIPTIVE SNAPSHOT/);
+  assert.match(full, /EVIDENCE-LINKED OBSERVATIONS/);
+  assert.match(full, /CLOSING ORIENTATION/);
+  assert.match(clipboard, /Intentionally omitted: source signals/);
+  assert.doesNotMatch(clipboard, /Bewusst weggelassen|Zukunftsrahmen/);
 });

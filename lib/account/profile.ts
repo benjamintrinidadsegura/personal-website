@@ -1,3 +1,6 @@
+import type { Locale } from "@/lib/i18n/config";
+import { getAccountDictionary } from "@/data/i18n/account";
+
 const CONTROL_OR_BIDI_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u;
 const RESERVED_DISPLAY_NAMES = new Set([
   "guest",
@@ -37,15 +40,18 @@ export async function processDisplayNameSetup(
   actorUserId: string | null,
   requestIsValid: boolean,
   save: (actorUserId: string, displayName: string) => Promise<boolean>,
+  locale: Locale = "en",
 ): Promise<{ ok: true } | { ok: false; message: string }> {
+  const copy = getAccountDictionary(locale);
+  const saveFailure = copy.profileSaveFailure;
   const validation = validateAccountDisplayName(value);
-  if (!requestIsValid || !actorUserId) return { ok: false, message: "Display name could not be saved." };
-  if (!validation.success) return { ok: false, message: "Use 2 to 40 valid characters and avoid reserved labels." };
+  if (!requestIsValid || !actorUserId) return { ok: false, message: saveFailure };
+  if (!validation.success) return { ok: false, message: copy.profileInvalid };
   try {
     return await save(actorUserId, validation.displayName)
       ? { ok: true }
-      : { ok: false, message: "Display name could not be saved." };
+      : { ok: false, message: saveFailure };
   } catch {
-    return { ok: false, message: "Display name could not be saved." };
+    return { ok: false, message: saveFailure };
   }
 }

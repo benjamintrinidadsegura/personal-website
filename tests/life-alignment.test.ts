@@ -217,7 +217,8 @@ test("the route, result landscape, navigation, discovery, sitemap, and privacy s
   const discovery = readFileSync(new URL("../data/discovery-index.ts", import.meta.url), "utf8");
   const sitemap = readFileSync(new URL("../app/sitemap.ts", import.meta.url), "utf8");
   const privacy = readFileSync(new URL("../app/privacy/page.tsx", import.meta.url), "utf8");
-  assert.match(route, /alternates: \{ canonical: selfHref \}/);
+  assert.match(route, /createLocalizedMetadata/);
+  assert.match(route, /pathname: "\/life-alignment\/self"/);
   assert.match(journey, /<fieldset/);
   assert.match(journey, /role="alert"/);
   assert.match(journey, /data-life-section-heading/);
@@ -229,6 +230,39 @@ test("the route, result landscape, navigation, discovery, sitemap, and privacy s
   assert.match(journey, /<SelfMicroTools result=\{result\}/);
   assert.match(journey, /<SelfClosingOrientation result=\{result\}/);
   for (const source of [header, discovery, sitemap]) assert.match(source, /life-alignment|lifeAlignment/);
-  assert.match(privacy, /current page memory/);
-  assert.match(privacy, /does not send answers to a server/);
+  assert.match(privacy, /getPrivacyDictionary/);
+  assert.match(privacy, /copy\.life\.local/);
+  assert.match(privacy, /copy\.life\.partner/);
+  assert.match(privacy, /copy\.life\.export/);
+});
+
+test("DE and EN Self results localize presentation while preserving the semantic result", () => {
+  const de = buildLifeAlignmentResult(completeAnswers, "de");
+  const en = buildLifeAlignmentResult(completeAnswers, "en");
+  assert.equal(de.status, "complete");
+  assert.equal(en.status, "complete");
+  if (de.status !== "complete" || en.status !== "complete") return;
+
+  const semanticArea = ({ id, importantNow, currentEmphasis, capacityEffect, desiredDirection, signal }: typeof de.result.areas[number]) => ({ id, importantNow, currentEmphasis, capacityEffect, desiredDirection, signal });
+  assert.deepEqual(en.result.areas.map(semanticArea), de.result.areas.map(semanticArea));
+  assert.deepEqual(en.result.snapshot.map(({ id, areas }) => ({ id, areaIds: areas.map(({ id: areaId }) => areaId) })), de.result.snapshot.map(({ id, areas }) => ({ id, areaIds: areas.map(({ id: areaId }) => areaId) })));
+  assert.deepEqual(en.result.insights.map(({ id }) => id), de.result.insights.map(({ id }) => id));
+  assert.deepEqual(en.result.actionPaths.map(({ id, reversible }) => ({ id, reversible })), de.result.actionPaths.map(({ id, reversible }) => ({ id, reversible })));
+  assert.deepEqual(en.result.tools.map(({ id }) => id), de.result.tools.map(({ id }) => id));
+  assert.equal(en.result.focus.id, de.result.focus.id);
+  assert.equal(en.result.focusIntention, completeAnswers.focusIntention);
+
+  assert.equal(en.result.title, "Your Life Alignment snapshot");
+  assert.equal(en.result.focus.title, "Work and contribution");
+  assert.match(en.result.experiment.boundary, /voluntary, reversible exploration/i);
+  assert.notEqual(en.result.description, de.result.description);
+
+  const full = buildLifeAlignmentResultText(en.result, "en");
+  const clipboard = buildLifeAlignmentClipboardSummary(en.result, "en");
+  assert.match(full, /Snapshot:/);
+  assert.match(full, /Relationships across areas:/);
+  assert.match(full, /Selected focus:\s*\nWork and contribution/);
+  assert.match(full, /This snapshot organises your own answers/);
+  assert.match(clipboard, /Private short version without your free-text note/);
+  assert.doesNotMatch(clipboard, /Mehr verlässliche Zeit/);
 });

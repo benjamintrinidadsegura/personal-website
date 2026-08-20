@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { discoveryIndex } from "../data/discovery-index";
+import { getHomeCopy } from "../data/i18n/home";
+import { getProjectPageCopy } from "../data/i18n/project-page";
+import { getLocalizedProjects } from "../data/i18n/projects";
 import { getProject } from "../data/projects";
 import { siteConfig } from "../data/site";
 
@@ -16,8 +19,20 @@ test("project ecosystem exposes only the approved official destinations", () => 
   assert.equal(detail.includes("project.externalUrl"), true);
   assert.equal(detail.includes('target="_blank"'), true);
   assert.equal(detail.includes('rel="noopener noreferrer"'), true);
-  assert.equal(detail.includes("Externe Website"), true);
+  assert.equal(detail.includes("copy.externalWebsite"), true);
+  assert.equal(getProjectPageCopy("de").externalWebsite, "Externe Website ↗");
+  assert.equal(getProjectPageCopy("en").externalWebsite, "External website ↗");
   assert.equal(detail.includes("[overflow-wrap:anywhere]"), true);
+});
+
+test("English project presentation preserves canonical slugs and verified destinations", () => {
+  const german = getLocalizedProjects("de");
+  const english = getLocalizedProjects("en");
+
+  assert.deepEqual(english.map(({ slug }) => slug), german.map(({ slug }) => slug));
+  assert.deepEqual(english.map(({ externalUrl }) => externalUrl), german.map(({ externalUrl }) => externalUrl));
+  assert.equal(english.length, 6);
+  assert.notEqual(english.find(({ slug }) => slug === "bts-online")?.description, german.find(({ slug }) => slug === "bts-online")?.description);
 });
 
 test("social presence uses the four approved profiles with accessible external links", () => {
@@ -30,7 +45,8 @@ test("social presence uses the four approved profiles with accessible external l
 
   const contact = source("../components/sections/contact.tsx");
   assert.equal(contact.includes("social.context"), true);
-  assert.equal(contact.includes("externe Website, öffnet in neuem Tab"), true);
+  assert.equal(contact.includes("copy.externalLabel"), true);
+  assert.equal(getHomeCopy("de").contact.externalLabel, "externe Website, öffnet in neuem Tab");
   assert.equal(contact.includes('rel="noopener noreferrer"'), true);
   assert.equal(contact.includes("mailto:"), false);
 });
@@ -44,16 +60,17 @@ test("booking stays non-interactive until a public destination is verified", () 
   ].join("\n");
 
   assert.equal(combined.includes("calendly.com/app/scheduling/meeting_types/user/me"), false);
-  assert.equal(combined.includes("Öffentlicher Link in Verifizierung"), true);
+  assert.match(getHomeCopy("de").contact.bookingUnavailable, /^Öffentlicher Link in Verifizierung/u);
+  assert.equal(combined.includes("copy.bookingUnavailable"), true);
   assert.match(combined, /siteConfig\.booking\.url \? <a/u);
 });
 
 test("projects and contact remain discoverable through navigation and Discovery", () => {
   const header = source("../components/layout/header.tsx");
   const footer = source("../components/layout/footer.tsx");
-  assert.equal(header.includes('{ label: "GOATRECRUTAINER", href: "/projects/goatrecrutainer" }'), true);
-  assert.equal(header.includes('{ label: "RateCom", href: "/projects/ratecom" }'), true);
-  assert.equal(footer.includes('href="/#contact"'), true);
+  assert.equal(header.includes('{ id: "goatrecrutainer", label: "GOATRECRUTAINER", href: localizedHref("/projects/goatrecrutainer") }'), true);
+  assert.equal(header.includes('{ id: "ratecom", label: "RateCom", href: localizedHref("/projects/ratecom") }'), true);
+  assert.equal(footer.includes('href={href("/#contact")}'), true);
 
   assert.equal(discoveryIndex.find(({ id }) => id === "project-goatrecrutainer")?.href, "/projects/goatrecrutainer");
   assert.equal(discoveryIndex.find(({ id }) => id === "project-ratecom")?.href, "/projects/ratecom");

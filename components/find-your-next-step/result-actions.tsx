@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
+import { useLocale } from "@/components/i18n/locale-context";
+import { fynsResultActionsCopy } from "@/data/find-your-next-step-ui-locales";
+
 interface FynsResultActionsProps {
   accent: string;
   copyText: string;
@@ -64,6 +67,8 @@ export function FynsResultActions({
   shareText,
   printTitle,
 }: FynsResultActionsProps) {
+  const locale = useLocale();
+  const ui = fynsResultActionsCopy[locale];
   const [shareAvailable, setShareAvailable] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [showManualCopy, setShowManualCopy] = useState(false);
@@ -112,12 +117,12 @@ export function FynsResultActions({
     if (!copied) copied = copyWithTemporaryField(copyText);
 
     if (copied) {
-      setFeedback({ kind: "success", message: "Zusammenfassung kopiert." });
+      setFeedback({ kind: "success", message: ui.copied });
     } else {
       setShowManualCopy(true);
       setFeedback({
         kind: "error",
-        message: "Automatisches Kopieren hat nicht geklappt. Du kannst den Text hier manuell kopieren.",
+        message: ui.copyError,
       });
     }
     setBusyAction(null);
@@ -129,10 +134,10 @@ export function FynsResultActions({
     setFeedback(null);
     try {
       await navigator.share(sharePayload);
-      setFeedback({ kind: "success", message: "Teilen geöffnet." });
+      setFeedback({ kind: "success", message: ui.shareOpened });
     } catch (error) {
       if (!isAbortError(error)) {
-        setFeedback({ kind: "error", message: "Teilen hat nicht geklappt. Bitte versuche es erneut." });
+        setFeedback({ kind: "error", message: ui.shareError });
       }
     } finally {
       setBusyAction(null);
@@ -148,15 +153,13 @@ export function FynsResultActions({
     >
       <div className="rounded-[1.75rem] border border-[var(--result-actions-accent)]/30 bg-[var(--result-actions-accent)]/[0.045] p-6 sm:p-8">
         <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[var(--result-actions-accent)]">
-          Für später
+          {ui.eyebrow}
         </p>
         <h3 id="fyns-result-actions-title" className="mt-4 text-2xl font-black text-white sm:text-4xl">
-          Kurzfassung mitnehmen
+          {ui.title}
         </h3>
         <p className="mt-4 max-w-3xl leading-7 text-slate-300">
-          Dein Ergebnis wird nicht gespeichert. Diese Kurzfassung enthält die zentralen Aussagen, aber nicht jede
-          zusätzliche Ansicht oder Alltagshypothese. Du kannst sie jetzt drucken, kopieren oder – wenn verfügbar –
-          über dein Gerät teilen.
+          {ui.description}
         </p>
 
         <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -165,7 +168,7 @@ export function FynsResultActions({
             onClick={handlePrint}
             className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--result-actions-accent)] px-6 py-3 text-center font-black text-[#041018] transition motion-safe:hover:-translate-y-0.5 hover:brightness-110 motion-reduce:transform-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--result-actions-accent)] sm:w-auto"
           >
-            Drucken / als PDF speichern
+            {ui.print}
           </button>
           <button
             type="button"
@@ -173,7 +176,7 @@ export function FynsResultActions({
             onClick={handleCopy}
             className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/20 px-6 py-3 text-center font-bold text-slate-200 transition hover:border-[var(--result-actions-accent)]/65 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--result-actions-accent)] disabled:cursor-wait disabled:opacity-60 sm:w-auto"
           >
-            {busyAction === "copy" ? "Wird kopiert …" : "Kurzfassung kopieren"}
+            {busyAction === "copy" ? ui.copying : ui.copy}
           </button>
           {shareAvailable ? (
             <button
@@ -182,7 +185,7 @@ export function FynsResultActions({
               onClick={handleShare}
               className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/20 px-6 py-3 text-center font-bold text-slate-200 transition hover:border-[var(--result-actions-accent)]/65 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--result-actions-accent)] disabled:cursor-wait disabled:opacity-60 sm:w-auto"
             >
-              {busyAction === "share" ? "Teilen …" : "Teilen"}
+              {busyAction === "share" ? ui.sharing : ui.share}
             </button>
           ) : null}
         </div>
@@ -199,7 +202,7 @@ export function FynsResultActions({
         {showManualCopy ? (
           <div className="mt-5">
             <label htmlFor="fyns-manual-copy" className="block text-sm font-black text-white">
-              Text zum manuellen Kopieren
+              {ui.manual}
             </label>
             <textarea
               id="fyns-manual-copy"

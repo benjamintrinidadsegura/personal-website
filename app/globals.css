@@ -126,6 +126,39 @@ button { font: inherit; }
 
 .skip-link:focus { transform: translateY(0); }
 
+.navigation-feedback {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 90;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+
+.navigation-feedback::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0.08);
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--primary), var(--primary-hover), var(--accent));
+  box-shadow: 0 0 12px rgba(53, 208, 229, 0.55);
+}
+
+html[data-navigation-pending="true"] .navigation-feedback { opacity: 1; }
+
+html[data-navigation-pending="true"] .navigation-feedback::before {
+  animation: navigation-feedback-progress 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes navigation-feedback-progress {
+  from { transform: scaleX(0.08); }
+  to { transform: scaleX(0.82); }
+}
+
 ::selection { background: rgba(53, 208, 229, 0.3); color: white; }
 
 .writing-editor .bn-container,
@@ -166,6 +199,11 @@ button { font: inherit; }
     transition-duration: 0.01ms !important;
   }
   .signal-dot { animation: none; }
+  .navigation-feedback { transition: none; }
+  html[data-navigation-pending="true"] .navigation-feedback::before {
+    animation: none;
+    transform: scaleX(0.82);
+  }
 }
 
 .fyns-print-document { display: none; }

@@ -1,30 +1,12 @@
-import type { Metadata } from "next";
-
 import { LifeAlignmentPage as LifeAlignmentExperience } from "@/components/life-alignment/life-alignment-page";
-import { lifeAlignment, lifeAlignmentScene } from "@/data/life-alignment";
+import { getSelfAlignmentContent } from "@/data/i18n/life-alignment";
+import { createLocalizedMetadata } from "@/lib/i18n/metadata";
+import { getLocale } from "@/lib/i18n/server";
 
-const selfHref = "/life-alignment/self";
-
-export const metadata: Metadata = {
-  title: "Self | Life Alignment | bts.online",
-  description: lifeAlignment.description,
-  alternates: { canonical: selfHref },
-  openGraph: {
-    type: "website",
-    locale: "de_DE",
-    url: selfHref,
-    siteName: "bts.online",
-    title: "Self | Life Alignment | bts.online",
-    description: lifeAlignment.description,
-    images: [{ url: lifeAlignmentScene.src, width: 1600, height: 900, alt: lifeAlignmentScene.alt }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Self | Life Alignment | bts.online",
-    description: lifeAlignment.description,
-    images: [lifeAlignmentScene.src],
-  },
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return createLocalizedMetadata({ locale, pathname: "/life-alignment/self", title: "Self | Life Alignment | bts.online", description: getSelfAlignmentContent(locale).lifeAlignment.description });
+}
 
 export default function LifeAlignmentSelfPage() {
   return <LifeAlignmentExperience />;

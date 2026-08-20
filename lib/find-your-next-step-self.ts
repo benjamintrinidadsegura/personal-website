@@ -1,10 +1,15 @@
 import {
+  getSelfReflectionDimensions,
+  getSelfReflectionQuestions,
+  getSelfReflectionResultSections,
+  getSelfReflectionTensions,
   selfReflectionDimensions,
   selfReflectionQuestions,
-  selfReflectionResultSections,
   selfReflectionSections,
-  selfReflectionTensions,
 } from "@/data/find-your-next-step-self";
+import { selfGeneratedCopy } from "@/data/find-your-next-step-self-locales";
+import type { SelfGeneratedCopy } from "@/data/find-your-next-step-self-locales";
+import type { Locale } from "@/lib/i18n/config";
 import type {
   SelfReflectionAnswers,
   SelfReflectionDimensionId,
@@ -33,6 +38,12 @@ export const initialSelfReflectionState: SelfReflectionJourneyState = {
   restartPending: false,
 };
 
+const selfResultCopyByLocale: Record<Locale, SelfGeneratedCopy> = {
+  de: { openContext: "Deine Antworten ergeben im Moment kein stark verdichtetes Muster – einige Themen scheinen stärker vom jeweiligen Kontext abzuhängen.", open: "Deine Antworten ergeben im Moment ein offenes Bild, ohne dass ein einzelnes Thema deutlich in den Vordergrund tritt.", oneClear: (a) => `In deiner Momentaufnahme zeigt sich ${a} besonders klar.`, oneMultiple: (a) => `In deiner Momentaufnahme taucht ${a} an mehreren Stellen auf.`, twoClear: (a, b) => `In deiner Momentaufnahme zeigen sich ${a} und ${b} besonders klar.`, clearMultiple: (a, b) => `${a} zeigt sich in deiner Momentaufnahme besonders klar; ${b} taucht ebenfalls an mehreren Stellen auf.`, twoMultiple: (a, b) => `In deiner Momentaufnahme tauchen ${a} und ${b} an mehreren Stellen auf.`, tension: (title) => `Spannend ist außerdem die Kombination „${title}“.`, own: (answer) => `Als eigene Beobachtung hast du außerdem ausgewählt: „${answer}“`, selected: (n, max) => `${n} von ${max} ausgewählt`, selfImage: "Was du bei dir selbst wiedererkennst", title: "Dein mögliches Arbeits- und Lebens-Habitat", description: "Eine Momentaufnahme deiner aktuellen Antworten – kein festes Persönlichkeitsprofil und keine Bewertung deiner Person.", one: "Wähle eine Antwort aus.", exact: (n) => `Wähle genau ${n} Antworten aus.`, range: (a, b) => `Wähle ${a} bis ${b} Antworten aus.`, max: (n) => `Du kannst höchstens ${n} Antworten auswählen.`, incomplete: "Beantworte bitte alle Fragen, bevor du dein Ergebnis öffnest." },
+  en: { openContext: "Your answers do not form a strongly concentrated pattern at the moment — some themes appear to depend more on the particular context.", open: "Your answers currently form an open picture, without one theme moving clearly into the foreground.", oneClear: (a) => `In your snapshot, ${a} appears especially clearly.`, oneMultiple: (a) => `In your snapshot, ${a} appears in several places.`, twoClear: (a, b) => `In your snapshot, ${a} and ${b} appear especially clearly.`, clearMultiple: (a, b) => `${a} appears especially clearly in your snapshot; ${b} also appears in several places.`, twoMultiple: (a, b) => `In your snapshot, ${a} and ${b} appear in several places.`, tension: (title) => `The combination “${title}” also stands out.`, own: (answer) => `As an observation of your own, you also selected: “${answer}”`, selected: (n, max) => `${n} of ${max} selected`, selfImage: "What you recognise in yourself", title: "Your possible habitat for work and life", description: "A snapshot of your current answers — not a fixed personality profile or an assessment of you.", one: "Choose one answer.", exact: (n) => `Choose exactly ${n} answers.`, range: (a, b) => `Choose between ${a} and ${b} answers.`, max: (n) => `You can select no more than ${n} answers.`, incomplete: "Please answer every question before opening your result." },
+  ...selfGeneratedCopy,
+};
+
 export function isSelfReflectionQuestionComplete(
   question: SelfReflectionQuestion,
   optionIds: readonly string[] | undefined,
@@ -50,8 +61,8 @@ export function isSelfReflectionQuestionComplete(
   return true;
 }
 
-export function getMissingSelfReflectionQuestionIds(answers: SelfReflectionAnswers): string[] {
-  return selfReflectionQuestions
+export function getMissingSelfReflectionQuestionIds(answers: SelfReflectionAnswers, locale: Locale = "de"): string[] {
+  return getSelfReflectionQuestions(locale)
     .filter((question) => !isSelfReflectionQuestionComplete(question, answers[question.id]))
     .map(({ id }) => id);
 }
@@ -84,10 +95,12 @@ export interface SelfReflectionDimensionEvaluation {
 
 export function calculateSelfReflectionScores(
   answers: SelfReflectionAnswers,
+  locale: Locale = "de",
 ): readonly SelfReflectionDimensionEvaluation[] {
+  const activeQuestions = getSelfReflectionQuestions(locale);
   const contextualDimensions = new Set<SelfReflectionDimensionId>();
 
-  for (const question of selfReflectionQuestions) {
+  for (const question of activeQuestions) {
     for (const optionId of answers[question.id] ?? []) {
       const option = question.options.find(({ id }) => id === optionId);
       for (const dimension of option?.contextualDimensions ?? []) contextualDimensions.add(dimension);
@@ -100,7 +113,7 @@ export function calculateSelfReflectionScores(
     const evidenceQuestions = new Set<string>();
     const evidenceSections = new Set<SelfReflectionSectionId>();
 
-    for (const question of selfReflectionQuestions) {
+    for (const question of activeQuestions) {
       maximum += calculateQuestionDimensionCapacity(question, dimension);
 
       let questionScore = 0;
@@ -142,10 +155,11 @@ function getDimensionEvidence(
   answers: SelfReflectionAnswers,
   dimension: SelfReflectionDimensionId,
   roles?: readonly SelfReflectionEvidenceRole[],
+  locale: Locale = "de",
 ): SelfReflectionEvidence[] {
   const evidence: SelfReflectionEvidence[] = [];
 
-  for (const question of selfReflectionQuestions) {
+  for (const question of getSelfReflectionQuestions(locale)) {
     if (roles && !roles.includes(question.evidenceRole)) continue;
 
     for (const option of question.options) {
@@ -203,7 +217,10 @@ function compareEvaluations(
 
 function buildVisibleDimensionSummary(
   evaluations: readonly SelfReflectionDimensionEvaluation[],
+  locale: Locale,
 ): string {
+  const copy = selfResultCopyByLocale[locale];
+  const dimensions = getSelfReflectionDimensions(locale);
   const visible = [...evaluations]
     .filter((evaluation): evaluation is SelfReflectionDimensionEvaluation & {
       visibility: SelfReflectionVisibility;
@@ -213,38 +230,39 @@ function buildVisibleDimensionSummary(
 
   if (visible.length === 0) {
     return evaluations.some(({ contextual }) => contextual)
-      ? "Deine Antworten ergeben im Moment kein stark verdichtetes Muster – einige Themen scheinen stärker vom jeweiligen Kontext abzuhängen."
-      : "Deine Antworten ergeben im Moment ein offenes Bild, ohne dass ein einzelnes Thema deutlich in den Vordergrund tritt.";
+      ? copy.openContext
+      : copy.open;
   }
 
   const [first, second] = visible;
-  const firstLabel = selfReflectionDimensions[first.dimension].label;
+  const firstLabel = dimensions[first.dimension].label;
   if (!second) {
     return first.visibility === "clear"
-      ? `In deiner Momentaufnahme zeigt sich ${firstLabel} besonders klar.`
-      : `In deiner Momentaufnahme taucht ${firstLabel} an mehreren Stellen auf.`;
+      ? copy.oneClear(firstLabel)
+      : copy.oneMultiple(firstLabel);
   }
 
-  const secondLabel = selfReflectionDimensions[second.dimension].label;
+  const secondLabel = dimensions[second.dimension].label;
   if (first.visibility === "clear" && second.visibility === "clear") {
-    return `In deiner Momentaufnahme zeigen sich ${firstLabel} und ${secondLabel} besonders klar.`;
+    return copy.twoClear(firstLabel, secondLabel);
   }
   if (first.visibility === "clear") {
-    return `${firstLabel} zeigt sich in deiner Momentaufnahme besonders klar; ${secondLabel} taucht ebenfalls an mehreren Stellen auf.`;
+    return copy.clearMultiple(firstLabel, secondLabel);
   }
-  return `In deiner Momentaufnahme tauchen ${firstLabel} und ${secondLabel} an mehreren Stellen auf.`;
+  return copy.twoMultiple(firstLabel, secondLabel);
 }
 
 export function buildSelfReflectionSummary(
   evaluations: readonly SelfReflectionDimensionEvaluation[],
   tensions: readonly SelfReflectionTensionResult[],
   selfImageSection: SelfReflectionResultSection | null,
+  locale: Locale = "de",
 ): readonly string[] {
-  const summary = [buildVisibleDimensionSummary(evaluations)];
+  const summary = [buildVisibleDimensionSummary(evaluations, locale)];
   const firstTension = tensions[0];
 
   if (firstTension) {
-    summary.push(`Spannend ist außerdem die Kombination „${firstTension.title}“.`);
+    summary.push(selfResultCopyByLocale[locale].tension(firstTension.title));
     summary.push(firstTension.text);
     return summary;
   }
@@ -252,7 +270,7 @@ export function buildSelfReflectionSummary(
   const visibleDimensionCount = evaluations.filter(({ visibility }) => visibility !== null).length;
   const selfImageAnswer = selfImageSection?.statements[0]?.evidence[0]?.answer;
   if (visibleDimensionCount < 2 && selfImageAnswer) {
-    summary.push(`Als eigene Beobachtung hast du außerdem ausgewählt: „${selfImageAnswer}“`);
+    summary.push(selfResultCopyByLocale[locale].own(selfImageAnswer));
   }
 
   return summary;
@@ -261,25 +279,29 @@ export function buildSelfReflectionSummary(
 export function formatSelfReflectionSelectionCount(
   selectedCount: number,
   maxSelections: number,
+  locale: Locale = "de",
 ): string {
-  return `${selectedCount} von ${maxSelections} ausgewählt`;
+  return selfResultCopyByLocale[locale].selected(selectedCount, maxSelections);
 }
 
 function buildDimensionSections(
   answers: SelfReflectionAnswers,
   evaluations: readonly SelfReflectionDimensionEvaluation[],
+  locale: Locale,
 ): SelfReflectionResultSection[] {
-  return selfReflectionResultSections.flatMap((section) => {
+  const dimensions = getSelfReflectionDimensions(locale);
+  return getSelfReflectionResultSections(locale).flatMap((section) => {
     const statements = [...evaluations]
       .filter(({ visibility }) => visibility !== null)
       .sort(compareEvaluations)
       .flatMap((evaluation) => {
-        const definition = selfReflectionDimensions[evaluation.dimension];
-        const text = definition.copy[section.id];
+        const definition = dimensions[evaluation.dimension];
+        const text = section.id === "selfImage" ? undefined : definition.copy[section.id];
         const evidence = takeDistinctEvidence(getDimensionEvidence(
           answers,
           evaluation.dimension,
           section.roles,
+          locale,
         ));
         if (!text || evidence.length === 0 || !evaluation.visibility) return [];
 
@@ -298,8 +320,8 @@ function buildDimensionSections(
   });
 }
 
-function buildSelfImageSection(answers: SelfReflectionAnswers): SelfReflectionResultSection | null {
-  const question = selfReflectionQuestions.find(({ evidenceRole }) => evidenceRole === "selfImage");
+function buildSelfImageSection(answers: SelfReflectionAnswers, locale: Locale): SelfReflectionResultSection | null {
+  const question = getSelfReflectionQuestions(locale).find(({ evidenceRole }) => evidenceRole === "selfImage");
   if (!question) return null;
 
   const statements = question.options.flatMap((option) => {
@@ -317,15 +339,16 @@ function buildSelfImageSection(answers: SelfReflectionAnswers): SelfReflectionRe
   });
 
   return statements.length > 0
-    ? { id: "selfImage", title: "Was du bei dir selbst wiedererkennst", statements }
+    ? { id: "selfImage", title: selfResultCopyByLocale[locale].selfImage, statements }
     : null;
 }
 
 function selectedOptionSupportsPair(
   answers: SelfReflectionAnswers,
   dimensions: readonly [SelfReflectionDimensionId, SelfReflectionDimensionId],
+  locale: Locale,
 ): boolean {
-  return selfReflectionQuestions.some((question) =>
+  return getSelfReflectionQuestions(locale).some((question) =>
     question.options.some((option) => {
       if (!(answers[question.id] ?? []).includes(option.id)) return false;
       const optionDimensions = new Set((option.signals ?? []).map(({ dimension }) => dimension));
@@ -337,10 +360,11 @@ function selectedOptionSupportsPair(
 function buildTensions(
   answers: SelfReflectionAnswers,
   evaluations: readonly SelfReflectionDimensionEvaluation[],
+  locale: Locale,
 ) {
   const evaluationByDimension = new Map(evaluations.map((evaluation) => [evaluation.dimension, evaluation]));
 
-  return selfReflectionTensions
+  return getSelfReflectionTensions(locale)
     .flatMap((tension, definitionIndex) => {
       const [leftDimension, rightDimension] = tension.dimensions;
       const left = evaluationByDimension.get(leftDimension);
@@ -348,15 +372,15 @@ function buildTensions(
       if (!left?.visibility || !right?.visibility) return [];
 
       const allEvidence = [
-        ...getDimensionEvidence(answers, leftDimension),
-        ...getDimensionEvidence(answers, rightDimension),
+        ...getDimensionEvidence(answers, leftDimension, undefined, locale),
+        ...getDimensionEvidence(answers, rightDimension, undefined, locale),
       ];
       const independentQuestions = new Set(allEvidence.map(({ questionId }) => questionId));
       if (independentQuestions.size < 3) return [];
 
       const evidence: SelfReflectionEvidence[] = [];
       for (const dimension of tension.dimensions) {
-        const first = getDimensionEvidence(answers, dimension)[0];
+        const first = getDimensionEvidence(answers, dimension, undefined, locale)[0];
         if (first && !evidence.some(({ questionId, optionId }) => questionId === first.questionId && optionId === first.optionId)) {
           evidence.push(first);
         }
@@ -377,7 +401,7 @@ function buildTensions(
           text: tension.text,
           evidence: takeDistinctEvidence(evidence),
         },
-        explicitPair: selectedOptionSupportsPair(answers, tension.dimensions),
+        explicitPair: selectedOptionSupportsPair(answers, tension.dimensions, locale),
         weakestRatio: Math.min(leftRatio, rightRatio),
         definitionIndex,
       }];
@@ -391,49 +415,49 @@ function buildTensions(
     .map(({ result }) => result);
 }
 
-export function buildSelfReflectionResult(answers: SelfReflectionAnswers):
+export function buildSelfReflectionResult(answers: SelfReflectionAnswers, locale: Locale = "de"):
   | { status: "incomplete"; missingQuestionIds: readonly string[] }
   | { status: "complete"; result: SelfReflectionResult } {
-  const missingQuestionIds = getMissingSelfReflectionQuestionIds(answers);
+  const missingQuestionIds = getMissingSelfReflectionQuestionIds(answers, locale);
   if (missingQuestionIds.length > 0) return { status: "incomplete", missingQuestionIds };
 
-  const evaluations = calculateSelfReflectionScores(answers);
-  const selfImageSection = buildSelfImageSection(answers);
-  const sections = buildDimensionSections(answers, evaluations);
+  const evaluations = calculateSelfReflectionScores(answers, locale);
+  const selfImageSection = buildSelfImageSection(answers, locale);
+  const sections = buildDimensionSections(answers, evaluations, locale);
   if (selfImageSection) sections.push(selfImageSection);
-  const tensions = buildTensions(answers, evaluations);
+  const tensions = buildTensions(answers, evaluations, locale);
 
   return {
     status: "complete",
     result: {
-      title: "Dein mögliches Arbeits- und Lebens-Habitat",
-      description:
-        "Eine Momentaufnahme deiner aktuellen Antworten – kein festes Persönlichkeitsprofil und keine Bewertung deiner Person.",
-      summary: buildSelfReflectionSummary(evaluations, tensions, selfImageSection),
+      title: selfResultCopyByLocale[locale].title,
+      description: selfResultCopyByLocale[locale].description,
+      summary: buildSelfReflectionSummary(evaluations, tensions, selfImageSection, locale),
       sections,
       tensions,
     },
   };
 }
 
-function selectionInstruction(question: SelfReflectionQuestion): string {
+function selectionInstruction(question: SelfReflectionQuestion, locale: Locale): string {
+  const copy = selfResultCopyByLocale[locale];
   if (question.minSelections === question.maxSelections) {
-    return question.minSelections === 1
-      ? "Wähle eine Antwort aus."
-      : `Wähle genau ${question.minSelections} Antworten aus.`;
+    return question.minSelections === 1 ? copy.one : copy.exact(question.minSelections);
   }
-  return `Wähle ${question.minSelections} bis ${question.maxSelections} Antworten aus.`;
+  return copy.range(question.minSelections, question.maxSelections);
 }
 
-function isLastQuestionOfSection(questionIndex: number, sectionId: SelfReflectionSectionId): boolean {
-  const nextQuestion = selfReflectionQuestions[questionIndex + 1];
+function isLastQuestionOfSection(questionIndex: number, sectionId: SelfReflectionSectionId, locale: Locale): boolean {
+  const nextQuestion = getSelfReflectionQuestions(locale)[questionIndex + 1];
   return !nextQuestion || nextQuestion.sectionId !== sectionId;
 }
 
 export function selfReflectionJourneyReducer(
   state: SelfReflectionJourneyState,
   action: SelfReflectionJourneyAction,
+  locale: Locale = "de",
 ): SelfReflectionJourneyState {
+  const activeQuestions = getSelfReflectionQuestions(locale);
   if (action.type === "confirm-restart") return initialSelfReflectionState;
   if (action.type === "request-restart") return { ...state, restartPending: true };
   if (action.type === "cancel-restart") return { ...state, restartPending: false };
@@ -441,7 +465,7 @@ export function selfReflectionJourneyReducer(
     return { ...state, phase: "journey", questionIndex: 0, validationMessage: null, restartPending: false };
   }
   if (action.type === "edit-section") {
-    const questionIndex = selfReflectionQuestions.findIndex(({ sectionId }) => sectionId === action.sectionId);
+    const questionIndex = activeQuestions.findIndex(({ sectionId }) => sectionId === action.sectionId);
     if (questionIndex < 0) return state;
     return {
       ...state,
@@ -454,7 +478,7 @@ export function selfReflectionJourneyReducer(
   }
   if (action.type === "toggle-option") {
     if (state.phase !== "journey") return state;
-    const question = selfReflectionQuestions[state.questionIndex];
+    const question = activeQuestions[state.questionIndex];
     if (!question || question.id !== action.questionId) return state;
     const option = question.options.find(({ id }) => id === action.optionId);
     if (!option) return state;
@@ -475,7 +499,7 @@ export function selfReflectionJourneyReducer(
       if (withoutExclusive.length >= question.maxSelections) {
         return {
           ...state,
-          validationMessage: `Du kannst höchstens ${question.maxSelections} Antworten auswählen.`,
+          validationMessage: selfResultCopyByLocale[locale].max(question.maxSelections),
         };
       }
       selected = [...withoutExclusive, option.id];
@@ -491,9 +515,9 @@ export function selfReflectionJourneyReducer(
   }
   if (action.type === "back") {
     if (state.phase !== "journey") return state;
-    const question = selfReflectionQuestions[state.questionIndex];
+    const question = activeQuestions[state.questionIndex];
     const firstEditingIndex = state.editingSectionId
-      ? selfReflectionQuestions.findIndex(({ sectionId }) => sectionId === state.editingSectionId)
+      ? activeQuestions.findIndex(({ sectionId }) => sectionId === state.editingSectionId)
       : -1;
     if (state.editingSectionId && state.questionIndex === firstEditingIndex) {
       return { ...state, phase: "result", editingSectionId: null, validationMessage: null };
@@ -505,20 +529,20 @@ export function selfReflectionJourneyReducer(
   }
   if (action.type === "continue") {
     if (state.phase !== "journey") return state;
-    const question = selfReflectionQuestions[state.questionIndex];
+    const question = activeQuestions[state.questionIndex];
     if (!question) return state;
     if (!isSelfReflectionQuestionComplete(question, state.answers[question.id])) {
-      return { ...state, validationMessage: selectionInstruction(question) };
+      return { ...state, validationMessage: selectionInstruction(question, locale) };
     }
 
-    const atJourneyEnd = state.questionIndex === selfReflectionQuestions.length - 1;
+    const atJourneyEnd = state.questionIndex === activeQuestions.length - 1;
     const atEditedSectionEnd = state.editingSectionId
-      ? isLastQuestionOfSection(state.questionIndex, state.editingSectionId)
+      ? isLastQuestionOfSection(state.questionIndex, state.editingSectionId, locale)
       : false;
     if (atJourneyEnd || atEditedSectionEnd) {
-      if (getMissingSelfReflectionQuestionIds(state.answers).length > 0) {
+      if (getMissingSelfReflectionQuestionIds(state.answers, locale).length > 0) {
         return atJourneyEnd
-          ? { ...state, validationMessage: "Beantworte bitte alle Fragen, bevor du dein Ergebnis öffnest." }
+          ? { ...state, validationMessage: selfResultCopyByLocale[locale].incomplete }
           : { ...state, questionIndex: state.questionIndex + 1, editingSectionId: null, validationMessage: null };
       }
       return { ...state, phase: "result", editingSectionId: null, validationMessage: null };

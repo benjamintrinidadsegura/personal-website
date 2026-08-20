@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
+import { accountDictionaries } from "../data/i18n/account";
+import { locales } from "../lib/i18n/config";
+
 import {
   accountAuthStorageKey,
   getSupabaseAuthStorageKey,
@@ -32,32 +35,40 @@ test("generic login permits existing normal users and exposes no registration or
   const actions = source("../app/account/actions.ts");
   const combined = `${page}\n${form}`;
 
-  assert.equal(combined.includes("BTS Account"), true);
-  assert.equal(combined.includes("Log in"), true);
+  assert.equal(page.includes("accountTitles[locale]"), true);
+  assert.equal(combined.includes("getAccountDictionary(locale)"), true);
   for (const forbidden of ["Admin Login", "Studio Login", "Sign up", "Register", "OAuth", "magic link", "Google", "GitHub"]) {
     assert.equal(combined.includes(forbidden), false, forbidden);
   }
   assert.equal(actions.includes("signInWithPassword"), true);
   assert.equal(actions.includes("verifyAdminAuthorization"), false);
   assert.equal(actions.includes("await supabase.auth.signOut();\n    return failure"), false);
-  assert.equal(actions.includes('redirect("/")'), true);
+  assert.equal(actions.includes('redirect(localizeHref("/", locale))'), true);
   assert.equal(actions.includes('redirect(account.state.aal === "aal2" ? "/admin" : "/admin/mfa")'), true);
   for (const openRedirectName of ["next", "returnTo", "callbackUrl"]) {
     assert.equal(actions.includes(`formData.get("${openRedirectName}")`), false, openRedirectName);
   }
 });
 
+test("account entry exposes complete controlled copy in every V1 locale", () => {
+  const englishKeys = Object.keys(accountDictionaries.en).sort();
+  for (const locale of locales) {
+    assert.deepEqual(Object.keys(accountDictionaries[locale]).sort(), englishKeys, locale);
+    for (const value of Object.values(accountDictionaries[locale])) assert.ok(value.trim().length > 0, locale);
+  }
+});
+
 test("account menu exposes exactly the approved adaptive states and no draft mutation", () => {
   const menu = source("../components/account/account-menu.tsx");
   assert.equal(menu.includes('account.kind === "anonymous"'), true);
-  assert.equal(menu.includes('href="/account/login"'), true);
+  assert.equal(menu.includes('href={href("/account/login")}'), true);
   assert.equal(menu.includes('account.kind === "admin"'), true);
   assert.equal(menu.includes('account.aal === "aal1"'), true);
-  assert.equal(menu.includes("Verify to access BTS Studio"), true);
+  assert.equal(menu.includes("copy.account.verifyStudio"), true);
   assert.equal(menu.includes('href="/admin"'), true);
   assert.equal(menu.includes('href="/admin/writing"'), true);
   assert.equal(menu.includes('href="/admin/echowall"'), true);
-  assert.equal(menu.includes("Edit this article"), true);
+  assert.equal(menu.includes("copy.account.editArticle"), true);
   assert.equal(menu.includes("createWritingDraftAction"), false);
   assert.equal(menu.includes("New Writing"), false);
   assert.equal(menu.includes("email"), false);
@@ -145,7 +156,7 @@ test("desktop and mobile account controls preserve accessibility and menu exclus
   const menu = source("../components/account/account-menu.tsx");
   const header = source("../components/layout/header.tsx");
   for (const required of [
-    'aria-label="Open account menu"',
+    "aria-label={copy.accountMenuOpen}",
     "aria-expanded={open}",
     'aria-controls="desktop-account-menu"',
     'event.key !== "Escape"',

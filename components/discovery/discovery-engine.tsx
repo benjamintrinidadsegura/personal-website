@@ -5,7 +5,8 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 
 import { useDiscovery } from "@/components/discovery/discovery-context";
 import { DiscoveryResults } from "@/components/discovery/discovery-results";
-import { guidedDiscoveryPrompts } from "@/data/discovery-curation";
+import { useLocale } from "@/components/i18n/locale-context";
+import { getDiscoveryUiCopy, getGuidedDiscoveryPrompts } from "@/data/i18n/discovery";
 import { acquireScrollLock } from "@/lib/scroll-lock";
 
 function isCurrentLocation(targetHref: string) {
@@ -18,6 +19,9 @@ function isCurrentLocation(targetHref: string) {
 }
 
 export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
+  const locale = useLocale();
+  const copy = getDiscoveryUiCopy(locale);
+  const prompts = getGuidedDiscoveryPrompts(locale);
   const pathname = usePathname();
   const {
     query,
@@ -220,7 +224,7 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
     type: "search" as const,
     value: query,
     role: "combobox",
-    "aria-label": "Inhalte entdecken",
+    "aria-label": copy.searchLabel,
     "aria-expanded": open,
     "aria-controls": listboxId,
     "aria-describedby": descriptionId,
@@ -244,7 +248,7 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
         <input
           {...inputProps}
           ref={desktopInput}
-          placeholder="Projekte, Karriere, Menschen und Tools entdecken"
+          placeholder={copy.placeholder}
           onClick={(event) => openDiscovery(event.currentTarget)}
           className="h-10 w-full rounded-full border border-white/15 bg-white/[0.035] pl-9 pr-14 text-sm text-white outline-none transition placeholder:text-slate-500 hover:border-white/25 focus:border-[#35d0e5]/60 focus:bg-[#071824] focus:ring-2 focus:ring-[#35d0e5]/15"
         />
@@ -255,7 +259,7 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
         ref={mobileTrigger}
         type="button"
         className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white transition hover:border-[#35d0e5]/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5] lg:hidden"
-        aria-label="Discovery öffnen"
+        aria-label={copy.open}
         aria-expanded={open}
         aria-controls={listboxId}
         onClick={(event) => openDiscovery(event.currentTarget)}
@@ -269,12 +273,12 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
               <input
                 {...inputProps}
                 ref={mobileInput}
-                placeholder="Projekte, Karriere, Menschen und Tools entdecken"
+                placeholder={copy.placeholder}
                 className="h-12 w-full rounded-xl border border-white/15 bg-[#04111b] px-4 text-base text-white outline-none placeholder:text-slate-500 focus:border-[#35d0e5]/60 focus:ring-2 focus:ring-[#35d0e5]/15"
               />
             </div>
-            <p id={descriptionId} className="sr-only">Vorschläge erscheinen während der Eingabe. Mit den Pfeiltasten ein verfügbares Ergebnis auswählen und mit Enter öffnen.</p>
-            <div id={listboxId} role="listbox" aria-label="Discovery-Ergebnisse" className="min-h-0 flex-1 overflow-hidden">
+            <p id={descriptionId} className="sr-only">{copy.description}</p>
+            <div id={listboxId} role="listbox" aria-label={copy.resultsLabel} className="min-h-0 flex-1 overflow-hidden">
               {matches.length > 0 && (
                 <DiscoveryResults
                   groups={groups}
@@ -287,10 +291,10 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
             </div>
             {!query.trim() ? (
               <div className="min-h-0 shrink overflow-y-auto px-5 py-7 text-center sm:px-6 sm:py-9">
-                <p className="text-lg font-black text-white">Discover the Digital HQ</p>
-                <p className="mt-2 text-sm text-slate-400">Projekte, Insights, Tools, Menschen und Seiten entdecken.</p>
-                <div className="mx-auto mt-6 grid max-w-xl gap-2 text-left sm:grid-cols-2" role="group" aria-label="Beispiele für Discovery-Anfragen">
-                  {guidedDiscoveryPrompts.map((prompt) => (
+                <p className="text-lg font-black text-white">{copy.discoverTitle}</p>
+                <p className="mt-2 text-sm text-slate-400">{copy.discoverDescription}</p>
+                <div className="mx-auto mt-6 grid max-w-xl gap-2 text-left sm:grid-cols-2" role="group" aria-label={copy.examples}>
+                  {prompts.map((prompt) => (
                     <button
                       key={prompt.id}
                       type="button"
@@ -310,13 +314,13 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
               </div>
             ) : matches.length === 0 ? (
               <div className="shrink-0 px-6 py-12 text-center" role="status">
-                <p className="text-lg font-black text-white">Keine Treffer</p>
-                <p className="mt-2 text-sm text-slate-400">Für „{query}“ wurde noch nichts Passendes gefunden.</p>
+                <p className="text-lg font-black text-white">{copy.noResults}</p>
+                <p className="mt-2 text-sm text-slate-400">{copy.noResultsFor(query)}</p>
               </div>
             ) : null}
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-white/10 px-4 py-2 font-mono text-[9px] uppercase tracking-wider text-slate-500">
-              <span aria-live="polite">{query.trim() ? `${matches.length} Treffer` : "Eingabe ab 1 Zeichen"}</span>
-              <span>↑↓ Auswahl · Enter Öffnen · Esc Schließen</span>
+              <span aria-live="polite">{query.trim() ? copy.count(matches.length) : copy.startTyping}</span>
+              <span>{copy.shortcuts}</span>
             </div>
           </div>
       )}

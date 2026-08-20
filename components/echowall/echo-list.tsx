@@ -1,25 +1,17 @@
 import type { EchoCategory, PublicEcho } from "@/types/echowall";
-
-const categoryLabels: Record<EchoCategory, string> = {
-  thought: "Gedanke",
-  feedback: "Feedback",
-  reaction: "Reaktion",
-  message: "Nachricht",
-};
-
-const dateFormatter = new Intl.DateTimeFormat("de-DE", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "Europe/Berlin",
-});
+import { getLocale } from "@/lib/i18n/server";
+import { getEchoDictionary } from "@/data/i18n/echowall";
+import { localeDetails } from "@/lib/i18n/config";
 
 type EchoListProps = {
   echoes: PublicEcho[];
   variant?: "full" | "preview";
 };
 
-export function EchoList({ echoes, variant = "full" }: EchoListProps) {
+export async function EchoList({ echoes, variant = "full" }: EchoListProps) {
+  const locale = await getLocale();
+  const categoryLabels: Record<EchoCategory, string> = getEchoDictionary(locale).form.categories;
+  const dateFormatter = new Intl.DateTimeFormat(localeDetails[locale].htmlLang, { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
   return (
     <ol className="grid border-l border-t border-white/10 lg:grid-cols-2">
       {echoes.map((echo, index) => (

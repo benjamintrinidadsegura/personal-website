@@ -4,6 +4,9 @@ export type WritingContentType = (typeof writingContentTypes)[number];
 export const writingStatuses = ["draft", "published"] as const;
 export type WritingStatus = (typeof writingStatuses)[number];
 
+export const writingLanguages = ["de", "en", "es", "tr", "pl", "el", "ru"] as const;
+export type WritingLanguage = (typeof writingLanguages)[number];
+
 export const suggestedWritingTopics = ["People", "Work", "Building", "Life", "Ideas"] as const;
 
 export type WritingTextStyles = {
@@ -67,6 +70,7 @@ export interface PublicWritingSummary {
   topics: string[];
   publishedAt: string;
   readingMinutes: number;
+  language: WritingLanguage;
 }
 
 export interface PublicWritingArticle extends PublicWritingSummary {

@@ -10,6 +10,7 @@ import {
   values,
 } from "../data/about";
 import { discoveryIndex } from "../data/discovery-index";
+import { getAboutContent, getAboutPageCopy } from "../data/i18n/about";
 import { getProject } from "../data/projects";
 import { siteConfig } from "../data/site";
 import { publishedSpotlights } from "../data/spotlights";
@@ -36,10 +37,10 @@ test("About establishes the canonical Benjamin identity and evidence-backed posi
 
 test("About metadata is canonical and supplies complete social preview metadata", () => {
   const page = source("../app/about/page.tsx");
-  assert.match(page, /Benjamin Trinidad Segura — About & Work \| bts\.online/u);
-  assert.match(page, /alternates: \{ canonical: "\/about" \}/u);
-  assert.match(page, /openGraph:/u);
-  assert.match(page, /twitter:/u);
+  assert.equal(getAboutPageCopy("de").title, "Benjamin Trinidad Segura — Über mich & Arbeit | bts.online");
+  assert.equal(getAboutPageCopy("en").title, "Benjamin Trinidad Segura — About & Work | bts.online");
+  assert.match(page, /createLocalizedMetadata\(\{ locale, pathname: "\/about"/u);
+  assert.match(page, /const locale = await getLocale\(\)/u);
   assert.match(page, /type: "profile"/u);
   assert.equal((page.match(/<h1\b/gu) ?? []).length, 1);
 });
@@ -49,9 +50,10 @@ test("ProfilePage and Person JSON-LD use verified relationships without unsuppor
   assert.match(page, /"@type": "ProfilePage"/u);
   assert.match(page, /"@type": "Person"/u);
   assert.match(page, /"@type": "Brand"/u);
-  assert.match(page, /sameAs: personProfiles/u);
-  assert.match(page, /sameAs: goatProfiles/u);
-  assert.match(page, /knowsAbout: \[\.\.\.aboutPositioning\.fields\]/u);
+  assert.match(page, /sameAs: personProfiles\.map/u);
+  assert.match(page, /sameAs: goatProfiles\.map/u);
+  assert.match(page, /knowsAbout: \[\.\.\.positioning\.fields\]/u);
+  assert.match(page, /inLanguage: story\.sourceLanguage/u);
   assert.match(page, /JSON\.stringify\(profileJsonLd\)\.replace/u);
   assert.doesNotMatch(page, /worksFor|affiliation|award|alumniOf|hasCredential/u);
 
@@ -90,12 +92,35 @@ test("owner sources remain separate from guests and preserve their required auth
 test("About integrates People, projects, writing, tools, contact, and the canonical Now source", () => {
   const page = source("../app/about/page.tsx");
   assert.match(page, /publishedSpotlights\.length/u);
-  assert.match(page, /href="\/people"/u);
-  assert.match(page, /href: "\/writing"/u);
-  assert.match(page, /href: "\/find-your-next-step"/u);
-  assert.match(page, /href="\/#contact"/u);
-  assert.match(page, /nowItems\.map/u);
+  assert.match(page, /localizeHref\("\/people", locale\)/u);
+  assert.match(page, /copy\.pathItems\.map/u);
+  assert.deepEqual(getAboutPageCopy("en").pathItems.map(({ href }) => href), ["/#building", "/people", "/writing", "/find-your-next-step"]);
+  assert.match(page, /localizeHref\("\/#contact", locale\)/u);
+  assert.match(page, /now\.items\.map/u);
   assert.match(page, /PrivacyVideo/u);
+});
+
+test("English About translates editorial framing while preserving owner source identity and language", () => {
+  const german = getAboutContent("de");
+  const english = getAboutContent("en");
+
+  assert.equal(english.ownerStories.length, german.ownerStories.length);
+  assert.deepEqual(english.ownerStories.map(({ id }) => id), german.ownerStories.map(({ id }) => id));
+  assert.deepEqual(english.ownerStories.map(({ video }) => video), german.ownerStories.map(({ video }) => video));
+  assert.equal(english.ownerStories.every(({ sourceLanguage }) => sourceLanguage === "de"), true);
+  assert.notEqual(english.positioning.explanation, german.positioning.explanation);
+  assert.equal(german.positioning.primary, "Menschlichere Systeme entwickeln, indem fehlender Kontext sichtbar wird.");
+  assert.deepEqual(german.values.map(({ title }) => title), [
+    "Kontext vor Kategorien",
+    "Veränderung vor Funktionen",
+    "Verstehen, nicht vermessen",
+    "Die Deutung bleibt beim Menschen",
+  ]);
+  assert.deepEqual(german.projectEvidence.slice(0, 2).map(({ status }) => status), ["Aktiv / im Wachstum", "Neuaufbau"]);
+  assert.deepEqual(german.ownerStories.map(({ label }) => label), [
+    "Benjamin spricht / Quelle aus erster Person",
+    "KI-Perspektive / Sekundärquelle",
+  ]);
 });
 
 test("About is discoverable and remains present in the production sitemap model", () => {

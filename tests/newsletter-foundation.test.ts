@@ -28,6 +28,7 @@ import {
   verifyNewsletterUnsubscribeToken,
 } from "../lib/newsletter/security";
 import { validateNewsletterSubscription } from "../lib/newsletter/validation";
+import { localeDetails, locales, type Locale } from "../lib/i18n/config";
 import type { RawNewsletterSubscription } from "../types/newsletter";
 
 const NOW = Date.UTC(2026, 7, 18, 12, 0, 0);
@@ -88,6 +89,22 @@ test("newsletter validation requires explicit consent, a token, and an empty hon
   assert.equal(newsletterPromise.en.includes("No fixed schedule, no spam."), true);
 });
 
+test("newsletter validation and consent copy are deterministic in every V1 locale", () => {
+  const localizedErrors = new Set<string>();
+  for (const locale of locales) {
+    const result = validateNewsletterSubscription(validRaw({ email: "invalid", consent: null }), locale);
+    assert.equal(result.success, false, locale);
+    if (!result.success) {
+      assert.ok(result.fieldErrors.email, locale);
+      assert.ok(result.fieldErrors.consent, locale);
+      localizedErrors.add(`${result.fieldErrors.email}|${result.fieldErrors.consent}`);
+    }
+    assert.ok(newsletterConsentCopy[locale].length > 0, locale);
+    assert.ok(newsletterPromise[locale].length > 0, locale);
+  }
+  assert.equal(localizedErrors.size, locales.length);
+});
+
 test("newsletter tokens are purpose-bound and network identifiers are privacy-reduced", () => {
   assert.equal(reduceNewsletterNetworkIdentifier("192.0.2.42"), "192.0.2");
   assert.equal(reduceNewsletterNetworkIdentifier("2001:db8:1234:5678:aaaa:bbbb:cccc:dddd"), "2001:0db8:1234:5678::/64");
@@ -142,7 +159,7 @@ test("runtime configuration fails closed until provider, tracking, sender, and l
 
 test("subscription creates only hashed security metadata and returns enumeration-safe success", async () => {
   let databaseInput: Record<string, unknown> | null = null;
-  let deliveredTo: string | null = null;
+  let deliveredEmail: { to: string; confirmationUrl: string; locale?: Locale } | null = null;
   const result = await processNewsletterSubscription(
     validRaw(),
     request,
@@ -151,12 +168,18 @@ test("subscription creates only hashed security metadata and returns enumeration
       databaseInput = input;
       return { subscriberId: SUBSCRIBER_ID, shouldSend: true, confirmationExpiresAt: new Date(NOW + 86_400_000).toISOString() };
     },
-    async (email) => { deliveredTo = email.to; return true; },
+    async (email) => { deliveredEmail = email; return true; },
     NOW,
     () => CONFIRMATION_TOKEN,
+    "de",
   );
   assert.deepEqual(result, { ok: true });
-  assert.equal(deliveredTo, "reader@example.com");
+  const sent = deliveredEmail as { to: string; confirmationUrl: string; locale?: Locale } | null;
+  assert.equal(sent?.to, "reader@example.com");
+  assert.equal(sent?.locale, "de");
+  const confirmationUrl = new URL(sent?.confirmationUrl ?? "http://invalid.local");
+  assert.equal(confirmationUrl.pathname, "/newsletter/confirm");
+  assert.equal(confirmationUrl.searchParams.get("token"), CONFIRMATION_TOKEN);
   const capturedInput = databaseInput as Record<string, unknown> | null;
   assert.equal(capturedInput?.email, "reader@example.com");
   for (const field of ["emailHash", "networkHash", "formTokenHash", "confirmationTokenHash"]) {
@@ -229,6 +252,28 @@ test("Brevo adapter is bounded, dependency-free, and creates inert confirmation 
   assert.equal(content.htmlContent.includes("&lt;unsafe&gt;"), true);
   assert.equal(/<img|pixel|utm_|google-analytics/iu.test(content.htmlContent), false);
   assert.equal(content.textContent.includes("reader@example.com"), false);
+  const germanContent = createConfirmationEmailContent({
+    to: "reader@example.com",
+    confirmationUrl: "https://bts.online/newsletter/confirm?token=safe",
+    expiresAt: new Date(NOW + 86_400_000).toISOString(),
+    locale: "de",
+  });
+  assert.match(germanContent.subject, /Bestätige/u);
+  assert.match(germanContent.htmlContent, /<html lang="de">/u);
+  assert.match(germanContent.textContent, /Bestätige dein Abonnement/u);
+  const localizedSubjects = new Set<string>();
+  for (const locale of locales) {
+    const localized = createConfirmationEmailContent({
+      to: "reader@example.com",
+      confirmationUrl: `https://bts.online/${locale}/newsletter/confirm?token=safe`,
+      expiresAt: new Date(NOW + 86_400_000).toISOString(),
+      locale,
+    });
+    assert.match(localized.htmlContent, new RegExp(`<html lang="${localeDetails[locale].htmlLang}">`, "u"), locale);
+    assert.ok(localized.textContent.length > 100, locale);
+    localizedSubjects.add(localized.subject);
+  }
+  assert.equal(localizedSubjects.size, locales.length);
 
   let captured: RequestInit | null = null;
   const configuration = newsletterRuntimeConfiguration({
@@ -314,13 +359,16 @@ test("public UI keeps account consent separate and token pages private", () => {
   const unsubscribePage = readFileSync(new URL("../app/newsletter/unsubscribe/page.tsx", import.meta.url), "utf8");
   const config = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
   const writingPage = readFileSync(new URL("../app/writing/[slug]/page.tsx", import.meta.url), "utf8");
-  assert.equal(form.includes("It is not linked to BTS Account"), true);
+  const translations = readFileSync(new URL("../data/i18n/newsletter.ts", import.meta.url), "utf8");
+  assert.equal(form.includes("copy.emailHelp"), true);
+  assert.equal(translations.includes("It is not linked to BTS Account"), true);
   assert.equal(form.includes('type="checkbox"'), true);
   assert.equal(form.includes("checked="), false);
-  assert.equal(form.includes("Double opt-in is required"), true);
-  assert.equal(confirmPage.includes("Opening this page alone does not subscribe you"), true);
+  assert.equal(form.includes("copy.privacyPrefix"), true);
+  assert.equal(translations.includes("Double opt-in is required"), true);
+  assert.equal(confirmPage.includes("copy.body"), true);
   assert.equal(confirmPage.includes("robots: { index: false, follow: false }"), true);
-  assert.equal(unsubscribePage.includes("does not require a BTS Account"), true);
+  assert.equal(unsubscribePage.includes("copy.body"), true);
   assert.equal(config.includes('value: "no-referrer"'), true);
   assert.equal(writingPage.includes("<NewsletterCta />"), true);
   assert.equal(writingPage.includes("issueNewsletterFormToken"), false);

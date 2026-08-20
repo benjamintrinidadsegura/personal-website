@@ -1,15 +1,18 @@
-import type { SelfProfileIdentityResult } from "@/lib/find-your-next-step-self-profile";
+"use client";
 
-const profileDisclosure =
-  "Diese Profil-Linse verdichtet deine aktuellen Antworten redaktionell. Sie ist weder Persönlichkeitstyp noch Diagnose und kann sich mit deiner Situation verändern.";
+import { useLocale } from "@/components/i18n/locale-context";
+import { selfProfileUiCopy } from "@/data/find-your-next-step-self-ui-locales";
+import type { SelfProfileIdentityResult } from "@/lib/find-your-next-step-self-profile";
 
 function CompactProfileState({
   identity,
 }: {
   identity: Extract<SelfProfileIdentityResult, { status: "mixed" | "none" }>;
 }) {
+  const locale = useLocale();
+  const ui = selfProfileUiCopy[locale];
   const mixed = identity.status === "mixed";
-  const title = mixed ? "Vielseitiger als eindeutig" : "Profil-Linse bewusst offen";
+  const title = mixed ? ui.varied : ui.open;
   const titleId = mixed ? "self-profile-mixed-title" : "self-profile-none-title";
 
   return (
@@ -21,7 +24,7 @@ function CompactProfileState({
     >
       <div className="max-w-3xl border-l-2 border-[#35d0e5]/55 pl-5 sm:pl-7">
         <p className="font-mono text-xs font-black uppercase tracking-[0.2em] text-[#73e3f1]">
-          Eine mögliche Linse auf deine Momentaufnahme
+          {ui.lens}
         </p>
         <h3 id={titleId} className="mt-4 text-2xl font-black leading-tight text-white sm:text-3xl">
           {title}
@@ -30,7 +33,7 @@ function CompactProfileState({
           {identity.message}
         </p>
         <p className="mt-5 border-t border-white/10 pt-4 text-sm leading-6 text-slate-500">
-          {profileDisclosure}
+          {ui.disclaimer}
         </p>
       </div>
     </section>
@@ -42,6 +45,8 @@ export function SelfProfileIdentityView({
 }: {
   identity: SelfProfileIdentityResult;
 }) {
+  const locale = useLocale();
+  const ui = selfProfileUiCopy[locale];
   if (identity.status !== "profile") return <CompactProfileState identity={identity} />;
 
   const description = identity.contextual
@@ -58,11 +63,11 @@ export function SelfProfileIdentityView({
       <div className="grid gap-11 lg:grid-cols-[1.05fr_0.72fr] lg:gap-16">
         <div className="min-w-0">
           <p className="font-mono text-xs font-black uppercase tracking-[0.2em] text-[#73e3f1]">
-            Eine mögliche Linse auf deine Momentaufnahme
+            {ui.lens}
           </p>
           {identity.contextual ? (
             <p className="mt-4 border-l-2 border-[#35d0e5] pl-4 text-sm font-bold leading-6 text-slate-200">
-              Situationsabhängige Linse
+              {ui.contextual}
             </p>
           ) : null}
           <h3
@@ -81,7 +86,7 @@ export function SelfProfileIdentityView({
 
         <div className="min-w-0 border-t border-[#35d0e5]/25 pt-8 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
           <p className="font-mono text-xs font-black uppercase tracking-[0.18em] text-[#73e3f1]">
-            Drei Signale dieser Linse
+            {ui.signals}
           </p>
           <ul className="mt-5 divide-y divide-[#35d0e5]/20 border-y border-[#35d0e5]/20">
             {identity.definition.signatureSignals.map((signal) => (
@@ -92,18 +97,18 @@ export function SelfProfileIdentityView({
           </ul>
 
           <div className="mt-9">
-            <h4 className="text-lg font-black text-white">Warum diese Linse?</h4>
+            <h4 className="text-lg font-black text-white">{ui.why}</h4>
             <p className="mt-3 text-sm leading-6 text-slate-400">{identity.why}</p>
           </div>
 
           {identity.secondarySignals.length > 0 ? (
             <div className="mt-9 border-t border-white/10 pt-7">
-              <h4 className="text-lg font-black text-white">Was die Momentaufnahme zusätzlich färbt</h4>
+              <h4 className="text-lg font-black text-white">{ui.secondary}</h4>
               <ul className="mt-4 grid gap-4">
                 {identity.secondarySignals.map((signal) => (
                   <li key={signal.dimension} className="border-l border-[#35d0e5]/45 pl-4">
                     <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#73e3f1]">
-                      {signal.label}{signal.contextual ? " · situationsabhängig" : ""}
+                      {signal.label}{signal.contextual ? ` · ${ui.contextualSuffix}` : ""}
                     </p>
                     <p className="mt-2 text-sm leading-6 text-slate-300">{signal.text}</p>
                   </li>
@@ -115,7 +120,7 @@ export function SelfProfileIdentityView({
       </div>
 
       <p className="mt-10 max-w-4xl border-t border-white/10 pt-5 text-sm leading-6 text-slate-500">
-        {profileDisclosure}
+        {ui.disclaimer}
       </p>
     </section>
   );

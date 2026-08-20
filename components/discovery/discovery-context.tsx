@@ -3,7 +3,9 @@
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { useLocale } from "@/components/i18n/locale-context";
 import { discoveryIndex } from "@/data/discovery-index";
+import { localizeDiscoveryItems } from "@/data/i18n/discovery";
 import { createAdaptiveDiscoveryView, discoverItems, groupDiscoveryItems } from "@/lib/discovery";
 import type { AdaptiveDiscoveryView, DiscoveryGroup, DiscoveryItem, DiscoveryMatch } from "@/types/discovery";
 
@@ -41,6 +43,7 @@ function isCurrentLocation(targetHref: string) {
 const DiscoveryContext = createContext<DiscoveryContextValue | null>(null);
 
 export function DiscoveryProvider({ children, items = discoveryIndex }: { children: ReactNode; items?: DiscoveryItem[] }) {
+  const locale = useLocale();
   const pathname = usePathname();
   const [query, setQueryState] = useState("");
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -175,7 +178,8 @@ export function DiscoveryProvider({ children, items = discoveryIndex }: { childr
     };
   }, [pendingAnchorId]);
 
-  const matches = useMemo(() => discoverItems(items, query), [items, query]);
+  const localizedItems = useMemo(() => localizeDiscoveryItems(items, locale), [items, locale]);
+  const matches = useMemo(() => discoverItems(localizedItems, query), [localizedItems, query]);
   const groups = useMemo(() => groupDiscoveryItems(matches), [matches]);
   const adaptiveView = useMemo(() => createAdaptiveDiscoveryView(matches, selectedMatchId), [matches, selectedMatchId]);
   const value = useMemo(

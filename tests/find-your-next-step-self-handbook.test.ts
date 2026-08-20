@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { selfHandbookUiCopy } from "../data/find-your-next-step-self-ui-locales";
 
 import {
   selfHandbookActivityDefinitions,
@@ -230,8 +231,8 @@ test("Handbook data is curated, valid, unique, and never maps an answer option d
 
 test("Handbook consumes the existing Self evaluation without duplicating visibility thresholds", () => {
   const engine = readFileSync(new URL("../lib/find-your-next-step-self-handbook.ts", import.meta.url), "utf8");
-  assert.match(engine, /calculateSelfReflectionScores\(answers\)/u);
-  assert.match(engine, /getMissingSelfReflectionQuestionIds\(answers\)/u);
+  assert.match(engine, /calculateSelfReflectionScores\(answers, locale\)/u);
+  assert.match(engine, /getMissingSelfReflectionQuestionIds\(answers, locale\)/u);
   assert.equal(engine.includes("0.6"), false);
   assert.equal(engine.includes("0.35"), false);
   assert.equal(engine.includes("Math.random"), false);
@@ -452,7 +453,7 @@ test("Handbook UI exposes four compact semantic chapters without persistence or 
   assert.match(view, /<h3 id="self-handbook-title"/u);
   assert.match(view, /<h4 id=\{id\}/u);
   for (const chapter of ["Entscheiden", "Arbeiten", "Energie & Umfeld", "Lernen & Ausprobieren"]) {
-    assert.equal(view.includes(`title="${chapter}"`), true, chapter);
+    assert.equal(Object.values(selfHandbookUiCopy.de).includes(chapter), true, chapter);
   }
   assert.ok((view.match(/<ol/gu) ?? []).length >= 2);
   assert.ok((view.match(/<ul/gu) ?? []).length >= 3);

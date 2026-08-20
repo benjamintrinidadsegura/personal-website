@@ -4,24 +4,14 @@ import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
 
 import { submitNewsletterAction } from "@/app/newsletter/actions";
-import { newsletterConsentCopy } from "@/lib/newsletter/domain";
+import type { NewsletterDictionary } from "@/data/i18n/newsletter";
 import type {
   NewsletterField,
   NewsletterRequestActionState,
-  NewsletterRequestErrorCode,
 } from "@/types/newsletter";
 
 const initialState: NewsletterRequestActionState = null;
-const errorMessages: Record<NewsletterRequestErrorCode, string> = {
-  INVALID_INPUT: "Please review the subscription form.",
-  INVALID_REQUEST: "The subscription request could not be accepted.",
-  INVALID_FORM_TOKEN: "This form has expired. Reload the page and try again.",
-  SUBMISSION_TOO_FAST: "Please take a moment before submitting.",
-  RATE_LIMITED: "Too many requests were made. Please try again later.",
-  SERVICE_UNAVAILABLE: "Newsletter subscription is temporarily unavailable.",
-};
-
-export function NewsletterForm({ formToken }: { formToken: string | null }) {
+export function NewsletterForm({ formToken, copy, consent, privacyHref }: { formToken: string | null; copy: NewsletterDictionary["form"]; consent: string; privacyHref: string }) {
   const [state, action, pending] = useActionState(submitNewsletterAction, initialState);
   const feedback = useRef<HTMLDivElement>(null);
   const form = useRef<HTMLFormElement>(null);
@@ -40,8 +30,8 @@ export function NewsletterForm({ formToken }: { formToken: string | null }) {
   if (!formToken) {
     return (
       <div role="status" className="mt-10 border-l-2 border-[#ff9a3d] p-6">
-        <h2 className="text-xl font-black text-white">The newsletter is being prepared.</h2>
-        <p className="mt-2 leading-7 text-slate-400">Subscriptions will open after delivery and privacy configuration is complete.</p>
+        <h2 className="text-xl font-black text-white">{copy.preparingTitle}</h2>
+        <p className="mt-2 leading-7 text-slate-400">{copy.preparingBody}</p>
       </div>
     );
   }
@@ -49,8 +39,8 @@ export function NewsletterForm({ formToken }: { formToken: string | null }) {
   if (state?.ok) {
     return (
       <div ref={feedback} tabIndex={-1} role="status" className="mt-10 border-l-2 border-[#35d0e5] bg-[#35d0e5]/[0.04] p-6 outline-none">
-        <h2 className="text-2xl font-black text-white">Check your inbox.</h2>
-        <p className="mt-3 leading-7 text-slate-300">If this address is eligible, a confirmation email is on its way. The subscription starts only after confirmation.</p>
+        <h2 className="text-2xl font-black text-white">{copy.inboxTitle}</h2>
+        <p className="mt-3 leading-7 text-slate-300">{copy.inboxBody}</p>
       </div>
     );
   }
@@ -68,11 +58,11 @@ export function NewsletterForm({ formToken }: { formToken: string | null }) {
         aria-live="polite"
         className={state && !state.ok ? "border-l-2 border-[#ff9a3d] p-5 text-slate-200 outline-none" : "sr-only"}
       >
-        {state && !state.ok ? errorMessages[state.code] : ""}
+        {state && !state.ok ? copy.errors[state.code] : ""}
       </div>
       <div>
-        <label htmlFor="newsletter-email" className="block font-bold text-white">Email address <span className="text-[#ff9a3d]">(required)</span></label>
-        <p id="newsletter-email-help" className="mt-2 text-sm leading-6 text-slate-400">Used only for this newsletter. It is not linked to BTS Account.</p>
+        <label htmlFor="newsletter-email" className="block font-bold text-white">{copy.email} <span className="text-[#ff9a3d]">({copy.required})</span></label>
+        <p id="newsletter-email-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.emailHelp}</p>
         <input
           id="newsletter-email"
           name="email"
@@ -99,11 +89,11 @@ export function NewsletterForm({ formToken }: { formToken: string | null }) {
             className="mt-1 h-5 w-5 shrink-0 accent-[#35d0e5]"
           />
           <label htmlFor="newsletter-consent" className="leading-7 text-slate-300">
-            {newsletterConsentCopy.en} <span className="font-bold text-[#ff9a3d]">(required)</span>
+            {consent} <span className="font-bold text-[#ff9a3d]">({copy.required})</span>
           </label>
         </div>
         <p id="newsletter-consent-help" className="ml-8 mt-3 text-sm leading-6 text-slate-400">
-          Double opt-in is required. Read the <Link href="/privacy#newsletter" className="font-bold text-[#35d0e5] underline underline-offset-4">newsletter privacy information</Link>.
+          {copy.privacyPrefix} <Link href={privacyHref} className="font-bold text-[#35d0e5] underline underline-offset-4">{copy.privacyLink}</Link>.
         </p>
         {fieldError("consent") ? <p id="newsletter-consent-error" className="ml-8 mt-2 text-sm text-[#ffad63]">{fieldError("consent")}</p> : null}
       </div>
@@ -111,7 +101,7 @@ export function NewsletterForm({ formToken }: { formToken: string | null }) {
         <input name="website" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" />
       </div>
       <button type="submit" disabled={pending} className="min-h-12 rounded-full bg-[#35d0e5] px-7 py-3 font-black text-[#041018] disabled:cursor-wait disabled:opacity-60">
-        {pending ? "Requesting…" : "Request subscription"}
+        {pending ? copy.requesting : copy.request}
       </button>
     </form>
   );

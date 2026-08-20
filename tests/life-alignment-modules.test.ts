@@ -36,8 +36,9 @@ test("the root route belongs to the hub and Self owns its dedicated canonical ro
 
   assert.match(hubRoute, /<LifeAlignmentHub \/>/u);
   assert.doesNotMatch(hubRoute, /<LifeAlignmentExperience \/>/u);
-  assert.match(selfRoute, /const selfHref = "\/life-alignment\/self"/u);
-  assert.match(selfRoute, /alternates: \{ canonical: selfHref \}/u);
+  assert.match(selfRoute, /createLocalizedMetadata/u);
+  assert.match(selfRoute, /pathname: "\/life-alignment\/self"/u);
+  assert.match(selfRoute, /getLocale/u);
   assert.match(selfRoute, /<LifeAlignmentExperience \/>/u);
 });
 

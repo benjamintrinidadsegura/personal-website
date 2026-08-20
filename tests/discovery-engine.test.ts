@@ -9,6 +9,7 @@ import {
   guidedDiscoveryPrompts,
 } from "../data/discovery-curation";
 import { discoveryIndex } from "../data/discovery-index";
+import { getDiscoveryUiCopy, localizeDiscoveryItems } from "../data/i18n/discovery";
 import { adaptiveDiscoveryGroupLimit, createAdaptiveDiscoveryView, discoverItems, groupDiscoveryItems, normalizeDiscoveryText } from "../lib/discovery";
 import type { ActiveDiscoveryDimension, DiscoveryItem, DiscoveryMatch } from "../types/discovery";
 
@@ -424,19 +425,21 @@ test("header preserves navigation and exposes desktop and mobile discovery contr
   const engine = readFileSync(new URL("../components/discovery/discovery-engine.tsx", import.meta.url), "utf8");
 
   assert.equal(header.includes("<DiscoveryEngine"), true);
-  assert.equal(header.includes('{ label: "Find Your Next Step", href: "/find-your-next-step" }'), true);
-  assert.equal(header.includes('{ label: "Life Alignment", href: "/life-alignment" }'), true);
-  assert.equal(header.includes('{ label: "EchoWall", href: "/echowall" }'), true);
+  assert.equal(header.includes('{ id: "fyns", label: "Find Your Next Step", href: localizedHref("/find-your-next-step") }'), true);
+  assert.equal(header.includes('{ id: "life-alignment", label: "Life Alignment", href: localizedHref("/life-alignment") }'), true);
+  assert.equal(header.includes('{ id: "echowall", label: "EchoWall", href: localizedHref("/echowall") }'), true);
   assert.equal(header.includes("setOpenDropdown(null)"), true);
-  assert.equal(engine.includes("Projekte, Karriere, Menschen und Tools entdecken"), true);
-  assert.equal(engine.includes("guidedDiscoveryPrompts.map"), true);
+  assert.equal(engine.includes("getDiscoveryUiCopy(locale)"), true);
+  assert.equal(getDiscoveryUiCopy("de").placeholder, "Projekte, Karriere, Menschen und Tools entdecken");
+  assert.equal(getDiscoveryUiCopy("en").placeholder, "Discover projects, careers, people and tools");
+  assert.equal(engine.includes("prompts.map"), true);
   assert.equal(engine.includes("data-guided-discovery-prompt"), true);
   assert.equal(engine.includes("applyGuidedPrompt(prompt.query)"), true);
   assert.equal(engine.includes('event.key !== "Enter" && event.key !== " "'), true);
   assert.equal(engine.includes("event.preventDefault()"), true);
   assert.equal(engine.includes("setActiveId(null)"), true);
   assert.equal(engine.includes("[input, ...promptButtons, ...options]"), true);
-  assert.equal(engine.includes('aria-label="Discovery öffnen"'), true);
+  assert.equal(engine.includes("aria-label={copy.open}"), true);
   assert.equal(engine.includes("event.metaKey || event.ctrlKey"), true);
   assert.equal(engine.includes('event.key === "Escape"'), true);
   assert.equal(engine.includes('event.key !== "Tab"'), true);
@@ -459,12 +462,12 @@ test("overlay results navigate directly without selecting a canvas top match", (
   assert.equal(engine.includes("document.getElementById(`discovery-option-${selected.id}`)?.click()"), true);
   assert.equal(engine.includes("onBeginNavigation={beginOverlayNavigation}"), true);
   assert.equal(engine.includes("onSettleNavigation={settleOverlayNavigation}"), true);
-  assert.equal(engine.includes("mit Enter öffnen"), true);
-  assert.equal(engine.includes("Enter Öffnen"), true);
+  assert.equal(engine.includes("copy.description"), true);
+  assert.equal(engine.includes("copy.shortcuts"), true);
   assert.equal(results.includes('import Link, { useLinkStatus } from "next/link"'), true);
   assert.equal(results.includes('role="option"'), true);
   assert.equal(results.includes('aria-disabled="true"'), true);
-  assert.equal(results.includes("Noch nicht verfügbar"), true);
+  assert.equal(results.includes("copy.unavailable"), true);
   assert.equal(results.includes("<button"), false);
   assert.equal(results.includes("onSelect"), false);
   assert.equal(results.includes("onBeginNavigation(item.href as string)"), true);
@@ -493,7 +496,8 @@ test("context canvas stays homepage-local while the root layout remains server-r
   assert.ok(page.indexOf("<ContextCanvas>") < page.indexOf("<Hero />"));
   assert.ok(page.indexOf("<Hero />") < page.indexOf("<Now />"));
   assert.ok(page.indexOf("<Now />") < page.indexOf("</ContextCanvas>"));
-  assert.equal(context.includes("discoverItems(items, query)"), true);
+  assert.equal(context.includes("localizeDiscoveryItems(items, locale)"), true);
+  assert.equal(context.includes("discoverItems(localizedItems, query)"), true);
   assert.equal(context.includes("createAdaptiveDiscoveryView(matches, selectedMatchId)"), true);
   assert.equal(context.includes("selectedMatchId"), true);
   assert.equal(engine.includes("dismissDiscovery(false)"), true);
@@ -528,7 +532,7 @@ test("context canvas stays homepage-local while the root layout remains server-r
   assert.equal(discoveryView.includes("groupMatches.length >= 3"), true);
   assert.equal(discoveryView.includes('groupMatches.length === 4 ? "xl:grid-cols-5" : "xl:grid-cols-4"'), true);
   assert.equal(discoveryView.includes("featured={hasFeaturedResult && index === 0}"), true);
-  assert.equal(discoveryView.includes("Detailseite öffnen"), true);
+  assert.equal(discoveryView.includes("copy.openDetail"), true);
   assert.equal(header.includes("acquireScrollLock()"), true);
   assert.equal(engine.includes("previousTarget?.isConnected"), true);
   assert.equal(engine.includes("previousTarget.getClientRects().length > 0"), true);
@@ -551,8 +555,8 @@ test("context canvas cards navigate directly while preserving modified-link beha
 
   const resultCard = discoveryView.slice(resultCardStart, resultCardEnd);
   assert.equal(resultCard.includes("Als Top Match anzeigen"), false);
-  assert.equal(resultCard.includes("Ergebnis öffnen →"), true);
-  assert.equal(resultCard.includes("Noch nicht verfügbar"), true);
+  assert.equal(resultCard.includes("copy.openResult"), true);
+  assert.equal(resultCard.includes("copy.unavailable"), true);
   assert.equal(resultCard.includes("<Link"), true);
   assert.equal(resultCard.includes("<article"), true);
   assert.equal(resultCard.includes("<button"), false);
@@ -582,8 +586,8 @@ test("top match is one full-card link or a non-interactive article", () => {
   assert.equal(topMatch.includes("data-top-match-id={item.id}"), true);
   assert.equal(topMatch.includes("group block"), true);
   assert.equal(topMatch.includes("focus-visible:ring-2"), true);
-  assert.equal(topMatch.includes("Detailseite öffnen →"), true);
-  assert.equal(topMatch.includes("Noch nicht verfügbar"), true);
+  assert.equal(topMatch.includes("copy.openDetail"), true);
+  assert.equal(topMatch.includes("copy.unavailable"), true);
   assert.equal(topMatch.includes("<article"), true);
   assert.equal(topMatch.includes("beginNavigation(item.href as string)"), true);
   assert.equal(topMatch.includes("isUnmodifiedPrimaryClick(event)"), true);
@@ -642,12 +646,12 @@ test("discovery results own compact scrolling and keep keyboard movement local",
   assert.equal(engine.includes("flex-col"), true);
   assert.equal(engine.includes("min-h-0 flex-1 overflow-hidden"), true);
   assert.equal(engine.includes("shrink-0"), true);
-  assert.equal(engine.includes("↑↓ Auswahl · Enter Öffnen · Esc Schließen"), true);
+  assert.equal(engine.includes("copy.shortcuts"), true);
   assert.equal(results.includes("max-h-[min(52svh,22rem)]"), true);
   assert.equal(results.includes("lg:max-h-[min(58svh,26rem)]"), true);
   assert.equal(results.includes("overflow-y-scroll"), true);
   assert.equal(results.includes("[scrollbar-gutter:stable]"), true);
-  assert.equal(results.includes("Weitere Ergebnisse – scrollen"), true);
+  assert.equal(results.includes("copy.moreResults"), true);
   assert.equal(results.includes("data-has-more-results"), true);
   assert.equal(results.includes("pb-12"), true);
   assert.equal(results.includes("line-clamp-1"), true);
@@ -675,4 +679,33 @@ test("context canvas uses typed status accents for top, featured, and standard c
   assert.equal(discoveryView.includes("styles.interactive"), true);
   assert.equal(discoveryView.includes("<StatusBadge status={item.status} />"), true);
   assert.equal(discoveryView.includes('featured={hasFeaturedResult && index === 0}'), true);
+});
+
+test("Discovery preserves one stable index while representative German and English queries resolve", () => {
+  const german = localizeDiscoveryItems(discoveryIndex, "de");
+  const english = localizeDiscoveryItems(discoveryIndex, "en");
+
+  assert.deepEqual(german.map(({ id }) => id), discoveryIndex.map(({ id }) => id));
+  assert.deepEqual(english.map(({ id }) => id), discoveryIndex.map(({ id }) => id));
+  assert.equal(german.every((item) => !item.href || !item.href.startsWith("/en")), true);
+  assert.equal(english.every((item) => !item.href || /^\/en(?:\/|#|$)/u.test(item.href)), true);
+
+  const representativeQueries = [
+    { locale: "de", items: german, query: "Beziehungen", expected: "tool-life-alignment-partner" },
+    { locale: "de", items: german, query: "Lebensrichtung", expected: "tool-life-alignment-life-vision" },
+    { locale: "de", items: german, query: "Schreiben", expected: "page-writing" },
+    { locale: "de", items: german, query: "Interviews", expected: "page-interviews" },
+    { locale: "de", items: german, query: "Projekte", expected: "page-projects" },
+    { locale: "en", items: english, query: "relationships", expected: "tool-life-alignment-partner" },
+    { locale: "en", items: english, query: "life direction", expected: "tool-life-alignment-life-vision" },
+    { locale: "en", items: english, query: "projects", expected: "page-projects" },
+  ] as const;
+  for (const { locale, items, query, expected } of representativeQueries) {
+    assert.equal(discoverItems(items, query).some(({ item }) => item.id === expected), true, `${locale}: ${query}`);
+  }
+
+  const canvas = readFileSync(new URL("../components/discovery/context-discovery-view.tsx", import.meta.url), "utf8");
+  assert.equal(canvas.includes("copy.groups[item.group]"), true);
+  assert.equal(canvas.includes("copy.statuses[item.status]"), true);
+  assert.equal(canvas.includes("Top Match, ${item.status}"), false);
 });

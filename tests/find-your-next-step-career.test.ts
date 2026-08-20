@@ -10,6 +10,8 @@ import {
   careerSections,
   careerSignalIds,
 } from "../data/find-your-next-step-career";
+import { careerUiCopy } from "../data/find-your-next-step-career-ui-locales";
+import { fynsHumanContextCopy, fynsResultActionsCopy } from "../data/find-your-next-step-ui-locales";
 import {
   buildCareerResult,
   buildCareerNextStep,
@@ -799,9 +801,9 @@ test("Career result actions and print document preserve scoped content and priva
   assert.ok(client.indexOf("<FynsResultActions") < client.indexOf('aria-labelledby="career-edit-title"'));
   assert.match(client, /data-fyns-print-document="career"/u);
   assert.match(client, /className="fyns-print-document hidden"/u);
-  assert.match(client, /buildCareerResultText\(result\)/u);
-  assert.match(client, /buildCareerShareText\(result\)/u);
-  assert.match(client, /CAREER_RESULT_DISCLAIMER/u);
+  assert.match(client, /buildCareerResultText\(result, locale\)/u);
+  assert.match(client, /buildCareerShareText\(result, locale\)/u);
+  assert.match(formatter, /CAREER_RESULT_DISCLAIMER/u);
   assert.equal(printDocument.includes("<button"), false);
   assert.equal(printDocument.includes("<details"), false);
   assert.equal(printDocument.includes("EvidenceDetails"), false);
@@ -813,7 +815,7 @@ test("Career result actions and print document preserve scoped content and priva
     "Spannungsfelder zum Mitdenken", "Dein nächster sinnvoller Schritt", "Qualifikation mitdenken",
     "Bei konkreten Rollen prüfen", "In Stellenanzeigen prüfen",
   ]) {
-    assert.equal(printDocument.includes(expected), true, expected);
+    assert.equal(Object.values(careerUiCopy.de).some((value) => typeof value === "string" && value.includes(expected)), true, expected);
   }
   assert.match(shell, /data-fyns-result-page="career"/u);
   assert.match(shell, /data-fyns-result-page-content/u);
@@ -838,24 +840,23 @@ test("Career result polish keeps Human Context non-scored, priorities unordered,
   const client = readFileSync(new URL("../components/find-your-next-step/career-exploration-journey.tsx", import.meta.url), "utf8");
   const context = readFileSync(new URL("../components/find-your-next-step/human-context-reflection.tsx", import.meta.url), "utf8");
   const recovery = readFileSync(new URL("../components/find-your-next-step/result-recovery.tsx", import.meta.url), "utf8");
-  const actions = readFileSync(new URL("../components/find-your-next-step/result-actions.tsx", import.meta.url), "utf8");
 
   assert.match(client, /<HumanContextReflection accent="#ff9a3d"/u);
-  assert.match(context, /Deine Deutung zählt/u);
-  assert.match(context, /nicht mit deinem BTS Account/u);
+  assert.match(fynsHumanContextCopy.de.eyebrow, /Deine Deutung zählt/u);
+  assert.match(fynsHumanContextCopy.de.privacy, /nicht mit deinem BTS Account/u);
   assert.equal(/score|punkte|prozent/iu.test(context), false);
   assert.equal(context.includes("aria-live"), false);
 
   assert.match(client, /question\.format === "priority"/u);
-  assert.match(client, /Die Auswahl wird nicht in eine Reihenfolge gebracht\./u);
+  assert.match(careerUiCopy.de.unranked, /Die Auswahl wird nicht in eine Reihenfolge gebracht\./u);
   assert.match(client, /safelyBuildCareerResult/u);
   assert.match(client, /status: "unavailable"/u);
   assert.match(client, /<FynsResultRecovery/u);
   assert.match(recovery, /aria-labelledby=\{titleId\}/u);
   assert.match(recovery, /headingRef/u);
 
-  assert.match(actions, /Kurzfassung mitnehmen/u);
-  assert.match(actions, /Kurzfassung kopieren/u);
+  assert.match(fynsResultActionsCopy.de.title, /Kurzfassung mitnehmen/u);
+  assert.match(fynsResultActionsCopy.de.copy, /Kurzfassung kopieren/u);
 });
 
 test("Career dock derives global progress while keeping section and local positions separate", () => {
@@ -870,9 +871,9 @@ test("Career dock derives global progress while keeping section and local positi
   assert.match(client, /localQuestionCount=\{sectionQuestions\.length\}/u);
   assert.equal(/totalQuestionCount=\{14\}/u.test(client), false);
   assert.match(client, /accent="#ff9a3d"/u);
-  assert.match(dock, /Frage \{globalQuestionNumber\} von \{totalQuestionCount\}/u);
-  assert.match(dock, /hier \{localQuestionNumber\}\/\{localQuestionCount\}/u);
-  assert.match(dock, /hier \{localQuestionNumber\} von \{localQuestionCount\}/u);
+  assert.match(dock, /\{copy\.question\} \{globalQuestionNumber\} \{copy\.of\} \{totalQuestionCount\}/u);
+  assert.match(dock, /\{copy\.here\} \{localQuestionNumber\}\/\{localQuestionCount\}/u);
+  assert.match(dock, /\{copy\.here\} \{localQuestionNumber\} \{copy\.of\} \{localQuestionCount\}/u);
   assert.equal((dock.match(/aria-current=/gu) ?? []).length, 1);
   assert.match(dock, /aria-current=\{current \? "step" : undefined\}/u);
   assert.equal(dock.includes("<progress"), false);
@@ -971,13 +972,13 @@ test("Career remains a focused accessible client island with no persistence chan
   assert.equal(client.includes('question.format === "single" ? "radio" : "checkbox"'), true);
   assert.equal(client.includes("<details"), true);
   assert.equal(client.includes("<summary"), true);
-  assert.equal(client.includes("Jobtitel zum Erkunden"), true);
-  assert.equal(client.includes("Alternative Suchbegriffe"), true);
+  assert.equal(careerUiCopy.de.jobs, "Jobtitel zum Erkunden");
+  assert.equal(careerUiCopy.de.aliases, "Alternative Suchbegriffe");
   assert.match(client, /result\.jobTitles\.map/iu);
   assert.match(client, /md:grid-cols-2/iu);
   assert.equal(client.includes("aria-live"), false);
   assert.equal(client.includes("onKeyDown"), false);
-  assert.equal(client.includes("Career Map · Ebenen"), true);
+  assert.match(client, /Career Map · \{ui\.layers\}/u);
   assert.equal(client.includes("Radar"), false);
   assert.equal(client.includes("Bubble"), false);
   assert.match(client, /pb-\[calc\(12rem\+env\(safe-area-inset-bottom\)\)\]/u);

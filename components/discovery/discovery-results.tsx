@@ -4,6 +4,8 @@ import Link, { useLinkStatus } from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type MutableRefObject } from "react";
 
 import { DiscoveryExplanation } from "@/components/discovery/discovery-explanation";
+import { useLocale } from "@/components/i18n/locale-context";
+import { getDiscoveryUiCopy } from "@/data/i18n/discovery";
 import type { DiscoveryGroup, DiscoveryMatch, DiscoveryStatus } from "@/types/discovery";
 
 const statusClasses: Record<DiscoveryStatus, string> = {
@@ -74,6 +76,8 @@ function DiscoveryResultOption({
   onBeginNavigation: DiscoveryResultsProps["onBeginNavigation"];
   onSettleNavigation: DiscoveryResultsProps["onSettleNavigation"];
 }) {
+  const locale = useLocale();
+  const copy = getDiscoveryUiCopy(locale);
   const { item } = match;
   const optionId = `discovery-option-${item.id}`;
   const handoffIdRef = useRef<number | null>(null);
@@ -83,7 +87,7 @@ function DiscoveryResultOption({
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-bold text-white">{item.title}</span>
           <span className={`rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${statusClasses[item.status]}`}>
-            {item.status}
+            {copy.statuses[item.status]}
           </span>
         </div>
         <p className="mt-1 line-clamp-1 text-sm leading-5 text-slate-400 sm:line-clamp-2">{item.description}</p>
@@ -92,7 +96,7 @@ function DiscoveryResultOption({
       {item.href ? (
         <span aria-hidden="true" className="shrink-0 text-slate-500">→</span>
       ) : (
-        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-500">Noch nicht verfügbar</span>
+        <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-500">{copy.unavailable}</span>
       )}
     </>
   );
@@ -132,6 +136,8 @@ function DiscoveryResultOption({
 }
 
 export function DiscoveryResults({ groups, activeId, onActivate, onBeginNavigation, onSettleNavigation }: DiscoveryResultsProps) {
+  const locale = useLocale();
+  const copy = getDiscoveryUiCopy(locale);
   const scrollArea = useRef<HTMLDivElement>(null);
   const scrollContent = useRef<HTMLDivElement>(null);
   const [canScrollDown, setCanScrollDown] = useState(false);
@@ -199,7 +205,7 @@ export function DiscoveryResults({ groups, activeId, onActivate, onBeginNavigati
             return (
               <section key={group} role="group" aria-labelledby={headingId} className="not-first:mt-2">
                 <h2 id={headingId} className="px-3 py-2 font-mono text-[10px] font-black uppercase tracking-[0.22em] text-[#35d0e5]">
-                  {group}
+                  {copy.groups[group]}
                 </h2>
                 <div className="grid gap-1">
                   {matches.map((match) => {
@@ -223,7 +229,7 @@ export function DiscoveryResults({ groups, activeId, onActivate, onBeginNavigati
       {canScrollDown && (
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 flex h-12 items-end justify-center bg-gradient-to-t from-[#071824] via-[#071824]/90 to-transparent pb-2">
           <span className="rounded-full border border-white/10 bg-[#071824]/95 px-3 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-400 shadow-lg">
-            Weitere Ergebnisse – scrollen
+            {copy.moreResults}
           </span>
         </div>
       )}

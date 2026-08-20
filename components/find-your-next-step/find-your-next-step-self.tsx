@@ -5,11 +5,16 @@ import { ContextScene } from "@/components/find-your-next-step/context-scene";
 import { FindYourNextStepJourneyBreadcrumb } from "@/components/find-your-next-step/find-your-next-step-journey";
 import { SelfReflectionJourney } from "@/components/find-your-next-step/self-reflection-journey";
 import { StatusPill } from "@/components/ui/status-pill";
-import { findYourNextStep } from "@/data/find-your-next-step";
-import { getFynsContextScene } from "@/data/find-your-next-step-figures";
+import { getFindYourNextStep } from "@/data/find-your-next-step";
+import { getLocalizedFynsContextScene } from "@/data/find-your-next-step-figures";
+import { fynsJourneyShellCopy } from "@/data/find-your-next-step-ui-locales";
+import type { Locale } from "@/lib/i18n/config";
+import { localizeHref } from "@/lib/i18n/routing";
 import type { NextStepJourney } from "@/types/find-your-next-step";
 
-export function FindYourNextStepSelf({ journey }: { journey: NextStepJourney }) {
+export function FindYourNextStepSelf({ journey, locale }: { journey: NextStepJourney; locale: Locale }) {
+  const findYourNextStep = getFindYourNextStep(locale);
+  const shell = fynsJourneyShellCopy[locale];
   return (
     <article
       data-fyns-result-page="self"
@@ -22,13 +27,13 @@ export function FindYourNextStepSelf({ journey }: { journey: NextStepJourney }) 
       />
 
       <div data-fyns-result-page-content className="relative mx-auto max-w-6xl">
-        <FindYourNextStepJourneyBreadcrumb journey={journey} />
+        <FindYourNextStepJourneyBreadcrumb journey={journey} locale={locale} />
 
         <header className="grid gap-10 border-b border-white/15 py-16 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:py-24">
           <div>
             <div className="flex flex-wrap items-center gap-4">
               <p className="font-mono text-xs font-black uppercase tracking-[0.28em] text-[var(--journey-accent)]">
-                Find Your Next Step / Weg {journey.number}
+                Find Your Next Step / {shell.path} {journey.number}
               </p>
               <StatusPill>{journey.status}</StatusPill>
             </div>
@@ -42,20 +47,20 @@ export function FindYourNextStepSelf({ journey }: { journey: NextStepJourney }) 
         </header>
 
         <div className="py-10 sm:py-14">
-          <ContextScene scene={getFynsContextScene("self")} priority />
+          <ContextScene scene={getLocalizedFynsContextScene("self", locale)} priority />
         </div>
 
         <SelfReflectionJourney />
 
         <div className="flex flex-col items-start justify-between gap-6 border-t border-white/15 py-14 sm:flex-row sm:items-center">
           <p className="max-w-xl text-slate-500">
-            Diese Beta bleibt bewusst eine strukturierte Selbstreflexion – ohne Diagnose und ohne dauerhafte Speicherung.
+            {shell.selfBoundary}
           </p>
           <Link
-            href={findYourNextStep.href}
+            href={localizeHref(findYourNextStep.href, locale)}
             className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 py-3 font-bold text-slate-200 transition hover:border-[var(--journey-accent)]/60 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--journey-accent)]"
           >
-            ← Zurück zu Find Your Next Step
+            ← {shell.back}
           </Link>
         </div>
       </div>

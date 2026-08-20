@@ -11,6 +11,7 @@ import {
   verifyCommentFormToken,
 } from "../lib/comments/security";
 import { validateGuestCommentSubmission } from "../lib/comments/validation";
+import { locales } from "../lib/i18n/config";
 import type { RawGuestCommentSubmission } from "../types/comments";
 
 const NOW = Date.UTC(2026, 7, 14, 12, 0, 0);
@@ -50,6 +51,20 @@ test("guest names are normalized, bounded, single-line, and reject controls or b
   }
   assert.equal(validateGuestCommentSubmission(validRaw({ displayName: "AB" })).success, true);
   assert.equal(validateGuestCommentSubmission(validRaw({ displayName: "A".repeat(40) })).success, true);
+});
+
+test("comment validation returns localized controlled errors without changing submission semantics", () => {
+  const localizedErrors = new Set<string>();
+  for (const locale of locales) {
+    const result = validateGuestCommentSubmission(validRaw({ displayName: "A", body: "x" }), locale);
+    assert.equal(result.success, false, locale);
+    if (!result.success) {
+      assert.ok(result.fieldErrors.displayName, locale);
+      assert.ok(result.fieldErrors.body, locale);
+      localizedErrors.add(`${result.fieldErrors.displayName}|${result.fieldErrors.body}`);
+    }
+  }
+  assert.equal(localizedErrors.size, locales.length);
 });
 
 test("comment bodies preserve paragraphs and angle brackets while enforcing bounds", () => {

@@ -2,10 +2,13 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { ContextScene } from "@/components/find-your-next-step/context-scene";
-import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
-import { getFynsContextScene } from "@/data/find-your-next-step-figures";
+import { getFindYourNextStep, getNextStepJourneys } from "@/data/find-your-next-step";
+import { getLocalizedFynsContextScene } from "@/data/find-your-next-step-figures";
+import { fynsOverviewUiCopy } from "@/data/find-your-next-step-ui-locales";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { StatusPill } from "@/components/ui/status-pill";
+import type { Locale } from "@/lib/i18n/config";
+import { localizeHref } from "@/lib/i18n/routing";
 import type { NextStepJourney } from "@/types/find-your-next-step";
 
 const journeyLayouts = [
@@ -15,12 +18,13 @@ const journeyLayouts = [
   "lg:col-span-9 lg:col-start-4",
 ] as const;
 
-function JourneyCard({ journey, index }: { journey: NextStepJourney; index: number }) {
+function JourneyCard({ journey, index, locale }: { journey: NextStepJourney; index: number; locale: Locale }) {
+  const copy = fynsOverviewUiCopy[locale];
   return (
     <li className="grid lg:grid-cols-12">
       <Link
-        href={journey.href}
-        aria-label={`${journey.title} – Einstieg öffnen`}
+        href={localizeHref(journey.href, locale)}
+        aria-label={`${journey.title} – ${copy.open}`}
         style={{
           "--journey-accent": journey.accent,
           background: `linear-gradient(135deg, ${journey.accent}12, rgba(255,255,255,0.012) 60%)`,
@@ -36,7 +40,7 @@ function JourneyCard({ journey, index }: { journey: NextStepJourney; index: numb
         <div className="relative">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="font-mono text-xs font-black uppercase tracking-[0.24em] text-[var(--journey-accent)]">
-              Weg {journey.number}
+              {copy.path} {journey.number}
             </p>
             <StatusPill>{journey.status}</StatusPill>
           </div>
@@ -50,7 +54,7 @@ function JourneyCard({ journey, index }: { journey: NextStepJourney; index: numb
               </p>
             </div>
             <span className="inline-flex min-h-11 shrink-0 items-center font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[var(--journey-accent)]">
-              {journey.status === "Beta" ? "Journey öffnen" : "Weg ansehen"} <span aria-hidden="true" className="ml-2 transition-transform motion-safe:group-hover:translate-x-1">→</span>
+              {journey.status === "Beta" ? copy.openJourney : copy.viewPath} <span aria-hidden="true" className="ml-2 transition-transform motion-safe:group-hover:translate-x-1">→</span>
             </span>
           </div>
         </div>
@@ -59,7 +63,10 @@ function JourneyCard({ journey, index }: { journey: NextStepJourney; index: numb
   );
 }
 
-export function FindYourNextStepOverview() {
+export function FindYourNextStepOverview({ locale }: { locale: Locale }) {
+  const findYourNextStep = getFindYourNextStep(locale);
+  const nextStepJourneys = getNextStepJourneys(locale);
+  const copy = fynsOverviewUiCopy[locale];
   return (
     <article className="section-lines relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36">
       <div
@@ -68,11 +75,11 @@ export function FindYourNextStepOverview() {
       />
 
       <div className="relative mx-auto max-w-[90rem]">
-        <nav aria-label="Breadcrumb" className="font-mono text-xs text-slate-400">
+        <nav aria-label={copy.breadcrumb} className="font-mono text-xs text-slate-400">
           <ol className="flex flex-wrap items-center gap-2">
             <li>
               <Link
-                href="/"
+                href={localizeHref("/", locale)}
                 className="inline-flex min-h-11 items-center transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5]"
               >
                 Digital HQ
@@ -101,7 +108,7 @@ export function FindYourNextStepOverview() {
           </div>
 
           <aside aria-labelledby="fyns-principle-title" className="border-l border-[#ff9a3d] pl-7 sm:pl-9">
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">Was FYNS nicht tut</p>
+            <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">{copy.notDo}</p>
             <h2 id="fyns-principle-title" className="mt-6 text-2xl font-black leading-snug text-white sm:text-3xl">
               {findYourNextStep.principleTitle}
             </h2>
@@ -110,13 +117,13 @@ export function FindYourNextStepOverview() {
         </header>
 
         <div className="border-b border-white/15 py-10 sm:py-14">
-          <ContextScene scene={getFynsContextScene("overview")} priority />
+          <ContextScene scene={getLocalizedFynsContextScene("overview", locale)} priority />
         </div>
 
         <section aria-labelledby="fyns-paths-title" className="border-b border-white/15 py-20 sm:py-28">
           <div id="fyns-paths-title">
             <SectionHeading
-              eyebrow="Vier Ausgangspunkte / 01–04"
+              eyebrow={copy.starting}
               title={findYourNextStep.pathsTitle}
               description={findYourNextStep.pathsDescription}
               accent="orange"
@@ -124,7 +131,7 @@ export function FindYourNextStepOverview() {
           </div>
           <ol className="mt-16 grid gap-6 sm:mt-20 lg:gap-8">
             {nextStepJourneys.map((journey, index) => (
-              <JourneyCard key={journey.slug} journey={journey} index={index} />
+              <JourneyCard key={journey.slug} journey={journey} index={index} locale={locale} />
             ))}
           </ol>
         </section>
@@ -132,9 +139,9 @@ export function FindYourNextStepOverview() {
         <section aria-labelledby="fyns-help-title" className="border-b border-white/15 py-20 sm:py-24">
           <div id="fyns-help-title">
             <SectionHeading
-              eyebrow="Wie FYNS helfen soll"
-              title="Verstehen, einordnen, weitergehen."
-              description="Keine Abkürzung zu einer fertigen Antwort, sondern eine ruhigere Struktur für den Moment zwischen Frage und Entscheidung."
+              eyebrow={copy.helpEyebrow}
+              title={copy.helpTitle}
+              description={copy.helpDescription}
             />
           </div>
           <ol className="mt-14 grid border-l border-t border-white/10 md:grid-cols-3">
@@ -150,14 +157,14 @@ export function FindYourNextStepOverview() {
 
         <section aria-labelledby="fyns-development-title" className="grid gap-10 border-b border-white/15 py-20 lg:grid-cols-[0.38fr_1fr] sm:py-24">
           <div>
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">Aktueller Stand / Beta</p>
-            <p className="mt-5 max-w-xs text-sm leading-6 text-slate-500">Transparent by design. Keine Funktion wird vorgetäuscht, bevor sie wirklich trägt.</p>
+            <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">{copy.status}</p>
+            <p className="mt-5 max-w-xs text-sm leading-6 text-slate-500">{copy.transparent}</p>
           </div>
           <div>
             <h2 id="fyns-development-title" className="text-3xl font-black text-white sm:text-5xl">{findYourNextStep.developmentTitle}</h2>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{findYourNextStep.developmentText}</p>
             <div className="mt-10 border-l-2 border-[#35d0e5] bg-white/[0.025] p-6 sm:p-8">
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#35d0e5]">Datenschutz in diesem Stand</p>
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#35d0e5]">{copy.privacy}</p>
               <p className="mt-4 max-w-3xl leading-7 text-slate-300">{findYourNextStep.privacyText}</p>
             </div>
           </div>
@@ -168,10 +175,10 @@ export function FindYourNextStepOverview() {
             {findYourNextStep.closingText}
           </p>
           <Link
-            href="/"
+            href={localizeHref("/", locale)}
             className="mt-10 inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 py-3 font-bold text-slate-300 transition hover:border-[#35d0e5]/50 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5]"
           >
-            ← Zurück zum Digital HQ
+            ← {copy.back}
           </Link>
         </div>
       </div>

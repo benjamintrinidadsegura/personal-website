@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { processAccountCommentSubmission } from "../app/writing/comments/actions";
 import { processDisplayNameSetup, validateAccountDisplayName } from "../lib/account/profile";
 import { mapPublicWritingComment } from "../lib/comments/domain";
+import { locales } from "../lib/i18n/config";
 import {
   createAccountCommentFormToken,
   verifyAccountCommentFormToken,
@@ -93,6 +94,30 @@ test("account submission requires verified identity and accepts no browser ident
   for (const name of ["userId", "profileId", "displayName", "identityKind", "role", "isAuthor"]) {
     assert.equal(component.includes(`name="${name}"`), false, name);
   }
+});
+
+test("account comment validation is localized for every V1 interface locale", async () => {
+  const localizedErrors = new Set<string>();
+  for (const locale of locales) {
+    const result = await processAccountCommentSubmission(
+      ARTICLE_ID,
+      validRaw({ body: "x" }),
+      request,
+      USER_ID,
+      secrets,
+      async () => ({ commentId: "unexpected" }),
+      NOW,
+      locale,
+    );
+    assert.equal(result.ok, false, locale);
+    if (!result.ok) {
+      assert.equal(result.code, "INVALID_INPUT", locale);
+      const message = result.fieldErrors?.body;
+      assert.ok(message, locale);
+      localizedErrors.add(message);
+    }
+  }
+  assert.equal(localizedErrors.size, locales.length);
 });
 
 test("account submission preserves inert plain text and enforces honeypot and origin", async () => {
@@ -230,6 +255,6 @@ test("inline account identity and submission remain accessible on narrow layouts
     "w-full",
   ]) assert.equal(form.includes(required), true, required);
   assert.equal(list.includes("break-words"), true);
-  assert.equal(list.includes(">Author<"), true);
-  assert.equal(list.includes(">Guest<"), true);
+  assert.equal(list.includes("{copy.author}"), true);
+  assert.equal(list.includes("{copy.guest}"), true);
 });

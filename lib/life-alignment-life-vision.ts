@@ -1,5 +1,4 @@
 import {
-  lifeVisionAreas,
   lifeVisionConstraintOptions,
   lifeVisionEmphasisOptions,
   lifeVisionHorizonOptions,
@@ -22,6 +21,10 @@ import type {
   LifeVisionSignal,
   LifeVisionSource,
 } from "@/types/life-alignment-life-vision";
+import { getLifeVisionContent } from "@/data/i18n/life-alignment";
+import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { localizeLifeVisionResult } from "@/lib/life-alignment-localization";
+import { lifeUiValue } from "@/data/i18n/life-alignment-ui";
 
 function lowerFirst(value: string): string {
   return value.length > 0 ? `${value[0].toLocaleLowerCase("de-DE")}${value.slice(1)}` : value;
@@ -48,16 +51,51 @@ export const initialLifeVisionState: LifeVisionJourneyState = {
   restartPending: false,
 };
 
-export function formatLifeVisionSelectionCount(selected: number, min: number, max: number): string {
-  const state = selected >= min && selected <= max ? "gültige Auswahl" : min === max ? `${min} benötigt` : `${min}–${max} benötigt`;
-  return `${selected} von ${max} ausgewählt · ${state}`;
+export function formatLifeVisionSelectionCount(selected: number, min: number, max: number, locale: Locale = "de", noun: "selected" | "marked" = "selected"): string {
+  const words = {
+    de: ["von", "ausgewählt", "markiert", "gültige Auswahl", "benötigt"], en: ["of", "selected", "marked", "valid selection", "required"], es: ["de", "seleccionados", "marcados", "selección válida", "necesarios"], tr: ["/", "seçili", "işaretli", "geçerli seçim", "gerekli"], pl: ["z", "wybrano", "zaznaczono", "prawidłowy wybór", "wymagane"], el: ["από", "επιλεγμένα", "σημειωμένα", "έγκυρη επιλογή", "απαιτούνται"], ru: ["из", "выбрано", "отмечено", "допустимый выбор", "требуется"],
+  } satisfies Record<Locale, readonly [string, string, string, string, string]>;
+  const copy = words[locale]; const state = selected >= min && selected <= max ? copy[3] : `${min === max ? min : `${min}–${max}`} ${copy[4]}`;
+  return `${selected} ${copy[0]} ${max} ${noun === "marked" ? copy[2] : copy[1]} · ${state}`;
 }
 
-export function getLifeVisionAreaTitle(areaId: LifeVisionAreaId): string {
-  return lifeVisionAreas.find(({ id }) => id === areaId)?.title ?? "Lebensbereich";
+export function getLifeVisionAreaTitle(areaId: LifeVisionAreaId, locale: Locale = "de"): string {
+  return getLifeVisionContent(locale).areas.find(({ id }) => id === areaId)?.title ?? lifeUiValue(locale, "Life area", "Lebensbereich");
 }
 
-export function validateLifeVisionSection(sectionIndex: number, answers: LifeVisionAnswers): string | null {
+export function validateLifeVisionSection(sectionIndex: number, answers: LifeVisionAnswers, locale: Locale = "de"): string | null {
+  if (locale !== defaultLocale) {
+    if (sectionIndex === 0) {
+      if (!answers.horizon) return lifeUiValue(locale, "Choose a future frame.", "Choose a future frame.");
+      if (answers.selectedAreaIds.length < 3 || answers.selectedAreaIds.length > 6) return lifeUiValue(locale, "Select three to six relevant life areas.", "Select three to six relevant life areas.");
+      return null;
+    }
+    if (sectionIndex === 1) return answers.selectedAreaIds.every((areaId) => Boolean(answers.emphasisByArea[areaId])) ? null : lifeUiValue(locale, "Choose a direction for every life area; ‘still uncertain’ and ‘intentionally open’ are complete answers.", "Choose a direction for every life area; ‘still uncertain’ and ‘intentionally open’ are complete answers.");
+    if (sectionIndex === 2) {
+      if (answers.protectedAreaIds.length < 1 || answers.protectedAreaIds.length > 3) return lifeUiValue(locale, "Mark one to three life areas that should not be sacrificed casually.", "Mark one to three life areas that should not be sacrificed casually.");
+      if (answers.protectedAreaIds.some((areaId) => !answers.selectedAreaIds.includes(areaId))) return lifeUiValue(locale, "Protected priorities must belong to your selected life areas.", "Protected priorities must belong to your selected life areas.");
+      if (answers.protectionIds.length < 1 || answers.protectionIds.length > 3) return lifeUiValue(locale, "Select one to three conditions that should remain sustainable in your future.", "Select one to three conditions that should remain sustainable in your future.");
+      return null;
+    }
+    if (sectionIndex === 3) {
+      for (const areaId of answers.selectedAreaIds) {
+        const sources = answers.sourcesByArea[areaId] ?? [];
+        if (sources.length < 1 || sources.length > 2) return lifeUiValue(locale, "Select one or two source signals for every life area.", "Select one or two source signals for every life area.");
+        if (sources.includes("uncertain") && sources.length > 1) return lifeUiValue(locale, "‘Still uncertain’ can only be selected by itself for an area.", "‘Still uncertain’ can only be selected by itself for an area.");
+      }
+      return null;
+    }
+    if (sectionIndex === 4) {
+      if (answers.constraintIds.length < 1 || answers.constraintIds.length > 3) return lifeUiValue(locale, "Select one to three real conditions.", "Select one to three real conditions.");
+      if (answers.constraintIds.includes("none") && answers.constraintIds.length > 1) return lifeUiValue(locale, "‘No specific constraint’ can only be selected by itself.", "‘No specific constraint’ can only be selected by itself.");
+      if (answers.competingAreaIds.length !== 0 && answers.competingAreaIds.length !== 2) return lifeUiValue(locale, "Select exactly two potentially competing directions, or none.", "Select exactly two potentially competing directions, or none.");
+      if (answers.competingAreaIds.some((areaId) => !answers.selectedAreaIds.includes(areaId))) return lifeUiValue(locale, "Competing directions must belong to your selected life areas.", "Competing directions must belong to your selected life areas.");
+      if (!answers.tradeoffStance) return lifeUiValue(locale, "Describe how you relate to this possible trade-off today.", "Describe how you relate to this possible trade-off today.");
+      return null;
+    }
+    if (answers.explorationModes.length < 2 || answers.explorationModes.length > 4) return lifeUiValue(locale, "Select two to four forms of exploration that might fit you.", "Select two to four forms of exploration that might fit you.");
+    return null;
+  }
   if (sectionIndex === 0) {
     if (!answers.horizon) return "Wähle einen Zukunftsrahmen aus.";
     if (answers.selectedAreaIds.length < 3 || answers.selectedAreaIds.length > 6) return "Wähle drei bis sechs relevante Lebensbereiche aus.";
@@ -94,9 +132,9 @@ export function validateLifeVisionSection(sectionIndex: number, answers: LifeVis
   return null;
 }
 
-export function firstInvalidLifeVisionSection(answers: LifeVisionAnswers): number | null {
+export function firstInvalidLifeVisionSection(answers: LifeVisionAnswers, locale: Locale = "de"): number | null {
   for (let index = 0; index < lifeVisionSections.length; index += 1) {
-    if (validateLifeVisionSection(index, answers)) return index;
+    if (validateLifeVisionSection(index, answers, locale)) return index;
   }
   return null;
 }
@@ -358,15 +396,13 @@ function buildClosingOrientation(answers: LifeVisionAnswers, areas: readonly Lif
   };
 }
 
-export function buildLifeVisionResult(answers: LifeVisionAnswers): { status: "incomplete"; sectionIndex: number; message: string } | { status: "complete"; result: LifeVisionResult } {
-  const invalidSection = firstInvalidLifeVisionSection(answers);
-  if (invalidSection !== null) return { status: "incomplete", sectionIndex: invalidSection, message: validateLifeVisionSection(invalidSection, answers) ?? "Vervollständige deine Auswahl." };
+export function buildLifeVisionResult(answers: LifeVisionAnswers, locale: Locale = "de"): { status: "incomplete"; sectionIndex: number; message: string } | { status: "complete"; result: LifeVisionResult } {
+  const invalidSection = firstInvalidLifeVisionSection(answers, locale);
+  if (invalidSection !== null) return { status: "incomplete", sectionIndex: invalidSection, message: validateLifeVisionSection(invalidSection, answers, locale) ?? lifeUiValue(locale, "Complete your selections.", "Vervollständige deine Auswahl.") };
   const areas = answers.selectedAreaIds.map((areaId) => makeAreaResult(answers, areaId));
   const competingAreas = areas.filter(({ id }) => answers.competingAreaIds.includes(id));
   const actionPaths = buildActionPaths(answers, areas);
-  return {
-    status: "complete",
-    result: {
+  const result: LifeVisionResult = {
       title: "Deine Future Direction Landscape",
       description: "Eine erklärbare Darstellung deiner gewählten Zukunftsrichtungen, geschützten Prioritäten, offenen Fragen und heutigen Bedingungen. Du bestimmst, was davon für dich trägt.",
       horizonLabel: lifeVisionHorizonOptions[answers.horizon!].label,
@@ -380,8 +416,8 @@ export function buildLifeVisionResult(answers: LifeVisionAnswers): { status: "in
       insights: buildInsights(answers, areas),
       actionPaths,
       closingOrientation: buildClosingOrientation(answers, areas, actionPaths),
-    },
   };
+  return { status: "complete", result: localizeLifeVisionResult(result, answers, locale) };
 }
 
 function toggle<T>(values: readonly T[], value: T, max: number): readonly T[] {
@@ -389,7 +425,7 @@ function toggle<T>(values: readonly T[], value: T, max: number): readonly T[] {
   return values.length >= max ? values : [...values, value];
 }
 
-export function lifeVisionReducer(state: LifeVisionJourneyState, action: LifeVisionAction): LifeVisionJourneyState {
+export function lifeVisionReducer(state: LifeVisionJourneyState, action: LifeVisionAction, locale: Locale = "de"): LifeVisionJourneyState {
   if (action.type === "start") return { ...state, phase: "journey", validationMessage: null };
   if (action.type === "request-restart") return { ...state, restartPending: true };
   if (action.type === "cancel-restart") return { ...state, restartPending: false };
@@ -397,7 +433,7 @@ export function lifeVisionReducer(state: LifeVisionJourneyState, action: LifeVis
   if (action.type === "edit-section") return { ...state, phase: "journey", sectionIndex: action.sectionIndex, validationMessage: null, restartPending: false };
   if (action.type === "back") return state.sectionIndex === 0 ? { ...state, phase: "intro", validationMessage: null } : { ...state, sectionIndex: state.sectionIndex - 1, validationMessage: null };
   if (action.type === "continue") {
-    const message = validateLifeVisionSection(state.sectionIndex, state.answers);
+    const message = validateLifeVisionSection(state.sectionIndex, state.answers, locale);
     if (message) return { ...state, validationMessage: message };
     if (state.sectionIndex === lifeVisionSections.length - 1) return { ...state, phase: "result", validationMessage: null };
     return { ...state, sectionIndex: state.sectionIndex + 1, validationMessage: null };

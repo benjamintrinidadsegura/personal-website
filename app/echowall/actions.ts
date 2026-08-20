@@ -11,6 +11,8 @@ import {
   verifyFormToken,
 } from "@/lib/echowall/security";
 import { validateEchoSubmission } from "@/lib/echowall/validation";
+import { getLocale } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
 import type {
   EchoActionState,
   RawEchoSubmission,
@@ -75,6 +77,7 @@ export async function processEchoSubmission(
   secrets: SubmissionSecrets | null,
   submitToDatabase: SubmitToDatabase,
   now = Date.now(),
+  locale: Locale = "de",
 ): Promise<SubmitEchoResult> {
   if (
     !secrets ||
@@ -84,7 +87,7 @@ export async function processEchoSubmission(
     return { ok: false, code: secrets ? "INVALID_REQUEST" : "SERVICE_UNAVAILABLE" };
   }
 
-  const validation = validateEchoSubmission(raw);
+  const validation = validateEchoSubmission(raw, locale);
   if (!validation.success) {
     return validation.isHoneypot
       ? { ok: false, code: "INVALID_REQUEST" }
@@ -200,5 +203,7 @@ export async function submitEchoAction(
         errorCode: error?.message,
       };
     },
+    Date.now(),
+    await getLocale(),
   );
 }

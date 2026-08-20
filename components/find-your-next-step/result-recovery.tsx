@@ -1,4 +1,8 @@
+"use client";
+
 import type { CSSProperties, RefObject } from "react";
+import { useLocale } from "@/components/i18n/locale-context";
+import { fynsHumanContextCopy } from "@/data/find-your-next-step-ui-locales";
 
 export function FynsResultRecovery({
   accent,
@@ -49,6 +53,7 @@ export function FynsResultSupplementFallback({
   titleId: string;
   title: string;
 }) {
+  const locale = useLocale();
   return (
     <section
       aria-labelledby={titleId}
@@ -57,8 +62,7 @@ export function FynsResultSupplementFallback({
     >
       <h3 id={titleId} className="font-black text-white">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-400">
-        Dein Kernergebnis bleibt verfügbar. Du kannst deine Antworten prüfen, das Ergebnis mitnehmen oder die Seite
-        später erneut öffnen.
+        {fynsHumanContextCopy[locale].recovery}
       </p>
     </section>
   );

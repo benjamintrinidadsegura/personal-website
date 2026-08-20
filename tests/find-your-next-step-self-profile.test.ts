@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { selfProfileUiCopy } from "../data/find-your-next-step-self-ui-locales";
 
 import {
   selfProfileDefinitions,
@@ -195,8 +196,8 @@ test("Profile selection is deterministic, pure, and consumes the existing Self v
   const second = buildSelfProfileIdentity(orientationAgencyAnswers);
   assert.deepEqual(first, second);
   assert.deepEqual(orientationAgencyAnswers, answerSnapshot);
-  assert.match(engine, /calculateSelfReflectionScores\(answers\)/u);
-  assert.match(engine, /getMissingSelfReflectionQuestionIds\(answers\)/u);
+  assert.match(engine, /calculateSelfReflectionScores\(answers, locale\)/u);
+  assert.match(engine, /getMissingSelfReflectionQuestionIds\(answers, locale\)/u);
   assert.equal(engine.includes("0.6"), false);
   assert.equal(engine.includes("0.35"), false);
   assert.equal(engine.includes("Math.random"), false);
@@ -365,12 +366,12 @@ test("Profile UI is screen-only, follows the required result position, and expos
   assert.match(view, /<h3/u);
   assert.match(view, /<h4/u);
   assert.match(view, /<ul/u);
-  assert.match(view, /Situationsabhängige Linse/u);
-  assert.match(view, /Vielseitiger als eindeutig/u);
-  assert.match(view, /Profil-Linse bewusst offen/u);
-  assert.match(view, /Warum diese Linse\?/u);
-  assert.match(view, /Drei Signale dieser Linse/u);
-  assert.match(view, /weder Persönlichkeitstyp noch Diagnose/u);
+  assert.equal(selfProfileUiCopy.de.contextual, "Situationsabhängige Linse");
+  assert.equal(selfProfileUiCopy.de.varied, "Vielseitiger als eindeutig");
+  assert.equal(selfProfileUiCopy.de.open, "Profil-Linse bewusst offen");
+  assert.equal(selfProfileUiCopy.de.why, "Warum diese Linse?");
+  assert.equal(selfProfileUiCopy.de.signals, "Drei Signale dieser Linse");
+  assert.match(selfProfileUiCopy.de.disclaimer, /weder Persönlichkeitstyp noch Diagnose/u);
   assert.equal(view.includes("identity.strength"), false);
   assert.equal(view.includes("aria-live"), false);
   assert.equal(view.includes("animate-"), false);

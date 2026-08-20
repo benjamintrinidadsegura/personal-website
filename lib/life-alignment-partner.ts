@@ -29,6 +29,9 @@ import type {
   PartnerSharedContextSignal,
 } from "@/types/life-alignment-partner";
 import { PARTNER_DISCLAIMER } from "@/data/life-alignment-partner";
+import type { Locale } from "@/lib/i18n/config";
+import { localizePartnerComparisonResult } from "@/lib/life-alignment-localization";
+import { lifeUiValue } from "@/data/i18n/life-alignment-ui";
 
 const MIN_DIMENSIONS = 3;
 const MAX_DIMENSIONS = 6;
@@ -59,9 +62,13 @@ export const initialPartnerJourneyState: PartnerJourneyState = {
   restartPending: false,
 };
 
-export function formatPartnerSelectionCount(selected: number): string {
-  const validity = selected >= MIN_DIMENSIONS && selected <= MAX_DIMENSIONS ? "gültige Auswahl" : `${MIN_DIMENSIONS}–${MAX_DIMENSIONS} benötigt`;
-  return `${selected} von ${MAX_DIMENSIONS} ausgewählt · ${validity}`;
+export function formatPartnerSelectionCount(selected: number, locale: Locale = "de"): string {
+  const words = {
+    de: ["von", "ausgewählt", "gültige Auswahl", "benötigt"], en: ["of", "selected", "valid selection", "required"], es: ["de", "seleccionados", "selección válida", "necesarios"], tr: ["/", "seçili", "geçerli seçim", "gerekli"], pl: ["z", "wybrano", "prawidłowy wybór", "wymagane"], el: ["από", "επιλεγμένα", "έγκυρη επιλογή", "απαιτούνται"], ru: ["из", "выбрано", "допустимый выбор", "требуется"],
+  } satisfies Record<Locale, readonly [string, string, string, string]>;
+  const copy = words[locale];
+  const validity = selected >= MIN_DIMENSIONS && selected <= MAX_DIMENSIONS ? copy[2] : `${MIN_DIMENSIONS}–${MAX_DIMENSIONS} ${copy[3]}`;
+  return `${selected} ${copy[0]} ${MAX_DIMENSIONS} ${copy[1]} · ${validity}`;
 }
 
 export function activePartnerParticipant(state: PartnerJourneyState): PartnerParticipantId | null {
@@ -70,35 +77,36 @@ export function activePartnerParticipant(state: PartnerJourneyState): PartnerPar
   return null;
 }
 
-export function validatePartnerSection(sectionIndex: number, answers: PartnerParticipantAnswers): string | null {
+export function validatePartnerSection(sectionIndex: number, answers: PartnerParticipantAnswers, locale: Locale = "de"): string | null {
+  const message = (english: string, german: string) => lifeUiValue(locale, english, german);
   const selected = [...new Set(answers.selectedDimensionIds)];
   if (sectionIndex === 0) {
-    if (selected.length < MIN_DIMENSIONS || selected.length > MAX_DIMENSIONS) return "Wähle drei bis sechs Themen für deine eigene Perspektive aus.";
+    if (selected.length < MIN_DIMENSIONS || selected.length > MAX_DIMENSIONS) return message("Select three to six topics for your own perspective.", "Wähle drei bis sechs Themen für deine eigene Perspektive aus.");
     const invalidSensitive = selected.some((id) => partnerDimensions.find((dimension) => dimension.id === id)?.sensitive && !answers.sensitiveOptIns.includes(id));
-    return invalidSensitive ? "Beziehe ein sensibles Thema nur nach ausdrücklicher Zustimmung ein." : null;
+    return invalidSensitive ? message("Include a sensitive topic only after explicit opt-in.", "Beziehe ein sensibles Thema nur nach ausdrücklicher Zustimmung ein.") : null;
   }
 
   if (sectionIndex === 1) {
     return selected.every((id) => {
       const answer = answers.dimensions[id];
       return Boolean(answer?.experience && answer.importance && answer.certainty);
-    }) ? null : "Ordne für jedes gewählte Thema dein heutiges Erleben, seine Bedeutung und deine Sicherheit ein.";
+    }) ? null : message("For every selected topic, describe your current experience, its importance and your certainty.", "Ordne für jedes gewählte Thema dein heutiges Erleben, seine Bedeutung und deine Sicherheit ein.");
   }
 
   if (sectionIndex === 2) {
     return selected.every((id) => {
       const answer = answers.dimensions[id];
       return Boolean(answer?.desiredDirection && answer.expectationClarity && answer.differenceStance && answer.constraint);
-    }) ? null : "Ordne für jedes gewählte Thema Richtung, Erwartung, mögliche Differenz und heutigen Spielraum ein.";
+    }) ? null : message("For every selected topic, describe direction, expectation, possible difference and current room.", "Ordne für jedes gewählte Thema Richtung, Erwartung, mögliche Differenz und heutigen Spielraum ein.");
   }
 
-  if (!answers.comparisonConsent) return "Bestätige erst, dass diese strukturierten Antworten in die gemeinsame Gegenüberstellung einfließen dürfen.";
+  if (!answers.comparisonConsent) return message("Confirm that these structured answers may be included in the shared comparison.", "Bestätige erst, dass diese strukturierten Antworten in die gemeinsame Gegenüberstellung einfließen dürfen.");
   return null;
 }
 
-export function firstInvalidPartnerSection(answers: PartnerParticipantAnswers): number | null {
+export function firstInvalidPartnerSection(answers: PartnerParticipantAnswers, locale: Locale = "de"): number | null {
   for (let sectionIndex = 0; sectionIndex < 4; sectionIndex += 1) {
-    if (validatePartnerSection(sectionIndex, answers)) return sectionIndex;
+    if (validatePartnerSection(sectionIndex, answers, locale)) return sectionIndex;
   }
   return null;
 }
@@ -111,7 +119,7 @@ function toggleInList<T>(items: readonly T[], item: T): readonly T[] {
   return items.includes(item) ? items.filter((candidate) => candidate !== item) : [...items, item];
 }
 
-export function partnerJourneyReducer(state: PartnerJourneyState, action: PartnerJourneyAction): PartnerJourneyState {
+export function partnerJourneyReducer(state: PartnerJourneyState, action: PartnerJourneyAction, locale: Locale = "de"): PartnerJourneyState {
   if (action.type === "start") return state.phase === "intro" ? { ...state, phase: "participant-a", sectionIndex: 0 } : state;
   if (action.type === "request-restart") return { ...state, restartPending: true };
   if (action.type === "cancel-restart") return { ...state, restartPending: false };
@@ -174,7 +182,7 @@ export function partnerJourneyReducer(state: PartnerJourneyState, action: Partne
   }
 
   if (action.type === "continue") {
-    const validationMessage = validatePartnerSection(state.sectionIndex, answers);
+    const validationMessage = validatePartnerSection(state.sectionIndex, answers, locale);
     if (validationMessage) return { ...state, validationMessage };
     return state.sectionIndex < 3 ? { ...state, sectionIndex: state.sectionIndex + 1, validationMessage: null } : state;
   }
@@ -578,12 +586,12 @@ function buildConversationTools(findings: readonly PartnerComparisonFinding[]): 
   ];
 }
 
-export function buildPartnerComparisonResult(participants: Readonly<Record<PartnerParticipantId, PartnerParticipantAnswers>>, participantASealed = true): { status: "incomplete"; participant: PartnerParticipantId; sectionIndex: number; message: string } | { status: "complete"; result: PartnerComparisonResult } {
+export function buildPartnerComparisonResult(participants: Readonly<Record<PartnerParticipantId, PartnerParticipantAnswers>>, participantASealed = true, locale: Locale = "de"): { status: "incomplete"; participant: PartnerParticipantId; sectionIndex: number; message: string } | { status: "complete"; result: PartnerComparisonResult } {
   for (const participant of ["a", "b"] as const) {
-    const sectionIndex = firstInvalidPartnerSection(participants[participant]);
+    const sectionIndex = firstInvalidPartnerSection(participants[participant], locale);
     if (sectionIndex !== null || participant === "a" && !participantASealed) {
       const invalidSection = sectionIndex ?? 3;
-      return { status: "incomplete", participant, sectionIndex: invalidSection, message: validatePartnerSection(invalidSection, participants[participant]) ?? "Person A muss ihre Antworten zuerst versiegeln." };
+      return { status: "incomplete", participant, sectionIndex: invalidSection, message: validatePartnerSection(invalidSection, participants[participant], locale) ?? lifeUiValue(locale, "Person A must seal their answers first.", "Person A muss ihre Antworten zuerst versiegeln.") };
     }
   }
 
@@ -613,9 +621,7 @@ export function buildPartnerComparisonResult(participants: Readonly<Record<Partn
     openOrUncertainTopics: tracks.filter(hasUncertainty).length,
     topicsWithPresentConstraints: overlap.filter((track) => [track.participantA!, track.participantB!].some(({ constraint }) => constraint !== "none")).length,
   };
-  return {
-    status: "complete",
-    result: {
+  const result: PartnerComparisonResult = {
       title: "Was zwischen euch sichtbar wird",
       description: "Eine gemeinsame, qualitative Orientierung aus euren ausdrücklich freigegebenen Antworten – insight-first, ohne Kompatibilitätswert, Gewinnerseite oder versteckte Bewertung.",
       sharedOverview: buildSharedOverview(tracks, findings),
@@ -628,6 +634,6 @@ export function buildPartnerComparisonResult(participants: Readonly<Record<Partn
       conversationTools: buildConversationTools(findings),
       sensitiveDimensionIds,
       disclaimer: PARTNER_DISCLAIMER,
-    },
   };
+  return { status: "complete", result: localizePartnerComparisonResult(result, participants, locale) };
 }

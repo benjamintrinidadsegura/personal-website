@@ -1,33 +1,29 @@
 import type { Metadata } from "next";
 
 import { FindYourNextStepOverview } from "@/components/find-your-next-step/find-your-next-step-overview";
-import { findYourNextStep } from "@/data/find-your-next-step";
-import { getFynsContextScene } from "@/data/find-your-next-step-figures";
+import { getFindYourNextStep } from "@/data/find-your-next-step";
+import { getLocalizedFynsContextScene } from "@/data/find-your-next-step-figures";
+import { createLocalizedMetadata } from "@/lib/i18n/metadata";
+import { getLocale } from "@/lib/i18n/server";
 
-const description = findYourNextStep.introduction;
-const overviewScene = getFynsContextScene("overview");
-
-export const metadata: Metadata = {
-  title: "Find Your Next Step | bts.online",
-  description,
-  alternates: { canonical: findYourNextStep.href },
-  openGraph: {
-    type: "website",
-    locale: "de_DE",
-    url: findYourNextStep.href,
-    siteName: "bts.online",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const content = getFindYourNextStep(locale);
+  const overviewScene = getLocalizedFynsContextScene("overview", locale);
+  const metadata = createLocalizedMetadata({
+    locale,
+    pathname: content.href,
     title: "Find Your Next Step | bts.online",
-    description,
-    images: [{ url: overviewScene.src, width: 1600, height: 900, alt: overviewScene.alt }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Find Your Next Step | bts.online",
-    description,
-    images: [overviewScene.src],
-  },
-};
+    description: content.introduction,
+  });
+  return {
+    ...metadata,
+    openGraph: { ...metadata.openGraph, images: [{ url: overviewScene.src, width: 1600, height: 900, alt: overviewScene.alt }] },
+    twitter: { ...metadata.twitter, images: [overviewScene.src] },
+  };
+}
 
-export default function FindYourNextStepPage() {
-  return <FindYourNextStepOverview />;
+export default async function FindYourNextStepPage() {
+  const locale = await getLocale();
+  return <FindYourNextStepOverview locale={locale} />;
 }

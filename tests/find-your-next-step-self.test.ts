@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { fynsDockCopy, fynsErrorCopy, fynsHumanContextCopy, fynsResultActionsCopy } from "../data/find-your-next-step-ui-locales";
 
 import {
   selfReflectionDimensions,
@@ -528,7 +529,7 @@ test("Self result actions and print document stay scoped, non-interactive, and p
   assert.match(actions, /navigator\.canShare\(payload\)/u);
   assert.match(actions, /navigator\.clipboard\?\.writeText\(copyText\)/u);
   assert.match(actions, /document\.execCommand\("copy"\)/u);
-  assert.match(actions, /Text zum manuellen Kopieren/u);
+  assert.equal(fynsResultActionsCopy.de.manual, "Text zum manuellen Kopieren");
   assert.match(actions, /role="status"/u);
   assert.match(actions, /aria-live="polite"/u);
   assert.match(actions, /const originalTitle = document\.title/u);
@@ -587,7 +588,7 @@ test("the journey dock is the single active-phase navigation and progress surfac
   assert.equal(dock.includes("Nicht gespeichert"), false);
   assert.equal(dock.includes("animate-"), false);
   assert.match(client, /accent="#35d0e5"/u);
-  assert.match(client, /accessibleLabel="Steuerung und Fortschritt der Reflexion"/u);
+  assert.match(client, /accessibleLabel=\{ui\.progress\}/u);
   assert.equal(client.includes('"Ergebnis ansehen"'), true);
   assert.equal(client.includes('"Zurück zum Ergebnis"'), true);
   assert.equal(client.includes('"Ergebnis aktualisieren"'), true);
@@ -601,19 +602,23 @@ test("the journey dock exposes global, section, and local progress without gamif
   assert.equal(selfReflectionSections.every((section) =>
     selfReflectionQuestions.filter(({ sectionId }) => sectionId === section.id).length === 3
   ), true);
-  assert.match(dock, /<ol aria-label="Abschnitte der Journey"/u);
+  assert.match(dock, /locale: Locale/u);
+  assert.equal(fynsDockCopy.de.question, "Frage");
+  assert.equal(fynsDockCopy.en.question, "Question");
+  assert.match(dock, /<ol aria-label=\{copy\.sections\}/u);
   assert.equal((dock.match(/aria-current=/gu) ?? []).length, 1);
   assert.match(dock, /aria-current=\{current \? "step" : undefined\}/u);
   assert.match(dock, /"h-1\.5 bg-\[var\(--dock-accent\)\]"/u);
   assert.match(dock, /"h-1 bg-\[#9aaabd\]\/70"/u);
   assert.match(dock, /border-dashed border-white\/25/u);
-  assert.match(dock, /"aktuell"/u);
-  assert.match(dock, /"abgeschlossen"/u);
-  assert.match(dock, /"noch nicht erreicht"/u);
-  assert.match(dock, /Frage \{globalQuestionNumber\} von \{totalQuestionCount\}/u);
-  assert.match(dock, /Abschnitt \{currentSectionIndex \+ 1\}\/\{sections\.length\} · hier \{localQuestionNumber\}\/\{localQuestionCount\}/u);
-  assert.match(dock, /Abschnitt \{currentSectionIndex \+ 1\} von \{sections\.length\} · hier \{localQuestionNumber\} von \{localQuestionCount\}/u);
+  assert.equal(fynsDockCopy.de.current, "aktuell");
+  assert.equal(fynsDockCopy.de.completed, "abgeschlossen");
+  assert.equal(fynsDockCopy.de.pending, "noch nicht erreicht");
+  assert.match(dock, /\{copy\.question\} \{globalQuestionNumber\} \{copy\.of\} \{totalQuestionCount\}/u);
+  assert.match(dock, /\{copy\.section\} \{currentSectionIndex \+ 1\}\/\{sections\.length\} · \{copy\.here\} \{localQuestionNumber\}\/\{localQuestionCount\}/u);
+  assert.match(dock, /\{copy\.section\} \{currentSectionIndex \+ 1\} \{copy\.of\} \{sections\.length\} · \{copy\.here\} \{localQuestionNumber\} \{copy\.of\} \{localQuestionCount\}/u);
   assert.match(client, /globalQuestionNumber=\{state\.questionIndex \+ 1\}/u);
+  assert.match(client, /locale=\{locale\}/u);
   assert.match(client, /totalQuestionCount=\{selfReflectionQuestions\.length\}/u);
   assert.match(client, /localQuestionNumber=\{currentQuestionNumber\}/u);
   assert.match(client, /localQuestionCount=\{sectionQuestions\.length\}/u);
@@ -634,7 +639,7 @@ test("the journey dock reserves content and safe-area space at every responsive 
   assert.match(client, /scroll-mb-\[calc\(12rem\+env\(safe-area-inset-bottom\)\)\]/u);
   assert.match(client, /lg:scroll-mb-\[calc\(8\.5rem\+env\(safe-area-inset-bottom\)\)\]/u);
   assert.ok((`${client}\n${dock}`.match(/safe-area-inset-bottom/gu) ?? []).length >= 5);
-  assert.match(client, /\{currentSection\?\.title\} · Reflexionsentscheidung/u);
+  assert.match(client, /\{currentSection\?\.title\} · \{ui\.decision\}/u);
 });
 
 test("Self global and local progress cross every section boundary and preserve original indices", () => {
@@ -804,21 +809,19 @@ test("Self remains a focused client island with native semantics and no persiste
 test("Self result polish preserves interpretive authority, honest export scope, and recoverable core output", () => {
   const client = readFileSync(new URL("../components/find-your-next-step/self-reflection-journey.tsx", import.meta.url), "utf8");
   const context = readFileSync(new URL("../components/find-your-next-step/human-context-reflection.tsx", import.meta.url), "utf8");
-  const recovery = readFileSync(new URL("../components/find-your-next-step/result-recovery.tsx", import.meta.url), "utf8");
-  const actions = readFileSync(new URL("../components/find-your-next-step/result-actions.tsx", import.meta.url), "utf8");
   const routeError = readFileSync(new URL("../app/find-your-next-step/[slug]/error.tsx", import.meta.url), "utf8");
 
   assert.match(client, /<HumanContextReflection accent="#35d0e5"/u);
-  assert.match(context, /Deine Deutung zählt/u);
-  assert.match(context, /Was davon möchtest du selbst\?/u);
-  assert.match(context, /werden nicht ausgewertet und verändern dein Ergebnis nicht/u);
-  assert.match(context, /nicht mit deinem BTS Account/u);
+  assert.match(fynsHumanContextCopy.de.eyebrow, /Deine Deutung zählt/u);
+  assert.match(fynsHumanContextCopy.de.body, /Was davon möchtest du selbst\?/u);
+  assert.match(fynsHumanContextCopy.de.privacy, /werden nicht ausgewertet und verändern dein Ergebnis nicht/u);
+  assert.match(fynsHumanContextCopy.de.privacy, /nicht mit deinem BTS Account/u);
   assert.equal(/score|punkte|prozent/iu.test(context), false);
   assert.equal(context.includes("<input"), false);
   assert.equal(context.includes("aria-live"), false);
 
   assert.match(client, /question\.format === "priority"/u);
-  assert.match(client, /Die Auswahl wird nicht in eine Reihenfolge gebracht\./u);
+  assert.match(client, /copy\.unranked/u);
   assert.match(client, /safelyBuildSelfResult/u);
   assert.match(client, /safelyBuildSelfHandbook/u);
   assert.match(client, /safelyBuildSelfProfile/u);
@@ -826,14 +829,14 @@ test("Self result polish preserves interpretive authority, honest export scope, 
   assert.match(client, /<FynsResultSupplementFallback/u);
   assert.equal(client.includes("if (!handbook) return null"), false);
   assert.equal(client.includes("if (!profileIdentity) return null"), false);
-  assert.match(recovery, /Dein Kernergebnis bleibt verfügbar/u);
+  assert.match(fynsHumanContextCopy.de.recovery, /Dein Kernergebnis bleibt verfügbar/u);
 
-  assert.match(actions, /Kurzfassung mitnehmen/u);
-  assert.match(actions, /nicht jede\s+zusätzliche Ansicht oder Alltagshypothese/u);
-  assert.match(actions, /Kurzfassung kopieren/u);
+  assert.match(fynsResultActionsCopy.de.title, /Kurzfassung mitnehmen/u);
+  assert.match(fynsResultActionsCopy.de.description, /nicht jede\s+zusätzliche Ansicht oder Alltagshypothese/u);
+  assert.match(fynsResultActionsCopy.de.copy, /Kurzfassung kopieren/u);
 
   assert.equal(routeError.startsWith('"use client"'), true);
   assert.match(routeError, /onClick=\{reset\}/u);
-  assert.match(routeError, /href="\/find-your-next-step"/u);
-  assert.match(routeError, /keine Verknüpfung zu deinem BTS Account/u);
+  assert.match(routeError, /href=\{href\("\/find-your-next-step"\)\}/u);
+  assert.match(fynsErrorCopy.de.description, /keine Verknüpfung zu deinem BTS Account/u);
 });

@@ -20,6 +20,9 @@ import {
   verifyNewsletterUnsubscribeToken,
 } from "@/lib/newsletter/security";
 import { validateNewsletterSubscription } from "@/lib/newsletter/validation";
+import { getLocale } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
+import { getLocalizedPathname } from "@/lib/i18n/routing";
 import type {
   NewsletterLifecycleActionState,
   NewsletterLifecycleResult,
@@ -90,6 +93,7 @@ export async function processNewsletterSubscription(
   sendConfirmation: SendConfirmationEmail,
   now = Date.now(),
   createConfirmationToken: () => string = createNewsletterConfirmationToken,
+  locale: Locale = "en",
 ): Promise<NewsletterRequestResult> {
   if (
     !secrets
@@ -97,7 +101,7 @@ export async function processNewsletterSubscription(
     || !isAllowedRequestOrigin(request.origin, request.host, secrets.siteUrl)
   ) return { ok: false, code: secrets ? "INVALID_REQUEST" : "SERVICE_UNAVAILABLE" };
 
-  const validation = validateNewsletterSubscription(raw);
+  const validation = validateNewsletterSubscription(raw, locale);
   if (!validation.success) {
     return validation.isHoneypot
       ? { ok: false, code: "INVALID_REQUEST" }
@@ -148,7 +152,7 @@ export async function processNewsletterSubscription(
     ) return { ok: false, code: "SERVICE_UNAVAILABLE" };
 
     if (database.shouldSend && database.confirmationExpiresAt) {
-      const confirmationUrl = new URL("/newsletter/confirm", secrets.siteUrl);
+      const confirmationUrl = new URL(getLocalizedPathname("/newsletter/confirm", locale), secrets.siteUrl);
       confirmationUrl.searchParams.set("token", confirmationToken);
       // Public output remains deliberately identical if the provider is temporarily
       // unavailable. A later rate-limited request rotates the pending token.
@@ -156,6 +160,7 @@ export async function processNewsletterSubscription(
         to: validation.data.email,
         confirmationUrl: confirmationUrl.toString(),
         expiresAt: database.confirmationExpiresAt,
+        locale,
       });
     }
 
@@ -278,6 +283,9 @@ export async function submitNewsletterAction(
     configuration
       ? createBrevoConfirmationSender(configuration)
       : async () => false,
+    Date.now(),
+    createNewsletterConfirmationToken,
+    await getLocale(),
   );
 }
 

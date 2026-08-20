@@ -11,6 +11,10 @@ import {
   lifeConstraintOptions,
   tradeoffOptions,
 } from "@/data/life-alignment";
+import { getSelfAlignmentContent } from "@/data/i18n/life-alignment";
+import type { Locale } from "@/lib/i18n/config";
+import { localizeLifeAlignmentResult } from "@/lib/life-alignment-localization";
+import { lifeUiValue } from "@/data/i18n/life-alignment-ui";
 import type {
   AlignmentSignal,
   LifeAlignmentAction,
@@ -75,20 +79,27 @@ export function formatLifeAlignmentSelectionCount(
   minSelections: number,
   maxSelections: number,
   verb: "ausgewählt" | "markiert" = "ausgewählt",
+  locale: Locale = "de",
 ): string {
-  const requirement = selectedCount >= minSelections && selectedCount <= maxSelections
-    ? "gültige Auswahl"
-    : minSelections === maxSelections
-      ? `${minSelections} benötigt`
-      : `${minSelections}–${maxSelections} benötigt`;
-  return `${selectedCount} von ${maxSelections} ${verb} · ${requirement}`;
+  const words = {
+    de: { of: "von", selected: "ausgewählt", marked: "markiert", valid: "gültige Auswahl", required: "benötigt" },
+    en: { of: "of", selected: "selected", marked: "marked", valid: "valid selection", required: "required" },
+    es: { of: "de", selected: "seleccionados", marked: "marcados", valid: "selección válida", required: "necesarios" },
+    tr: { of: "/", selected: "seçili", marked: "işaretli", valid: "geçerli seçim", required: "gerekli" },
+    pl: { of: "z", selected: "wybrano", marked: "zaznaczono", valid: "prawidłowy wybór", required: "wymagane" },
+    el: { of: "από", selected: "επιλεγμένα", marked: "σημειωμένα", valid: "έγκυρη επιλογή", required: "απαιτούνται" },
+    ru: { of: "из", selected: "выбрано", marked: "отмечено", valid: "допустимый выбор", required: "требуется" },
+  } satisfies Record<Locale, Record<string, string>>;
+  const copy = words[locale];
+  const requirement = selectedCount >= minSelections && selectedCount <= maxSelections ? copy.valid : `${minSelections === maxSelections ? minSelections : `${minSelections}–${maxSelections}`} ${copy.required}`;
+  return `${selectedCount} ${copy.of} ${maxSelections} ${verb === "markiert" ? copy.marked : copy.selected} · ${requirement}`;
 }
 
-export function getLifeAreaTitle(answers: LifeAlignmentAnswers, areaId: LifeAreaId): string {
+export function getLifeAreaTitle(answers: LifeAlignmentAnswers, areaId: LifeAreaId, locale: Locale = "de"): string {
   if (areaId === "custom-1" || areaId === "custom-2") {
-    return normalizeLifeAlignmentText(answers.customLabels[areaId]) || "Eigener Lebensbereich";
+    return normalizeLifeAlignmentText(answers.customLabels[areaId]) || lifeUiValue(locale, "Custom life area", "Eigener Lebensbereich");
   }
-  return lifeAreas.find(({ id }) => id === areaId)?.title ?? "Lebensbereich";
+  return getSelfAlignmentContent(locale).areas.find(({ id }) => id === areaId)?.title ?? lifeUiValue(locale, "Life area", "Lebensbereich");
 }
 
 function validAreaId(answers: LifeAlignmentAnswers, areaId: LifeAreaId): boolean {
@@ -96,14 +107,15 @@ function validAreaId(answers: LifeAlignmentAnswers, areaId: LifeAreaId): boolean
     || CUSTOM_IDS.includes(areaId as (typeof CUSTOM_IDS)[number]) && validCustomAreaLabel(answers.customLabels[areaId as "custom-1" | "custom-2"]);
 }
 
-export function validateLifeAlignmentSection(sectionIndex: number, answers: LifeAlignmentAnswers): string | null {
+export function validateLifeAlignmentSection(sectionIndex: number, answers: LifeAlignmentAnswers, locale: Locale = "de"): string | null {
+  const message = (english: string, german: string) => lifeUiValue(locale, english, german);
+  const selected = [...new Set(answers.selectedAreaIds)];
   if (sectionIndex === 0) {
-    const selected = [...new Set(answers.selectedAreaIds)];
-    if (selected.length < 4 || selected.length > 6) return "Wähle vier bis sechs Lebensbereiche aus.";
-    if (selected.some((areaId) => !validAreaId(answers, areaId))) return "Prüfe die Bezeichnung deines eigenen Lebensbereichs.";
+    if (selected.length < 4 || selected.length > 6) return message("Select four to six life areas.", "Wähle vier bis sechs Lebensbereiche aus.");
+    if (selected.some((areaId) => !validAreaId(answers, areaId))) return message("Check the name of your custom life area.", "Prüfe die Bezeichnung deines eigenen Lebensbereichs.");
     const priorities = [...new Set(answers.priorityAreaIds)];
-    if (priorities.length < 1 || priorities.length > 3) return "Markiere ein bis drei Bereiche, die gerade besonders wichtig sind.";
-    if (priorities.some((areaId) => !selected.includes(areaId))) return "Prioritäten müssen zu deinen ausgewählten Lebensbereichen gehören.";
+    if (priorities.length < 1 || priorities.length > 3) return message("Mark one to three areas that are especially important right now.", "Markiere ein bis drei Bereiche, die gerade besonders wichtig sind.");
+    if (priorities.some((areaId) => !selected.includes(areaId))) return message("Priorities must belong to your selected life areas.", "Prioritäten müssen zu deinen ausgewählten Lebensbereichen gehören.");
     return null;
   }
 
@@ -111,35 +123,35 @@ export function validateLifeAlignmentSection(sectionIndex: number, answers: Life
     return answers.selectedAreaIds.every((areaId) => {
       const answer = answers.areas[areaId];
       return Boolean(answer?.currentEmphasis && answer.capacityEffect);
-    }) ? null : "Ordne für jeden ausgewählten Bereich den heutigen Raum und seine Wirkung ein.";
+    }) ? null : message("For every selected area, describe its current space and effect on your capacity.", "Ordne für jeden ausgewählten Bereich den heutigen Raum und seine Wirkung ein.");
   }
 
   if (sectionIndex === 2) {
     return answers.selectedAreaIds.every((areaId) => Boolean(answers.areas[areaId]?.desiredDirection))
       ? null
-      : "Wähle für jeden Bereich eine gewünschte Richtung oder bewusst ‚noch unsicher‘.";
+      : message("Choose a desired direction for every area, including ‘still uncertain’ when that fits.", "Wähle für jeden Bereich eine gewünschte Richtung oder bewusst ‚noch unsicher‘.");
   }
 
   if (sectionIndex === 3) {
     const constraints = [...new Set(answers.constraints)];
-    if (constraints.length < 1 || constraints.length > 3) return "Wähle eine bis drei heutige Bedingungen aus.";
-    if (constraints.includes("none") && constraints.length > 1) return "‚Keine konkrete Grenze‘ kann nur allein gewählt werden.";
-    if (!answers.tradeoffStatus) return "Ordne ein, wie du heute zu einer möglichen Spannung stehst.";
+    if (constraints.length < 1 || constraints.length > 3) return message("Select one to three current conditions.", "Wähle eine bis drei heutige Bedingungen aus.");
+    if (constraints.includes("none") && constraints.length > 1) return message("‘No specific constraint’ can only be selected by itself.", "‚Keine konkrete Grenze‘ kann nur allein gewählt werden.");
+    if (!answers.tradeoffStatus) return message("Describe how you relate to a possible tension today.", "Ordne ein, wie du heute zu einer möglichen Spannung stehst.");
     return null;
   }
 
-  if (!answers.focusAreaId || !answers.selectedAreaIds.includes(answers.focusAreaId)) return "Wähle einen Bereich für deine weitere Reflexion.";
-  if (answers.authoritySources.length < 1 || answers.authoritySources.length > 2) return "Wähle ein oder zwei Herkunftssignale aus.";
-  if (answers.authoritySources.includes("uncertain") && answers.authoritySources.length > 1) return "‚Noch unsicher‘ kann hier nur allein gewählt werden.";
-  if (!answers.entanglementStatus) return "Ordne ein, ob die verbundene Annahme oder Grenze heute noch besteht.";
-  if (!validFocusIntention(answers.focusIntention)) return "Nutze für deine optionale Notiz 12 bis 240 gültige Zeichen – oder lasse sie leer.";
-  if (!answers.experimentMode) return "Wähle einen kleinen nächsten Modus – auch ‚noch nichts verändern‘ ist möglich.";
+  if (!answers.focusAreaId || !answers.selectedAreaIds.includes(answers.focusAreaId)) return message("Choose one area for further reflection.", "Wähle einen Bereich für deine weitere Reflexion.");
+  if (answers.authoritySources.length < 1 || answers.authoritySources.length > 2) return message("Select one or two source signals.", "Wähle ein oder zwei Herkunftssignale aus.");
+  if (answers.authoritySources.includes("uncertain") && answers.authoritySources.length > 1) return message("‘Still uncertain’ can only be selected by itself here.", "‚Noch unsicher‘ kann hier nur allein gewählt werden.");
+  if (!answers.entanglementStatus) return message("Describe whether the connected assumption or constraint still applies today.", "Ordne ein, ob die verbundene Annahme oder Grenze heute noch besteht.");
+  if (!validFocusIntention(answers.focusIntention)) return message("Use 12 to 240 valid characters for the optional note, or leave it empty.", "Nutze für deine optionale Notiz 12 bis 240 gültige Zeichen – oder lasse sie leer.");
+  if (!answers.experimentMode) return message("Choose a small next mode; changing nothing yet is also available.", "Wähle einen kleinen nächsten Modus – auch ‚noch nichts verändern‘ ist möglich.");
   return null;
 }
 
-export function getFirstInvalidLifeAlignmentSection(answers: LifeAlignmentAnswers): number | null {
+export function getFirstInvalidLifeAlignmentSection(answers: LifeAlignmentAnswers, locale: Locale = "de"): number | null {
   for (let index = 0; index < lifeAlignmentSections.length; index += 1) {
-    if (validateLifeAlignmentSection(index, answers)) return index;
+    if (validateLifeAlignmentSection(index, answers, locale)) return index;
   }
   return null;
 }
@@ -558,12 +570,12 @@ function buildClosingOrientation(answers: LifeAlignmentAnswers): LifeAlignmentCl
   };
 }
 
-export function buildLifeAlignmentResult(answers: LifeAlignmentAnswers):
+export function buildLifeAlignmentResult(answers: LifeAlignmentAnswers, locale: Locale = "de"):
   | { status: "incomplete"; sectionIndex: number; message: string }
   | { status: "complete"; result: LifeAlignmentResult } {
-  const invalidSection = getFirstInvalidLifeAlignmentSection(answers);
+  const invalidSection = getFirstInvalidLifeAlignmentSection(answers, locale);
   if (invalidSection !== null) {
-    return { status: "incomplete", sectionIndex: invalidSection, message: validateLifeAlignmentSection(invalidSection, answers) ?? "Die Reflexion ist noch nicht vollständig." };
+    return { status: "incomplete", sectionIndex: invalidSection, message: validateLifeAlignmentSection(invalidSection, answers, locale) ?? lifeUiValue(locale, "The reflection is not complete yet.", "Die Reflexion ist noch nicht vollständig.") };
   }
 
   const areas = answers.selectedAreaIds.map((areaId) => buildAreaResult(answers, areaId));
@@ -614,7 +626,7 @@ export function buildLifeAlignmentResult(answers: LifeAlignmentAnswers):
     closing: buildClosingOrientation(answers),
     highStakesBoundary: isHighStakesArea(focus.id),
   };
-  return { status: "complete", result };
+  return { status: "complete", result: localizeLifeAlignmentResult(result, answers, locale) };
 }
 
 function withoutArea(answers: LifeAlignmentAnswers, areaId: LifeAreaId): LifeAlignmentAnswers {
@@ -629,7 +641,7 @@ function withoutArea(answers: LifeAlignmentAnswers, areaId: LifeAreaId): LifeAli
   };
 }
 
-export function lifeAlignmentReducer(state: LifeAlignmentJourneyState, action: LifeAlignmentAction): LifeAlignmentJourneyState {
+export function lifeAlignmentReducer(state: LifeAlignmentJourneyState, action: LifeAlignmentAction, locale: Locale = "de"): LifeAlignmentJourneyState {
   if (action.type === "confirm-restart") return initialLifeAlignmentState;
   if (action.type === "request-restart") return { ...state, restartPending: true };
   if (action.type === "cancel-restart") return { ...state, restartPending: false };
@@ -694,7 +706,7 @@ export function lifeAlignmentReducer(state: LifeAlignmentJourneyState, action: L
   }
   if (action.type === "continue") {
     if (state.phase !== "journey") return state;
-    const validationMessage = validateLifeAlignmentSection(state.sectionIndex, state.answers);
+    const validationMessage = validateLifeAlignmentSection(state.sectionIndex, state.answers, locale);
     if (validationMessage) return { ...state, validationMessage };
     if (state.sectionIndex === lifeAlignmentSections.length - 1) return { ...state, phase: "result", validationMessage: null };
     return { ...state, sectionIndex: state.sectionIndex + 1, validationMessage: null };

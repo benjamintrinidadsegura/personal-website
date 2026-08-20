@@ -9,11 +9,21 @@ import {
   legacyAdminCookieOptions,
   rootAuthCookieOptions,
 } from "@/lib/supabase/auth-cookies";
+import { defaultLocale, localeHeaderName } from "@/lib/i18n/config";
+import { getRequestLocaleRouting, isLocaleAwarePublicPath } from "@/lib/i18n/routing";
 
 type CookieItem = { name: string; value: string; options: CookieOptions };
 
 function createResponse(request: NextRequest) {
-  return NextResponse.next({ request });
+  const routing = getRequestLocaleRouting(request.nextUrl.pathname);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(localeHeaderName, routing.locale);
+  const canRewrite = routing.locale !== defaultLocale && isLocaleAwarePublicPath(routing.internalPathname);
+  const response = canRewrite
+    ? NextResponse.rewrite(new URL(`${routing.internalPathname}${request.nextUrl.search}`, request.url), { request: { headers: requestHeaders } })
+    : NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set("Content-Language", routing.locale);
+  return response;
 }
 
 function applyResponseHeaders(response: NextResponse, headers: Record<string, string>) {
@@ -21,6 +31,15 @@ function applyResponseHeaders(response: NextResponse, headers: Record<string, st
 }
 
 export async function proxy(request: NextRequest) {
+  const localeRouting = getRequestLocaleRouting(request.nextUrl.pathname);
+  if (localeRouting.canonicalRedirect) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = localeRouting.canonicalRedirect;
+    const response = NextResponse.redirect(destination, 308);
+    response.headers.set("Content-Language", defaultLocale);
+    return response;
+  }
+
   const url = process.env.SUPABASE_URL;
   const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!url || !publishableKey) return createResponse(request);

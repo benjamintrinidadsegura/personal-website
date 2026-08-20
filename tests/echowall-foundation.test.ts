@@ -11,6 +11,7 @@ import {
   verifyFormToken,
 } from "../lib/echowall/security";
 import { validateEchoSubmission } from "../lib/echowall/validation";
+import { defaultLocale, locales } from "../lib/i18n/config";
 import type { RawEchoSubmission } from "../types/echowall";
 
 const NOW = Date.UTC(2026, 6, 21, 12, 0, 0);
@@ -49,6 +50,21 @@ test("validation accepts exact lower and upper character boundaries", () => {
   assert.equal(validateEchoSubmission(validRaw({ displayName: "A".repeat(41) })).success, false);
   assert.equal(validateEchoSubmission(validRaw({ message: "123456789" })).success, false);
   assert.equal(validateEchoSubmission(validRaw({ message: "x".repeat(501) })).success, false);
+});
+
+test("EchoWall validation localizes controlled errors across all V1 locales", () => {
+  const localizedErrors = new Set<string>();
+  for (const locale of locales) {
+    const result = validateEchoSubmission(validRaw({ displayName: "A", message: "short", consent: "false" }), locale);
+    assert.equal(result.success, false, locale);
+    if (!result.success) {
+      assert.ok(result.fieldErrors.displayName, locale);
+      assert.ok(result.fieldErrors.message, locale);
+      assert.ok(result.fieldErrors.consent, locale);
+      localizedErrors.add(`${result.fieldErrors.displayName}|${result.fieldErrors.message}|${result.fieldErrors.consent}`);
+    }
+  }
+  assert.equal(localizedErrors.size, locales.length);
 });
 
 test("validation trims whitespace, normalizes NFC, and accepts Unicode and emoji", () => {
@@ -256,9 +272,9 @@ test("public navigation keeps Projects and robust Pulse and EchoWall links", () 
     new URL("../components/layout/header.tsx", import.meta.url),
     "utf8",
   );
-  assert.equal(header.includes('{ label: "Pulse", href: "/#pulse" }'), true);
-  assert.match(header, /label: "Projects",\s+href: "\/#building"/u);
-  assert.equal(header.includes('{ label: "EchoWall", href: "/echowall" }'), true);
+  assert.equal(header.includes('id: "pulse", label: copy.nav.pulse, href: localizedHref("/#pulse")'), true);
+  assert.match(header, /id: "projects", label: copy\.nav\.projects, href: localizedHref\("\/#building"\)/u);
+  assert.equal(header.includes('id: "echowall", label: "EchoWall", href: localizedHref("/echowall")'), true);
   assert.equal(header.includes('href: "#pulse"'), false);
 });
 
@@ -378,7 +394,7 @@ test("robots and sitemap fail closed and expose only canonical production routes
 
     const entries = createSitemap([]).map(({ url }) => new URL(url).pathname);
 
-    assert.deepEqual(entries, [
+    const germanEntries = [
       "/",
       "/echowall",
       "/writing",
@@ -407,7 +423,10 @@ test("robots and sitemap fail closed and expose only canonical production routes
       "/people/kevin-schweisfurth",
       "/people/amr-medhat",
       "/people/melanie-kleinhenz",
-    ]);
+    ];
+    assert.deepEqual(entries, germanEntries.flatMap((path) => locales.map((locale) => (
+      locale === defaultLocale ? path : path === "/" ? `/${locale}` : `/${locale}${path}`
+    ))));
     assert.equal(entries.some((route) => route.startsWith("/admin")), false);
     assert.equal(entries.includes("/projects/influsa"), false);
   } finally {

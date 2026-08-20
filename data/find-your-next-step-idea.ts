@@ -1,4 +1,6 @@
 import type { IdeaQuestion, IdeaSection } from "@/types/find-your-next-step-idea";
+import type { Locale } from "@/lib/i18n/config";
+import { ideaLocaleCopy } from "@/data/find-your-next-step-idea-locales";
 
 export const ideaIntro = {
   eyebrow: "Beta · Ideenklärung",
@@ -28,6 +30,90 @@ export const ideaSections: readonly IdeaSection[] = [
   { id: "reality", title: "Was weißt du schon?", description: "Beobachtungen, Annahmen und reale Grenzen getrennt halten." },
   { id: "experiment", title: "Was lernst du als Nächstes?", description: "Ein kleiner Versuch mit einer klaren Lernfrage." },
 ] as const;
+
+const ideaIntroEn = {
+  eyebrow: "Beta · Idea clarification",
+  title: "Turn your idea into a small, testable next move.",
+  description: "This journey organises how you currently see the idea, problem, people and value. It does not create a business plan or claim that an idea is validated.",
+  canDo: ["capture your idea in a few sentences of your own", "separate observations, assumptions and open questions", "formulate a small learning step within your real constraints"],
+  cannotDo: ["predict a market, revenue or success", "confirm demand, feasibility or legal permissibility", "take over a decision or interpretation of your intent"],
+  duration: "9 short decisions in 4 sections · about 6–9 minutes",
+  privacy: "Your input remains only in the current page state. It is not stored, connected to an account or transmitted.",
+  authority: "You decide which wording is accurate. The result remains an editable working note, not an assessment of your idea or you.",
+} as const;
+
+const ideaSectionCopyEn: Readonly<Record<IdeaSection["id"], Pick<IdeaSection, "title" | "description">>> = {
+  core: { title: "What is it about?", description: "The idea and starting problem in your own words." },
+  "people-value": { title: "For whom and why?", description: "The people and the concrete value you hope to create." },
+  reality: { title: "What do you know already?", description: "Keep observations, assumptions and real constraints separate." },
+  experiment: { title: "What will you learn next?", description: "A small experiment with a clear learning question." },
+};
+
+const ideaQuestionCopyEn: Readonly<Record<string, { prompt: string; context: string; placeholder?: string; options?: Readonly<Record<string, { label: string; resultText: string }>> }>> = {
+  "idea-summary": { prompt: "How would you describe your idea in one sentence today?", context: "A provisional description is enough. You can change it later.", placeholder: "For example: A service that …" },
+  "problem-summary": { prompt: "What concrete problem or need do you want to understand better?", context: "Describe the situation, not the finished solution.", placeholder: "People currently experience …" },
+  "audience-summary": { prompt: "For whom might this problem be particularly relevant?", context: "Be as specific as your current knowledge allows.", placeholder: "For example: People who …" },
+  "value-summary": { prompt: "What might become noticeably better or easier for these people?", context: "Describe possible value, not a promise of success.", placeholder: "It could help them …" },
+  "evidence-state": { prompt: "What is your view mainly based on at the moment?", context: "Choose the most honest snapshot. No level is automatically better.", options: {
+    "direct-observation": { label: "Repeated personal observations of a concrete situation.", resultText: "Your current view is based on repeated personal observations." },
+    conversations: { label: "Specific conversations with people who may be affected.", resultText: "Your current view is based on specific conversations with people who may be affected." },
+    "own-experience": { label: "Primarily my own experience of the problem.", resultText: "Your own experience is the main starting point; how far it applies to others remains open." },
+    "mixed-signals": { label: "A mixture of observations, conversations and assumptions.", resultText: "Your view combines early indications with assumptions that remain open." },
+    "early-assumption": { label: "Still mostly a plausible assumption.", resultText: "Your view is currently based mostly on a plausible assumption." },
+  } },
+  "critical-assumptions": { prompt: "Which two assumptions deserve a closer look first?", context: "Prioritise uncertainty, not importance to a future business plan.", options: {
+    "problem-repeats": { label: "The problem happens often enough or is sufficiently burdensome.", resultText: "How often the problem actually occurs and how burdensome it is." },
+    "audience-specific": { label: "The intended audience is specific enough.", resultText: "Whether the intended group is defined specifically enough." },
+    "current-alternatives": { label: "Existing alternatives leave a relevant gap.", resultText: "Which alternatives people already use and where a gap remains." },
+    "value-matters": { label: "The possible value genuinely matters to these people.", resultText: "Whether the possible value genuinely matters to the people concerned." },
+    "idea-usable": { label: "The idea can be made tangible in an understandable form.", resultText: "Whether the idea can be made understandable and small enough to experience." },
+    "commitment-fit": { label: "I want to continue under real-life conditions.", resultText: "Whether you want to continue with the idea under your real-life conditions." },
+  } },
+  "real-constraints": { prompt: "Which boundaries should explicitly apply to the first experiment?", context: "Choose up to three. Boundaries are planning conditions, not weaknesses.", options: {
+    "limited-time": { label: "Only a few hours are available.", resultText: "The first experiment should remain manageable within a few hours." },
+    "no-budget": { label: "No budget, or only a very small one.", resultText: "The first experiment should require no meaningful budget." },
+    "limited-access": { label: "Limited access to potential users so far.", resultText: "Access to people who may be affected is still limited." },
+    "energy-boundary": { label: "My available energy is limited.", resultText: "The experiment should explicitly protect your available energy." },
+    "privacy-boundary": { label: "Sensitive data and privacy must remain untouched.", resultText: "The experiment must not collect sensitive data or intrude on anyone’s privacy." },
+    "legal-boundary": { label: "Legal or professional boundaries need clarification before implementation.", resultText: "Legal or professional boundaries must be clarified separately before implementation." },
+    "no-clear-limit": { label: "I cannot name a clear boundary yet.", resultText: "A clear boundary for the first experiment remains open." },
+  } },
+  "learning-goal": { prompt: "What do you most want to understand better through the next small step?", context: "A learning goal keeps the experiment smaller than a complete implementation.", options: {
+    "understand-problem": { label: "How people describe the problem themselves.", resultText: "how people who may be affected describe the problem in their own words" },
+    "understand-alternatives": { label: "What people do instead today.", resultText: "which alternatives people use today and what those alternatives lack" },
+    "understand-value": { label: "Whether the possible value feels clear and relevant.", resultText: "how clear and relevant the possible value feels to people" },
+    "understand-use": { label: "How people would use a very simple version.", resultText: "how people actually use a very simple version" },
+    "understand-fit": { label: "Whether I want to carry the idea forward under real-life conditions.", resultText: "whether you want to carry the idea forward under real-life conditions" },
+  } },
+  "experiment-mode": { prompt: "Which format best fits your first learning experiment?", context: "Choose the smallest format that can give you an honest indication.", options: {
+    conversation: { label: "A short, open conversation without selling.", resultText: "Have a short, open conversation without trying to convince the person of your solution." },
+    observation: { label: "Observe or document a real situation.", resultText: "Observe or document a real situation without collecting unnecessary personal data." },
+    "paper-walkthrough": { label: "Walk through a sketch or process together.", resultText: "Walk through a simple sketch or process together with one person." },
+    "manual-prototype": { label: "Try one tiny manual version.", resultText: "Try a tiny manual version once within a clearly bounded setting." },
+    "desk-research": { label: "Compare existing alternatives systematically.", resultText: "Compare a small number of existing alternatives against one question written down in advance." },
+    "private-reflection": { label: "First write a short personal decision note.", resultText: "First write a short personal decision note before involving anyone else." },
+  } },
+};
+
+const ideaIntroByLocale = { de: ideaIntro, en: ideaIntroEn, es: ideaLocaleCopy.es.intro, tr: ideaLocaleCopy.tr.intro, pl: ideaLocaleCopy.pl.intro, el: ideaLocaleCopy.el.intro, ru: ideaLocaleCopy.ru.intro } as const;
+const ideaSectionCopyByLocale = { en: ideaSectionCopyEn, es: ideaLocaleCopy.es.sections, tr: ideaLocaleCopy.tr.sections, pl: ideaLocaleCopy.pl.sections, el: ideaLocaleCopy.el.sections, ru: ideaLocaleCopy.ru.sections } as const;
+const ideaQuestionCopyByLocale = { en: ideaQuestionCopyEn, es: ideaLocaleCopy.es.questions, tr: ideaLocaleCopy.tr.questions, pl: ideaLocaleCopy.pl.questions, el: ideaLocaleCopy.el.questions, ru: ideaLocaleCopy.ru.questions } as const;
+
+export function getIdeaIntro(locale: Locale) { return ideaIntroByLocale[locale]; }
+
+export function getIdeaSections(locale: Locale): readonly IdeaSection[] {
+  const localize = (copy: (typeof ideaSectionCopyByLocale)[keyof typeof ideaSectionCopyByLocale]) => ideaSections.map((section) => ({ ...section, ...copy[section.id] }));
+  return ({ de: () => ideaSections, en: () => localize(ideaSectionCopyByLocale.en), es: () => localize(ideaSectionCopyByLocale.es), tr: () => localize(ideaSectionCopyByLocale.tr), pl: () => localize(ideaSectionCopyByLocale.pl), el: () => localize(ideaSectionCopyByLocale.el), ru: () => localize(ideaSectionCopyByLocale.ru) } satisfies Record<Locale, () => readonly IdeaSection[]>)[locale]();
+}
+
+export function getIdeaQuestions(locale: Locale): readonly IdeaQuestion[] {
+  const localize = (copies: (typeof ideaQuestionCopyByLocale)[keyof typeof ideaQuestionCopyByLocale]) => ideaQuestions.map((question) => {
+    const copy = copies[question.id];
+    if (question.format === "short-text") return { ...question, prompt: copy.prompt, context: copy.context, placeholder: copy.placeholder ?? question.placeholder };
+    return { ...question, prompt: copy.prompt, context: copy.context, options: question.options.map((option) => ({ ...option, ...(copy.options?.[option.id] ?? { label: option.label, resultText: option.resultText }) })) };
+  });
+  return ({ de: () => ideaQuestions, en: () => localize(ideaQuestionCopyByLocale.en), es: () => localize(ideaQuestionCopyByLocale.es), tr: () => localize(ideaQuestionCopyByLocale.tr), pl: () => localize(ideaQuestionCopyByLocale.pl), el: () => localize(ideaQuestionCopyByLocale.el), ru: () => localize(ideaQuestionCopyByLocale.ru) } satisfies Record<Locale, () => readonly IdeaQuestion[]>)[locale]();
+}
 
 export const ideaQuestions: readonly IdeaQuestion[] = [
   {

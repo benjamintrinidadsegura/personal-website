@@ -1,4 +1,8 @@
 import {
+  getSelfHandbookActivityDefinitions,
+  getSelfHandbookExperimentDefinitions,
+  getSelfHandbookPatterns,
+  getSelfHandbookTextDefinitions,
   selfHandbookActivityDefinitions,
   selfHandbookExperimentDefinitions,
   selfHandbookPatterns,
@@ -11,9 +15,11 @@ import type {
   SelfHandbookTextKind,
 } from "@/data/find-your-next-step-self-handbook";
 import {
+  getSelfReflectionQuestions,
   selfReflectionQuestions,
   selfReflectionSections,
 } from "@/data/find-your-next-step-self";
+import type { Locale } from "@/lib/i18n/config";
 import {
   calculateSelfReflectionScores,
   getMissingSelfReflectionQuestionIds,
@@ -116,15 +122,15 @@ const knownEvidenceRoles: readonly SelfReflectionEvidenceRole[] = [
   "synthesis",
 ];
 
-function normalizeText(value: string): string {
-  return value.trim().toLocaleLowerCase("de-DE").replace(/\s+/gu, " ");
+function normalizeText(value: string, locale: Locale = "de"): string {
+  return value.trim().toLocaleLowerCase({ de: "de-DE", en: "en-GB", es: "es", tr: "tr", pl: "pl", el: "el", ru: "ru" }[locale]).replace(/\s+/gu, " ");
 }
 
-function lowerFirst(value: string): string {
-  return value.length === 0 ? value : `${value[0].toLocaleLowerCase("de-DE")}${value.slice(1)}`;
+function lowerFirst(value: string, locale: Locale): string {
+  return value.length === 0 ? value : `${value[0].toLocaleLowerCase({ de: "de-DE", en: "en-GB", es: "es", tr: "tr", pl: "pl", el: "el", ru: "ru" }[locale])}${value.slice(1)}`;
 }
 
-function collectEvidence(answers: SelfReflectionAnswers): {
+function collectEvidence(answers: SelfReflectionAnswers, locale: Locale): {
   byDimension: ReadonlyMap<SelfReflectionDimensionId, readonly EvidenceHit[]>;
   selectedSignalSets: readonly {
     questionId: string;
@@ -137,7 +143,7 @@ function collectEvidence(answers: SelfReflectionAnswers): {
     dimensions: ReadonlySet<SelfReflectionDimensionId>;
   }[] = [];
 
-  for (const question of selfReflectionQuestions) {
+  for (const question of getSelfReflectionQuestions(locale)) {
     for (const optionId of answers[question.id] ?? []) {
       const option = question.options.find(({ id }) => id === optionId);
       if (!option) continue;
@@ -243,16 +249,23 @@ function compareCandidates<T>(left: RankedCandidate<T>, right: RankedCandidate<T
   return left.libraryIndex - right.libraryIndex;
 }
 
-function qualifyText(kind: SelfHandbookTextKind, text: string, source: SelfHandbookSource): string {
-  if (source.contextual) {
-    return kind === "decision"
-      ? `Wenn dieser Kontext gerade relevant ist: ${text}`
-      : `Je nach Aufgabe könnte Folgendes hilfreich sein: ${text}`;
-  }
-  if (source.visibility === "multiple") return `Das könnte einen Versuch wert sein: ${text}`;
+const handbookQualifierCopy: Record<Locale, { contextualDecision: string; contextual: string; multiple: string; attention: string; trial: string }> = {
+  de: { contextualDecision: "Wenn dieser Kontext gerade relevant ist:", contextual: "Je nach Aufgabe könnte Folgendes hilfreich sein:", multiple: "Das könnte einen Versuch wert sein:", attention: "Darauf könntest du achten:", trial: "Für einen Versuch könnte es hilfreich sein:" },
+  en: { contextualDecision: "If this context is relevant right now:", contextual: "Depending on the task, this may be helpful:", multiple: "This may be worth trying:", attention: "You could pay attention to this:", trial: "For a small trial, this may be helpful:" },
+  es: { contextualDecision: "Si este contexto es relevante ahora:", contextual: "Según la tarea, esto podría ayudarte:", multiple: "Podría merecer la pena probarlo:", attention: "Podrías prestar atención a esto:", trial: "Para una prueba pequeña, esto podría ayudarte:" },
+  tr: { contextualDecision: "Bu bağlam şu anda anlamlıysa:", contextual: "Göreve bağlı olarak şu yararlı olabilir:", multiple: "Bunu denemeye değer olabilir:", attention: "Şuna dikkat edebilirsin:", trial: "Küçük bir deneme için şu yararlı olabilir:" },
+  pl: { contextualDecision: "Jeśli ten kontekst jest teraz istotny:", contextual: "Zależnie od zadania pomocne może być:", multiple: "Warto to wypróbować:", attention: "Możesz zwrócić uwagę na:", trial: "W małej próbie pomocne może być:" },
+  el: { contextualDecision: "Αν αυτό το πλαίσιο είναι τώρα σχετικό:", contextual: "Ανάλογα με το έργο, μπορεί να βοηθήσει το εξής:", multiple: "Ίσως αξίζει να το δοκιμάσεις:", attention: "Θα μπορούσες να προσέξεις το εξής:", trial: "Για μια μικρή δοκιμή, μπορεί να βοηθήσει το εξής:" },
+  ru: { contextualDecision: "Если этот контекст сейчас актуален:", contextual: "В зависимости от задачи может помочь следующее:", multiple: "Это может стоить небольшой пробы:", attention: "Можно обратить внимание на следующее:", trial: "Для небольшой пробы может помочь следующее:" },
+};
+
+function qualifyText(kind: SelfHandbookTextKind, text: string, source: SelfHandbookSource, locale: Locale): string {
+  const copy = handbookQualifierCopy[locale];
+  if (source.contextual) return `${kind === "decision" ? copy.contextualDecision : copy.contextual} ${text}`;
+  if (source.visibility === "multiple") return `${copy.multiple} ${text}`;
   if (kind === "decision") return text;
-  if (kind === "environment" || kind === "energyWatchout") return `Darauf könntest du achten: ${text}`;
-  return `Für einen Versuch könnte es hilfreich sein: ${text}`;
+  if (kind === "environment" || kind === "energyWatchout") return `${copy.attention} ${text}`;
+  return `${copy.trial} ${text}`;
 }
 
 function selectCandidates<T>(candidates: readonly RankedCandidate<T>[], limit: number): readonly T[] {
@@ -286,15 +299,18 @@ function buildTextCandidates({
   evaluationsByDimension,
   evidenceByDimension,
   selectedSignalSets,
+  locale,
 }: {
   kind: SelfHandbookTextKind;
   evaluationsByDimension: ReadonlyMap<SelfReflectionDimensionId, SelfReflectionDimensionEvaluation>;
   evidenceByDimension: ReadonlyMap<SelfReflectionDimensionId, readonly EvidenceHit[]>;
   selectedSignalSets: readonly { questionId: string; dimensions: ReadonlySet<SelfReflectionDimensionId> }[];
+  locale: Locale;
 }): readonly RankedCandidate<SelfHandbookItem>[] {
-  return selfHandbookTextDefinitions.flatMap((definition, libraryIndex) => {
+  const patterns = new Map(getSelfHandbookPatterns(locale).map((pattern) => [pattern.id, pattern]));
+  return getSelfHandbookTextDefinitions(locale).flatMap((definition, libraryIndex) => {
     if (definition.kind !== kind) return [];
-    const pattern = patternById.get(definition.patternId);
+    const pattern = patterns.get(definition.patternId);
     if (!pattern) return [];
     const sourceEvaluation = buildSourceEvaluation({
       pattern,
@@ -312,12 +328,12 @@ function buildTextCandidates({
       ...(definition.followUp ? [definition.followUp] : []),
     ];
     return variants.map((variant, variantIndex) => {
-      const text = qualifyText(kind, variant.text, sourceEvaluation.source);
+      const text = qualifyText(kind, variant.text, sourceEvaluation.source, locale);
       return {
         ...sourceEvaluation,
         id: variant.id,
         semanticKey: variant.semanticKey,
-        normalizedText: normalizeText(text),
+        normalizedText: normalizeText(text, locale),
         suppresses: definition.suppresses ?? [],
         libraryIndex: (libraryIndex * 2) + variantIndex,
         value: { id: variant.id, text, source: sourceEvaluation.source },
@@ -326,9 +342,10 @@ function buildTextCandidates({
   });
 }
 
-function contextualizeActivityWhy(definition: SelfHandbookActivityDefinition, source: SelfHandbookSource): string {
+function contextualizeActivityWhy(definition: SelfHandbookActivityDefinition, source: SelfHandbookSource, locale: Locale): string {
+  const prefix: Record<Locale, string> = { de: "Wenn dieser Kontext gerade relevant ist,", en: "If this context is relevant right now,", es: "Si este contexto es relevante ahora,", tr: "Bu bağlam şu anda anlamlıysa,", pl: "Jeśli ten kontekst jest teraz istotny,", el: "Αν αυτό το πλαίσιο είναι τώρα σχετικό,", ru: "Если этот контекст сейчас актуален," };
   return source.contextual
-    ? `Wenn dieser Kontext gerade relevant ist, ${lowerFirst(definition.why)}`
+    ? `${prefix[locale]} ${lowerFirst(definition.why, locale)}`
     : definition.why;
 }
 
@@ -336,13 +353,16 @@ function buildActivityCandidates({
   evaluationsByDimension,
   evidenceByDimension,
   selectedSignalSets,
+  locale,
 }: {
   evaluationsByDimension: ReadonlyMap<SelfReflectionDimensionId, SelfReflectionDimensionEvaluation>;
   evidenceByDimension: ReadonlyMap<SelfReflectionDimensionId, readonly EvidenceHit[]>;
   selectedSignalSets: readonly { questionId: string; dimensions: ReadonlySet<SelfReflectionDimensionId> }[];
+  locale: Locale;
 }): readonly RankedCandidate<SelfHandbookActivity>[] {
-  return selfHandbookActivityDefinitions.flatMap((definition, libraryIndex) => {
-    const pattern = patternById.get(definition.patternId);
+  const patterns = new Map(getSelfHandbookPatterns(locale).map((pattern) => [pattern.id, pattern]));
+  return getSelfHandbookActivityDefinitions(locale).flatMap((definition, libraryIndex) => {
+    const pattern = patterns.get(definition.patternId);
     if (!pattern) return [];
     const sourceEvaluation = buildSourceEvaluation({
       pattern,
@@ -352,12 +372,12 @@ function buildActivityCandidates({
     });
     if (!sourceEvaluation) return [];
     if (!hasRequiredRoleEvidence(sourceEvaluation.source.dimensions, definition.roles, evidenceByDimension)) return [];
-    const why = contextualizeActivityWhy(definition, sourceEvaluation.source);
+    const why = contextualizeActivityWhy(definition, sourceEvaluation.source, locale);
     return [{
       ...sourceEvaluation,
       id: definition.id,
       semanticKey: definition.semanticKey,
-      normalizedText: normalizeText(`${definition.title} ${why}`),
+      normalizedText: normalizeText(`${definition.title} ${why}`, locale),
       suppresses: [],
       libraryIndex,
       value: {
@@ -372,7 +392,7 @@ function buildActivityCandidates({
   });
 }
 
-function selectActivities(candidates: readonly RankedCandidate<SelfHandbookActivity>[]): readonly SelfHandbookActivity[] {
+function selectActivities(candidates: readonly RankedCandidate<SelfHandbookActivity>[], locale: Locale): readonly SelfHandbookActivity[] {
   const selected: SelfHandbookActivity[] = [];
   const ids = new Set<string>();
   const semanticKeys = new Set<string>();
@@ -389,7 +409,7 @@ function selectActivities(candidates: readonly RankedCandidate<SelfHandbookActiv
     ) continue;
 
     const examples = candidate.value.examples.filter((example) => {
-      const normalizedName = normalizeText(example.activity);
+      const normalizedName = normalizeText(example.activity, locale);
       return !exampleIds.has(example.id) && !exampleNames.has(normalizedName);
     });
     if (examples.length < 2) continue;
@@ -400,7 +420,7 @@ function selectActivities(candidates: readonly RankedCandidate<SelfHandbookActiv
     normalizedTexts.add(candidate.normalizedText);
     for (const example of boundedExamples) {
       exampleIds.add(example.id);
-      exampleNames.add(normalizeText(example.activity));
+      exampleNames.add(normalizeText(example.activity, locale));
     }
     selected.push({ ...candidate.value, examples: boundedExamples });
   }
@@ -408,24 +428,34 @@ function selectActivities(candidates: readonly RankedCandidate<SelfHandbookActiv
   return selected;
 }
 
-function experimentFraming(source: SelfHandbookSource): string {
-  if (source.contextual) return "Wenn dieser Kontext gerade relevant ist, könntest du diesen kleinen Versuch nutzen.";
-  return source.visibility === "clear"
-    ? "Für einen Versuch könnte es hilfreich sein, diese Hypothese praktisch zu prüfen."
-    : "Das könnte einen Versuch wert sein.";
+function experimentFraming(source: SelfHandbookSource, locale: Locale): string {
+  const copy: Record<Locale, { contextual: string; clear: string; multiple: string }> = {
+    de: { contextual: "Wenn dieser Kontext gerade relevant ist, könntest du diesen kleinen Versuch nutzen.", clear: "Für einen Versuch könnte es hilfreich sein, diese Hypothese praktisch zu prüfen.", multiple: "Das könnte einen Versuch wert sein." },
+    en: { contextual: "If this context is relevant right now, you could use this small experiment.", clear: "For a small trial, it may be helpful to test this hypothesis in practice.", multiple: "This may be worth trying." },
+    es: { contextual: "Si este contexto es relevante ahora, podrías usar este pequeño experimento.", clear: "En una prueba pequeña, podría ayudarte comprobar esta hipótesis en la práctica.", multiple: "Podría merecer la pena probarlo." },
+    tr: { contextual: "Bu bağlam şu anda anlamlıysa bu küçük denemeyi kullanabilirsin.", clear: "Küçük bir denemede bu varsayımı uygulamada sınamak yararlı olabilir.", multiple: "Bunu denemeye değer olabilir." },
+    pl: { contextual: "Jeśli ten kontekst jest teraz istotny, możesz wykorzystać tę małą próbę.", clear: "W małej próbie pomocne może być sprawdzenie tej hipotezy w praktyce.", multiple: "Warto to wypróbować." },
+    el: { contextual: "Αν αυτό το πλαίσιο είναι τώρα σχετικό, μπορείς να χρησιμοποιήσεις αυτό το μικρό πείραμα.", clear: "Σε μια μικρή δοκιμή μπορεί να βοηθήσει να ελέγξεις αυτή την υπόθεση στην πράξη.", multiple: "Ίσως αξίζει να το δοκιμάσεις." },
+    ru: { contextual: "Если этот контекст сейчас актуален, можно использовать этот небольшой эксперимент.", clear: "В небольшой пробе полезно проверить эту гипотезу на практике.", multiple: "Это может стоить небольшой пробы." },
+  };
+  if (source.contextual) return copy[locale].contextual;
+  return source.visibility === "clear" ? copy[locale].clear : copy[locale].multiple;
 }
 
 function buildExperimentCandidates({
   evaluationsByDimension,
   evidenceByDimension,
   selectedSignalSets,
+  locale,
 }: {
   evaluationsByDimension: ReadonlyMap<SelfReflectionDimensionId, SelfReflectionDimensionEvaluation>;
   evidenceByDimension: ReadonlyMap<SelfReflectionDimensionId, readonly EvidenceHit[]>;
   selectedSignalSets: readonly { questionId: string; dimensions: ReadonlySet<SelfReflectionDimensionId> }[];
+  locale: Locale;
 }): readonly RankedCandidate<SelfHandbookExperiment>[] {
-  return selfHandbookExperimentDefinitions.flatMap((definition, libraryIndex) => {
-    const pattern = patternById.get(definition.patternId);
+  const patterns = new Map(getSelfHandbookPatterns(locale).map((pattern) => [pattern.id, pattern]));
+  return getSelfHandbookExperimentDefinitions(locale).flatMap((definition, libraryIndex) => {
+    const pattern = patterns.get(definition.patternId);
     if (!pattern) return [];
     const sourceEvaluation = buildSourceEvaluation({
       pattern,
@@ -435,12 +465,12 @@ function buildExperimentCandidates({
     });
     if (!sourceEvaluation) return [];
     if (!hasRequiredRoleEvidence(sourceEvaluation.source.dimensions, definition.roles, evidenceByDimension)) return [];
-    const framing = experimentFraming(sourceEvaluation.source);
+    const framing = experimentFraming(sourceEvaluation.source, locale);
     return [{
       ...sourceEvaluation,
       id: definition.id,
       semanticKey: definition.semanticKey,
-      normalizedText: normalizeText(`${definition.title} ${definition.action}`),
+      normalizedText: normalizeText(`${definition.title} ${definition.action}`, locale),
       suppresses: definition.suppresses ?? [],
       libraryIndex,
       value: {
@@ -497,13 +527,13 @@ function selectExperiments(
   return selectedCandidates.map(({ value }) => value);
 }
 
-export function buildSelfHandbook(answers: SelfReflectionAnswers): SelfHandbook | null {
-  if (getMissingSelfReflectionQuestionIds(answers).length > 0) return null;
+export function buildSelfHandbook(answers: SelfReflectionAnswers, locale: Locale = "de"): SelfHandbook | null {
+  if (getMissingSelfReflectionQuestionIds(answers, locale).length > 0) return null;
 
-  const evaluations = calculateSelfReflectionScores(answers);
+  const evaluations = calculateSelfReflectionScores(answers, locale);
   const evaluationsByDimension = new Map(evaluations.map((evaluation) => [evaluation.dimension, evaluation]));
-  const { byDimension: evidenceByDimension, selectedSignalSets } = collectEvidence(answers);
-  const candidateInput = { evaluationsByDimension, evidenceByDimension, selectedSignalSets };
+  const { byDimension: evidenceByDimension, selectedSignalSets } = collectEvidence(answers, locale);
+  const candidateInput = { evaluationsByDimension, evidenceByDimension, selectedSignalSets, locale };
 
   const decisionQuestions = selectCandidates(buildTextCandidates({ kind: "decision", ...candidateInput }), 5);
   const environmentChecklist = selectCandidates(buildTextCandidates({ kind: "environment", ...candidateInput }), 6);
@@ -519,7 +549,7 @@ export function buildSelfHandbook(answers: SelfReflectionAnswers): SelfHandbook 
     energyWatchouts,
     workStrategies,
     learningIdeas,
-    activitySuggestions: selectActivities(buildActivityCandidates(candidateInput)),
+    activitySuggestions: selectActivities(buildActivityCandidates(candidateInput), locale),
     experiments: selectExperiments(buildExperimentCandidates(candidateInput)),
   };
 }

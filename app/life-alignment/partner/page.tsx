@@ -1,28 +1,12 @@
-import type { Metadata } from "next";
-
 import { PartnerPage } from "@/components/life-alignment/partner/partner-page";
-import { partnerModule, partnerScene } from "@/data/life-alignment-partner";
+import { getPartnerAlignmentContent } from "@/data/i18n/life-alignment";
+import { createLocalizedMetadata } from "@/lib/i18n/metadata";
+import { getLocale } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Partner / Relationship | Life Alignment | bts.online",
-  description: partnerModule.description,
-  alternates: { canonical: partnerModule.href },
-  openGraph: {
-    type: "website",
-    locale: "de_DE",
-    url: partnerModule.href,
-    siteName: "bts.online",
-    title: "Partner / Relationship | Life Alignment | bts.online",
-    description: partnerModule.description,
-    images: [{ url: partnerScene.src, width: 1600, height: 900, alt: partnerScene.alt }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Partner / Relationship | Life Alignment | bts.online",
-    description: partnerModule.description,
-    images: [partnerScene.src],
-  },
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return createLocalizedMetadata({ locale, pathname: "/life-alignment/partner", title: "Partner / Relationship | Life Alignment | bts.online", description: getPartnerAlignmentContent(locale).module.description });
+}
 
 export default function LifeAlignmentPartnerPage() {
   return <PartnerPage />;

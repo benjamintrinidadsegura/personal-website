@@ -6,12 +6,14 @@ import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { HumanContextReflection } from "@/components/find-your-next-step/human-context-reflection";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
 import { FynsResultRecovery } from "@/components/find-your-next-step/result-recovery";
-import { careerIntro, careerQuestions, careerSections } from "@/data/find-your-next-step-career";
+import { useLocale } from "@/components/i18n/locale-context";
+import { getCareerIntro, getCareerQuestions, getCareerSections } from "@/data/find-your-next-step-career";
+import { careerUiCopy } from "@/data/find-your-next-step-career-ui-locales";
 import {
   buildCareerResultText,
   buildCareerShareText,
-  CAREER_RESULT_DISCLAIMER,
 } from "@/lib/find-your-next-step-career-export";
+import type { Locale } from "@/lib/i18n/config";
 import {
   buildCareerResult,
   careerJourneyReducer,
@@ -27,17 +29,13 @@ import type {
   CareerTensionResult,
 } from "@/types/find-your-next-step";
 
-function selectionInstruction(question: CareerQuestion): string {
-  let instruction: string;
-  if (question.minSelections === question.maxSelections) {
-    instruction = question.minSelections === 1
-      ? "Wähle eine Antwort."
-      : `Wähle genau ${question.minSelections} Antworten.`;
-  } else {
-    instruction = `Wähle ${question.minSelections} bis ${question.maxSelections} Antworten.`;
-  }
+function selectionInstruction(question: CareerQuestion, locale: Locale): string {
+  const copy = careerUiCopy[locale];
+  const instruction = question.minSelections === question.maxSelections
+    ? question.minSelections === 1 ? copy.one : copy.exact(question.minSelections)
+    : copy.range(question.minSelections, question.maxSelections);
   return question.format === "priority"
-    ? `${instruction} Die Auswahl wird nicht in eine Reihenfolge gebracht.`
+    ? `${instruction} ${copy.unranked}`
     : instruction;
 }
 
@@ -52,10 +50,13 @@ function safelyBuildCareerResult(...args: Parameters<typeof buildCareerResult>):
 }
 
 function MapLayers({ currentSectionIndex }: { currentSectionIndex?: number }) {
+  const locale = useLocale();
+  const ui = careerUiCopy[locale];
+  const careerSections = getCareerSections(locale);
   return (
     <div className="rounded-[1.5rem] border border-[#ff9a3d]/20 bg-[#ff9a3d]/[0.035] p-5 sm:p-6">
       <div className="flex items-center justify-between gap-4">
-        <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-[#ffb36d]">Career Map · Ebenen</p>
+        <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-[#ffb36d]">Career Map · {ui.layers}</p>
         {currentSectionIndex !== undefined ? (
           <p className="text-sm font-bold text-white">{careerSections[currentSectionIndex]?.mapLabel}</p>
         ) : null}
@@ -71,25 +72,27 @@ function MapLayers({ currentSectionIndex }: { currentSectionIndex?: number }) {
             >
               <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${current ? "bg-[#ff9a3d]" : completed ? "bg-slate-400" : "border border-white/25"}`} />
               <span>{section.mapLabel}</span>
-              <span className="sr-only">{current ? "aktuell" : completed ? "erkundet" : "noch nicht erreicht"}</span>
+              <span className="sr-only">{current ? ui.current : completed ? ui.explored : ui.pending}</span>
             </li>
           );
         })}
       </ol>
       <p className="mt-5 text-sm leading-6 text-slate-400">
-        Während der Journey entstehen nur diese fünf Kontextebenen. Berufliche Richtungen werden erst in deinem Ergebnis sichtbar.
+        {ui.mapHint}
       </p>
     </div>
   );
 }
 
 function EvidenceDetails({ evidence }: { evidence: readonly CareerEvidence[] }) {
+  const locale = useLocale();
+  const ui = careerUiCopy[locale];
   return (
     <details className="mt-5 border-t border-white/10 pt-3 text-sm text-slate-400">
       <summary className="min-h-11 cursor-pointer list-none rounded-lg py-3 font-bold text-[#ffb36d] marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9a3d]">
-        Worauf basiert das? <span aria-hidden="true">+</span>
+        {ui.based} <span aria-hidden="true">+</span>
       </summary>
-      <p className="mt-2 leading-6">Auf diesen von dir gewählten Antworten:</p>
+      <p className="mt-2 leading-6">{ui.basedAnswers}</p>
       <ul className="mt-3 grid gap-2">
         {evidence.slice(0, 4).map((item) => (
           <li key={`${item.questionId}-${item.optionId}`} className="border-l border-[#ff9a3d]/45 pl-4 leading-6 text-slate-300">
@@ -110,6 +113,8 @@ function DirectionCard({
   index: number;
   tier: "primary" | "additional";
 }) {
+  const locale = useLocale();
+  const ui = careerUiCopy[locale];
   const primary = tier === "primary";
   return (
     <article
@@ -117,7 +122,7 @@ function DirectionCard({
     >
       <div className="flex items-start justify-between gap-5">
         <p className={`font-mono text-[10px] font-black uppercase tracking-[0.2em] ${primary ? "text-[#ffb36d]" : "text-slate-500"}`}>
-          {primary ? "Erkundungsspur" : "Weitere Spur"}
+          {primary ? ui.primaryPath : ui.furtherPath}
         </p>
         <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border font-mono text-xs font-black ${primary ? "border-[#ff9a3d]/45 text-[#ffb36d]" : "border-white/15 text-slate-500"}`}>
           {String(index + 1).padStart(2, "0")}
@@ -128,23 +133,23 @@ function DirectionCard({
       </h4>
       <p className="mt-5 leading-7 text-slate-300">{direction.description}</p>
       <div className="mt-6 border-l-2 border-[#ff9a3d]/55 pl-5">
-        <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#ffb36d]">Warum diese Spur auftaucht</p>
+        <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#ffb36d]">{ui.whyPath}</p>
         <p className="mt-3 font-bold leading-7 text-white">{direction.why}</p>
       </div>
 
       <details className="mt-6 border-t border-white/10 pt-3 text-sm text-slate-400">
         <summary className="min-h-11 cursor-pointer list-none rounded-lg py-3 font-bold text-slate-200 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9a3d]">
-          Felder, Umfelder und Bedingungen ansehen <span aria-hidden="true">+</span>
+          {ui.details} <span aria-hidden="true">+</span>
         </summary>
         <div className="mt-4 grid gap-6 sm:grid-cols-2">
           <div>
-            <h5 className="font-black text-white">Mögliche Felder zum Erkunden</h5>
+            <h5 className="font-black text-white">{ui.fields}</h5>
             <ul className="mt-3 grid gap-2">
               {direction.fields.map((field) => <li key={field} className="border-l border-white/15 pl-3 leading-6 text-slate-300">{field}</li>)}
             </ul>
           </div>
           <div>
-            <h5 className="font-black text-white">Typische Arbeitsumfelder</h5>
+            <h5 className="font-black text-white">{ui.environments}</h5>
             <ul className="mt-3 grid gap-2">
               {direction.environments.map((environment) => <li key={environment} className="border-l border-white/15 pl-3 leading-6 text-slate-300">{environment}</li>)}
             </ul>
@@ -152,7 +157,7 @@ function DirectionCard({
         </div>
         {direction.qualificationNote ? (
           <div className="mt-6 rounded-2xl border border-[#b8a5ff]/25 bg-[#b8a5ff]/[0.045] p-5">
-            <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#c8bbff]">Qualifikation mitdenken</p>
+            <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#c8bbff]">{ui.qualifications}</p>
             <p className="mt-3 leading-6 text-slate-300">{direction.qualificationNote}</p>
           </div>
         ) : null}
@@ -160,7 +165,7 @@ function DirectionCard({
           <div className="mt-5 grid gap-3">
             {direction.constraintNotes.map((note) => (
               <div key={note} className="rounded-2xl border border-[#ff9a3d]/25 bg-[#ff9a3d]/[0.035] p-5">
-                <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#ffb36d]">Bei konkreten Rollen prüfen</p>
+                <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#ffb36d]">{ui.checkRoles}</p>
                 <p className="mt-3 leading-6 text-slate-300">{note}</p>
               </div>
             ))}
@@ -173,6 +178,8 @@ function DirectionCard({
 }
 
 function JobTitleCard({ job }: { job: CareerResultJobTitle }) {
+  const locale = useLocale();
+  const ui = careerUiCopy[locale];
   const hasDetails = job.aliases.length > 0 || Boolean(job.qualificationNote) || job.constraintNotes.length > 0;
   return (
     <article className="rounded-[1.35rem] border border-white/12 bg-white/[0.025] p-5 sm:p-6">
@@ -189,17 +196,17 @@ function JobTitleCard({ job }: { job: CareerResultJobTitle }) {
       <h4 className="mt-5 text-xl font-black leading-tight text-white sm:text-2xl">{job.title}</h4>
       <p className="mt-3 leading-6 text-slate-300">{job.description}</p>
       <div className="mt-5 border-l-2 border-[#ff9a3d]/45 pl-4">
-        <p className="font-mono text-[9px] font-black uppercase tracking-[0.16em] text-[#ffb36d]">Warum hier?</p>
+        <p className="font-mono text-[9px] font-black uppercase tracking-[0.16em] text-[#ffb36d]">{ui.whyHere}</p>
         <p className="mt-2 text-sm font-bold leading-6 text-slate-100">{job.why}</p>
       </div>
       {hasDetails ? (
         <details className="mt-5 border-t border-white/10 pt-2 text-sm text-slate-400">
           <summary className="min-h-11 cursor-pointer list-none rounded-lg py-3 font-bold text-slate-200 marker:content-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9a3d]">
-            Suchbegriffe und Hinweise <span aria-hidden="true">+</span>
+            {ui.searchNotes} <span aria-hidden="true">+</span>
           </summary>
           {job.aliases.length > 0 ? (
             <div className="mt-3">
-              <p className="font-mono text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">Alternative Suchbegriffe</p>
+              <p className="font-mono text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">{ui.aliases}</p>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {job.aliases.map((alias) => <li key={alias} className="rounded-full border border-white/12 px-3 py-1.5 text-slate-300">{alias}</li>)}
               </ul>
@@ -207,13 +214,13 @@ function JobTitleCard({ job }: { job: CareerResultJobTitle }) {
           ) : null}
           {job.qualificationNote ? (
             <div className="mt-4 rounded-xl border border-[#b8a5ff]/25 bg-[#b8a5ff]/[0.045] p-4">
-              <p className="font-mono text-[9px] font-black uppercase tracking-[0.16em] text-[#c8bbff]">Qualifikation mitdenken</p>
+              <p className="font-mono text-[9px] font-black uppercase tracking-[0.16em] text-[#c8bbff]">{ui.qualifications}</p>
               <p className="mt-2 leading-6 text-slate-300">{job.qualificationNote}</p>
             </div>
           ) : null}
           {job.constraintNotes.map((note) => (
             <div key={note} className="mt-3 rounded-xl border border-[#ff9a3d]/25 bg-[#ff9a3d]/[0.035] p-4">
-              <p className="font-mono text-[9px] font-black uppercase tracking-[0.16em] text-[#ffb36d]">In Stellenanzeigen prüfen</p>
+              <p className="font-mono text-[9px] font-black uppercase tracking-[0.16em] text-[#ffb36d]">{ui.checkAds}</p>
               <p className="mt-2 leading-6 text-slate-300">{note}</p>
             </div>
           ))}
@@ -240,24 +247,26 @@ function CareerPrintDirection({
   direction: CareerResultDirection;
   label: string;
 }) {
+  const locale = useLocale();
+  const ui = careerUiCopy[locale];
   return (
     <article className="fyns-print-block">
       <p className="fyns-print-label">{label}</p>
       <h3>{direction.title}</h3>
       <p>{direction.description}</p>
       <div className="fyns-print-detail">
-        <h4>Warum diese Spur auftaucht</h4>
+        <h4>{ui.whyPath}</h4>
         <p>{direction.why}</p>
       </div>
       {direction.qualificationNote ? (
         <div className="fyns-print-note">
-          <h4>Qualifikation mitdenken</h4>
+          <h4>{ui.qualifications}</h4>
           <p>{direction.qualificationNote}</p>
         </div>
       ) : null}
       {direction.constraintNotes.length > 0 ? (
         <div className="fyns-print-note">
-          <h4>Bei konkreten Rollen prüfen</h4>
+          <h4>{ui.checkRoles}</h4>
           <ul>{direction.constraintNotes.map((note) => <li key={note}>{note}</li>)}</ul>
         </div>
       ) : null}
@@ -266,6 +275,8 @@ function CareerPrintDirection({
 }
 
 function CareerPrintJobTitle({ job }: { job: CareerResultJobTitle }) {
+  const locale = useLocale();
+  const ui = careerUiCopy[locale];
   return (
     <article className="fyns-print-block">
       <p className="fyns-print-label">
@@ -275,13 +286,13 @@ function CareerPrintJobTitle({ job }: { job: CareerResultJobTitle }) {
       <p>{job.description}</p>
       {job.qualificationNote ? (
         <div className="fyns-print-note">
-          <h4>Qualifikation mitdenken</h4>
+          <h4>{ui.qualifications}</h4>
           <p>{job.qualificationNote}</p>
         </div>
       ) : null}
       {job.constraintNotes.length > 0 ? (
         <div className="fyns-print-note">
-          <h4>In Stellenanzeigen prüfen</h4>
+          <h4>{ui.checkAds}</h4>
           <ul>{job.constraintNotes.map((note) => <li key={note}>{note}</li>)}</ul>
         </div>
       ) : null}
@@ -290,13 +301,15 @@ function CareerPrintJobTitle({ job }: { job: CareerResultJobTitle }) {
 }
 
 function CareerPrintDocument({ result }: { result: CareerResult }) {
+  const locale = useLocale();
+  const ui = careerUiCopy[locale];
   return (
     <article className="fyns-print-document hidden" data-fyns-print-document="career">
       <header className="fyns-print-header">
         <p className="fyns-print-brand">bts.online / FYNS / Career</p>
         <h1>{result.title}</h1>
         <section className="fyns-print-summary" aria-labelledby="career-print-summary-title">
-          <h2 id="career-print-summary-title">Zusammenfassung</h2>
+          <h2 id="career-print-summary-title">{ui.summary}</h2>
           {result.summary.map((sentence, index) => <p key={`${index}-${sentence}`}>{sentence}</p>)}
         </section>
         <p className="fyns-print-description">{result.description}</p>
@@ -304,13 +317,13 @@ function CareerPrintDocument({ result }: { result: CareerResult }) {
 
       {result.primaryDirections.length > 0 ? (
         <section className="fyns-print-section" aria-labelledby="career-print-primary-title">
-          <h2 id="career-print-primary-title">Besonders interessant zum Erkunden</h2>
+          <h2 id="career-print-primary-title">{ui.primaryHeading}</h2>
           <div className="fyns-print-stack">
             {result.primaryDirections.map((direction, index) => (
               <CareerPrintDirection
                 key={direction.id}
                 direction={direction}
-                label={`Primäre Richtung ${String(index + 1).padStart(2, "0")}`}
+                label={`${ui.primaryDirection} ${String(index + 1).padStart(2, "0")}`}
               />
             ))}
           </div>
@@ -319,13 +332,13 @@ function CareerPrintDocument({ result }: { result: CareerResult }) {
 
       {result.additionalDirections.length > 0 ? (
         <section className="fyns-print-section" aria-labelledby="career-print-additional-title">
-          <h2 id="career-print-additional-title">Weitere Richtungen</h2>
+          <h2 id="career-print-additional-title">{ui.additionalHeading}</h2>
           <div className="fyns-print-stack">
             {result.additionalDirections.map((direction, index) => (
               <CareerPrintDirection
                 key={direction.id}
                 direction={direction}
-                label={`Weitere Richtung ${String(index + 1).padStart(2, "0")}`}
+                label={`${ui.additionalDirection} ${String(index + 1).padStart(2, "0")}`}
               />
             ))}
           </div>
@@ -334,7 +347,7 @@ function CareerPrintDocument({ result }: { result: CareerResult }) {
 
       {result.jobTitles.length > 0 ? (
         <section className="fyns-print-section" aria-labelledby="career-print-jobs-title">
-          <h2 id="career-print-jobs-title">Jobtitel zum Erkunden</h2>
+          <h2 id="career-print-jobs-title">{ui.jobs}</h2>
           <div className="fyns-print-stack">
             {result.jobTitles.map((job) => <CareerPrintJobTitle key={job.id} job={job} />)}
           </div>
@@ -343,11 +356,11 @@ function CareerPrintDocument({ result }: { result: CareerResult }) {
 
       {result.conditions.length > 0 ? (
         <section className="fyns-print-section" aria-labelledby="career-print-conditions-title">
-          <h2 id="career-print-conditions-title">Bedingungen</h2>
+          <h2 id="career-print-conditions-title">{ui.conditions}</h2>
           <ul className="fyns-print-list">
             {result.conditions.map((condition) => (
               <li key={condition.id}>
-                <strong>{condition.kind === "constraint" ? "Feste Bedingung" : condition.kind === "preference" ? "Präferenz" : "Qualifizierungsrahmen"}:</strong>{" "}
+                <strong>{condition.kind === "constraint" ? ui.firm : condition.kind === "preference" ? ui.preference : ui.qualificationScope}:</strong>{" "}
                 {condition.text}
               </li>
             ))}
@@ -357,7 +370,7 @@ function CareerPrintDocument({ result }: { result: CareerResult }) {
 
       {result.tensions.length > 0 ? (
         <section className="fyns-print-section" aria-labelledby="career-print-tensions-title">
-          <h2 id="career-print-tensions-title">Spannungsfelder zum Mitdenken</h2>
+          <h2 id="career-print-tensions-title">{ui.tensions}</h2>
           <div className="fyns-print-stack">
             {result.tensions.slice(0, 2).map((tension) => (
               <article key={tension.id} className="fyns-print-block">
@@ -370,12 +383,12 @@ function CareerPrintDocument({ result }: { result: CareerResult }) {
       ) : null}
 
       <section className="fyns-print-section fyns-print-next-step" aria-labelledby="career-print-next-step-title">
-        <p className="fyns-print-label">Dein nächster sinnvoller Schritt</p>
+        <p className="fyns-print-label">{ui.nextStep}</p>
         <h2 id="career-print-next-step-title">{result.nextStep.title}</h2>
         <p>{result.nextStep.text}</p>
       </section>
 
-      <p className="fyns-print-disclaimer">{CAREER_RESULT_DISCLAIMER}</p>
+      <p className="fyns-print-disclaimer">{ui.disclaimer}</p>
     </article>
   );
 }
@@ -391,15 +404,18 @@ function ResultView({
   headingRef: React.RefObject<HTMLHeadingElement | null>;
   restartPending: boolean;
 }) {
-  const copyText = buildCareerResultText(result);
-  const shareText = buildCareerShareText(result);
+  const locale = useLocale();
+  const ui = careerUiCopy[locale];
+  const careerSections = getCareerSections(locale);
+  const copyText = buildCareerResultText(result, locale);
+  const shareText = buildCareerShareText(result, locale);
 
   return (
     <>
     <section aria-labelledby="career-result-title" className="py-16 sm:py-24" data-fyns-screen-result>
       <div className="grid gap-8 border-b border-white/15 pb-14 lg:grid-cols-[1fr_0.72fr] lg:items-end">
         <div>
-          <p className="font-mono text-xs font-black uppercase tracking-[0.25em] text-[#ffb36d]">Deine Orientierung · Nicht gespeichert</p>
+          <p className="font-mono text-xs font-black uppercase tracking-[0.25em] text-[#ffb36d]">{ui.orientation}</p>
           <h2
             ref={headingRef}
             tabIndex={-1}
@@ -421,9 +437,9 @@ function ResultView({
       <div className="mt-16 grid gap-20">
         {result.primaryDirections.length > 0 ? (
           <section aria-labelledby="career-primary-title">
-            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ffb36d]">Primäre Erkundungsspuren</p>
-            <h3 id="career-primary-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">Besonders interessant zum Erkunden</h3>
-            <p className="mt-5 max-w-3xl leading-7 text-slate-400">Diese Richtungen werden durch mehrere deiner Antworten getragen. Die Reihenfolge dient nur der Lesbarkeit; keine Richtung ist dadurch höherwertig.</p>
+            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ffb36d]">{ui.primaryEyebrow}</p>
+            <h3 id="career-primary-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">{ui.primaryHeading}</h3>
+            <p className="mt-5 max-w-3xl leading-7 text-slate-400">{ui.primaryDescription}</p>
             <div className="relative mt-10 grid gap-7 lg:px-12">
               <div aria-hidden="true" className="absolute bottom-8 left-1/2 top-8 hidden w-px bg-gradient-to-b from-[#ff9a3d]/10 via-[#ff9a3d]/35 to-[#ff9a3d]/10 lg:block" />
               {result.primaryDirections.map((direction, index) => (
@@ -435,15 +451,15 @@ function ResultView({
           </section>
         ) : (
           <section aria-labelledby="career-open-map-title" className="rounded-[1.75rem] border border-[#ff9a3d]/25 bg-[#ff9a3d]/[0.035] p-7 sm:p-9">
-            <h3 id="career-open-map-title" className="text-2xl font-black text-white sm:text-4xl">Deine Karte bleibt vorerst bewusst offen.</h3>
-            <p className="mt-5 max-w-3xl leading-7 text-slate-300">Keine berufliche Richtung besitzt aktuell genug zusammenhängende Evidenz für eine hervorgehobene Spur. Das ist kein Fehler und wird nicht durch künstliche Empfehlungen aufgefüllt.</p>
+            <h3 id="career-open-map-title" className="text-2xl font-black text-white sm:text-4xl">{ui.openTitle}</h3>
+            <p className="mt-5 max-w-3xl leading-7 text-slate-300">{ui.openDescription}</p>
           </section>
         )}
 
         {result.additionalDirections.length > 0 ? (
           <section aria-labelledby="career-additional-title">
-            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-slate-500">Weitere Erkundungsspuren</p>
-            <h3 id="career-additional-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">Ebenfalls einen Blick wert</h3>
+            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-slate-500">{ui.additionalEyebrow}</p>
+            <h3 id="career-additional-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">{ui.worthLook}</h3>
             <div className="mt-9 grid gap-5 lg:grid-cols-2">
               {result.additionalDirections.map((direction, index) => <DirectionCard key={direction.id} direction={direction} index={index} tier="additional" />)}
             </div>
@@ -452,11 +468,11 @@ function ResultView({
 
         {result.jobTitles.length > 0 ? (
           <section aria-labelledby="career-job-titles-title">
-            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ffb36d]">Konkrete Suchbegriffe</p>
-            <h3 id="career-job-titles-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">Jobtitel zum Erkunden</h3>
-            <p className="mt-5 max-w-3xl leading-7 text-slate-400">Konkrete Rollen als Ausgangspunkt für deine weitere Suche. Sie sind redaktionelle Beispiele aus deinen sichtbaren Erkundungsspuren – keine Aussage darüber, ob du bereits alle Voraussetzungen erfüllst oder ob aktuell Stellen verfügbar sind.</p>
+            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ffb36d]">{ui.jobsEyebrow}</p>
+            <h3 id="career-job-titles-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">{ui.jobs}</h3>
+            <p className="mt-5 max-w-3xl leading-7 text-slate-400">{ui.jobsDescription}</p>
             {result.primaryDirections.length === 0 ? (
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">Weil deine Karte aktuell keine primäre Spur zeigt, bleibt diese Auswahl bewusst kurz und dient nur als vorsichtiger Startpunkt.</p>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">{ui.jobsWeak}</p>
             ) : null}
             <div className="mt-8 grid items-start gap-4 md:grid-cols-2">
               {result.jobTitles.map((job) => <JobTitleCard key={job.id} job={job} />)}
@@ -466,14 +482,14 @@ function ResultView({
 
         {result.conditions.length > 0 ? (
           <section aria-labelledby="career-conditions-title">
-            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ffb36d]">Realitätsebene</p>
-            <h3 id="career-conditions-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">Bedingungen, die du mitnehmen möchtest</h3>
-            <p className="mt-5 max-w-3xl leading-7 text-slate-400">Feste Bedingungen, Präferenzen und Qualifizierungsrahmen bleiben sichtbar, ohne Directions zu bewerten oder zu entfernen.</p>
+            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ffb36d]">{ui.reality}</p>
+            <h3 id="career-conditions-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">{ui.conditionsTitle}</h3>
+            <p className="mt-5 max-w-3xl leading-7 text-slate-400">{ui.conditionsDescription}</p>
             <ul className="mt-8 grid gap-4 md:grid-cols-2">
               {result.conditions.map((condition) => (
                 <li key={condition.id} className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
                   <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                    {condition.kind === "constraint" ? "Feste Bedingung" : condition.kind === "preference" ? "Präferenz" : "Qualifizierungsrahmen"}
+                    {condition.kind === "constraint" ? ui.firm : condition.kind === "preference" ? ui.preference : ui.qualificationScope}
                   </p>
                   <p className="mt-3 font-bold leading-7 text-white">{condition.text}</p>
                 </li>
@@ -484,8 +500,8 @@ function ResultView({
 
         {result.tensions.length > 0 ? (
           <section aria-labelledby="career-tensions-title">
-            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#c8bbff]">Beides darf wichtig sein</p>
-            <h3 id="career-tensions-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">Spannungsfelder zum Mitdenken</h3>
+            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#c8bbff]">{ui.both}</p>
+            <h3 id="career-tensions-title" className="mt-4 max-w-3xl text-3xl font-black text-white sm:text-5xl">{ui.tensions}</h3>
             <div className="mt-8 grid gap-5 lg:grid-cols-2">
               {result.tensions.map((tension) => <TensionCard key={tension.id} tension={tension} />)}
             </div>
@@ -493,7 +509,7 @@ function ResultView({
         ) : null}
 
         <section aria-labelledby="career-next-step-title" className="rounded-[1.75rem] border border-[#ff9a3d]/35 bg-[linear-gradient(135deg,rgba(255,154,61,0.09),rgba(255,255,255,0.02))] p-7 sm:p-10">
-          <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ffb36d]">Dein nächster sinnvoller Schritt</p>
+          <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ffb36d]">{ui.nextStep}</p>
           <h3 id="career-next-step-title" className="mt-5 max-w-3xl text-3xl font-black text-white sm:text-5xl">{result.nextStep.title}</h3>
           <p className="mt-6 max-w-4xl text-lg font-bold leading-8 text-slate-200">{result.nextStep.text}</p>
         </section>
@@ -502,16 +518,16 @@ function ResultView({
       <FynsResultActions
         accent="#ff9a3d"
         copyText={copyText}
-        shareTitle="FYNS – Career – Ergebnis"
+        shareTitle={ui.resultTitle}
         shareText={shareText}
-        printTitle="FYNS – Career – Ergebnis"
+        printTitle={ui.resultTitle}
       />
 
       <section aria-labelledby="career-edit-title" className="mt-20 border-t border-white/15 pt-14">
         <div className="grid gap-8 lg:grid-cols-[0.65fr_1fr]">
           <div>
-            <h3 id="career-edit-title" className="text-2xl font-black text-white">Antworten anpassen</h3>
-            <p className="mt-4 max-w-md leading-7 text-slate-400">Öffne eine Ebene erneut. Alle anderen Antworten bleiben im aktuellen Seitenzustand erhalten.</p>
+            <h3 id="career-edit-title" className="text-2xl font-black text-white">{ui.adjust}</h3>
+            <p className="mt-4 max-w-md leading-7 text-slate-400">{ui.adjustDescription}</p>
           </div>
           <ol className="grid gap-3 sm:grid-cols-2">
             {careerSections.map((section, index) => (
@@ -533,15 +549,15 @@ function ResultView({
       <div className="mt-12 border-t border-white/10 pt-10">
         {!restartPending ? (
           <button type="button" onClick={() => dispatch({ type: "request-restart" })} className="inline-flex min-h-12 items-center rounded-full border border-white/15 px-6 py-3 font-bold text-slate-300 transition hover:border-[#ff9a3d]/60 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff9a3d]">
-            Neu starten
+            {ui.restart}
           </button>
         ) : (
           <div className="max-w-2xl rounded-2xl border border-[#ff9a3d]/30 bg-[#ff9a3d]/[0.04] p-6">
-            <p className="font-bold text-white">Alle aktuellen Antworten verwerfen?</p>
-            <p className="mt-2 text-sm leading-6 text-slate-400">Dieser Schritt kann nach dem Bestätigen nicht rückgängig gemacht werden.</p>
+            <p className="font-bold text-white">{ui.discardTitle}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">{ui.discardDescription}</p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <button type="button" onClick={() => dispatch({ type: "cancel-restart" })} className="min-h-11 rounded-full border border-white/15 px-5 py-2 font-bold text-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9a3d]">Behalten</button>
-              <button type="button" onClick={() => dispatch({ type: "confirm-restart" })} className="min-h-11 rounded-full bg-[#ff9a3d] px-5 py-2 font-black text-[#241204] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9a3d]">Antworten verwerfen</button>
+              <button type="button" onClick={() => dispatch({ type: "cancel-restart" })} className="min-h-11 rounded-full border border-white/15 px-5 py-2 font-bold text-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9a3d]">{ui.keep}</button>
+              <button type="button" onClick={() => dispatch({ type: "confirm-restart" })} className="min-h-11 rounded-full bg-[#ff9a3d] px-5 py-2 font-black text-[#241204] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff9a3d]">{ui.discard}</button>
             </div>
           </div>
         )}
@@ -553,12 +569,20 @@ function ResultView({
 }
 
 export function CareerExplorationJourney() {
-  const [state, dispatch] = useReducer(careerJourneyReducer, initialCareerState);
+  const locale = useLocale();
+  const ui = careerUiCopy[locale];
+  const careerIntro = getCareerIntro(locale);
+  const careerQuestions = getCareerQuestions(locale);
+  const careerSections = getCareerSections(locale);
+  const [state, dispatch] = useReducer(
+    (current: typeof initialCareerState, action: Parameters<typeof careerJourneyReducer>[1]) => careerJourneyReducer(current, action, locale),
+    initialCareerState,
+  );
   const headingRef = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const initialRender = useRef(true);
   const question = careerQuestions[state.questionIndex];
-  const resultState = useMemo(() => safelyBuildCareerResult(state.answers), [state.answers]);
+  const resultState = useMemo(() => safelyBuildCareerResult(state.answers, locale), [locale, state.answers]);
 
   useEffect(() => {
     if (initialRender.current) {
@@ -587,22 +611,22 @@ export function CareerExplorationJourney() {
           </div>
           <div className="grid gap-5">
             <div className="rounded-[1.5rem] border border-[#ff9a3d]/20 bg-[#ff9a3d]/[0.035] p-6 sm:p-7">
-              <h3 className="font-black text-white">Wobei sie helfen kann</h3>
+              <h3 className="font-black text-white">{ui.can}</h3>
               <ul className="mt-5 grid gap-3 text-sm leading-6 text-slate-300">{careerIntro.canDo.map((item) => <li key={item} className="border-l border-[#ff9a3d]/50 pl-4">{item}</li>)}</ul>
             </div>
             <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.025] p-6 sm:p-7">
-              <h3 className="font-black text-white">Was sie nicht leisten kann</h3>
+              <h3 className="font-black text-white">{ui.cannot}</h3>
               <ul className="mt-5 grid gap-3 text-sm leading-6 text-slate-400">{careerIntro.cannotDo.map((item) => <li key={item} className="border-l border-white/15 pl-4">{item}</li>)}</ul>
             </div>
           </div>
         </div>
         <div className="mt-10"><MapLayers /></div>
         <div className="mt-8 border-l-2 border-[#ff9a3d] bg-[#ff9a3d]/[0.035] p-6 sm:p-8">
-          <p className="font-mono text-xs font-black uppercase tracking-[0.2em] text-[#ffb36d]">Nur für diesen Moment</p>
+          <p className="font-mono text-xs font-black uppercase tracking-[0.2em] text-[#ffb36d]">{ui.local}</p>
           <p className="mt-4 max-w-3xl font-bold leading-7 text-white">{careerIntro.privacy}</p>
         </div>
         <button type="button" onClick={() => dispatch({ type: "start" })} className="mt-10 inline-flex min-h-14 items-center rounded-full bg-[#ff9a3d] px-7 py-4 font-black text-[#241204] transition motion-safe:hover:-translate-y-0.5 hover:brightness-110 motion-reduce:transform-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ff9a3d]">
-          Career Map starten <span aria-hidden="true" className="ml-3">→</span>
+          {ui.start} <span aria-hidden="true" className="ml-3">→</span>
         </button>
       </section>
     );
@@ -614,9 +638,9 @@ export function CareerExplorationJourney() {
         <FynsResultRecovery
           accent="#ff9a3d"
           titleId="career-result-unavailable-title"
-          title="Deine Career Map konnte gerade nicht aufgebaut werden."
-          message="Deine Antworten bleiben im aktuellen Seitenzustand erhalten. Kehre zu den Fragen zurück und versuche es nach einer kleinen Anpassung erneut."
-          actionLabel="Zurück zu den Fragen"
+          title={ui.unavailableTitle}
+          message={ui.unavailableMessage}
+          actionLabel={ui.backQuestions}
           onAction={() => dispatch({ type: "edit-section", sectionId: careerSections[0].id })}
           headingRef={headingRef}
         />
@@ -627,9 +651,9 @@ export function CareerExplorationJourney() {
         <FynsResultRecovery
           accent="#ff9a3d"
           titleId="career-incomplete-title"
-          title="Deine Career Map ist noch nicht vollständig."
-          message="Beantworte die noch offenen Fragen, bevor FYNS deine Career Map erneut aufbaut."
-          actionLabel="Zurück zu den Fragen"
+          title={ui.incompleteTitle}
+          message={ui.incompleteMessage}
+          actionLabel={ui.backQuestions}
           onAction={() => dispatch({ type: "edit-section", sectionId: careerSections[0].id })}
           headingRef={headingRef}
         />
@@ -645,8 +669,8 @@ export function CareerExplorationJourney() {
   const currentSection = careerSections[currentSectionIndex];
   const lastInSection = sectionQuestions.at(-1)?.id === question.id;
   const lastInJourney = state.questionIndex === careerQuestions.length - 1;
-  const nextLabel = state.editingSectionId && lastInSection ? "Career Map aktualisieren" : lastInJourney ? "Career Map ansehen" : "Weiter";
-  const backLabel = state.editingSectionId && sectionQuestions[0]?.id === question.id ? "Zurück zur Career Map" : state.questionIndex === 0 ? "Zurück zur Einführung" : "Zurück";
+  const nextLabel = state.editingSectionId && lastInSection ? ui.update : lastInJourney ? ui.view : ui.next;
+  const backLabel = state.editingSectionId && sectionQuestions[0]?.id === question.id ? ui.backMap : state.questionIndex === 0 ? ui.backIntro : ui.back;
   const guidanceId = `${question.id}-guidance`;
   const errorId = `${question.id}-error`;
 
@@ -654,15 +678,15 @@ export function CareerExplorationJourney() {
     <section className="pb-[calc(12rem+env(safe-area-inset-bottom))] pt-14 sm:pt-20 lg:pb-[calc(8.5rem+env(safe-area-inset-bottom))]">
       <form className="mx-auto max-w-4xl py-12 sm:py-16" aria-labelledby={`${question.id}-title`} onSubmit={(event) => { event.preventDefault(); dispatch({ type: "continue" }); }}>
         <MapLayers currentSectionIndex={currentSectionIndex} />
-        <p className="mt-10 font-mono text-xs font-black uppercase tracking-[0.22em] text-slate-500">{currentSection?.title} · Erkundungsentscheidung {String(state.questionIndex + 1).padStart(2, "0")}</p>
+        <p className="mt-10 font-mono text-xs font-black uppercase tracking-[0.22em] text-slate-500">{currentSection?.title} · {ui.choice} {String(state.questionIndex + 1).padStart(2, "0")}</p>
         <h2 ref={headingRef} tabIndex={-1} style={{ outline: "none" }} id={`${question.id}-title`} className="mt-5 scroll-mb-[calc(12rem+env(safe-area-inset-bottom))] text-3xl font-black leading-tight text-white outline-none sm:text-5xl lg:scroll-mb-[calc(8.5rem+env(safe-area-inset-bottom))]">{question.prompt}</h2>
         {question.context ? <p className="mt-5 max-w-3xl text-base leading-7 text-slate-400 sm:text-lg">{question.context}</p> : null}
 
         <fieldset aria-describedby={`${guidanceId}${state.validationMessage ? ` ${errorId}` : ""}`} className="mt-10">
           <legend className="sr-only">{question.prompt}</legend>
           <div id={guidanceId} className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
-            <span>{selectionInstruction(question)}</span>
-            <span className="ml-auto inline-flex min-h-8 shrink-0 items-center rounded-full border border-[#ff9a3d]/40 bg-[#ff9a3d]/[0.065] px-3 py-1 font-mono text-xs font-bold text-[#ffb36d]">{formatCareerSelectionCount(selectedOptionIds.length, question.maxSelections)}</span>
+            <span>{selectionInstruction(question, locale)}</span>
+            <span className="ml-auto inline-flex min-h-8 shrink-0 items-center rounded-full border border-[#ff9a3d]/40 bg-[#ff9a3d]/[0.065] px-3 py-1 font-mono text-xs font-bold text-[#ffb36d]">{formatCareerSelectionCount(selectedOptionIds.length, question.maxSelections, locale)}</span>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {question.options.map((option) => {
@@ -684,7 +708,7 @@ export function CareerExplorationJourney() {
                       {option.description ? <span className="mt-2 block text-sm leading-6 text-slate-400">{option.description}</span> : null}
                     </span>
                     <span aria-hidden="true" className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center border text-xs font-black ${inputType === "radio" ? "rounded-full" : "rounded-md"} ${selected ? "border-[#ff9a3d] bg-[#ff9a3d] text-[#241204]" : "border-white/25 text-transparent"}`}>✓</span>
-                    {selected ? <span className="sr-only">Ausgewählt</span> : null}
+                    {selected ? <span className="sr-only">{ui.selected}</span> : null}
                   </span>
                 </label>
               );
@@ -695,6 +719,7 @@ export function CareerExplorationJourney() {
         {state.validationMessage ? <p ref={errorRef} tabIndex={-1} style={{ outline: "none" }} id={errorId} role="alert" className="mt-5 scroll-mb-[calc(12rem+env(safe-area-inset-bottom))] border-l-2 border-[#ff9a3d] pl-4 font-bold text-[#ffb36d] outline-none lg:scroll-mb-[calc(8.5rem+env(safe-area-inset-bottom))]">{state.validationMessage}</p> : null}
 
         <JourneyDock
+          locale={locale}
           sections={careerSections}
           currentSectionIndex={currentSectionIndex}
           globalQuestionNumber={state.questionIndex + 1}
@@ -702,7 +727,7 @@ export function CareerExplorationJourney() {
           localQuestionNumber={currentQuestionNumber}
           localQuestionCount={sectionQuestions.length}
           accent="#ff9a3d"
-          accessibleLabel="Steuerung und Fortschritt der Career Map"
+          accessibleLabel={ui.controls}
           backLabel={backLabel}
           nextLabel={nextLabel}
           onBack={() => dispatch({ type: "back" })}

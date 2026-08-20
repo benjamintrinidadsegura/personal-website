@@ -11,6 +11,7 @@ import {
   hqPulseUpdates,
   resolveHqPulseItems,
 } from "../data/hq-pulse";
+import { localizeHqPulseItems } from "../data/i18n/hq-pulse";
 import { mapPublicWritingSummary } from "../lib/writing/domain";
 import type { HqPulseCandidate, HqPulseUpdate, SpotlightPulseSource } from "../types/content";
 import type { PublicWritingSummary } from "../types/writing";
@@ -180,15 +181,31 @@ test("HQ Pulse and Discovery consume the same resolved public model", () => {
   const home = source("../app/page.tsx");
   const writing = source("../components/sections/writing.tsx");
 
-  assert.equal(component.includes("createHqPulseItems({ publishedWriting })"), true);
+  assert.equal(component.includes("localizeHqPulseItems(createHqPulseItems({ publishedWriting }), locale)"), true);
   assert.equal(component.includes('String(items.length).padStart(2, "0")'), true);
-  assert.equal(component.includes("Newest"), true);
+  assert.equal(component.includes("copy.newest"), true);
   assert.equal(discovery.includes("createHqPulseDiscoveryItems"), true);
   assert.equal(layout.includes("createHqPulseItems({ publishedWriting })"), true);
   assert.equal(layout.includes("createHqPulseDiscoveryItems(resolvedPulseItems)"), true);
   assert.equal(home.includes("<HqPulse publishedWriting={publishedWriting} />"), true);
   assert.equal(home.includes("<Writing publishedWriting={publishedWriting} />"), true);
   assert.equal(writing.includes("publishedWriting ?? await getPublishedWriting()"), true);
+});
+
+test("HQ Pulse localization preserves stable item identities, destinations, and ordering", () => {
+  const german = localizeHqPulseItems(hqPulseItems, "de");
+  const english = localizeHqPulseItems(hqPulseItems, "en");
+
+  for (const localized of [german, english]) {
+    assert.deepEqual(localized.map(({ id }) => id), hqPulseItems.map(({ id }) => id));
+    assert.deepEqual(localized.map(({ href }) => href), hqPulseItems.map(({ href }) => href));
+    assert.deepEqual(localized.map(({ date }) => date), hqPulseItems.map(({ date }) => date));
+    assert.equal(localized.length, hqPulseItems.length);
+    assert.equal(new Set(localized.map(({ id }) => id)).size, localized.length);
+  }
+  assert.equal(german.every(({ status }) => status !== "Published"), true);
+  assert.equal(german.every(({ status }) => status === "Veröffentlicht"), true);
+  assert.notEqual(english[0]?.title, hqPulseItems[0]?.title);
 });
 
 test("aggregation reads only canonical public summaries and static interview metadata", () => {

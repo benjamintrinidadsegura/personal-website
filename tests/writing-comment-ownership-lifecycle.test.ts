@@ -358,9 +358,10 @@ test("inline owner UX is accessible, mobile-safe, confirmed, and does not add re
   const controls = source("../components/writing/comments/owned-comment-controls.tsx");
   const list = source("../components/writing/comments/comment-list.tsx");
   const discussion = source("../components/writing/comments/discussion.tsx");
+  const translations = source("../data/i18n/writing.ts");
   for (const required of [
-    "Edit your comment",
-    "Delete your comment?",
+    "copy.editTitle",
+    "copy.deleteTitle",
     'aria-live="polite"',
     "aria-invalid",
     'event.key === "Escape"',
@@ -370,8 +371,10 @@ test("inline owner UX is accessible, mobile-safe, confirmed, and does not add re
     "editButton.current?.focus()",
     "deleteButton.current?.focus()",
   ]) assert.equal(controls.includes(required), true, required);
-  assert.equal(list.includes("Comment deleted by author."), true);
-  assert.equal(list.includes(">edited<"), true);
+  assert.equal(list.includes("copy.deleted"), true);
+  assert.equal(list.includes("copy.edited"), true);
+  assert.equal(translations.includes("Edit your comment"), true);
+  assert.equal(translations.includes("Delete your comment?"), true);
   assert.equal(discussion.includes('id="discussion-title" tabIndex={-1}'), true);
   for (const forbidden of ["Reply", "Moderate", "Ban user", "dangerouslySetInnerHTML"]) {
     assert.equal(`${controls}${list}`.includes(forbidden), false, forbidden);

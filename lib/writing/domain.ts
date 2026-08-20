@@ -8,6 +8,7 @@ import {
   type WritingStatus,
 } from "@/types/writing";
 import { validateWritingDocument } from "@/lib/writing/document";
+import { getWritingLocalization } from "@/data/writing-localization";
 
 type UnknownRow = Record<string, unknown>;
 
@@ -41,7 +42,7 @@ export function mapPublicWritingSummary(row: UnknownRow): PublicWritingSummary |
     row.status !== "published" || !validDate(row.published_at)
   ) return null;
   if (row.body_json !== null && row.body_json !== undefined && !validateWritingDocument(row.body_json).success) return null;
-  return { id: row.id, slug: row.slug, title: row.title, deck: row.deck, excerpt: row.excerpt, contentType: row.content_type, topics: row.topics, publishedAt: row.published_at, readingMinutes: calculateReadingMinutes(row.body) };
+  return { id: row.id, slug: row.slug, title: row.title, deck: row.deck, excerpt: row.excerpt, contentType: row.content_type, topics: row.topics, publishedAt: row.published_at, readingMinutes: calculateReadingMinutes(row.body), language: getWritingLocalization(row.slug).language };
 }
 
 export function mapPublicWritingArticle(row: UnknownRow): PublicWritingArticle | null {

@@ -1,4 +1,6 @@
 import type { DiscoveryMatchReason } from "@/types/discovery";
+import { useLocale } from "@/components/i18n/locale-context";
+import { getDiscoveryUiCopy } from "@/data/i18n/discovery";
 
 interface DiscoveryExplanationProps {
   reasons: readonly DiscoveryMatchReason[];
@@ -13,6 +15,8 @@ export function DiscoveryExplanation({
   compact = false,
   className = "",
 }: DiscoveryExplanationProps) {
+  const locale = useLocale();
+  const copy = getDiscoveryUiCopy(locale);
   const visibleReasons = reasons.slice(0, maxReasons);
   if (visibleReasons.length === 0) return null;
 
@@ -25,7 +29,7 @@ export function DiscoveryExplanation({
           key={`${reason.kind}-${reason.source}-${reason.displayValue}`}
           className={index > 0 ? "hidden sm:list-item" : undefined}
         >
-          <span className="font-semibold text-slate-300">{reason.label}:</span>{" "}
+          <span className="font-semibold text-slate-300">{copy.reasons[reason.label]}:</span>{" "}
           <span>{reason.displayValue}</span>
         </li>
       ))}

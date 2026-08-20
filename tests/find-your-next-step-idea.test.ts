@@ -206,7 +206,7 @@ test("Idea UI is an accessible local client island with progress, export, edit, 
   assert.match(client, /tabIndex=\{-1\}/u);
   assert.match(client, /<JourneyDock/u);
   assert.match(client, /totalQuestionCount=\{ideaQuestions\.length\}/u);
-  assert.match(client, /accessibleLabel="Steuerung und Fortschritt der Ideenklärung"/u);
+  assert.match(client, /accessibleLabel=\{ui\.progress\}/u);
   assert.match(client, /pb-\[calc\(12rem\+env\(safe-area-inset-bottom\)\)\]/u);
   assert.match(client, /<FynsResultActions/u);
   assert.match(client, /data-fyns-print-document="idea"/u);

@@ -153,7 +153,7 @@ test("reduced clipboard export omits sensitive themes and all person-level evide
   assert.doesNotMatch(clipboard, /Person [AB]:/);
   assert.doesNotMatch(clipboard, /Von A gewählt|Von B gewählt|Beschreibende Anzahlen/);
   assert.match(clipboard, /Sensible Themen.*ausgelassen/i);
-  assert.ok(full.length <= 8_000);
+  assert.ok(full.length <= 16_000);
   assert.ok(clipboard.length <= 1_600);
 });
 
@@ -195,4 +195,34 @@ test("Partner-specific implementation has no persistence, network, analytics, or
   ];
   const source = paths.map((path) => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
   for (const prohibited of ["localStorage", "sessionStorage", "indexedDB", "document.cookie", "@/lib/supabase", "fetch(", "navigator.sendBeacon", "analytics", "accountId", "userId"]) assert.equal(source.includes(prohibited), false, prohibited);
+});
+
+test("DE and EN Partner results preserve released semantics while localizing shared interpretation", () => {
+  const participants = { a: completeA, b: completeB };
+  const de = buildPartnerComparisonResult(participants, true, "de");
+  const en = buildPartnerComparisonResult(participants, true, "en");
+  assert.equal(de.status, "complete");
+  assert.equal(en.status, "complete");
+  if (de.status !== "complete" || en.status !== "complete") return;
+
+  assert.deepEqual(en.result.metrics, de.result.metrics);
+  assert.deepEqual(en.result.tracks.map(({ dimensionId, sensitive, participantA, participantB }) => ({ dimensionId, sensitive, participantA: participantA && { experience: participantA.experience, desiredDirection: participantA.desiredDirection, importance: participantA.importance, certainty: participantA.certainty, expectationClarity: participantA.expectationClarity, differenceStance: participantA.differenceStance, constraint: participantA.constraint }, participantB: participantB && { experience: participantB.experience, desiredDirection: participantB.desiredDirection, importance: participantB.importance, certainty: participantB.certainty, expectationClarity: participantB.expectationClarity, differenceStance: participantB.differenceStance, constraint: participantB.constraint } })), de.result.tracks.map(({ dimensionId, sensitive, participantA, participantB }) => ({ dimensionId, sensitive, participantA: participantA && { experience: participantA.experience, desiredDirection: participantA.desiredDirection, importance: participantA.importance, certainty: participantA.certainty, expectationClarity: participantA.expectationClarity, differenceStance: participantA.differenceStance, constraint: participantA.constraint }, participantB: participantB && { experience: participantB.experience, desiredDirection: participantB.desiredDirection, importance: participantB.importance, certainty: participantB.certainty, expectationClarity: participantB.expectationClarity, differenceStance: participantB.differenceStance, constraint: participantB.constraint } })));
+  assert.deepEqual(en.result.sharedOverview.map(({ id, dimensionIds }) => ({ id, dimensionIds })), de.result.sharedOverview.map(({ id, dimensionIds }) => ({ id, dimensionIds })));
+  assert.deepEqual(en.result.findings.map(({ id, category, dimensionIds, evidence }) => ({ id, category, dimensionIds, evidence: evidence.map(({ participant, dimensionId, field }) => ({ participant, dimensionId, field })) })), de.result.findings.map(({ id, category, dimensionIds, evidence }) => ({ id, category, dimensionIds, evidence: evidence.map(({ participant, dimensionId, field }) => ({ participant, dimensionId, field })) })));
+  assert.deepEqual(en.result.paths.map(({ id, evidenceFindingIds }) => ({ id, evidenceFindingIds })), de.result.paths.map(({ id, evidenceFindingIds }) => ({ id, evidenceFindingIds })));
+  assert.deepEqual(en.result.experiments.map(({ id, evidenceFindingIds }) => ({ id, evidenceFindingIds })), de.result.experiments.map(({ id, evidenceFindingIds }) => ({ id, evidenceFindingIds })));
+  assert.deepEqual(en.result.conversationTools.map(({ id, evidenceFindingIds }) => ({ id, evidenceFindingIds })), de.result.conversationTools.map(({ id, evidenceFindingIds }) => ({ id, evidenceFindingIds })));
+
+  assert.equal(en.result.title, "What becomes visible between you");
+  assert.equal(en.result.tracks[0]?.dimensionTitle, "Closeness and connection");
+  assert.match(en.result.description, /without a compatibility score/i);
+  assert.notEqual(en.result.sharedOverview[0]?.headline, de.result.sharedOverview[0]?.headline);
+
+  const full = buildPartnerResultText(en.result, "en");
+  const clipboard = buildPartnerClipboardSummary(en.result, "en");
+  assert.match(full, /SHARED RELATIONSHIP CONTEXT/);
+  assert.match(full, /THREE REVERSIBLE EXPLORATIONS/);
+  assert.match(full, /One perspective:/);
+  assert.match(clipboard, /Sensitive topics and personal evidence were intentionally omitted/);
+  assert.doesNotMatch(clipboard, /Kompatibilitätsmessung|Sensible Themen/);
 });

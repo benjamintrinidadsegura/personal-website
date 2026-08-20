@@ -6,6 +6,8 @@ import { useRef } from "react";
 import { useDiscovery } from "@/components/discovery/discovery-context";
 import { DiscoveryExplanation } from "@/components/discovery/discovery-explanation";
 import { DiscoveryNavigationStatus, isUnmodifiedPrimaryClick } from "@/components/discovery/discovery-results";
+import { useLocale } from "@/components/i18n/locale-context";
+import { getDiscoveryUiCopy } from "@/data/i18n/discovery";
 import type { DiscoveryMatch, DiscoveryStatus } from "@/types/discovery";
 
 interface StatusStyles {
@@ -48,14 +50,18 @@ interface NavigationHandoffProps {
 }
 
 function StatusBadge({ status }: { status: DiscoveryStatus }) {
+  const locale = useLocale();
+  const copy = getDiscoveryUiCopy(locale);
   return (
     <span className={`rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider ${statusStyles[status].badge}`}>
-      {status}
+      {copy.statuses[status]}
     </span>
   );
 }
 
 function TopMatch({ match, beginNavigation, settleNavigation }: { match: DiscoveryMatch } & NavigationHandoffProps) {
+  const locale = useLocale();
+  const copy = getDiscoveryUiCopy(locale);
   const { item } = match;
   const styles = statusStyles[item.status];
   const handoffIdRef = useRef<number | null>(null);
@@ -63,22 +69,22 @@ function TopMatch({ match, beginNavigation, settleNavigation }: { match: Discove
   const content = (
     <>
       <div className="flex flex-wrap items-center gap-3">
-        <span className="font-mono text-[10px] font-black uppercase tracking-[0.28em] text-[#35d0e5]">Top Match</span>
+        <span className="font-mono text-[10px] font-black uppercase tracking-[0.28em] text-[#35d0e5]">{copy.topMatch}</span>
         <StatusBadge status={item.status} />
       </div>
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-slate-500">{item.group} / {item.category}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-slate-500">{copy.groups[item.group]} / {item.category}</p>
           <h2 className="mt-3 max-w-4xl text-3xl font-black tracking-[-0.035em] text-white sm:text-5xl">{item.title}</h2>
           <p className="mt-5 max-w-3xl text-base leading-7 text-slate-300 sm:text-lg">{item.description}</p>
           <DiscoveryExplanation reasons={match.reasons} maxReasons={2} />
         </div>
         {item.href ? (
           <span className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#35d0e5]/35 px-5 py-2.5 font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[#73e3f1] transition-colors group-hover:border-[#35d0e5]/65 group-hover:bg-[#35d0e5]/10">
-            Detailseite öffnen →
+            {copy.openDetail} →
           </span>
         ) : (
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">Noch nicht verfügbar</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">{copy.unavailable}</span>
         )}
       </div>
     </>
@@ -89,7 +95,7 @@ function TopMatch({ match, beginNavigation, settleNavigation }: { match: Discove
       <Link
         href={item.href}
         data-top-match-id={item.id}
-        aria-label={`${item.title}, Top Match, ${item.status}`}
+        aria-label={`${item.title}, ${copy.topMatch}, ${copy.statuses[item.status]}`}
         onClick={(event) => {
           if (!isUnmodifiedPrimaryClick(event)) return;
           handoffIdRef.current = beginNavigation(item.href as string);
@@ -105,7 +111,7 @@ function TopMatch({ match, beginNavigation, settleNavigation }: { match: Discove
   return (
     <article
       data-top-match-id={item.id}
-      aria-label={`${item.title}, Top Match, ${item.status}`}
+      aria-label={`${item.title}, ${copy.topMatch}, ${copy.statuses[item.status]}`}
       className={layoutClasses}
     >
       {content}
@@ -114,6 +120,8 @@ function TopMatch({ match, beginNavigation, settleNavigation }: { match: Discove
 }
 
 function ResultCard({ match, beginNavigation, settleNavigation, featured = false }: { match: DiscoveryMatch; featured?: boolean } & NavigationHandoffProps) {
+  const locale = useLocale();
+  const copy = getDiscoveryUiCopy(locale);
   const { item } = match;
   const styles = statusStyles[item.status];
   const handoffIdRef = useRef<number | null>(null);
@@ -128,7 +136,7 @@ function ResultCard({ match, beginNavigation, settleNavigation, featured = false
       <p className={`mt-3 line-clamp-3 text-sm leading-6 text-slate-400 ${featured ? "xl:line-clamp-4 xl:max-w-2xl xl:text-base xl:leading-7" : ""}`}>{item.description}</p>
       <DiscoveryExplanation reasons={match.reasons} maxReasons={2} />
       <span className={`mt-auto pt-6 font-mono text-[10px] uppercase tracking-[0.18em] ${item.href ? "text-slate-300 group-hover:text-white group-focus-visible:text-white" : "text-slate-500"}`}>
-        {item.href ? "Ergebnis öffnen →" : "Noch nicht verfügbar"}
+        {item.href ? `${copy.openResult} →` : copy.unavailable}
       </span>
     </>
   );
@@ -163,25 +171,27 @@ function ResultCard({ match, beginNavigation, settleNavigation, featured = false
 }
 
 export function ContextDiscoveryView() {
+  const locale = useLocale();
+  const copy = getDiscoveryUiCopy(locale);
   const { query, matches, adaptiveView, navigationPending, beginCanvasNavigation, settleCanvasNavigation } = useDiscovery();
 
   return (
     <div data-navigation-pending={navigationPending || undefined} className="mx-auto w-full max-w-[90rem] px-5 py-10 sm:px-8 sm:py-14">
       <div className="flex flex-col gap-4 border-l border-[#35d0e5]/40 pl-5 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
         <div>
-          <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-[#35d0e5]">Context Canvas / Discovery View</p>
+          <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-[#35d0e5]">{copy.contextCanvas}</p>
           <h1 id="context-discovery-title" className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">
-            Dein aktueller Kontext: <span className="text-[#73e3f1]">„{query.trim()}“</span>
+            {copy.currentContext(query.trim())}
           </h1>
         </div>
-        <p className="max-w-md text-sm leading-6 text-slate-400">Die Oberfläche reagiert auf dein Signal – ruhig, kuratiert und auf Basis der bestehenden Discovery.</p>
+        <p className="max-w-md text-sm leading-6 text-slate-400">{copy.canvasDescription}</p>
       </div>
 
       {matches.length === 0 ? (
         <div className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.025] px-6 py-9 sm:px-9" role="status">
-          <p className="font-mono text-[10px] font-black uppercase tracking-[0.25em] text-[#ff9a3d]">Noch kein passendes Signal</p>
-          <h2 className="mt-3 text-2xl font-black text-white">Für „{query.trim()}“ ist aktuell nichts Passendes kuratiert.</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">Versuche einen Begriff aus Projekten, Insights, Tools, Menschen oder Seiten. Dein Suchbegriff bleibt dabei vollständig unter deiner Kontrolle.</p>
+          <p className="font-mono text-[10px] font-black uppercase tracking-[0.25em] text-[#ff9a3d]">{copy.noSignal}</p>
+          <h2 className="mt-3 text-2xl font-black text-white">{copy.noCurated(query.trim())}</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">{copy.noCuratedHelp}</p>
         </div>
       ) : (
         <div className="mt-10">
@@ -203,9 +213,9 @@ export function ContextDiscoveryView() {
                 return (
                   <section key={group} aria-labelledby={`context-group-${group.toLocaleLowerCase("en-US")}`}>
                     <div className="mb-6 flex items-center justify-between gap-4">
-                      <h2 id={`context-group-${group.toLocaleLowerCase("en-US")}`} className="font-mono text-lg font-black uppercase tracking-[0.12em] text-white sm:text-xl">{group}</h2>
+                      <h2 id={`context-group-${group.toLocaleLowerCase("en-US")}`} className="font-mono text-lg font-black uppercase tracking-[0.12em] text-white sm:text-xl">{copy.groups[group]}</h2>
                       <span className="shrink-0 rounded-full border border-white/15 bg-white/[0.035] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-slate-300 sm:text-xs">
-                        {totalResults} Treffer
+                        {copy.count(totalResults)}
                       </span>
                     </div>
                     <div className={`grid gap-4 sm:grid-cols-2 ${gridColumns}`}>
@@ -220,7 +230,7 @@ export function ContextDiscoveryView() {
                       ))}
                     </div>
                     {remainingCount > 0 && (
-                      <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">+ {remainingCount} weitere Treffer</p>
+                      <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">{copy.moreCount(remainingCount)}</p>
                     )}
                   </section>
                 );

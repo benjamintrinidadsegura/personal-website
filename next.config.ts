@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+import { defaultLocale, locales } from "./lib/i18n/config";
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -29,6 +31,13 @@ const nextConfig: NextConfig = {
         { key: "Referrer-Policy", value: "no-referrer" },
       ],
     },
+    ...locales.filter((locale) => locale !== defaultLocale).map((locale) => ({
+      source: `/${locale}/newsletter/:path*`,
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+      ],
+    })),
   ],
 };
 
