@@ -278,7 +278,7 @@ test("public navigation keeps Projects and robust Pulse and EchoWall links", () 
   assert.equal(header.includes('href: "#pulse"'), false);
 });
 
-test("application hardening config sets only the approved global headers and body limit", () => {
+test("application hardening config sets approved global headers, production HSTS, and body limit", () => {
   const config = readFileSync(
     new URL("../next.config.ts", import.meta.url),
     "utf8",
@@ -291,13 +291,14 @@ test("application hardening config sets only the approved global headers and bod
     'value: "camera=(), microphone=(), geolocation=()"',
     'key: "x-frame-options", value: "deny"',
     'key: "content-security-policy", value: "frame-ancestors \'none\';"',
+    'key: "strict-transport-security", value: "max-age=31536000"',
+    'process.env.node_env === "production"',
     'bodysizelimit: "192kb"',
     'source: "/:path*"',
   ]) {
     assert.equal(lower.includes(required), true, required);
   }
 
-  assert.equal(lower.includes("strict-transport-security"), false);
   assert.equal(lower.includes("script-src"), false);
   assert.equal(lower.includes("style-src"), false);
   assert.equal(lower.includes("img-src"), false);
@@ -311,7 +312,7 @@ test("application hardening config sets only the approved global headers and bod
   assert.equal(permissions?.[1]?.includes("*"), false);
 });
 
-test("robots metadata route is canonical-production-only and blocks all admin routes", () => {
+test("robots metadata route is canonical-production-only and excludes private routes", () => {
   const robots = readFileSync(
     new URL("../app/robots.ts", import.meta.url),
     "utf8",
@@ -323,7 +324,9 @@ test("robots metadata route is canonical-production-only and blocks all admin ro
     "process.env.site_url",
     'url.protocol !== "https:"',
     "url.hostname !== siteconfig.domain",
-    'disallow: "/admin"',
+    '"/admin"',
+    '"/account"',
+    '"/api"',
     'disallow: "/"',
     'new url("/sitemap.xml", siteurl)',
     "robots.txt ist kein zugriffsschutz",
@@ -386,9 +389,12 @@ test("robots and sitemap fail closed and expose only canonical production routes
     const productionRules = Array.isArray(productionRobots.rules)
       ? productionRobots.rules
       : [productionRobots.rules];
-    assert.equal(productionRules.some(
-      (rule) => rule.allow === "/" && rule.disallow === "/admin",
-    ), true);
+    assert.equal(productionRules.some((rule) => {
+      const disallow = Array.isArray(rule.disallow) ? rule.disallow : [rule.disallow];
+      return rule.allow === "/"
+        && ["/admin", "/account", "/api", "/newsletter/confirm", "/newsletter/unsubscribe"]
+          .every((route) => disallow.includes(route));
+    }), true);
     assert.equal(typeof productionRobots.host, "string");
     assert.equal(typeof productionRobots.sitemap, "string");
 
@@ -400,8 +406,10 @@ test("robots and sitemap fail closed and expose only canonical production routes
       "/writing",
       "/newsletter",
       "/privacy",
+      "/impressum",
       "/about",
       "/people",
+      "/world",
       "/life-alignment",
       "/life-alignment/self",
       "/life-alignment/partner",

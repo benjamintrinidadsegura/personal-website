@@ -32,33 +32,46 @@ export default async function SpotlightPage({ params }: SpotlightPageProps) {
   const copy = getPeopleCopy(locale);
   const related = getLocalizedRelatedSpotlights(spotlight, locale);
   const canonical = `https://bts.online${getLocalizedPathname(`/people/${spotlight.slug}`, locale)}`;
+  const personEntityId = `https://bts.online/people/${spotlight.slug}#person`;
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "ProfilePage",
-        "@id": canonical,
+        "@id": `${canonical}#profile`,
         url: canonical,
         name: spotlight.seo.title,
         description: spotlight.seo.description,
         datePublished: spotlight.publishedAt,
         inLanguage: locale,
-        mainEntity: {
-          "@type": "Person",
-          name: spotlight.fullName,
-          alternateName: spotlight.displayName !== spotlight.fullName ? spotlight.displayName : undefined,
-          jobTitle: spotlight.role,
-          knowsAbout: spotlight.expertise,
-        },
+        mainEntity: { "@id": personEntityId },
+      },
+      {
+        "@type": "Person",
+        "@id": personEntityId,
+        name: spotlight.fullName,
+        alternateName: spotlight.displayName !== spotlight.fullName ? spotlight.displayName : undefined,
+        jobTitle: spotlight.role,
+        knowsAbout: spotlight.expertise,
       },
       spotlight.video && {
         "@type": "VideoObject",
+        "@id": `https://bts.online/people/${spotlight.slug}#video`,
         name: spotlight.video.title,
         description: sourceSpotlight?.teaser ?? spotlight.teaser,
         uploadDate: spotlight.publishedAt,
         embedUrl: `https://www.youtube-nocookie.com/embed/${spotlight.video.youtubeId}`,
         contentUrl: spotlight.video.url,
         inLanguage: spotlight.language,
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${canonical}#breadcrumb`,
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Digital HQ", item: "https://bts.online/" },
+          { "@type": "ListItem", position: 2, name: "People", item: `https://bts.online${getLocalizedPathname("/people", locale)}` },
+          { "@type": "ListItem", position: 3, name: spotlight.fullName, item: canonical },
+        ],
       },
     ].filter(Boolean),
   };

@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-
 import { useLocale } from "@/components/i18n/locale-context";
 import { getErrorDictionary } from "@/data/i18n/errors";
 
-export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const locale = useLocale();
   const copy = getErrorDictionary(locale);
-  useEffect(() => { console.error(error); }, [error]);
   return (
     <section className="flex min-h-[70svh] items-center px-5 pb-20 pt-32 sm:px-8" aria-labelledby="error-title">
       <div className="mx-auto w-full max-w-4xl border-l-2 border-[#ff9a3d] pl-7 sm:pl-10">

@@ -1,6 +1,6 @@
 # EchoWall: Betrieb und Production Readiness
 
-Stand: 22. Juli 2026  
+Stand: 22. August 2026
 Status: verbindliches Betriebshandbuch für den aktuellen EchoWall-Umfang  
 Geltung: bts.online, EchoWall und die zugehörige Adminmoderation
 
@@ -93,10 +93,9 @@ EchoWall besteht aus folgenden Schichten:
 
 ### Noch nicht als Produktionsbetrieb nachgewiesen
 
-- separates Supabase-Produktionsprojekt
 - produktive Dashboard- und Sessioneinstellungen
 - produktives Hosting und Reverse-Proxy-Verhalten
-- Provider-Backup und vollständiger Restore
+- live ausgeführter vollständiger Restore (das sichere V1-Verfahren ist dokumentiert)
 - Secret-Rotation unter Produktionsbedingungen
 - Lost-MFA- und Admin-Offboarding-Drill
 - strukturierte Betriebslogs und Alarmierung
@@ -238,7 +237,7 @@ juristisch geprüft**.
 | Auditereignis | Status- und Sicherheitsnachweis | intern | AAL2-Admin | 12 Monate | nach Frist löschen/pseudonymisieren | bis Backupablauf enthalten | Frist offen |
 | Actor-UUID | interne Actor-Zuordnung | intern | DB; nicht normale Monitoringlogs | wie Auditereignis | später pseudonymisieren | bis Backupablauf enthalten | offen |
 | Authdaten | Adminaccount und Sessions | Supabase Auth | Auth-Admin | bis Accountende plus Providerfristen | kontrollierter Auth-Prozess | providerabhängig | Dashboard-Check |
-| Backups | Disaster Recovery | Provider-intern | Projektverantwortliche | bestätigtes Tarif- und Backupfenster | regulärer Ablauf | verlängert tatsächliche Löschung | offen |
+| Backups | Disaster Recovery | verschlüsselte private Ablage außerhalb von Git und öffentlichem Webroot | Restore Owner Benjamin Trinidad Segura | wöchentlich bei aktiven Writes sowie vor risikoreichen Änderungen | nach bestätigtem internem Löschzyklus | kann physische Löschung bis zum Ablauf verzögern | V1-Verfahren dokumentiert |
 
 ## 10. Retentionmodell
 
@@ -252,7 +251,7 @@ Jede Frist in diesem Abschnitt ist ein **Produktvorschlag – nicht juristisch g
 - private Kontakte: nach Zweckfortfall, spätestens nach 90 Tagen
 - Rate-Limit- und Duplicate-Daten: 48 Stunden
 - Auditlog und Moderationsgründe: 12 Monate
-- Backups: gemäß bestätigtem Tarif und Backupfenster
+- Backups: gemäß dem manuellen V1-Verfahren in `docs/v1-backup-recovery.md`; keine automatische Free-Plan- oder PITR-Garantie
 
 > **Wichtiger Ist-Stand:** `retention_until` und `expires_at` löschen derzeit
 > nichts. Es existiert kein automatischer Purge. Bis zur gesonderten technischen
@@ -298,16 +297,19 @@ RPO und RTO sind betriebliche Zielwerte, keine bestätigten Providerzusagen.
 | einzelner Echo versehentlich gelöscht | 0 | 15 Minuten | Archive öffnen, `deleted -> hidden`, nicht öffentliche Sichtbarkeit prüfen, bewusst neu freigeben | keiner | EchoWall-Admin | AAL2 und Archive intakt | **ja** |
 | Admin versehentlich deaktiviert | 0 | 30 Minuten | Auth-Nutzer und Allowlist prüfen, sicher reaktivieren, Sessions und MFA prüfen | keiner | Projektverantwortliche | sicherer Projektzugang | nein |
 | fehlerhafte Migration | Stand vor Migration | 2 Stunden | Writes stoppen, Historie/Schema prüfen, Folgemigration oder bestätigten Restoreweg nutzen | Änderungen seit Restorepunkt | DB-Verantwortliche | Dry Run und Backup | nein |
-| Datenbank beschädigt | höchstens 24 Stunden; bei PITR kleiner | 4 Stunden | Provider-Restore, Migrationen und Rechte abgleichen, Smoke-Test | tarifabhängig | Projektverantwortliche | bestätigtes Backup/PITR | nein |
+| Datenbank beschädigt | höchstens 7 Tage bei aktiven V1-Writes; vor Änderungen Stand des Pre-Change-Backups | 1 Arbeitstag | letztes verifiziertes logisches Backup ausschließlich in isoliertes Ziel wiederherstellen, Migrationen/Rechte abgleichen, Smoke-Test, erst danach bewusster Trafficwechsel | Änderungen seit letztem Backup | Restore Owner Benjamin Trinidad Segura | verschlüsselte logische Sicherung und isoliertes Ziel | Verfahren verifiziert; live nein |
 | Secret kompromittiert | 0 Datenverlust | 1 Stunde Eindämmung | Key rotieren, Hosting aktualisieren, deployen, alten Wert widerrufen, Logs prüfen | mögliche Exposition | Projektverantwortliche | Zugriff auf Hosting und Supabase | nein |
 | öffentliche Seite ausgefallen | nicht anwendbar | 1 Stunde | Hosting- und DB-Status prüfen, letzte stabile Version wiederherstellen | keine DB-Daten | Betreiber | Repository und Konfiguration verfügbar | nein |
 | Supabase-Ausfall | providerabhängig | providerabhängig | riskante Writes stoppen, Status prüfen, nach Recovery Integrität testen | providerabhängig | Supabase/Betreiber | Status- und Eskalationsweg | nein |
 | Hosting-Ausfall | 0 DB-Daten | 1–4 Stunden | kontrolliert neu deployen oder Wiederherstellungsziel verwenden | keine DB-Daten | Betreiber | Code und Environments gesichert | nein |
 | kompromittierter Admin | Zeitpunkt der Erkennung | 1 Stunde Eindämmung | deaktivieren, Sessions widerrufen, Audit und öffentliche Inhalte prüfen | mögliche unbefugte Moderation | Projektverantwortliche | unabhängiger Projektzugang | nein |
 
-Provider-Backup und vollständiger Provider-Restore sind **nicht real getestet**. Vor
-Production müssen Tarif, Backupfenster und Restoreverantwortung bestätigt sowie ein
-Restore-Drill terminiert werden.
+Beide aktuellen Supabase-Projekte sind laut Betreiber-Dashboard Free-Projekte in
+AWS `eu-central-1` (Frankfurt, EU). Der Free-Tarif enthält keine automatischen
+Datenbankbackups und kein PITR. Der proportionate manuelle Sicherungs- und isolierte
+Restoreablauf, die Verantwortung und Eskalationskriterien stehen verbindlich in
+`docs/v1-backup-recovery.md`. Das Verfahren wurde dokumentarisch und statisch
+verifiziert; ein Live-Restore wurde bewusst nicht ausgeführt.
 
 ## 13. Loggingregeln
 
@@ -378,8 +380,10 @@ Kontrollrhythmus verwendet. Es wird keine externe Monitoringplattform vorausgese
 - veralteter PostgREST-Schemacache
 - überfällige Retention-Daten
 
-Bis ein Alarmkanal eingerichtet ist, ist die Kontrolle manuell. Monitoringkontakt,
-Incidentkontakt und Reaktionszeiten sind offene Entscheidungen.
+Bis ein Alarmkanal eingerichtet ist, ist die Kontrolle manuell. Monitoring- und
+Incidentkontakt sowie aktueller operativer Owner ist Benjamin Trinidad Segura.
+Automatisierte Alarmierung bleibt ein SHOULD/LATER-Ausbau; die in Abschnitt 23
+festgelegten Kontrollrhythmen gelten für V1.
 
 ## 15. Incident-Response-Runbooks
 
@@ -586,8 +590,8 @@ Bei einem Cachefehler nach erfolgreicher RPC:
 
 ## 21. Produktionskonfiguration Supabase
 
-- [ ] **Offene Entscheidung:** separates Produktionsprojekt anlegen.
-- [ ] **Dashboard-Check:** Region ist bewusst gewählt.
+- [x] **Human-Check:** separates Produktionsprojekt ist vorhanden.
+- [x] **Human-Check:** DEV und Production nutzen AWS `eu-central-1` (Frankfurt, EU).
 - [ ] **Dashboard-Check:** Site URL ist korrekt.
 - [ ] **Dashboard-Check:** Redirect URLs sind minimal.
 - [ ] **Dashboard-Check:** Signup ist deaktiviert.
@@ -595,8 +599,8 @@ Bei einem Cachefehler nach erfolgreicher RPC:
 - [ ] **Dashboard-Check:** Faktorlimit ist festgelegt.
 - [ ] **Dashboard-Check:** Sessionregeln sind dokumentiert.
 - [ ] **Dashboard-Check:** Auth- und MFA-Rate-Limits sind geprüft.
-- [ ] **Dashboard-Check:** Backupplan und reales Backupfenster sind bestätigt.
-- [ ] **Dashboard-Check:** PITR-Verfügbarkeit und Bedarf sind entschieden.
+- [x] **V1-Entscheidung:** manueller logischer Backupplan und RPO sind in `docs/v1-backup-recovery.md` dokumentiert.
+- [x] **V1-Entscheidung:** Free enthält kein PITR; PITR ist für den aktuellen persönlichen V1-Umfang nicht erforderlich und wird bei wachsender Kritikalität neu bewertet.
 - [ ] **Dashboard-Check:** Logs und Aufbewahrung sind geprüft.
 - [ ] **Dashboard-Check:** Datenbankressourcen sind ausreichend.
 - [ ] **Dashboard-Check:** Pooling und Direct Connection sind je Zweck dokumentiert.
@@ -607,7 +611,7 @@ Tarif- und providerabhängige Punkte gelten erst nach realer Dashboardprüfung a
 
 ## 22. Launch-Checkliste
 
-- [ ] separates Production-Supabase-Projekt vorhanden
+- [x] separates Production-Supabase-Projekt vorhanden (Human-Dashboardnachweis)
 - [ ] Production- und Preview-Secrets getrennt
 - [ ] Signup deaktiviert
 - [ ] Admin-E-Mail bestätigt
@@ -618,8 +622,8 @@ Tarif- und providerabhängige Punkte gelten erst nach realer Dashboardprüfung a
 - [ ] Lost-MFA-Runbook geprüft
 - [ ] Auth-Site-URL und Redirect URLs korrekt
 - [ ] Sessionregeln dokumentiert
-- [ ] Backupplan und Backupfenster bestätigt
-- [ ] Provider-Restore-Drill terminiert
+- [x] manueller V1-Backupplan, Free-Limit und Backupfenster dokumentiert
+- [x] sicherer isolierter Restore-Drill dokumentiert; Live-Ausführung bewusst ausstehend
 - [ ] Retentionentscheidung dokumentiert
 - [ ] manueller Cleanup-Prozess definiert
 - [ ] Löschanfragenprozess definiert
@@ -628,8 +632,8 @@ Tarif- und providerabhängige Punkte gelten erst nach realer Dashboardprüfung a
 - [ ] Security Header geprüft
 - [ ] `robots.txt` geprüft
 - [ ] Sitemap ohne Adminrouten geprüft
-- [ ] Monitoringkontakt festgelegt
-- [ ] Incidentkontakt festgelegt
+- [x] Monitoringkontakt festgelegt: Benjamin Trinidad Segura
+- [x] Incidentkontakt festgelegt: Benjamin Trinidad Segura
 - [ ] Secret-Rotation dokumentiert
 - [ ] lokale und entfernte Migrationen konsistent
 - [ ] RLS- und RPC-Rechte im Produktionsprojekt real geprüft
@@ -693,10 +697,6 @@ Produkt benötigt eine eigene Retention-, Recovery- und Auditentscheidung.
 
 - [ ] tatsächliche Produktionsdomain
 - [ ] Hostinganbieter
-- [ ] separates Supabase-Produktionsprojekt
-- [ ] Supabase-Tarif
-- [ ] Backupfenster
-- [ ] PITR
 - [ ] JWT-Laufzeit
 - [ ] Inactivity Timeout
 - [ ] Time-boxed Session
@@ -704,9 +704,9 @@ Produkt benötigt eine eigene Retention-, Recovery- und Auditentscheidung.
 - [ ] finale Retention-Fristen – **Produktvorschlag – nicht juristisch geprüft**
 - [ ] Audit-Aufbewahrung – **Produktvorschlag – nicht juristisch geprüft**
 - [ ] Permanent-Purge-Modell – **Produktvorschlag – nicht juristisch geprüft**
-- [ ] Monitoringkontakt
-- [ ] Incidentkontakt
-- [ ] verantwortliche Person für Restore
+- [x] Supabase-Produktionsprojekt, Free-Tarif und Region durch Human-Dashboardnachweis bestätigt
+- [x] V1-Backupfenster und fehlendes Free-PITR dokumentiert
+- [x] Monitoring-, Incident- und Restore Owner: Benjamin Trinidad Segura
 - [ ] verantwortliche Person für manuellen Cleanup
 - [ ] Produktionsstartdatum
 

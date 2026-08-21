@@ -19,7 +19,7 @@ const de = {
     provider: "Brevo ist als E-Mail-Auftragsverarbeiter vorgesehen. Bestätigte Abonnentinnen und Abonnenten erhalten neue Texte und gelegentliche Updates aus dem Digital HQ ohne festen Zeitplan. Jede Ausgabe enthält einen Abmeldeweg. Die Newsletter-Einwilligung ist vom BTS Account getrennt.",
     retention: "Unbestätigte, ausstehende Anmeldungen sollen nach sieben Tagen bereinigt werden. Die endgültigen Aufbewahrungsfristen für Einwilligungsnachweise und Sperrdatensätze müssen vor Aktivierung der Datenerhebung dokumentiert werden. Newsletter V1 enthält kein Öffnungs- oder Klicktracking.",
     disabledTitle: "Die Newsletter-Erfassung ist nicht aktiviert.",
-    disabledBody: "Die erforderliche Anschrift der verantwortlichen Stelle und die abschließenden rechtlichen Angaben sind nicht konfiguriert. Das Anmeldeformular bleibt bis dahin nicht verfügbar.",
+    disabledBody: "Die verantwortliche Stelle ist veröffentlicht. Die Newsletter-Erfassung bleibt dennoch geschlossen, bis alle gesonderten Provider-, Versand- und Laufzeit-Gates vollständig konfiguriert sind.",
   },
 } as const;
 
@@ -45,7 +45,7 @@ const en: PrivacyDictionary = {
     provider: "Brevo is the intended email processor. Confirmed subscribers receive new writing and occasional Digital HQ updates, with no fixed schedule. Every edition provides an unsubscribe route. Newsletter consent is separate from BTS Account.",
     retention: "Unconfirmed pending subscriptions are scheduled for cleanup after seven days. Final retention periods for consent evidence and suppression records must be documented before collection is enabled. Newsletter V1 includes no open or click tracking.",
     disabledTitle: "Newsletter collection is not enabled.",
-    disabledBody: "The required controller address and final legal particulars have not been configured. The subscription form remains unavailable until they are supplied.",
+    disabledBody: "The controller is published. Newsletter collection nevertheless stays closed until its separate provider, delivery and runtime gates are fully configured.",
   },
 };
 

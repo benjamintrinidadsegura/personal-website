@@ -51,24 +51,33 @@ export default async function AboutPage() {
   const ratecomProject = projectEvidence.find(({ name }) => name === "RateCom");
   const canonicalPath = getLocalizedPathname("/about", locale);
   const canonical = `https://bts.online${canonicalPath}`;
+  const personEntityId = "https://bts.online/about#benjamin";
+  const brandEntityId = "https://bts.online/#goatrecrutainer";
   const profileJsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "ProfilePage", "@id": `${canonical}#profile`, url: canonical,
         name: copy.title, description: copy.description, inLanguage: locale,
-        mainEntity: { "@id": `${canonical}#benjamin` },
+        mainEntity: { "@id": personEntityId },
         relatedLink: [goatProject?.externalUrl, ratecomProject?.externalUrl, ...["/people", "/writing", "/find-your-next-step", "/life-alignment"].map((path) => `https://bts.online${getLocalizedPathname(path, locale)}`)].filter(Boolean),
       },
       {
-        "@type": "Person", "@id": `${canonical}#benjamin`, name: positioning.name, url: canonical,
+        "@type": "Person", "@id": personEntityId, name: positioning.name, url: "https://bts.online/about",
         description: positioning.explanation, sameAs: personProfiles.map(({ url }) => url),
         knowsAbout: [...positioning.fields], subjectOf: ownerStories.map((story) => ({
           "@type": "VideoObject", name: story.video.title, url: story.video.url,
           uploadDate: story.publishedAt, inLanguage: story.sourceLanguage,
         })),
       },
-      { "@type": "Brand", "@id": `${canonical}#goatrecrutainer`, name: "GOATRECRUTAINER", url: goatProject?.externalUrl, sameAs: goatProfiles.map(({ url }) => url) },
+      { "@type": "Brand", "@id": brandEntityId, name: "GOATRECRUTAINER", url: goatProject?.externalUrl, sameAs: goatProfiles.map(({ url }) => url) },
+      {
+        "@type": "BreadcrumbList", "@id": `${canonical}#breadcrumb`,
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Digital HQ", item: "https://bts.online/" },
+          { "@type": "ListItem", position: 2, name: copy.breadcrumb, item: canonical },
+        ],
+      },
     ],
   };
   return (

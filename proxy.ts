@@ -9,17 +9,19 @@ import {
   legacyAdminCookieOptions,
   rootAuthCookieOptions,
 } from "@/lib/supabase/auth-cookies";
-import { defaultLocale, localeHeaderName } from "@/lib/i18n/config";
+import { defaultLocale, isLocale, localeHeaderName } from "@/lib/i18n/config";
 import { getRequestLocaleRouting, isLocaleAwarePublicPath } from "@/lib/i18n/routing";
 
 type CookieItem = { name: string; value: string; options: CookieOptions };
+type LocaleRouting = ReturnType<typeof getRequestLocaleRouting>;
+const internalLocaleHeaderName = "x-bts-internal-rewrite-locale";
 
-function createResponse(request: NextRequest) {
-  const routing = getRequestLocaleRouting(request.nextUrl.pathname);
+function createResponse(request: NextRequest, routing: LocaleRouting, shouldRewrite: boolean) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(localeHeaderName, routing.locale);
-  const canRewrite = routing.locale !== defaultLocale && isLocaleAwarePublicPath(routing.internalPathname);
-  const response = canRewrite
+  if (shouldRewrite) requestHeaders.set(internalLocaleHeaderName, routing.locale);
+  else requestHeaders.delete(internalLocaleHeaderName);
+  const response = shouldRewrite
     ? NextResponse.rewrite(new URL(`${routing.internalPathname}${request.nextUrl.search}`, request.url), { request: { headers: requestHeaders } })
     : NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Language", routing.locale);
@@ -31,7 +33,18 @@ function applyResponseHeaders(response: NextResponse, headers: Record<string, st
 }
 
 export async function proxy(request: NextRequest) {
-  const localeRouting = getRequestLocaleRouting(request.nextUrl.pathname);
+  const pathnameRouting = getRequestLocaleRouting(request.nextUrl.pathname);
+  const propagatedLocale = request.headers.get(internalLocaleHeaderName);
+  const isInternalLocaleRewrite = pathnameRouting.locale === defaultLocale
+    && isLocale(propagatedLocale)
+    && isLocaleAwarePublicPath(pathnameRouting.internalPathname);
+  const localeRouting = isInternalLocaleRewrite
+    ? { ...pathnameRouting, locale: propagatedLocale }
+    : pathnameRouting;
+  const shouldRewrite = !isInternalLocaleRewrite
+    && pathnameRouting.locale !== defaultLocale
+    && isLocaleAwarePublicPath(pathnameRouting.internalPathname);
+  const securityPathname = localeRouting.internalPathname;
   if (localeRouting.canonicalRedirect) {
     const destination = request.nextUrl.clone();
     destination.pathname = localeRouting.canonicalRedirect;
@@ -42,15 +55,15 @@ export async function proxy(request: NextRequest) {
 
   const url = process.env.SUPABASE_URL;
   const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !publishableKey) return createResponse(request);
+  if (!url || !publishableKey) return createResponse(request, localeRouting, shouldRewrite);
 
   const initialRootCookieNames = request.cookies.getAll()
     .filter(({ name }) => isSupabaseAuthCookie(name, accountAuthStorageKey))
     .map(({ name }) => name);
-  let response = createResponse(request);
+  let response = createResponse(request, localeRouting, shouldRewrite);
   const setCookies = (items: CookieItem[], responseHeaders: Record<string, string>) => {
     for (const { name, value } of items) request.cookies.set(name, value);
-    response = createResponse(request);
+    response = createResponse(request, localeRouting, shouldRewrite);
     for (const { name, value, options } of items) {
       response.cookies.set(name, value, { ...options, ...rootAuthCookieOptions });
     }
@@ -68,10 +81,10 @@ export async function proxy(request: NextRequest) {
     ? request.cookies.getAll().filter(({ name }) => isSupabaseAuthCookie(name, legacyStorageKey))
     : [];
 
-  if (!data.user && request.nextUrl.pathname.startsWith("/admin") && legacyStorageKey && legacyCookies.length > 0) {
+  if (!data.user && securityPathname.startsWith("/admin") && legacyStorageKey && legacyCookies.length > 0) {
     const setLegacyCookies = (items: CookieItem[], responseHeaders: Record<string, string>) => {
       for (const { name, value } of items) request.cookies.set(name, value);
-      response = createResponse(request);
+      response = createResponse(request, localeRouting, shouldRewrite);
       for (const { name, value, options } of items) {
         response.cookies.set(name, value, { ...options, ...legacyAdminCookieOptions });
       }
@@ -93,7 +106,7 @@ export async function proxy(request: NextRequest) {
         migratedRootNames.add(rootName);
         request.cookies.set(rootName, cookie.value);
       }
-      response = createResponse(request);
+      response = createResponse(request, localeRouting, shouldRewrite);
       for (const cookie of refreshedLegacyCookies) {
         const suffix = cookie.name.slice(legacyStorageKey.length);
         response.cookies.set(`${accountAuthStorageKey}${suffix}`, cookie.value, rootAuthCookieOptions);
@@ -108,7 +121,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (request.nextUrl.pathname.startsWith("/admin") && legacyStorageKey) {
+  if (securityPathname.startsWith("/admin") && legacyStorageKey) {
     const cookiesToClear = request.cookies.getAll()
       .filter(({ name }) => isSupabaseAuthCookie(name, legacyStorageKey));
     for (const { name } of cookiesToClear) {
@@ -117,8 +130,8 @@ export async function proxy(request: NextRequest) {
   }
 
   if (
-    request.nextUrl.pathname.startsWith("/admin")
-    && request.nextUrl.pathname !== "/admin/login"
+    securityPathname.startsWith("/admin")
+    && securityPathname !== "/admin/login"
     && !data.user
   ) {
     const redirectResponse = NextResponse.redirect(new URL("/account/login", request.url));

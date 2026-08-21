@@ -3,8 +3,7 @@ import type { SocialLink } from "@/types/content";
 export const siteConfig = {
   name: "Benjamin Trinidad Segura",
   domain: "bts.online",
-  // TODO: Vor Veröffentlichung mit Benjamin bestätigen.
-  email: "hello@bts.online",
+  email: "goatrecrutainer@gmail.com",
   socialLinks: [
     { label: "TikTok", url: "https://www.tiktok.com/@goatrecrutainer", context: "GOATRECRUTAINER" },
     { label: "Instagram", url: "https://www.instagram.com/goatrecrutainer", context: "GOATRECRUTAINER" },

@@ -50,9 +50,38 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
   const sourceDiffers = article.language !== locale;
   const translationSlug = getWritingTranslationSlug(article.slug, locale);
   const taxonomy = writingTaxonomies[locale];
+  const canonicalUrl = `https://bts.online${getLocalizedPathname(`/writing/${article.slug}`, article.language)}`;
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        "@id": `${canonicalUrl}#article`,
+        mainEntityOfPage: canonicalUrl,
+        headline: article.title,
+        description: article.excerpt,
+        datePublished: article.publishedAt,
+        inLanguage: article.language,
+        author: { "@id": "https://bts.online/about#benjamin" },
+        isPartOf: { "@id": "https://bts.online/#website" },
+        articleSection: article.contentType,
+        keywords: article.topics,
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${canonicalUrl}#breadcrumb`,
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Digital HQ", item: "https://bts.online/" },
+          { "@type": "ListItem", position: 2, name: "Writing", item: `https://bts.online${getLocalizedPathname("/writing", article.language)}` },
+          { "@type": "ListItem", position: 3, name: article.title, item: canonicalUrl },
+        ],
+      },
+    ],
+  };
 
   return (
     <article className="relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</gu, "\\u003c") }} />
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[58rem] bg-[radial-gradient(circle_at_72%_15%,rgba(53,208,229,0.16),transparent_30rem),radial-gradient(circle_at_18%_42%,rgba(255,122,0,0.07),transparent_22rem)]" />
       <div className="relative mx-auto max-w-[90rem]">
         <nav aria-label={copy.breadcrumb} className="font-mono text-xs text-slate-400"><ol className="flex flex-wrap items-center gap-2"><li><Link href={localizeHref("/", locale)} className="inline-flex min-h-11 items-center hover:text-white">Digital HQ</Link></li><li aria-hidden="true">/</li><li><Link href={localizeHref("/writing", locale)} className="inline-flex min-h-11 items-center hover:text-white">Writing</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="max-w-full truncate text-[#35d0e5]" lang={sourceDiffers ? article.language : undefined}>{article.title}</li></ol></nav>

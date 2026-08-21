@@ -29,7 +29,7 @@ const de = {
     contact: "Kontakt",
   },
   account: { login: "Einloggen", logout: "Ausloggen", verifyStudio: "Für BTS Studio verifizieren", editArticle: "Artikel bearbeiten", echoWallModeration: "EchoWall moderieren" },
-  footer: { owner: "Das Digital HQ von Benjamin Trinidad Segura", signal: "Geschichten. Karrieren. Communities.", contact: "Kontakt & Social", privacy: "Datenschutz", evolving: "Immer in Bewegung" },
+  footer: { owner: "Das Digital HQ von Benjamin Trinidad Segura", signal: "Geschichten. Karrieren. Communities.", contact: "Kontakt & Social", privacy: "Datenschutz", imprint: "Impressum", evolving: "Immer in Bewegung" },
 } as const;
 
 type WidenStrings<T> = {
@@ -71,7 +71,7 @@ const en: GlobalDictionary = {
     contact: "Contact",
   },
   account: { login: "Log in", logout: "Log out", verifyStudio: "Verify to access BTS Studio", editArticle: "Edit this article", echoWallModeration: "Moderate EchoWall" },
-  footer: { owner: "Benjamin Trinidad Segura’s Digital HQ", signal: "Stories. Careers. Communities.", contact: "Contact & Social", privacy: "Privacy", evolving: "Always evolving" },
+  footer: { owner: "Benjamin Trinidad Segura’s Digital HQ", signal: "Stories. Careers. Communities.", contact: "Contact & Social", privacy: "Privacy", imprint: "Legal notice", evolving: "Always evolving" },
 };
 
 const es: GlobalDictionary = {
@@ -81,7 +81,7 @@ const es: GlobalDictionary = {
   languageNavigation: "Elegir idioma", switchTo: "Cambiar idioma a", accountMenuOpen: "Abrir menú de cuenta", footerNavigation: "Navegación del pie",
   nav: { home: "Inicio", about: "Sobre mí", projects: "Proyectos", allProjects: "Todos los proyectos", insights: "Perspectivas", pulse: "Pulse", writing: "Writing", people: "Personas / Entrevistas", worldMap: "Mapa mundial", tools: "Herramientas", partners: "Colaboraciones", contact: "Contacto" },
   account: { login: "Iniciar sesión", logout: "Cerrar sesión", verifyStudio: "Verificar acceso a BTS Studio", editArticle: "Editar este artículo", echoWallModeration: "Moderar EchoWall" },
-  footer: { owner: "El Digital HQ de Benjamin Trinidad Segura", signal: "Historias. Trayectorias. Comunidades.", contact: "Contacto y redes", privacy: "Privacidad", evolving: "Siempre en evolución" },
+  footer: { owner: "El Digital HQ de Benjamin Trinidad Segura", signal: "Historias. Trayectorias. Comunidades.", contact: "Contacto y redes", privacy: "Privacidad", imprint: "Aviso legal", evolving: "Siempre en evolución" },
 };
 
 const tr: GlobalDictionary = {
@@ -91,7 +91,7 @@ const tr: GlobalDictionary = {
   languageNavigation: "Dil seç", switchTo: "Dili şuna değiştir", accountMenuOpen: "Hesap menüsünü aç", footerNavigation: "Alt bilgi gezinmesi",
   nav: { home: "Ana sayfa", about: "Hakkımda", projects: "Projeler", allProjects: "Tüm projeler", insights: "İçgörüler", pulse: "Pulse", writing: "Yazılar", people: "İnsanlar / Röportajlar", worldMap: "Dünya Haritası", tools: "Araçlar", partners: "İş ortakları", contact: "İletişim" },
   account: { login: "Giriş yap", logout: "Çıkış yap", verifyStudio: "BTS Studio erişimini doğrula", editArticle: "Bu yazıyı düzenle", echoWallModeration: "EchoWall moderasyonu" },
-  footer: { owner: "Benjamin Trinidad Segura’nın Digital HQ’su", signal: "Hikâyeler. Kariyerler. Topluluklar.", contact: "İletişim ve sosyal medya", privacy: "Gizlilik", evolving: "Sürekli gelişiyor" },
+  footer: { owner: "Benjamin Trinidad Segura’nın Digital HQ’su", signal: "Hikâyeler. Kariyerler. Topluluklar.", contact: "İletişim ve sosyal medya", privacy: "Gizlilik", imprint: "Yasal bildirim", evolving: "Sürekli gelişiyor" },
 };
 
 const pl: GlobalDictionary = {
@@ -101,7 +101,7 @@ const pl: GlobalDictionary = {
   languageNavigation: "Wybierz język", switchTo: "Zmień język na", accountMenuOpen: "Otwórz menu konta", footerNavigation: "Nawigacja w stopce",
   nav: { home: "Strona główna", about: "O mnie", projects: "Projekty", allProjects: "Wszystkie projekty", insights: "Perspektywy", pulse: "Pulse", writing: "Teksty", people: "Ludzie / Wywiady", worldMap: "Mapa świata", tools: "Narzędzia", partners: "Partnerzy", contact: "Kontakt" },
   account: { login: "Zaloguj się", logout: "Wyloguj się", verifyStudio: "Potwierdź dostęp do BTS Studio", editArticle: "Edytuj ten artykuł", echoWallModeration: "Moderacja EchoWall" },
-  footer: { owner: "Digital HQ Benjamina Trinidada Segury", signal: "Historie. Kariery. Społeczności.", contact: "Kontakt i social media", privacy: "Prywatność", evolving: "W ciągłym rozwoju" },
+  footer: { owner: "Digital HQ Benjamina Trinidada Segury", signal: "Historie. Kariery. Społeczności.", contact: "Kontakt i social media", privacy: "Prywatność", imprint: "Nota prawna", evolving: "W ciągłym rozwoju" },
 };
 
 const el: GlobalDictionary = {
@@ -111,7 +111,7 @@ const el: GlobalDictionary = {
   languageNavigation: "Επιλογή γλώσσας", switchTo: "Αλλαγή γλώσσας σε", accountMenuOpen: "Άνοιγμα μενού λογαριασμού", footerNavigation: "Πλοήγηση υποσέλιδου",
   nav: { home: "Αρχική", about: "Σχετικά", projects: "Έργα", allProjects: "Όλα τα έργα", insights: "Οπτικές", pulse: "Pulse", writing: "Κείμενα", people: "Άνθρωποι / Συνεντεύξεις", worldMap: "Παγκόσμιος χάρτης", tools: "Εργαλεία", partners: "Συνεργασίες", contact: "Επικοινωνία" },
   account: { login: "Σύνδεση", logout: "Αποσύνδεση", verifyStudio: "Επαλήθευση πρόσβασης στο BTS Studio", editArticle: "Επεξεργασία άρθρου", echoWallModeration: "Διαχείριση EchoWall" },
-  footer: { owner: "Το Digital HQ του Benjamin Trinidad Segura", signal: "Ιστορίες. Σταδιοδρομίες. Κοινότητες.", contact: "Επικοινωνία και κοινωνικά δίκτυα", privacy: "Απόρρητο", evolving: "Σε συνεχή εξέλιξη" },
+  footer: { owner: "Το Digital HQ του Benjamin Trinidad Segura", signal: "Ιστορίες. Σταδιοδρομίες. Κοινότητες.", contact: "Επικοινωνία και κοινωνικά δίκτυα", privacy: "Απόρρητο", imprint: "Νομικές πληροφορίες", evolving: "Σε συνεχή εξέλιξη" },
 };
 
 const ru: GlobalDictionary = {
@@ -121,7 +121,7 @@ const ru: GlobalDictionary = {
   languageNavigation: "Выбрать язык", switchTo: "Сменить язык на", accountMenuOpen: "Открыть меню аккаунта", footerNavigation: "Навигация в подвале",
   nav: { home: "Главная", about: "Обо мне", projects: "Проекты", allProjects: "Все проекты", insights: "Перспективы", pulse: "Pulse", writing: "Тексты", people: "Люди / Интервью", worldMap: "Карта мира", tools: "Инструменты", partners: "Партнёры", contact: "Контакты" },
   account: { login: "Войти", logout: "Выйти", verifyStudio: "Подтвердить доступ к BTS Studio", editArticle: "Редактировать статью", echoWallModeration: "Модерация EchoWall" },
-  footer: { owner: "Digital HQ Benjamin Trinidad Segura", signal: "Истории. Карьеры. Сообщества.", contact: "Контакты и соцсети", privacy: "Конфиденциальность", evolving: "Постоянно развивается" },
+  footer: { owner: "Digital HQ Benjamin Trinidad Segura", signal: "Истории. Карьеры. Сообщества.", contact: "Контакты и соцсети", privacy: "Конфиденциальность", imprint: "Правовая информация", evolving: "Постоянно развивается" },
 };
 
 export const globalDictionaries = { de, en, es, tr, pl, el, ru } as const satisfies Record<Locale, GlobalDictionary>;

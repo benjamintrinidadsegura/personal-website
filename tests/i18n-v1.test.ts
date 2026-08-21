@@ -80,8 +80,10 @@ test("locale request routing is deterministic and rejects unsafe switch targets"
 test("proxy locale handling overwrites spoofable state and never rewrites prefixed internal paths", () => {
   const proxy = readFileSync(new URL("../proxy.ts", import.meta.url), "utf8");
   assert.match(proxy, /requestHeaders\.set\(localeHeaderName, routing\.locale\)/u);
-  assert.match(proxy, /isLocaleAwarePublicPath\(routing\.internalPathname\)/u);
-  assert.match(proxy, /routing\.locale !== defaultLocale/u);
+  assert.match(proxy, /isLocaleAwarePublicPath\(pathnameRouting\.internalPathname\)/u);
+  assert.match(proxy, /pathnameRouting\.locale !== defaultLocale/u);
+  assert.match(proxy, /x-bts-internal-rewrite-locale/u);
+  assert.match(proxy, /securityPathname = localeRouting\.internalPathname/u);
   assert.match(proxy, /destination = request\.nextUrl\.clone\(\)/u);
   assert.match(proxy, /destination\.pathname = localeRouting\.canonicalRedirect/u);
 });

@@ -46,6 +46,7 @@ export function createSitemap(publishedWriting: PublicWritingSummary[]): Metadat
     "/writing",
     "/newsletter",
     "/privacy",
+    "/impressum",
     "/about",
     "/people",
     "/world",

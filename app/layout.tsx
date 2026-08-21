@@ -10,7 +10,7 @@ import { getAccountState } from "@/lib/account/state";
 import { getPublishedWriting } from "@/lib/writing/queries";
 import { getLocale } from "@/lib/i18n/server";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
-import { localeDetails } from "@/lib/i18n/config";
+import { localeDetails, locales } from "@/lib/i18n/config";
 import { getGlobalDictionary } from "@/data/i18n/global";
 import "./globals.css";
 
@@ -41,11 +41,22 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     ...createPublishedWritingDiscoveryItems(publishedWriting),
     ...createHqPulseDiscoveryItems(resolvedPulseItems),
   ];
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": "https://bts.online/#website",
+    url: "https://bts.online/",
+    name: "bts.online Digital HQ",
+    description: getGlobalDictionary(locale).siteDescription,
+    inLanguage: locales.map((candidate) => localeDetails[candidate].htmlLang),
+    publisher: { "@id": "https://bts.online/about#benjamin" },
+  };
   return (
     <html lang={localeDetails[locale].htmlLang} data-scroll-behavior="smooth">
       <body className="min-h-full">
         <NavigationFeedback />
         <LocaleProvider locale={locale}>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</gu, "\\u003c") }} />
           <a className="skip-link" href="#main-content">
             {getGlobalDictionary(locale).skipLink}
           </a>
