@@ -41,6 +41,7 @@ export function Header({ accountState }: { accountState: AccountState }) {
         { id: "pulse", label: copy.nav.pulse, href: localizedHref("/#pulse") },
         { id: "writing", label: copy.nav.writing, href: localizedHref("/writing") },
         { id: "people", label: copy.nav.people, href: localizedHref("/people") },
+        { id: "world-map", label: copy.nav.worldMap, href: localizedHref("/world") },
       ],
     },
     {

@@ -28,6 +28,7 @@ const knownStaticRoutes = new Set([
   "/find-your-next-step/idea",
   "/people",
   "/about",
+  "/world",
   "/people/evgeny-vinokurov",
   "/people/kiki-radicke",
   "/people/johanna-geisler",

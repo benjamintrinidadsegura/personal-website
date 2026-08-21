@@ -48,6 +48,7 @@ export function createSitemap(publishedWriting: PublicWritingSummary[]): Metadat
     "/privacy",
     "/about",
     "/people",
+    "/world",
     lifeAlignment.href,
     ...availableLifeAlignmentModules.map(({ href }) => href),
     findYourNextStep.href,

@@ -104,6 +104,11 @@ export const discoveryDimensionsByItemId: Readonly<Record<string, DiscoveryDimen
     goals: ["Orientierung finden", "Inspiration finden"],
     useCases: ["Karriereweg verstehen", "Wendepunkte kennenlernen"],
   },
+  "page-world-map": {
+    intent: ["Öffentliche Beziehungen auf einer Karte entdecken", "Menschen und Orte im Digital HQ erkunden"],
+    goals: ["Veröffentlichten Kontext geografisch verstehen", "Gespräche und Beziehungen entdecken"],
+    useCases: ["World Map öffnen", "Interviews nach Ort erkunden"],
+  },
   "project-byc": {
     intent: ["Community gründen", "Community organisieren", "Idee umsetzen"],
     goals: ["Eigene Community aufbauen", "Community weiterentwickeln"],

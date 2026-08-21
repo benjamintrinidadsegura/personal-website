@@ -1,6 +1,7 @@
 import { getLocalizedProjects } from "@/data/i18n/projects";
 import { getLocalizedPublishedSpotlights } from "@/data/i18n/people";
 import { localizeHqPulseItem } from "@/data/i18n/hq-pulse";
+import { getWorldMapDictionary } from "@/data/i18n/world-map";
 import { guidedDiscoveryPrompts } from "@/data/discovery-curation";
 import { projects } from "@/data/projects";
 import type { Locale } from "@/lib/i18n/config";
@@ -239,6 +240,19 @@ export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: 
   const localizedProjectCopy = projectCopyById(locale);
   return items.map((item) => {
     let localized: DiscoveryItem = { ...item, ...(staticCopyByLocale[locale][item.id] ?? localizedProjectCopy.get(item.id)) };
+    if (item.id === "page-world-map") {
+      const mapCopy = getWorldMapDictionary(locale);
+      const terms: Record<Locale, { tags: string[]; keywords: string[] }> = {
+        de: { tags: ["Menschen", "Kontext", "Karte"], keywords: ["Weltkarte", "Orte", "Interviews", "Beziehungen", "Entdeckung"] },
+        en: { tags: ["People", "Context", "Map"], keywords: ["world map", "places", "interviews", "relationships", "discovery"] },
+        es: { tags: ["Personas", "Contexto", "Mapa"], keywords: ["mapa mundial", "lugares", "entrevistas", "relaciones", "descubrimiento"] },
+        tr: { tags: ["İnsanlar", "Bağlam", "Harita"], keywords: ["dünya haritası", "yerler", "röportajlar", "ilişkiler", "keşif"] },
+        pl: { tags: ["Ludzie", "Kontekst", "Mapa"], keywords: ["mapa świata", "miejsca", "wywiady", "relacje", "odkrywanie"] },
+        el: { tags: ["Άνθρωποι", "Πλαίσιο", "Χάρτης"], keywords: ["παγκόσμιος χάρτης", "τόποι", "συνεντεύξεις", "σχέσεις", "ανακάλυψη"] },
+        ru: { tags: ["Люди", "Контекст", "Карта"], keywords: ["карта мира", "места", "интервью", "связи", "открытие"] },
+      };
+      localized = { ...localized, title: mapCopy.breadcrumb, description: mapCopy.metadata.description, tags: terms[locale].tags, keywords: terms[locale].keywords };
+    }
     const person = people.get(item.id);
     if (person) localized = { ...localized, title: person.fullName, description: person.teaser, category: person.format, tags: [person.professionalContext, ...person.discovery.tags], keywords: [person.displayName, ...person.discovery.keywords, interviewKeyword[locale]] };
     if (item.id.startsWith("pulse-")) {
