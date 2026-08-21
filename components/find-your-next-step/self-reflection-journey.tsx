@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useReducer, useRef } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 import {
   getSelfReflectionIntro,
@@ -17,6 +18,16 @@ import {
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { HumanContextReflection } from "@/components/find-your-next-step/human-context-reflection";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
+import { FynsResultFigure } from "@/components/find-your-next-step/result-figure";
+import {
+  fynsCharacterConstellationCopy,
+  getFynsCharacterArtwork,
+} from "@/data/find-your-next-step-characters";
+import {
+  defaultFynsFigureRepresentation,
+  getFynsResultFigureCopy,
+} from "@/data/find-your-next-step-figures";
+import type { FynsFigureRepresentation } from "@/data/find-your-next-step-figures";
 import {
   FynsResultRecovery,
   FynsResultSupplementFallback,
@@ -27,6 +38,8 @@ import { buildSelfHandbook } from "@/lib/find-your-next-step-self-handbook";
 import type { SelfHandbook } from "@/lib/find-your-next-step-self-handbook";
 import { buildSelfProfileIdentity } from "@/lib/find-your-next-step-self-profile";
 import type { SelfProfileIdentityResult } from "@/lib/find-your-next-step-self-profile";
+import { buildSelfCharacterConstellation } from "@/lib/find-your-next-step-constellation";
+import type { FynsCharacterConstellation } from "@/lib/find-your-next-step-constellation";
 import {
   buildSelfResultText,
   buildSelfShareText,
@@ -184,11 +197,37 @@ function TensionCard({ tension }: { tension: SelfReflectionTensionResult }) {
   );
 }
 
-function SelfPrintDocument({ result }: { result: SelfReflectionResult }) {
+export function SelfPrintDocument({
+  result,
+  constellation,
+  representation,
+}: {
+  result: SelfReflectionResult;
+  constellation: FynsCharacterConstellation | null;
+  representation: FynsFigureRepresentation;
+}) {
   const locale = useLocale();
   const ui = selfUi[locale];
+  const constellationCopy = fynsCharacterConstellationCopy[locale];
+  const figureCopy = getFynsResultFigureCopy(locale);
+  const visibleCharacters = constellation
+    ? [constellation.dominant, ...constellation.supporting]
+    : [];
+  const applicationItems = constellation ? [
+    [constellationCopy.environments, constellation.application.environments],
+    [constellationCopy.energy, constellation.application.energy],
+    [constellationCopy.friction, constellation.application.friction],
+    [constellationCopy.needs, constellation.application.needs],
+    [constellationCopy.reflection, constellation.application.reflection],
+    [constellationCopy.experiment, constellation.application.experiment],
+  ].filter((item): item is [string, string] => Boolean(item[1])) : [];
+
   return (
-    <article className="fyns-print-document hidden" data-fyns-print-document="self">
+    <article
+      className="fyns-print-document hidden"
+      data-fyns-print-document="self"
+      data-fyns-print-representation={representation}
+    >
       <header className="fyns-print-header">
         <p className="fyns-print-brand">bts.online / FYNS / Self</p>
         <h1>{result.title}</h1>
@@ -198,6 +237,90 @@ function SelfPrintDocument({ result }: { result: SelfReflectionResult }) {
         </section>
         <p className="fyns-print-description">{result.description}</p>
       </header>
+
+      {constellation ? (
+        <section className="fyns-print-constellation" aria-labelledby="self-print-constellation-title">
+          <div className="fyns-print-constellation-heading">
+            <p className="fyns-print-label">{constellationCopy.eyebrow}</p>
+            <h2 id="self-print-constellation-title">{constellationCopy.synthesis}</h2>
+            <p>{constellationCopy.currentFacet(constellation.dominant.name)}</p>
+            <p className="fyns-print-note">
+              {figureCopy.legend}: {figureCopy.options[representation]}
+            </p>
+          </div>
+
+          <div className="fyns-print-character-stage" aria-label={constellationCopy.eyebrow}>
+            {visibleCharacters.map((character, index) => {
+              const role = index === 0 ? "dominant" : "supporting";
+              return (
+                <article
+                  key={character.id}
+                  className={`fyns-print-character fyns-print-character-${role}`}
+                  data-fyns-print-character={character.id}
+                  data-fyns-print-character-role={role}
+                >
+                  <Image
+                    src={getFynsCharacterArtwork(character.id, representation)}
+                    alt={`${character.name} — ${character.subtitle}`}
+                    width={125}
+                    height={188}
+                    loading="eager"
+                    unoptimized
+                    className="fyns-print-character-image"
+                  />
+                  <div className="fyns-print-character-copy">
+                    <p className="fyns-print-label">
+                      {role === "dominant" ? constellationCopy.dominant : constellationCopy.supporting}
+                    </p>
+                    <h3>{character.name}</h3>
+                    <p>{character.subtitle}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="fyns-print-stack">
+            <article className="fyns-print-block">
+              <h3>{constellationCopy.synthesis}</h3>
+              <p>{constellation.synthesis}</p>
+            </article>
+
+            {constellation.combination ? (
+              <article className="fyns-print-block">
+                <p className="fyns-print-label">{constellationCopy.combination}</p>
+                <h3>{constellation.combination.title}</h3>
+                <p>{constellation.combination.interpretation}</p>
+                <p className="fyns-print-note">
+                  {constellationCopy.possibility}: {constellation.combination.possibility}
+                </p>
+              </article>
+            ) : null}
+
+            {constellation.tensions.slice(0, 2).map((tension) => (
+              <article key={tension.id} className="fyns-print-block">
+                <p className="fyns-print-label">{constellationCopy.tensions}</p>
+                <h3>{tension.title}</h3>
+                <p>{constellationCopy.tensionFrame(tension.text)}</p>
+              </article>
+            ))}
+
+            {applicationItems.length > 0 ? (
+              <article className="fyns-print-block">
+                <h3>{constellationCopy.application}</h3>
+                <dl className="fyns-print-application">
+                  {applicationItems.map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </article>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {result.sections
         .filter((section) => section.statements.length > 0)
@@ -220,7 +343,7 @@ function SelfPrintDocument({ result }: { result: SelfReflectionResult }) {
           </section>
         ))}
 
-      {result.tensions.length > 0 ? (
+      {!constellation && result.tensions.length > 0 ? (
         <section className="fyns-print-section" aria-labelledby="self-print-tensions-title">
           <h2 id="self-print-tensions-title">{ui.tensions}</h2>
           <div className="fyns-print-stack">
@@ -243,6 +366,7 @@ function ResultView({
   result,
   handbook,
   profileIdentity,
+  constellation,
   dispatch,
   headingRef,
   restartPending,
@@ -250,6 +374,7 @@ function ResultView({
   result: SelfReflectionResult;
   handbook: SelfHandbook | null;
   profileIdentity: SelfProfileIdentityResult | null;
+  constellation: FynsCharacterConstellation | null;
   dispatch: React.Dispatch<Parameters<typeof selfReflectionJourneyReducer>[1]>;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
   restartPending: boolean;
@@ -259,32 +384,24 @@ function ResultView({
   const selfReflectionSections = getSelfReflectionSections(locale);
   const copyText = buildSelfResultText(result, locale);
   const shareText = buildSelfShareText(result, locale);
+  const [representation, setRepresentation] = useState<FynsFigureRepresentation>(defaultFynsFigureRepresentation);
 
   return (
     <>
     <section aria-labelledby="self-result-title" className="py-16 sm:py-24" data-fyns-screen-result>
-      <div className="grid gap-8 border-b border-white/15 pb-14 lg:grid-cols-[1fr_0.72fr] lg:items-end">
-        <div>
-          <p className="font-mono text-xs font-black uppercase tracking-[0.25em] text-[#35d0e5]">{ui.reflection}</p>
-          <h2
-            ref={headingRef}
-            tabIndex={-1}
-            style={{ outline: "none" }}
-            id="self-result-title"
-            className="mt-6 max-w-4xl text-[clamp(2.5rem,7vw,5.8rem)] font-black leading-[0.92] tracking-[-0.05em] text-white outline-none"
-          >
-            {result.title}
-          </h2>
-          <div className="mt-7 max-w-3xl space-y-3 text-lg font-bold leading-8 text-slate-200 sm:text-xl sm:leading-9">
-            {result.summary.map((sentence, index) => (
-              <p key={`${index}-${sentence}`}>{sentence}</p>
-            ))}
-          </div>
-        </div>
-        <p className="border-l border-[#35d0e5] pl-7 text-base leading-7 text-slate-300 sm:pl-9">
-          {result.description}
-        </p>
-      </div>
+      <FynsResultFigure
+        journey="self"
+        accent="#35d0e5"
+        headingId="self-result-title"
+        headingRef={headingRef}
+        title={result.title}
+        description={result.description}
+        summary={result.summary}
+        semanticIds={result.sections.flatMap((section) => section.statements.map((statement) => statement.id)).slice(0, 3)}
+        constellation={constellation}
+        representation={representation}
+        onRepresentationChange={setRepresentation}
+      />
 
       <HumanContextReflection accent="#35d0e5" titleId="self-human-context-title" />
 
@@ -395,7 +512,7 @@ function ResultView({
         )}
       </div>
     </section>
-    <SelfPrintDocument result={result} />
+    <SelfPrintDocument result={result} constellation={constellation} representation={representation} />
     </>
   );
 }
@@ -421,6 +538,16 @@ export function SelfReflectionJourney() {
       ? safelyBuildSelfProfile(state.answers, resultState.result, locale)
       : null,
   [locale, resultState, state.answers]);
+  const constellation = useMemo(() => resultState.status === "complete"
+    ? buildSelfCharacterConstellation({
+        answers: state.answers,
+        result: resultState.result,
+        profileIdentity,
+        handbook,
+        locale,
+      })
+    : null,
+  [handbook, locale, profileIdentity, resultState, state.answers]);
 
   useEffect(() => {
     if (initialRender.current) {
@@ -508,7 +635,7 @@ export function SelfReflectionJourney() {
         />
       );
     }
-    return <ResultView result={resultState.result} handbook={handbook} profileIdentity={profileIdentity} dispatch={dispatch} headingRef={headingRef} restartPending={state.restartPending} />;
+    return <ResultView result={resultState.result} handbook={handbook} profileIdentity={profileIdentity} constellation={constellation} dispatch={dispatch} headingRef={headingRef} restartPending={state.restartPending} />;
   }
 
   const selectedOptionIds = state.answers[question.id] ?? [];

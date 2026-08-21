@@ -47,6 +47,10 @@ function createCompleteAnswers(
 ): SelfReflectionAnswers {
   return Object.fromEntries(selfReflectionQuestions.map((question) => {
     if (overrides[question.id]) return [question.id, overrides[question.id]];
+    const exclusiveFallback = question.options.find(({ exclusive }) => exclusive);
+    if (exclusiveFallback && !question.options.some((option) => optionSupport(option, targets) > 0)) {
+      return [question.id, [exclusiveFallback.id]];
+    }
 
     const ranked = question.options
       .map((option, index) => ({ option, index, support: optionSupport(option, targets) }))
@@ -142,18 +146,18 @@ const sparseSelfImageSection: SelfReflectionResultSection = {
   }],
 };
 
-test("Self v1 defines exactly five sections and fifteen balanced interactions", () => {
+test("Self v1 defines exactly five sections and sixteen balanced interactions", () => {
   assert.deepEqual(validateSelfReflectionData(), []);
   assert.equal(selfReflectionSections.length, 5);
-  assert.equal(selfReflectionQuestions.length, 15);
-  assert.equal(new Set(selfReflectionQuestions.map(({ id }) => id)).size, 15);
+  assert.equal(selfReflectionQuestions.length, 16);
+  assert.equal(new Set(selfReflectionQuestions.map(({ id }) => id)).size, 16);
   assert.equal(
     new Set(selfReflectionQuestions.flatMap(({ options }) => options.map(({ id }) => id))).size,
     selfReflectionQuestions.flatMap(({ options }) => options).length,
   );
 
   for (const section of selfReflectionSections) {
-    assert.equal(selfReflectionQuestions.filter(({ sectionId }) => sectionId === section.id).length, 3, section.id);
+    assert.equal(selfReflectionQuestions.filter(({ sectionId }) => sectionId === section.id).length, section.id === "conditions" ? 4 : 3, section.id);
   }
 
   const coverage = selfReflectionDimensionOrder.map((dimension) =>
@@ -161,8 +165,9 @@ test("Self v1 defines exactly five sections and fifteen balanced interactions", 
       question.options.some((option) => option.signals?.some((signal) => signal.dimension === dimension)),
     ).length,
   );
-  assert.ok(Math.min(...coverage) >= 8);
-  assert.ok(Math.max(...coverage) - Math.min(...coverage) <= 3);
+  assert.ok(Math.min(...coverage.slice(0, 10)) >= 8);
+  assert.ok(Math.max(...coverage.slice(0, 10)) - Math.min(...coverage.slice(0, 10)) <= 3);
+  assert.deepEqual(coverage.slice(10), [3, 3, 3, 3, 3]);
 
   const dimensionIds = new Set(Object.keys(selfReflectionDimensions));
   assert.deepEqual(new Set(selfReflectionDimensionOrder), dimensionIds);
@@ -600,7 +605,7 @@ test("the journey dock exposes global, section, and local progress without gamif
 
   assert.equal(selfReflectionSections.length, 5);
   assert.equal(selfReflectionSections.every((section) =>
-    selfReflectionQuestions.filter(({ sectionId }) => sectionId === section.id).length === 3
+    selfReflectionQuestions.filter(({ sectionId }) => sectionId === section.id).length === (section.id === "conditions" ? 4 : 3)
   ), true);
   assert.match(dock, /locale: Locale/u);
   assert.equal(fynsDockCopy.de.question, "Frage");
@@ -651,9 +656,9 @@ test("Self global and local progress cross every section boundary and preserve o
     { questionIndex: 6, globalQuestionNumber: 7, sectionIndex: 2, questionInSection: 0 },
     { questionIndex: 8, globalQuestionNumber: 9, sectionIndex: 2, questionInSection: 2 },
     { questionIndex: 9, globalQuestionNumber: 10, sectionIndex: 3, questionInSection: 0 },
-    { questionIndex: 11, globalQuestionNumber: 12, sectionIndex: 3, questionInSection: 2 },
-    { questionIndex: 12, globalQuestionNumber: 13, sectionIndex: 4, questionInSection: 0 },
-    { questionIndex: 14, globalQuestionNumber: 15, sectionIndex: 4, questionInSection: 2 },
+    { questionIndex: 12, globalQuestionNumber: 13, sectionIndex: 3, questionInSection: 3 },
+    { questionIndex: 13, globalQuestionNumber: 14, sectionIndex: 4, questionInSection: 0 },
+    { questionIndex: 15, globalQuestionNumber: 16, sectionIndex: 4, questionInSection: 2 },
   ]) {
     const question = selfReflectionQuestions[checkpoint.questionIndex];
     const sectionIndex = selfReflectionSections.findIndex(({ id }) => id === question.sectionId);
@@ -664,7 +669,7 @@ test("Self global and local progress cross every section boundary and preserve o
     assert.equal(questionInSection, checkpoint.questionInSection);
     assert.equal(checkpoint.questionIndex + 1, checkpoint.globalQuestionNumber);
   }
-  assert.equal(selfReflectionQuestions.length, 15);
+  assert.equal(selfReflectionQuestions.length, 16);
 
   const completeAnswers = createCompleteAnswers(["agency", "orientation"]);
   let state = selfReflectionJourneyReducer(initialSelfReflectionState, { type: "start" });

@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
+import { FynsResultFigure } from "@/components/find-your-next-step/result-figure";
 import { getIdeaIntro, getIdeaQuestions, getIdeaSections } from "@/data/find-your-next-step-idea";
 import { ideaGeneratedCopy } from "@/data/find-your-next-step-idea-locales";
 import { useLocale } from "@/components/i18n/locale-context";
@@ -322,13 +323,15 @@ function ResultView({
   return (
     <section aria-labelledby="idea-result-title" className="py-16 sm:py-24" data-fyns-screen-result>
       <ResultPrintDocument result={result} />
-      <div className="max-w-4xl">
-        <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#77e5b5]">{ui.workingMap}</p>
-        <h2 ref={resultHeadingRef} tabIndex={-1} style={{ outline: "none" }} id="idea-result-title" className="mt-5 text-4xl font-black leading-tight text-white outline-none sm:text-6xl">
-          {result.title}
-        </h2>
-        <p className="mt-6 text-lg leading-8 text-slate-300">{result.description}</p>
-      </div>
+      <FynsResultFigure
+        journey="idea"
+        accent={IDEA_ACCENT}
+        headingId="idea-result-title"
+        headingRef={resultHeadingRef}
+        title={result.title}
+        description={result.description}
+        semanticIds={["idea-snapshot", "evidence-status", "learning-experiment"]}
+      />
 
       <section aria-labelledby="idea-snapshot-title" className="mt-14">
         <h3 id="idea-snapshot-title" className="text-3xl font-black text-white sm:text-5xl">{ui.snapshot}</h3>

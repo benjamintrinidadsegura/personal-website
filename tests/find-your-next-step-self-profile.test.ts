@@ -46,6 +46,10 @@ function createCompleteAnswers(
 ): SelfReflectionAnswers {
   return Object.fromEntries(selfReflectionQuestions.map((question) => {
     if (overrides[question.id]) return [question.id, overrides[question.id]];
+    const exclusiveFallback = question.options.find(({ exclusive }) => exclusive);
+    if (exclusiveFallback && !question.options.some((option) => optionSupport(option, targets) > 0)) {
+      return [question.id, [exclusiveFallback.id]];
+    }
     const ranked = question.options
       .map((option, index) => ({ option, index, support: optionSupport(option, targets) }))
       .filter(({ option }) => !option.exclusive)
@@ -94,6 +98,7 @@ const sparseAnswers: SelfReflectionAnswers = {
   "conditions-change": ["change-growth-purpose"],
   "conditions-habitat": ["habitat-connection", "habitat-recovery"],
   "conditions-combinations": ["combination-purpose-feedback"],
+  "conditions-facet-signals": ["facet-condition-open"],
   "self-view-strengths": ["strength-overview"],
   "self-view-context": ["context-open"],
   "self-view-synthesis": ["synthesis-reliability-variety"],
@@ -112,6 +117,7 @@ const broadMixedAnswers: SelfReflectionAnswers = {
   "conditions-change": ["change-agency-variety", "change-connection-feedback"],
   "conditions-habitat": ["habitat-recovery", "habitat-orientation", "habitat-variety"],
   "conditions-combinations": ["combination-depth-connection", "combination-reliability-variety"],
+  "conditions-facet-signals": ["facet-condition-open"],
   "self-view-strengths": ["strength-explore", "strength-connect", "strength-overview"],
   "self-view-context": ["context-open"],
   "self-view-synthesis": ["synthesis-purpose-feedback", "synthesis-orientation-agency"],
@@ -336,7 +342,7 @@ test("Profile evaluation leaves Self result, Handbook, exports, questions, and a
   assert.equal(buildSelfShareText(resultBefore.result), shareBefore);
   assert.equal(copyBefore.includes("Eigener Kurs"), false);
   assert.equal(shareBefore.includes("Eigener Kurs"), false);
-  assert.equal(selfReflectionQuestions.length, 15);
+  assert.equal(selfReflectionQuestions.length, 16);
 });
 
 test("Profile UI is screen-only, follows the required result position, and exposes semantic states", () => {

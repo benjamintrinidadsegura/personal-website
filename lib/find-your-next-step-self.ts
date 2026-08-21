@@ -192,7 +192,7 @@ function takeDistinctEvidence(
   return distinct;
 }
 
-function compareEvaluations(
+export function compareSelfReflectionEvaluations(
   left: SelfReflectionDimensionEvaluation,
   right: SelfReflectionDimensionEvaluation,
 ): number {
@@ -215,18 +215,23 @@ function compareEvaluations(
     - selfReflectionDimensionOrder.indexOf(right.dimension);
 }
 
+export function orderVisibleSelfReflectionEvaluations(
+  evaluations: readonly SelfReflectionDimensionEvaluation[],
+): readonly (SelfReflectionDimensionEvaluation & { visibility: SelfReflectionVisibility })[] {
+  return evaluations
+    .filter((evaluation): evaluation is SelfReflectionDimensionEvaluation & {
+      visibility: SelfReflectionVisibility;
+    } => evaluation.visibility !== null)
+    .sort(compareSelfReflectionEvaluations);
+}
+
 function buildVisibleDimensionSummary(
   evaluations: readonly SelfReflectionDimensionEvaluation[],
   locale: Locale,
 ): string {
   const copy = selfResultCopyByLocale[locale];
   const dimensions = getSelfReflectionDimensions(locale);
-  const visible = [...evaluations]
-    .filter((evaluation): evaluation is SelfReflectionDimensionEvaluation & {
-      visibility: SelfReflectionVisibility;
-    } => evaluation.visibility !== null)
-    .sort(compareEvaluations)
-    .slice(0, 2);
+  const visible = orderVisibleSelfReflectionEvaluations(evaluations).slice(0, 2);
 
   if (visible.length === 0) {
     return evaluations.some(({ contextual }) => contextual)
@@ -291,9 +296,7 @@ function buildDimensionSections(
 ): SelfReflectionResultSection[] {
   const dimensions = getSelfReflectionDimensions(locale);
   return getSelfReflectionResultSections(locale).flatMap((section) => {
-    const statements = [...evaluations]
-      .filter(({ visibility }) => visibility !== null)
-      .sort(compareEvaluations)
+    const statements = orderVisibleSelfReflectionEvaluations(evaluations)
       .flatMap((evaluation) => {
         const definition = dimensions[evaluation.dimension];
         const text = section.id === "selfImage" ? undefined : definition.copy[section.id];
@@ -562,11 +565,12 @@ export function validateSelfReflectionData(): string[] {
   const knownDimensions = new Set(selfReflectionDimensionOrder);
 
   if (selfReflectionSections.length !== 5) errors.push("Self Reflection must define exactly five sections.");
-  if (selfReflectionQuestions.length !== 15) errors.push("Self Reflection must define exactly fifteen questions.");
+  if (selfReflectionQuestions.length !== 16) errors.push("Self Reflection must define exactly sixteen questions.");
 
   for (const section of selfReflectionSections) {
     const questions = selfReflectionQuestions.filter(({ sectionId }) => sectionId === section.id);
-    if (questions.length !== 3) errors.push(`${section.id} must own exactly three questions.`);
+    const expectedQuestionCount = section.id === "conditions" ? 4 : 3;
+    if (questions.length !== expectedQuestionCount) errors.push(`${section.id} must own exactly ${expectedQuestionCount} questions.`);
     if (!section.title.trim() || !section.description.trim()) errors.push(`${section.id} contains empty copy.`);
   }
 

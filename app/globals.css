@@ -342,6 +342,92 @@ html[data-navigation-pending="true"] .navigation-feedback::before {
     color: #425466 !important;
   }
 
+  html[data-fyns-result-print] .fyns-print-constellation {
+    margin-top: 8mm;
+  }
+
+  html[data-fyns-result-print] .fyns-print-constellation-heading {
+    break-inside: avoid-page;
+  }
+
+  html[data-fyns-result-print] .fyns-print-constellation-heading h2,
+  html[data-fyns-result-print] .fyns-print-constellation-heading p:not(.fyns-print-label) {
+    margin-top: 2mm;
+  }
+
+  html[data-fyns-result-print] .fyns-print-character-stage {
+    display: flex;
+    align-items: flex-end;
+    gap: 3mm;
+    margin-top: 5mm;
+    padding: 4mm;
+    border: 1pt solid #cbd6de;
+    background: #eef5f7 !important;
+    break-inside: avoid-page;
+    print-color-adjust: exact;
+  }
+
+  html[data-fyns-result-print] .fyns-print-character {
+    min-width: 0;
+    overflow: hidden;
+    border: 0.75pt solid #aab6c1;
+    border-radius: 3mm;
+    background: #fff !important;
+    break-inside: avoid-page;
+  }
+
+  html[data-fyns-result-print] .fyns-print-character-dominant {
+    flex: 1.3 1 0;
+    border: 1.5pt solid var(--fyns-print-accent);
+  }
+
+  html[data-fyns-result-print] .fyns-print-character-supporting {
+    flex: 1 1 0;
+  }
+
+  html[data-fyns-result-print] .fyns-print-character-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 125 / 188;
+    object-fit: contain;
+    background: #f7f1e7 !important;
+  }
+
+  html[data-fyns-result-print] .fyns-print-character-copy {
+    padding: 2.5mm;
+  }
+
+  html[data-fyns-result-print] .fyns-print-character-copy h3 {
+    margin-top: 1mm;
+  }
+
+  html[data-fyns-result-print] .fyns-print-character-copy p:last-child {
+    margin-top: 1mm;
+    color: #425466 !important;
+    font-size: 8.5pt;
+  }
+
+  html[data-fyns-result-print] .fyns-print-application {
+    display: grid;
+    gap: 3mm;
+    margin: 3mm 0 0;
+  }
+
+  html[data-fyns-result-print] .fyns-print-application div {
+    break-inside: avoid-page;
+  }
+
+  html[data-fyns-result-print] .fyns-print-application dt {
+    color: var(--fyns-print-accent-text) !important;
+    font-size: 8.5pt;
+    font-weight: 800;
+  }
+
+  html[data-fyns-result-print] .fyns-print-application dd {
+    margin: 1mm 0 0;
+  }
+
   html[data-fyns-result-print] .fyns-print-section {
     margin-top: 9mm;
   }

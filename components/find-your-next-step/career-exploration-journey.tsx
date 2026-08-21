@@ -5,6 +5,7 @@ import { useEffect, useMemo, useReducer, useRef } from "react";
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { HumanContextReflection } from "@/components/find-your-next-step/human-context-reflection";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
+import { FynsResultFigure } from "@/components/find-your-next-step/result-figure";
 import { FynsResultRecovery } from "@/components/find-your-next-step/result-recovery";
 import { useLocale } from "@/components/i18n/locale-context";
 import { getCareerIntro, getCareerQuestions, getCareerSections } from "@/data/find-your-next-step-career";
@@ -413,24 +414,20 @@ function ResultView({
   return (
     <>
     <section aria-labelledby="career-result-title" className="py-16 sm:py-24" data-fyns-screen-result>
-      <div className="grid gap-8 border-b border-white/15 pb-14 lg:grid-cols-[1fr_0.72fr] lg:items-end">
-        <div>
-          <p className="font-mono text-xs font-black uppercase tracking-[0.25em] text-[#ffb36d]">{ui.orientation}</p>
-          <h2
-            ref={headingRef}
-            tabIndex={-1}
-            style={{ outline: "none" }}
-            id="career-result-title"
-            className="mt-6 max-w-4xl text-[clamp(2.8rem,8vw,6.5rem)] font-black leading-[0.9] tracking-[-0.055em] text-white outline-none"
-          >
-            {result.title}
-          </h2>
-          <div className="mt-7 max-w-3xl space-y-3 text-lg font-bold leading-8 text-slate-200 sm:text-xl sm:leading-9">
-            {result.summary.map((sentence, index) => <p key={`${index}-${sentence}`}>{sentence}</p>)}
-          </div>
-        </div>
-        <p className="border-l border-[#ff9a3d] pl-7 text-base leading-7 text-slate-300 sm:pl-9">{result.description}</p>
-      </div>
+      <FynsResultFigure
+        journey="career"
+        accent="#ff9a3d"
+        headingId="career-result-title"
+        headingRef={headingRef}
+        title={result.title}
+        description={result.description}
+        summary={result.summary}
+        semanticIds={[
+          ...result.primaryDirections.map(({ id }) => id),
+          ...result.additionalDirections.map(({ id }) => id),
+          `next-step-${result.nextStep.mode}`,
+        ].slice(0, 3)}
+      />
 
       <HumanContextReflection accent="#ff9a3d" titleId="career-human-context-title" />
 

@@ -19,7 +19,12 @@ export type SelfReflectionDimensionId =
   | "recovery"
   | "growth"
   | "purpose"
-  | "feedback";
+  | "feedback"
+  | "making"
+  | "care"
+  | "expression"
+  | "harmony"
+  | "effectiveness";
 
 export type SelfReflectionQuestionFormat = "single" | "multi" | "priority";
 

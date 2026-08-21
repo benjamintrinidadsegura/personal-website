@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n/config";
+
 export type FynsContextSceneKey = "overview" | "self" | "career" | "problem" | "idea";
 
 export interface FynsContextScene {
@@ -143,4 +145,108 @@ const sceneCopyByLocale: Record<Locale, FynsSceneCopy> = {
 export function getLocalizedFynsContextScene(key: FynsContextSceneKey, locale: Locale): FynsContextScene {
   return { ...fynsContextScenes[key], ...sceneCopyByLocale[locale][key] };
 }
-import type { Locale } from "@/lib/i18n/config";
+
+export const fynsFigureRepresentations = ["neutral", "masculine", "feminine"] as const;
+export type FynsFigureRepresentation = (typeof fynsFigureRepresentations)[number];
+export type FynsResultFigureJourney = Exclude<FynsContextSceneKey, "overview">;
+
+export const defaultFynsFigureRepresentation: FynsFigureRepresentation = "neutral";
+
+const resultFigureFocalPoints: Record<FynsResultFigureJourney, Record<FynsFigureRepresentation, string>> = {
+  self: { neutral: "64% 42%", masculine: "23% 52%", feminine: "84% 45%" },
+  career: { neutral: "61% 45%", masculine: "17% 50%", feminine: "84% 47%" },
+  problem: { neutral: "61% 42%", masculine: "18% 50%", feminine: "85% 48%" },
+  idea: { neutral: "61% 44%", masculine: "20% 50%", feminine: "84% 48%" },
+};
+
+export interface FynsResultFigureModel {
+  id: `fyns-result-figure-${FynsResultFigureJourney}-${FynsFigureRepresentation}`;
+  journey: FynsResultFigureJourney;
+  representation: FynsFigureRepresentation;
+  src: string;
+  objectPosition: string;
+  semanticIds: readonly string[];
+}
+
+export function createFynsResultFigureModel({
+  journey,
+  semanticIds,
+  representation = defaultFynsFigureRepresentation,
+}: {
+  journey: FynsResultFigureJourney;
+  semanticIds: readonly string[];
+  representation?: FynsFigureRepresentation;
+}): FynsResultFigureModel {
+  return {
+    id: `fyns-result-figure-${journey}-${representation}`,
+    journey,
+    representation,
+    src: fynsContextScenes[journey].src,
+    objectPosition: resultFigureFocalPoints[journey][representation],
+    semanticIds: [...new Set(semanticIds.filter(Boolean))].slice(0, 3),
+  };
+}
+
+type FynsResultFigureCopy = {
+  eyebrow: string;
+  legend: string;
+  explanation: string;
+  options: Record<FynsFigureRepresentation, string>;
+  visualLabel: (representation: string) => string;
+};
+
+const resultFigureCopy: Record<Locale, FynsResultFigureCopy> = {
+  de: {
+    eyebrow: "Deine aktuelle FYNS-Momentaufnahme",
+    legend: "Darstellung wählen",
+    explanation: "Nur eine visuelle Wahl. Sie verändert weder Ergebnis noch Empfehlungen und wird nicht gespeichert.",
+    options: { neutral: "Neutral / nicht-binär", masculine: "Maskulin", feminine: "Feminin" },
+    visualLabel: (representation) => `Visuelle Darstellung deiner aktuellen FYNS-Momentaufnahme: ${representation}.`,
+  },
+  en: {
+    eyebrow: "Your current FYNS snapshot",
+    legend: "Choose representation",
+    explanation: "A visual choice only. It changes neither your result nor recommendations and is not saved.",
+    options: { neutral: "Neutral / non-binary", masculine: "Masculine", feminine: "Feminine" },
+    visualLabel: (representation) => `${representation} visual representation of your current FYNS snapshot.`,
+  },
+  es: {
+    eyebrow: "Tu instantánea FYNS actual",
+    legend: "Elige la representación",
+    explanation: "Es solo una elección visual. No cambia tu resultado ni las recomendaciones y no se guarda.",
+    options: { neutral: "Neutral / no binaria", masculine: "Masculina", feminine: "Femenina" },
+    visualLabel: (representation) => `Representación visual de tu instantánea FYNS actual: ${representation}.`,
+  },
+  tr: {
+    eyebrow: "Güncel FYNS anlık görünümün",
+    legend: "Görsel temsili seç",
+    explanation: "Bu yalnızca görsel bir seçimdir. Sonucunu ya da önerileri değiştirmez ve kaydedilmez.",
+    options: { neutral: "Nötr / non-binary", masculine: "Maskülen", feminine: "Feminen" },
+    visualLabel: (representation) => `Güncel FYNS anlık görünümünün görsel temsili: ${representation}.`,
+  },
+  pl: {
+    eyebrow: "Twoja aktualna migawka FYNS",
+    legend: "Wybierz sposób przedstawienia postaci",
+    explanation: "To wyłącznie wybór wizualny. Nie zmienia wyniku ani rekomendacji i nie jest zapisywany.",
+    options: { neutral: "Neutralna / niebinarna", masculine: "Męska", feminine: "Kobieca" },
+    visualLabel: (representation) => `Wizualna reprezentacja Twojej aktualnej migawki FYNS: ${representation}.`,
+  },
+  el: {
+    eyebrow: "Η τρέχουσα στιγμιαία εικόνα FYNS σου",
+    legend: "Επίλεξε οπτική αναπαράσταση",
+    explanation: "Είναι μόνο μια οπτική επιλογή. Δεν αλλάζει το αποτέλεσμα ή τις προτάσεις και δεν αποθηκεύεται.",
+    options: { neutral: "Ουδέτερη / μη δυαδική", masculine: "Αρρενωπή", feminine: "Θηλυκή" },
+    visualLabel: (representation) => `Οπτική αναπαράσταση της τρέχουσας στιγμιαίας εικόνας FYNS σου: ${representation}.`,
+  },
+  ru: {
+    eyebrow: "Твой текущий снимок FYNS",
+    legend: "Выбери визуальное представление",
+    explanation: "Это только визуальный выбор. Он не меняет результат или рекомендации и не сохраняется.",
+    options: { neutral: "Нейтральное / небинарное", masculine: "Маскулинное", feminine: "Фемининное" },
+    visualLabel: (representation) => `Визуальное представление твоего текущего снимка FYNS: ${representation}.`,
+  },
+};
+
+export function getFynsResultFigureCopy(locale: Locale): FynsResultFigureCopy {
+  return resultFigureCopy[locale];
+}

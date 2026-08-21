@@ -6,7 +6,7 @@ import type {
   SelfReflectionSection,
 } from "@/types/find-your-next-step";
 import type { Locale } from "@/lib/i18n/config";
-import { formatSelfOption, getExtendedSelfIntro, getSelfDimensionCopy, getSelfResultSectionTitles, selfLocaleCopy } from "@/data/find-your-next-step-self-locales";
+import { formatSelfOption, getExtendedSelfIntro, getSelfDimensionCopy, getSelfResultSectionTitles, selfFacetSignalCopy, selfLocaleCopy } from "@/data/find-your-next-step-self-locales";
 
 export const selfReflectionIntro = {
   eyebrow: "Beta · Strukturierte Selbstreflexion",
@@ -23,7 +23,7 @@ export const selfReflectionIntro = {
     "keine medizinische oder psychologische Diagnose stellen",
     "keine wissenschaftliche Validierung ersetzen",
   ],
-  duration: "15 Reflexionsentscheidungen in 5 Abschnitten · etwa 8–10 Minuten",
+  duration: "16 Reflexionsentscheidungen in 5 Abschnitten · etwa 9–11 Minuten",
   privacy:
     "Deine Antworten werden nicht gespeichert und gehen verloren, wenn du die Seite neu lädst oder verlässt.",
 } as const;
@@ -165,6 +165,56 @@ export const selfReflectionDimensions: Readonly<
       conditions: "Wenige, verlässliche Feedbackpunkte könnten für dich hilfreich sein.",
     },
   },
+  making: {
+    label: "Konkretes Gestalten",
+    copy: {
+      importance: "Etwas Greifbares aus einer Idee entstehen zu lassen wirkt für dich gerade bedeutsam.",
+      work: "Du könntest leichter ins Tun kommen, wenn ein Gedanke in einen konkreten nächsten Schritt übergeht.",
+      energyGain: "Sichtbar etwas aufzubauen oder umzusetzen könnte dir eher Energie geben.",
+      energyDrain: "Langes Planen ohne eine Möglichkeit zum konkreten Umsetzen könnte dich eher Kraft kosten.",
+      conditions: "Material, Zeit und ein überschaubarer nächster Umsetzungsschritt könnten hilfreich sein.",
+    },
+  },
+  care: {
+    label: "Konkrete Unterstützung",
+    copy: {
+      importance: "Andere konkret zu unterstützen oder zu entlasten wirkt für dich gerade bedeutsam.",
+      work: "Du könntest dich besonders sinnvoll einbringen, wenn dein Beitrag für andere praktisch hilfreich wird.",
+      energyGain: "Eine erkennbare hilfreiche Wirkung für andere könnte dir eher Energie geben.",
+      energyDrain: "Helfen ohne Grenzen, Gegenseitigkeit oder reale Wirksamkeit könnte dich eher Kraft kosten.",
+      conditions: "Klare Bedürfnisse, freiwillige Unterstützung und tragfähige Grenzen könnten hilfreich sein.",
+    },
+  },
+  expression: {
+    label: "Eigener Ausdruck",
+    copy: {
+      importance: "Etwas auf deine eigene Art auszudrücken oder zu gestalten wirkt für dich gerade bedeutsam.",
+      work: "Du könntest leichter bei einer Sache bleiben, wenn deine eigene Handschrift darin Platz hat.",
+      energyGain: "Eigene Ideen in einer unverwechselbaren Form auszudrücken könnte dir eher Energie geben.",
+      energyDrain: "Nur vorgegebene Formen ohne Raum für eine eigene Lösung könnten dich eher Kraft kosten.",
+      conditions: "Ein offener Gestaltungsrahmen und die Erlaubnis zum Ausprobieren könnten hilfreich sein.",
+    },
+  },
+  harmony: {
+    label: "Konstruktive Balance",
+    copy: {
+      importance: "Unterschiedliche Bedürfnisse konstruktiv zusammenzubringen wirkt für dich gerade bedeutsam.",
+      work: "Du könntest dich eher wohlfühlen, wenn Verschiedenheit Platz hat, ohne dass ein Bedürfnis alles andere verdrängt.",
+      energyGain: "Ein Umfeld mit Ausgleich und fairem Miteinander könnte dir eher Energie geben.",
+      energyDrain: "Dauerhafte Zuspitzung oder einseitige Lösungen könnten dich eher Kraft kosten.",
+      conditions: "Offene Absprachen, faire Grenzen und Raum für mehrere Perspektiven könnten hilfreich sein.",
+    },
+  },
+  effectiveness: {
+    label: "Sichtbare Wirksamkeit",
+    copy: {
+      importance: "Erkennbarer Fortschritt und eine spürbare Wirkung deines Einsatzes wirken für dich gerade bedeutsam.",
+      work: "Du könntest leichter dranbleiben, wenn Fortschritt sichtbar und das angestrebte Ergebnis verständlich ist.",
+      energyGain: "Ein erreichter Zwischenschritt oder eine erkennbare Wirkung könnte dir eher Energie geben.",
+      energyDrain: "Viel Einsatz ohne sichtbaren Fortschritt oder nachvollziehbare Wirkung könnte dich eher Kraft kosten.",
+      conditions: "Klare Wirkungskriterien und sichtbare Zwischenstände könnten hilfreich sein.",
+    },
+  },
 };
 
 const dimensionOptions = (
@@ -221,6 +271,11 @@ export const selfReflectionQuestions: readonly SelfReflectionQuestion[] = [
       { id: "good-day-depth-variety", label: "Ich konnte mich vertiefen und bekam zugleich einen neuen Impuls.", signals: [{ dimension: "depth", weight: 1 }, { dimension: "variety", weight: 1 }] },
       { id: "good-day-connection-feedback", label: "Ein guter Austausch oder ehrliche Resonanz hat etwas bewegt.", signals: [{ dimension: "connection", weight: 1 }, { dimension: "feedback", weight: 1 }] },
       { id: "good-day-growth-purpose", label: "Ich habe etwas gelernt oder zu etwas beigetragen, das mir sinnvoll erschien.", signals: [{ dimension: "growth", weight: 1 }, { dimension: "purpose", weight: 1 }] },
+      { id: "good-day-making", label: "Aus einer Idee ist etwas Greifbares entstanden.", signals: [{ dimension: "making", weight: 1 }] },
+      { id: "good-day-care", label: "Meine Unterstützung hat jemandem konkret geholfen.", signals: [{ dimension: "care", weight: 1 }] },
+      { id: "good-day-expression", label: "Ich konnte etwas auf meine eigene Art ausdrücken oder gestalten.", signals: [{ dimension: "expression", weight: 1 }] },
+      { id: "good-day-harmony", label: "Unterschiedliche Bedürfnisse hatten Platz, ohne gegeneinander ausgespielt zu werden.", signals: [{ dimension: "harmony", weight: 1 }] },
+      { id: "good-day-effectiveness", label: "Ich konnte Fortschritt oder eine konkrete Wirkung erkennen.", signals: [{ dimension: "effectiveness", weight: 1 }] },
     ],
   },
   {
@@ -373,6 +428,24 @@ export const selfReflectionQuestions: readonly SelfReflectionQuestion[] = [
     ],
   },
   {
+    id: "conditions-facet-signals",
+    sectionId: "conditions",
+    prompt: "Welche Art von Bedingung hilft dir eher, dich stimmig einzubringen?",
+    context: "Wähle ein oder zwei Bedingungen, die in deiner aktuellen Situation tatsächlich einen Unterschied machen könnten.",
+    format: "multi",
+    evidenceRole: "condition",
+    minSelections: 1,
+    maxSelections: 2,
+    options: [
+      { id: "facet-condition-making", label: "Ich kann eine Idee in einen konkreten nächsten Schritt oder ein greifbares Ergebnis überführen.", signals: [{ dimension: "making", weight: 1 }] },
+      { id: "facet-condition-care", label: "Ich kann andere konkret unterstützen, ohne meine eigenen Grenzen zu übergehen.", signals: [{ dimension: "care", weight: 1 }] },
+      { id: "facet-condition-expression", label: "Es gibt Raum für meine eigene Handschrift statt nur für eine vorgegebene Form.", signals: [{ dimension: "expression", weight: 1 }] },
+      { id: "facet-condition-harmony", label: "Unterschiedliche Bedürfnisse können offen benannt und konstruktiv verbunden werden.", signals: [{ dimension: "harmony", weight: 1 }] },
+      { id: "facet-condition-effectiveness", label: "Fortschritt und Wirkung werden an verständlichen Zwischenständen erkennbar.", signals: [{ dimension: "effectiveness", weight: 1 }] },
+      { id: "facet-condition-open", label: "Keine davon macht in meiner aktuellen Situation einen spürbaren Unterschied.", exclusive: true },
+    ],
+  },
+  {
     id: "self-view-strengths",
     sectionId: "self-view",
     prompt: "Was erkennst du als natürliche Bewegung bei dir selbst wieder?",
@@ -424,6 +497,11 @@ export const selfReflectionQuestions: readonly SelfReflectionQuestion[] = [
       { id: "synthesis-depth-connection", label: "Ich möchte mich vertiefen können und zugleich bewusst verbunden bleiben.", signals: [{ dimension: "depth", weight: 2 }, { dimension: "connection", weight: 2 }] },
       { id: "synthesis-growth-recovery", label: "Entwicklung trägt mich eher, wenn Regeneration ebenfalls Platz hat.", signals: [{ dimension: "growth", weight: 2 }, { dimension: "recovery", weight: 2 }] },
       { id: "synthesis-purpose-feedback", label: "Bedeutung und ehrliche Resonanz helfen mir, meinen Beitrag einzuordnen.", signals: [{ dimension: "purpose", weight: 2 }, { dimension: "feedback", weight: 2 }] },
+      { id: "synthesis-making", label: "Mein Ergebnis sollte berücksichtigen, dass ich Ideen gern in etwas Konkretes überführe.", signals: [{ dimension: "making", weight: 2 }] },
+      { id: "synthesis-care", label: "Mein Ergebnis sollte berücksichtigen, dass konkrete Unterstützung für andere gerade wichtig sein kann.", signals: [{ dimension: "care", weight: 2 }] },
+      { id: "synthesis-expression", label: "Mein Ergebnis sollte berücksichtigen, dass eine eigene Ausdrucks- oder Gestaltungsform für mich zählt.", signals: [{ dimension: "expression", weight: 2 }] },
+      { id: "synthesis-harmony", label: "Mein Ergebnis sollte berücksichtigen, dass mehrere Bedürfnisse konstruktiv nebeneinander bestehen dürfen.", signals: [{ dimension: "harmony", weight: 2 }] },
+      { id: "synthesis-effectiveness", label: "Mein Ergebnis sollte berücksichtigen, dass sichtbarer Fortschritt und Wirkung für mich zählen.", signals: [{ dimension: "effectiveness", weight: 2 }] },
     ],
   },
 ] as const;
@@ -461,7 +539,7 @@ const selfReflectionIntroEn = {
   description: "This journey makes patterns in your current priorities, energy and helpful conditions visible. It is a snapshot — not a fixed personality profile.",
   canDo: ["make recurring values and needs visible", "consider conditions in work and everyday life together", "put helpful combinations and tensions into context"],
   cannotDo: ["not assess personality, aptitude or performance", "not make a medical or psychological diagnosis", "not replace scientific validation"],
-  duration: "15 reflection choices across 5 sections · about 8–10 minutes",
+  duration: "16 reflection choices across 5 sections · about 9–11 minutes",
   privacy: "Your answers are not stored and will be lost if you reload or leave the page.",
 } as const;
 
@@ -484,6 +562,11 @@ const dimensionCopyEn: typeof selfReflectionDimensions = {
   growth: { label: "Growth", copy: { importance: "Learning and personal growth appear to be a recurring priority.", work: "New challenges may help you retain interest and momentum.", energyGain: "Understanding or trying something new may be more likely to give you energy.", energyDrain: "Long periods without room to learn or grow may be more likely to drain you.", conditions: "An achievable challenge with time to learn may be helpful." } },
   purpose: { label: "Purpose and contribution", copy: { importance: "Visible meaning and making a personal contribution appear especially important to you.", work: "You seem to like connecting decisions with their effect and meaning.", energyGain: "A visible, meaningful contribution may be more likely to give you energy.", energyDrain: "Activities without a recognisable purpose may be more likely to drain you.", conditions: "A clear connection between what you do and its effect may be helpful." } },
   feedback: { label: "Feedback", copy: { importance: "Helpful feedback appears to be a meaningful point of orientation.", work: "The right feedback may help you put decisions and progress into context.", energyGain: "Honest and helpful feedback may be more likely to give you energy.", energyDrain: "Going a long time without feedback or a visible response may be more likely to drain you.", conditions: "A few reliable feedback points may be helpful for you." } },
+  making: { label: "Making things concrete", copy: { importance: "Turning an idea into something tangible appears meaningful to you right now.", work: "It may be easier to begin when an idea becomes a concrete next step.", energyGain: "Building or implementing something visible may be more likely to give you energy.", energyDrain: "Long planning without a chance to implement anything may be more likely to drain you.", conditions: "Materials, time and a manageable next implementation step may be helpful." } },
+  care: { label: "Practical support", copy: { importance: "Supporting or relieving other people in a concrete way appears meaningful to you right now.", work: "Your contribution may feel especially worthwhile when it becomes practically helpful to someone else.", energyGain: "A visible helpful effect for other people may be more likely to give you energy.", energyDrain: "Helping without boundaries, reciprocity or real effect may be more likely to drain you.", conditions: "Clear needs, voluntary support and sustainable boundaries may be helpful." } },
+  expression: { label: "Personal expression", copy: { importance: "Expressing or shaping something in your own way appears meaningful to you right now.", work: "It may be easier to stay engaged when your own signature has room in the work.", energyGain: "Expressing your ideas in a distinctive form may be more likely to give you energy.", energyDrain: "Only following prescribed forms without room for your own solution may be more likely to drain you.", conditions: "An open creative frame and permission to experiment may be helpful." } },
+  harmony: { label: "Constructive balance", copy: { importance: "Bringing different needs together constructively appears meaningful to you right now.", work: "You may feel more at ease when differences have room without one need displacing everything else.", energyGain: "An environment with balance and fair cooperation may be more likely to give you energy.", energyDrain: "Persistent escalation or one-sided solutions may be more likely to drain you.", conditions: "Open agreements, fair boundaries and room for several perspectives may be helpful." } },
+  effectiveness: { label: "Visible effectiveness", copy: { importance: "Recognisable progress and a tangible effect from your effort appear meaningful to you right now.", work: "It may be easier to stay with something when progress is visible and the intended result is understandable.", energyGain: "A completed milestone or visible effect may be more likely to give you energy.", energyDrain: "A great deal of effort without visible progress or understandable effect may be more likely to drain you.", conditions: "Clear impact criteria and visible intermediate states may be helpful." } },
 };
 
 const questionCopyEn: Readonly<Record<string, { prompt: string; context: string }>> = {
@@ -499,6 +582,7 @@ const questionCopyEn: Readonly<Record<string, { prompt: string; context: string 
   "conditions-change": { prompt: "When many things change, what helps you stay flexible?", context: "Think of personal, social or practical changes." },
   "conditions-habitat": { prompt: "Which conditions should ideally be present in your environment?", context: "Choose two or three — in everyday life, relationships, projects or work." },
   "conditions-combinations": { prompt: "Which combinations sound especially helpful to you?", context: "Both sides of a statement may matter at the same time." },
+  "conditions-facet-signals": { prompt: "Which kind of condition is more likely to help you contribute in a way that feels right?", context: "Choose one or two conditions that could genuinely make a difference in your current situation." },
   "self-view-strengths": { prompt: "What do you recognise as a natural tendency in yourself?", context: "This is not an assessment of ability. Choose up to three observations that feel familiar." },
   "self-view-context": { prompt: "Which preference depends especially on the situation and task for you?", context: "Being context-dependent is not a weaker signal; it is an observation in its own right." },
   "self-view-synthesis": { prompt: "What should your result definitely not overlook?", context: "Choose one or two statements that bring your previous answers together well." },
@@ -515,6 +599,11 @@ const dimensionOptionLabelEn: Readonly<Record<SelfReflectionDimensionId, string>
   growth: "Learning, growth and challenge",
   purpose: "Purpose, impact and making a personal contribution",
   feedback: "Honest and helpful feedback",
+  making: "Turning ideas into something concrete",
+  care: "Supporting other people in a practical way",
+  expression: "Personal expression and shaping things in my own way",
+  harmony: "Constructive balance between different needs",
+  effectiveness: "Visible progress and meaningful effect",
 };
 
 const optionCopyEn: Readonly<Record<string, { label: string; reflection?: string }>> = {
@@ -523,6 +612,11 @@ const optionCopyEn: Readonly<Record<string, { label: string; reflection?: string
   "good-day-depth-variety": { label: "I could go into depth while also receiving fresh input." },
   "good-day-connection-feedback": { label: "A good conversation or honest feedback shifted something." },
   "good-day-growth-purpose": { label: "I learnt something or contributed to something that felt meaningful." },
+  "good-day-making": { label: "An idea became something tangible." },
+  "good-day-care": { label: "My support helped someone in a concrete way." },
+  "good-day-expression": { label: "I could express or shape something in my own way." },
+  "good-day-harmony": { label: "Different needs had room without being played off against each other." },
+  "good-day-effectiveness": { label: "I could recognise progress or a concrete effect." },
   "beginning-orientation": { label: "An understandable goal and visible next steps." }, "beginning-agency": { label: "Enough freedom to find my own way in." }, "beginning-depth": { label: "Time to observe and think quietly first." }, "beginning-connection-feedback": { label: "A conversation and some initial honest feedback." }, "beginning-variety-growth": { label: "Trying things, learning something new and developing the path as I go." }, "beginning-reliability": { label: "A reliable framework that will not immediately change again." },
   "uncertainty-depth-agency": { label: "Time to think for myself before other perspectives enter." }, "uncertainty-orientation": { label: "Clear criteria against which I can assess the options." }, "uncertainty-connection-feedback": { label: "Conversations with people whose perspective I value." }, "uncertainty-variety-growth": { label: "A small experiment from which I can learn something concrete." }, "uncertainty-reliability-purpose": { label: "A solution that feels sustainable and meaningful to me." },
   "rhythm-depth-orientation": { label: "Clear priorities and longer uninterrupted blocks of time." }, "rhythm-reliability": { label: "A recognisable routine with predictable anchor points." }, "rhythm-variety-agency": { label: "Flexibility and deliberately switching between subjects." }, "rhythm-connection-feedback": { label: "Regular moments for exchange and feedback." }, "rhythm-recovery": { label: "Breaks and time alone that do not merely have to be left over." },
@@ -531,9 +625,12 @@ const optionCopyEn: Readonly<Record<string, { label: string; reflection?: string
   "drain-depth-recovery": { label: "Many interruptions and hardly any real solitude." }, "drain-variety-growth": { label: "Long periods of sameness without fresh input or growth." }, "drain-connection-feedback": { label: "Going a long time without the right exchange or helpful feedback." }, "drain-agency-orientation": { label: "Tight instructions combined with an unclear direction." }, "drain-reliability-purpose": { label: "Constant short-notice changes without a stable base or recognisable purpose." },
   "change-reliability-orientation": { label: "A few reliable anchor points and an understandable direction." }, "change-agency-variety": { label: "Room to respond myself and try new possibilities." }, "change-connection-feedback": { label: "People with whom I can speak openly and test my thinking." }, "change-depth-recovery": { label: "Time to process changes calmly and gain some distance." }, "change-growth-purpose": { label: "Understanding what I can learn and what the change might be good for." },
   "combination-orientation-agency": { label: "Clear goals and plenty of freedom in how to reach them." }, "combination-reliability-variety": { label: "A reliable base and deliberately changing tasks or impressions." }, "combination-depth-connection": { label: "Protected depth and purposeful exchange with others." }, "combination-growth-recovery": { label: "New challenges and genuine time to recover." }, "combination-purpose-feedback": { label: "A meaningful contribution and honest feedback on it." },
+  "facet-condition-making": { label: "I can turn an idea into a concrete next step or tangible result." }, "facet-condition-care": { label: "I can support other people in a concrete way without crossing my own boundaries." }, "facet-condition-expression": { label: "There is room for my own signature rather than only a prescribed form." }, "facet-condition-harmony": { label: "Different needs can be named openly and connected constructively." }, "facet-condition-effectiveness": { label: "Progress and effect become visible through understandable milestones." },
+  "facet-condition-open": { label: "None of these makes a noticeable difference in my current situation." },
   "strength-overview": { label: "Bring order to confusing situations first.", reflection: "You selected that you often begin by bringing order to confusing situations." }, "strength-depth": { label: "Stay with a subject for a long time and give it close attention.", reflection: "You selected that you often stay with a subject for a long time and give it close attention." }, "strength-connect": { label: "Connect people or different perspectives.", reflection: "You selected that you often connect people or different perspectives." }, "strength-explore": { label: "See possibilities and try something new.", reflection: "You selected that you often see possibilities and try new things." }, "strength-follow-through": { label: "Take responsibility and carry things forward reliably.", reflection: "You selected that you often take responsibility and carry things forward reliably." }, "strength-meaning": { label: "Ask about meaning and look for the wider context.", reflection: "You selected that you often ask about meaning and look for the wider context." }, "strength-open": { label: "I deliberately want to leave this open for now.", reflection: "" },
   "context-depth-connection": { label: "Whether solitude or exchange feels helpful." }, "context-orientation-agency": { label: "How much clear direction or room of my own I want." }, "context-reliability-variety": { label: "Whether reliability or change helps me more right now." }, "context-growth-recovery": { label: "Whether I put challenge or recovery first." }, "context-agency-feedback": { label: "How independently I decide and when I seek feedback." }, "context-open": { label: "I cannot narrow this down clearly at the moment." },
   "synthesis-orientation-agency": { label: "I value a clear direction and want to shape my own path." }, "synthesis-reliability-variety": { label: "A stable foundation and room for something new belong together for me." }, "synthesis-depth-connection": { label: "I want to be able to go into depth while remaining deliberately connected." }, "synthesis-growth-recovery": { label: "Growth tends to sustain me when recovery has space as well." }, "synthesis-purpose-feedback": { label: "Meaning and honest feedback help me put my contribution into context." },
+  "synthesis-making": { label: "My result should take account of how much I value turning ideas into something concrete." }, "synthesis-care": { label: "My result should take account of how important practical support for others may be right now." }, "synthesis-expression": { label: "My result should take account of how much my own form of expression or creation matters." }, "synthesis-harmony": { label: "My result should take account of different needs being allowed to coexist constructively." }, "synthesis-effectiveness": { label: "My result should take account of how much visible progress and effect matter to me." },
 };
 
 const resultSectionCopyEn: Readonly<Record<SelfReflectionResultSectionId, string>> = {
@@ -570,7 +667,16 @@ export function getSelfReflectionDimensions(locale: Locale) {
 }
 
 export function getSelfReflectionQuestions(locale: Locale): readonly SelfReflectionQuestion[] {
-  const extended = (key: Exclude<Locale, "de" | "en">) => selfReflectionQuestions.map((question, index) => ({ ...question, prompt: selfLocaleCopy[key].questions[index], context: selfLocaleCopy[key].sections.find((_, sectionIndex) => selfReflectionSections[sectionIndex]?.id === question.sectionId)?.[1], options: question.options.map((option) => ({ ...option, ...formatSelfOption(key, option.signals?.map(({ dimension }) => dimension) ?? option.contextualDimensions ?? [], question.evidenceRole) })) }));
+  const extended = (key: Exclude<Locale, "de" | "en">) => selfReflectionQuestions.map((question, index) => {
+    const isFacetQuestion = question.id === "conditions-facet-signals";
+    const legacyIndex = index > 12 ? index - 1 : index;
+    return {
+      ...question,
+      prompt: isFacetQuestion ? selfFacetSignalCopy[key].prompt : selfLocaleCopy[key].questions[legacyIndex],
+      context: isFacetQuestion ? selfFacetSignalCopy[key].context : selfLocaleCopy[key].sections.find((_, sectionIndex) => selfReflectionSections[sectionIndex]?.id === question.sectionId)?.[1],
+      options: question.options.map((option) => ({ ...option, ...formatSelfOption(key, option.signals?.map(({ dimension }) => dimension) ?? option.contextualDimensions ?? [], question.evidenceRole, option.id) })),
+    };
+  });
   return ({ de: () => selfReflectionQuestions, en: () => selfReflectionQuestions.map((question) => ({ ...question, ...questionCopyEn[question.id], options: question.options.map(localizeSelfOption) })), es: () => extended("es"), tr: () => extended("tr"), pl: () => extended("pl"), el: () => extended("el"), ru: () => extended("ru") } satisfies Record<Locale, () => readonly SelfReflectionQuestion[]>)[locale]();
 }
 

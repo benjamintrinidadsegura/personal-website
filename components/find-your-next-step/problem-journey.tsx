@@ -4,6 +4,7 @@ import { useEffect, useMemo, useReducer, useRef } from "react";
 
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
+import { FynsResultFigure } from "@/components/find-your-next-step/result-figure";
 import { useLocale } from "@/components/i18n/locale-context";
 import { getProblemIntro, getProblemQuestions, getProblemSections } from "@/data/find-your-next-step-problem";
 import {
@@ -150,18 +151,19 @@ function ResultView({
   return (
     <>
       <section aria-labelledby="problem-result-title" className="py-16 sm:py-24" data-fyns-screen-result>
-        <div className="grid gap-10 border-b border-white/15 pb-14 lg:grid-cols-[1.05fr_0.8fr] lg:items-end">
-          <div>
-            <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#d1c7ff]">{ui.snapshot}</p>
-            <h2 ref={headingRef} tabIndex={-1} style={{ outline: "none" }} id="problem-result-title" className="mt-5 text-4xl font-black text-white outline-none sm:text-6xl">
-              {result.title}
-            </h2>
-            <div className="mt-7 grid gap-3 text-lg font-bold leading-8 text-slate-200">
-              {result.summary.map((sentence) => <p key={sentence}>{sentence}</p>)}
-            </div>
-          </div>
-          <p className="border-l border-[#b8a5ff] pl-7 leading-7 text-slate-300">{result.description}</p>
-        </div>
+        <FynsResultFigure
+          journey="problem"
+          accent="#b8a5ff"
+          headingId="problem-result-title"
+          headingRef={headingRef}
+          title={result.title}
+          description={result.description}
+          summary={result.summary}
+          semanticIds={[
+            `boundary-${result.boundary.level}`,
+            ...result.situation.map(({ id }) => id),
+          ].slice(0, 3)}
+        />
 
         <aside
           aria-labelledby="problem-boundary-title"

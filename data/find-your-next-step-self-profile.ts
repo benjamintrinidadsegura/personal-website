@@ -166,6 +166,11 @@ export const selfProfileSecondaryCopy: Readonly<
   growth: "Lernen und Entwicklung bilden einen zusätzlichen Akzent.",
   purpose: "Ein erkennbarer Sinn oder Beitrag färbt die Momentaufnahme zusätzlich.",
   feedback: "Hilfreiche Resonanz taucht zusätzlich als Orientierungspunkt auf.",
+  making: "Konkretes Gestalten taucht zusätzlich als wiederkehrender Akzent auf.",
+  care: "Praktische Unterstützung für andere ist zusätzlich sichtbar.",
+  expression: "Eigener Ausdruck setzt einen zusätzlichen Akzent.",
+  harmony: "Konstruktive Balance zwischen Bedürfnissen ist zusätzlich sichtbar.",
+  effectiveness: "Sichtbarer Fortschritt und Wirksamkeit setzen einen zusätzlichen Akzent.",
 };
 
 const profileNamesEn: Readonly<Record<SelfProfileId, { name: string; tagline: string }>> = {

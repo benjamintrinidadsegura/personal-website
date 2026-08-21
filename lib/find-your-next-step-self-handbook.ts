@@ -642,8 +642,8 @@ export function validateSelfHandbookData(): string[] {
     validateCopy(definition.id, [definition.title, definition.action, definition.scope ?? "valid", definition.observe]);
   }
 
-  if (selfReflectionSections.length !== 5 || selfReflectionQuestions.length !== 15) {
-    errors.push("Handbook expects the unchanged five-section, fifteen-question Self foundation.");
+  if (selfReflectionSections.length !== 5 || selfReflectionQuestions.length !== 16) {
+    errors.push("Handbook expects the five-section, sixteen-question Self foundation.");
   }
 
   return errors;

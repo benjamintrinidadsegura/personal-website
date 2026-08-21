@@ -1,0 +1,126 @@
+{
+  "source": "a_clean_high_detail_character_sheet_infographic.png",
+  "status": "V1 human-accepted compromise",
+  "characters": [
+    {
+      "id": "explorer",
+      "name": "Explorer",
+      "triptych": "explorer-triptych.png",
+      "representations": {
+        "feminine": "explorer-feminine.png",
+        "masculine": "explorer-masculine.png",
+        "nonbinary": "explorer-nonbinary.png"
+      }
+    },
+    {
+      "id": "builder",
+      "name": "Builder",
+      "triptych": "builder-triptych.png",
+      "representations": {
+        "feminine": "builder-feminine.png",
+        "masculine": "builder-masculine.png",
+        "nonbinary": "builder-nonbinary.png"
+      }
+    },
+    {
+      "id": "connector",
+      "name": "Connector",
+      "triptych": "connector-triptych.png",
+      "representations": {
+        "feminine": "connector-feminine.png",
+        "masculine": "connector-masculine.png",
+        "nonbinary": "connector-nonbinary.png"
+      }
+    },
+    {
+      "id": "independent",
+      "name": "Independent",
+      "triptych": "independent-triptych.png",
+      "representations": {
+        "feminine": "independent-feminine.png",
+        "masculine": "independent-masculine.png",
+        "nonbinary": "independent-nonbinary.png"
+      }
+    },
+    {
+      "id": "thinker",
+      "name": "Thinker",
+      "triptych": "thinker-triptych.png",
+      "representations": {
+        "feminine": "thinker-feminine.png",
+        "masculine": "thinker-masculine.png",
+        "nonbinary": "thinker-nonbinary.png"
+      }
+    },
+    {
+      "id": "stabilizer",
+      "name": "Stabilizer",
+      "triptych": "stabilizer-triptych.png",
+      "representations": {
+        "feminine": "stabilizer-feminine.png",
+        "masculine": "stabilizer-masculine.png",
+        "nonbinary": "stabilizer-nonbinary.png"
+      }
+    },
+    {
+      "id": "challenger",
+      "name": "Challenger",
+      "triptych": "challenger-triptych.png",
+      "representations": {
+        "feminine": "challenger-feminine.png",
+        "masculine": "challenger-masculine.png",
+        "nonbinary": "challenger-nonbinary.png"
+      }
+    },
+    {
+      "id": "caregiver",
+      "name": "Caregiver",
+      "triptych": "caregiver-triptych.png",
+      "representations": {
+        "feminine": "caregiver-feminine.png",
+        "masculine": "caregiver-masculine.png",
+        "nonbinary": "caregiver-nonbinary.png"
+      }
+    },
+    {
+      "id": "creator",
+      "name": "Creator",
+      "triptych": "creator-triptych.png",
+      "representations": {
+        "feminine": "creator-feminine.png",
+        "masculine": "creator-masculine.png",
+        "nonbinary": "creator-nonbinary.png"
+      }
+    },
+    {
+      "id": "organizer",
+      "name": "Organizer",
+      "triptych": "organizer-triptych.png",
+      "representations": {
+        "feminine": "organizer-feminine.png",
+        "masculine": "organizer-masculine.png",
+        "nonbinary": "organizer-nonbinary.png"
+      }
+    },
+    {
+      "id": "harmonizer",
+      "name": "Harmonizer",
+      "triptych": "harmonizer-triptych.png",
+      "representations": {
+        "feminine": "harmonizer-feminine.png",
+        "masculine": "harmonizer-masculine.png",
+        "nonbinary": "harmonizer-nonbinary.png"
+      }
+    },
+    {
+      "id": "achiever",
+      "name": "Achiever",
+      "triptych": "achiever-triptych.png",
+      "representations": {
+        "feminine": "achiever-feminine.png",
+        "masculine": "achiever-masculine.png",
+        "nonbinary": "achiever-nonbinary.png"
+      }
+    }
+  ]
+}

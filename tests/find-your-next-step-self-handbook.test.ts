@@ -60,6 +60,10 @@ function createCompleteAnswers(
 ): SelfReflectionAnswers {
   return Object.fromEntries(selfReflectionQuestions.map((question) => {
     if (overrides[question.id]) return [question.id, overrides[question.id]];
+    const exclusiveFallback = question.options.find(({ exclusive }) => exclusive);
+    if (exclusiveFallback && !question.options.some((option) => optionSupport(option, targets) > 0)) {
+      return [question.id, [exclusiveFallback.id]];
+    }
     const ranked = question.options
       .map((option, index) => ({ option, index, support: optionSupport(option, targets) }))
       .filter(({ option }) => !option.exclusive)
@@ -102,6 +106,7 @@ const sparseAnswers: SelfReflectionAnswers = {
   "conditions-change": ["change-growth-purpose"],
   "conditions-habitat": ["habitat-connection", "habitat-recovery"],
   "conditions-combinations": ["combination-purpose-feedback"],
+  "conditions-facet-signals": ["facet-condition-open"],
   "self-view-strengths": ["strength-overview"],
   "self-view-context": ["context-open"],
   "self-view-synthesis": ["synthesis-reliability-variety"],
@@ -120,6 +125,7 @@ const multipleOnlyAnswers: SelfReflectionAnswers = {
   "conditions-change": ["change-connection-feedback"],
   "conditions-habitat": ["habitat-orientation", "habitat-variety"],
   "conditions-combinations": ["combination-reliability-variety"],
+  "conditions-facet-signals": ["facet-condition-open"],
   "self-view-strengths": ["strength-meaning"],
   "self-view-context": ["context-open"],
   "self-view-synthesis": ["synthesis-depth-connection"],
@@ -138,6 +144,7 @@ const broadMixedAnswers: SelfReflectionAnswers = {
   "conditions-change": ["change-agency-variety", "change-connection-feedback"],
   "conditions-habitat": ["habitat-recovery", "habitat-orientation", "habitat-variety"],
   "conditions-combinations": ["combination-depth-connection", "combination-reliability-variety"],
+  "conditions-facet-signals": ["facet-condition-open"],
   "self-view-strengths": ["strength-explore", "strength-connect", "strength-overview"],
   "self-view-context": ["context-open"],
   "self-view-synthesis": ["synthesis-purpose-feedback", "synthesis-orientation-agency"],
@@ -444,7 +451,7 @@ test("copy, share, print, Result Actions, and Career boundaries remain outside t
   const actions = readFileSync(new URL("../components/find-your-next-step/result-actions.tsx", import.meta.url), "utf8");
   assert.equal(formatter.includes("SelfHandbook"), false);
   assert.equal(actions.includes("SelfHandbook"), false);
-  assert.equal(selfReflectionQuestions.length, 15);
+  assert.equal(selfReflectionQuestions.length, 16);
 });
 
 test("Handbook UI exposes four compact semantic chapters without persistence or live regions", () => {
