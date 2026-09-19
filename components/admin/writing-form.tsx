@@ -5,6 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { publishWritingAction, saveWritingAction } from "@/app/admin/writing/actions";
 import { WritingDocument } from "@/components/writing/writing-document";
+import { getWritingShareDictionary } from "@/data/i18n/writing-share";
+import { siteConfig } from "@/data/site";
+import { getWritingLocalization } from "@/data/writing-localization";
 import { legacyBodyToWritingDocument } from "@/lib/writing/document";
 import {
   suggestedWritingTopics,
@@ -13,6 +16,7 @@ import {
   type WritingContentType,
   type WritingDocumentV1,
   type WritingField,
+  type WritingShareContext,
 } from "@/types/writing";
 
 const WritingEditor = dynamic(() => import("@/components/admin/writing-editor").then((module) => module.WritingEditor), {
@@ -196,6 +200,15 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
   const fieldClass = "mt-2 min-h-12 w-full rounded-lg border border-white/15 bg-[#04111b] px-4 py-3 text-white outline-none focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30";
   const statusLabel = article.status === "published" && isDirty ? "Unpublished changes" : phase === "saving" ? "Saving..." : phase === "waiting" || phase === "dirty" ? "Unsaved changes" : phase === "failed" ? "Save failed" : phase === "conflict" ? "Conflict" : "Saved";
   const settingsSummary = [snapshot.contentType === "essay" ? "Essay" : "Note", ...snapshot.topics].join(" · ");
+  const previewShareContext: WritingShareContext = {
+    articleId: article.id,
+    articleSlug: article.slug,
+    articleTitle: snapshot.title || "Untitled draft",
+    authorName: siteConfig.name,
+    canonicalUrl: null,
+    domain: siteConfig.domain,
+    language: article.slug ? getWritingLocalization(article.slug).language : "de",
+  };
 
   return (
     <div className="mt-4">
@@ -222,7 +235,7 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
           <h2 className="mt-6 break-words text-4xl font-black text-white sm:text-6xl">{snapshot.title || "Untitled draft"}</h2>
           {snapshot.deck ? <p className="mt-5 text-xl font-bold leading-8 text-slate-200">{snapshot.deck}</p> : null}
           {snapshot.excerpt ? <p className="mt-6 border-l border-[#ff9a3d] pl-5 text-slate-400">{snapshot.excerpt}</p> : null}
-          <div className="mt-10"><WritingDocument document={snapshot.document} /></div>
+          <div className="mt-10"><WritingDocument document={snapshot.document} shareContext={previewShareContext} shareCopy={getWritingShareDictionary("en")} /></div>
         </section>
       ) : (
         <div className="mx-auto max-w-4xl space-y-7">

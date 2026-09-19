@@ -1,5 +1,7 @@
 import {
   BlockNoteSchema,
+  createBlockConfig,
+  createBlockSpec,
   createHeadingBlockSpec,
   defaultBlockSpecs,
   defaultInlineContentSpecs,
@@ -10,6 +12,39 @@ import {
 import { validateWritingDocument, type WritingDocumentValidationResult } from "@/lib/writing/document";
 import type { WritingDocumentBlock, WritingDocumentV1, WritingInlineContent, WritingText } from "@/types/writing";
 
+function editorialBlockDom(tagName: "p" | "blockquote", className: string) {
+  const dom = document.createElement(tagName);
+  dom.className = className;
+  return { dom, contentDOM: dom };
+}
+
+const keyThoughtBlock = createBlockSpec(
+  createBlockConfig(() => ({ type: "keyThought" as const, propSchema: {}, content: "inline" as const })),
+  {
+    render: () => editorialBlockDom("p", "bn-writing-key-thought"),
+    toExternalHTML: () => editorialBlockDom("p", "bn-writing-key-thought"),
+    parse: (element) => element.classList.contains("bn-writing-key-thought") ? {} : undefined,
+  },
+)();
+
+const pullQuoteBlock = createBlockSpec(
+  createBlockConfig(() => ({ type: "pullQuote" as const, propSchema: {}, content: "inline" as const })),
+  {
+    render: () => editorialBlockDom("blockquote", "bn-writing-pull-quote"),
+    toExternalHTML: () => editorialBlockDom("blockquote", "bn-writing-pull-quote"),
+    parse: (element) => element.classList.contains("bn-writing-pull-quote") ? {} : undefined,
+  },
+)();
+
+const shareableBlock = createBlockSpec(
+  createBlockConfig(() => ({ type: "shareable" as const, propSchema: {}, content: "inline" as const })),
+  {
+    render: () => editorialBlockDom("p", "bn-writing-shareable"),
+    toExternalHTML: () => editorialBlockDom("p", "bn-writing-shareable"),
+    parse: (element) => element.classList.contains("bn-writing-shareable") ? {} : undefined,
+  },
+)();
+
 export const writingEditorSchema = BlockNoteSchema.create({
   blockSpecs: {
     paragraph: defaultBlockSpecs.paragraph,
@@ -18,6 +53,9 @@ export const writingEditorSchema = BlockNoteSchema.create({
     numberedListItem: defaultBlockSpecs.numberedListItem,
     quote: defaultBlockSpecs.quote,
     divider: defaultBlockSpecs.divider,
+    keyThought: keyThoughtBlock,
+    pullQuote: pullQuoteBlock,
+    shareable: shareableBlock,
   },
   inlineContentSpecs: defaultInlineContentSpecs,
   styleSpecs: {
@@ -44,9 +82,10 @@ function toEditorInline(content: WritingInlineContent[]) {
 
 function toEditorBlock(block: WritingDocumentBlock): EditorBlock {
   const children = block.children?.map(toEditorBlock);
-  if (block.type === "divider") return { type: "divider", children };
-  if (block.type === "heading") return { type: "heading", props: { level: block.level }, content: toEditorInline(block.content), children };
-  return { type: block.type, content: toEditorInline(block.content), children };
+  const identity = block.id ? { id: block.id } : {};
+  if (block.type === "divider") return { ...identity, type: "divider", children };
+  if (block.type === "heading") return { ...identity, type: "heading", props: { level: block.level }, content: toEditorInline(block.content), children };
+  return { ...identity, type: block.type, content: toEditorInline(block.content), children };
 }
 
 export function writingDocumentToBlockNote(document: WritingDocumentV1): EditorBlock[] {
@@ -92,16 +131,18 @@ function readEditorBlocks(value: unknown): unknown[] | null {
   if (!Array.isArray(value)) return null;
   return value.map((item) => {
     if (!isRecord(item) || typeof item.type !== "string" || !Array.isArray(item.children)) return null;
+    if (typeof item.id !== "string") return null;
+    const identity = { id: item.id };
     const children = readEditorBlocks(item.children);
     if (!children || children.some((child) => child === null)) return null;
     const childValue = children.length > 0 ? { children } : {};
-    if (item.type === "divider") return { type: "divider", ...childValue };
-    if (!["paragraph", "heading", "bulletListItem", "numberedListItem", "quote"].includes(item.type) || hasUnsupportedProps(item.props, item.type === "heading")) return null;
+    if (item.type === "divider") return { ...identity, type: "divider", ...childValue };
+    if (!["paragraph", "heading", "bulletListItem", "numberedListItem", "quote", "keyThought", "pullQuote", "shareable"].includes(item.type) || hasUnsupportedProps(item.props, item.type === "heading")) return null;
     const content = readEditorInline(item.content);
     if (!content || content.some((inline) => inline === null)) return null;
     return item.type === "heading"
-      ? { type: "heading", level: (item.props as Record<string, unknown>).level, content, ...childValue }
-      : { type: item.type, content, ...childValue };
+      ? { ...identity, type: "heading", level: (item.props as Record<string, unknown>).level, content, ...childValue }
+      : { ...identity, type: item.type, content, ...childValue };
   });
 }
 
