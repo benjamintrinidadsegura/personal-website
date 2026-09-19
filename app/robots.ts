@@ -42,10 +42,16 @@ export default function robots(): MetadataRoute.Robots {
     "/api",
     "/newsletter/confirm",
     "/newsletter/unsubscribe",
+    "/life-alignment/invite",
+    "/life-alignment/session",
+    "/life-alignment/sessions",
     ...locales.filter((locale) => locale !== defaultLocale).flatMap((locale) => [
       `/${locale}/account`,
       `/${locale}/newsletter/confirm`,
       `/${locale}/newsletter/unsubscribe`,
+      `/${locale}/life-alignment/invite`,
+      `/${locale}/life-alignment/session`,
+      `/${locale}/life-alignment/sessions`,
     ]),
   ];
 

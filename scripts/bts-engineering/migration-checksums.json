@@ -14,6 +14,8 @@
     "20260817000000_writing_comment_moderation.sql": "069443cda9a03e0b1617d51f29f6eda699c276164f7e370acd4dedacf3bcf84d",
     "20260818000000_newsletter_subscription_foundation.sql": "2d56d4e9a90bb51cb565109dda828cbaa125551e136ea6396f033bab4c5781d6",
     "20260819000000_newsletter_delivery.sql": "1d1e10587d776f2d796b8bc7e6747dbc77483c3b681d60d706b31c55aa292d8b",
-    "20260819010000_newsletter_delivery_runtime_fix.sql": "26e0390b81a2882b5a67fe5c29d2a09b6cc708aee29fd723d6cad48025b3bff6"
+    "20260819010000_newsletter_delivery_runtime_fix.sql": "26e0390b81a2882b5a67fe5c29d2a09b6cc708aee29fd723d6cad48025b3bff6",
+    "20260919000000_life_alignment_relationship_engine.sql": "e04914c0ebce3a608706512520e77975a9ec2da5dd20203f2204f07594a9e430",
+    "20260919010000_life_alignment_relationship_runtime_fix.sql": "b2d817ae064037b41dcd76773f5da81b7197c8cf79eb9a07b0e00fc70abd6330"
   }
 }

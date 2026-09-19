@@ -456,6 +456,24 @@ export function createRunner(options = {}) {
     return result.code === 0 && `${result.stdout}\n${result.stderr}`.includes(config.verification.residueSentinel);
   }
 
+  function recentAppliedMigrations() {
+    const statePath = join(stateRoot, "state/preflight.json");
+    if (!existsSync(statePath)) return [];
+    const state = readJson(statePath);
+    if (state.target?.projectRef !== config.target.projectRef) return [];
+    const candidates = [
+      ...(Array.isArray(state.recentApplies) ? state.recentApplies : []),
+      ...(state.applied ? [state.applied] : []),
+    ];
+    const recent = new Map();
+    for (const applied of candidates) {
+      const age = Date.now() - Date.parse(applied?.appliedAt);
+      if (typeof applied?.name !== "string" || typeof applied?.hash !== "string" || !Number.isFinite(age) || age < 0 || age > 30 * 60 * 1000) continue;
+      recent.set(`${applied.name}:${applied.hash}`, applied);
+    }
+    return [...recent.values()];
+  }
+
   async function inspectMigrations(target) {
     const local = validateMigrationIntegrity();
     recordEvidenceCheck("DEV migration history", "establish the pinned remote/local migration state before any gate");
@@ -479,19 +497,14 @@ export function createRunner(options = {}) {
     if (unknownRemote.length) throw new RunnerError("Remote contains migration versions absent locally", "MIGRATION_DIVERGED", { unknownRemote });
     const changedMigrations = new Map();
     for (const line of migrationStatus.stdout.split(/\r?\n/).filter(Boolean)) changedMigrations.set(line.slice(3).trim().replaceAll("\\", "/"), line.slice(0, 2));
-    let recentApply;
-    const statePath = join(stateRoot, "state/preflight.json");
-    if (existsSync(statePath)) {
-      const state = readJson(statePath);
-      if (state.applied && state.target?.projectRef === config.target.projectRef && Date.now() - Date.parse(state.applied.appliedAt) <= 30 * 60 * 1000) recentApply = state.applied;
-    }
+    const recentApplies = recentAppliedMigrations();
     const changedApplied = [];
     for (const version of remote) {
       const migration = local.find((entry) => entry.version === version);
       if (!migration) continue;
       const path = `supabase/migrations/${migration.name}`;
       const statusCode = changedMigrations.get(path);
-      const isJustAppliedUntracked = statusCode === "??" && recentApply?.name === migration.name && recentApply?.hash === migration.hash;
+      const isJustAppliedUntracked = statusCode === "??" && recentApplies.some((applied) => applied.name === migration.name && applied.hash === migration.hash);
       if (statusCode && !isJustAppliedUntracked) changedApplied.push(migration.name);
     }
     if (changedApplied.length) throw new RunnerError("An applied migration differs from HEAD", "APPLIED_MIGRATION_MODIFIED", { changedApplied });
@@ -549,14 +562,16 @@ export function createRunner(options = {}) {
       label: "migration dry-run",
     });
     const pending = migrations.pending[0] ?? null;
-    if (pending && !dryRun.stdout.includes(pending.name)) {
+    const dryRunOutput = `${dryRun.stdout}\n${dryRun.stderr}`;
+    if (pending && !dryRunOutput.includes(pending.name)) {
       throw new RunnerError("Dry-run did not identify the exact pending migration", "MIGRATION_DRY_RUN_MISMATCH");
     }
-    if (!pending && !/up to date|no migrations/i.test(`${dryRun.stdout}\n${dryRun.stderr}`)) {
+    if (!pending && !/up to date|no migrations/i.test(dryRunOutput)) {
       throw new RunnerError("Dry-run did not confirm a no-migration state", "MIGRATION_DRY_RUN_MISMATCH");
     }
     const state = {
       schemaVersion: 1,
+      recentApplies: recentAppliedMigrations(),
       createdAt: new Date().toISOString(),
       target: { environment: config.target.environment, projectName: config.target.projectName, projectRef: config.target.projectRef, databaseHost: config.target.databaseHost },
       pending,
@@ -786,9 +801,13 @@ export function createRunner(options = {}) {
       throw new RunnerError("Migration state changed after approval", "MIGRATION_GATE_REQUIRED");
     }
     const dryRun = await runTool("supabase", ["db", "push", "--db-url", target.url, "--dry-run"], { timeoutMs: config.timeoutsMs.databaseCommand, label: "final migration dry-run" });
-    if (!dryRun.stdout.includes(requested)) throw new RunnerError("Final dry-run does not match approval", "MIGRATION_DRY_RUN_MISMATCH");
+    const dryRunOutput = `${dryRun.stdout}\n${dryRun.stderr}`;
+    if (!dryRunOutput.includes(requested)) throw new RunnerError("Final dry-run does not match approval", "MIGRATION_DRY_RUN_MISMATCH");
     await runTool("supabase", ["db", "push", "--db-url", target.url], { timeoutMs: config.timeoutsMs.databaseCommand, label: "approved migration apply" });
-    state.applied = { name: requested, hash: state.pending.hash, appliedAt: new Date().toISOString() };
+    const applied = { name: requested, hash: state.pending.hash, appliedAt: new Date().toISOString() };
+    const preserved = Array.isArray(state.recentApplies) ? state.recentApplies.filter((entry) => entry.name !== requested) : [];
+    state.recentApplies = [...preserved, applied];
+    state.applied = applied;
     state.pending = null;
     writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
     return { applied: requested, commandCount };

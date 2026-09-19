@@ -1,5 +1,6 @@
 "use client";
 import { lifeUiValue } from "@/data/i18n/life-alignment-ui";
+import { relationshipUi } from "@/data/i18n/life-alignment-relationship-ui";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { LifeAlignmentContext } from "@/components/life-alignment/life-alignment-context";
@@ -10,6 +11,8 @@ import type { Locale } from "@/lib/i18n/config";
 const moduleAccents = {
     self: "#f5b971",
     partner: "#74d8c8",
+    friendship: "#8bd3ff",
+    founder: "#d7a7ff",
     "life-vision": "#b9a5ff",
 } as const;
 function ActiveModuleCard({ module, index, href, locale }: {
@@ -80,7 +83,7 @@ export function LifeAlignmentHub() {
           <div>
             <div className="flex flex-wrap items-center gap-4">
               <p className="font-mono text-xs font-black uppercase tracking-[0.28em] text-[#f5b971]">{lifeAlignmentHub.eyebrow}</p>
-              <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-slate-300">Modular V1 · Beta</span>
+              <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-slate-300">Modular V1.1 · Beta</span>
             </div>
             <h1 className="mt-7 text-[clamp(3.6rem,9vw,8rem)] font-black leading-[0.86] tracking-[-0.06em] text-white">
               Life<br />Alignment.
@@ -90,7 +93,7 @@ export function LifeAlignmentHub() {
           </div>
 
           <aside aria-labelledby="life-modes-title" className="border-l border-[#f5b971] pl-7 sm:pl-9">
-            <p id="life-modes-title" className="font-mono text-xs uppercase tracking-[0.22em] text-[#f5b971]">{lifeUiValue(locale, "Three perspectives", "Drei Blickrichtungen")}</p>
+            <p id="life-modes-title" className="font-mono text-xs uppercase tracking-[0.22em] text-[#f5b971]">Life Alignment modules</p>
             <ol className="mt-7 grid gap-5">
               {availableLifeAlignmentModules.map((module, index) => (<li key={module.id} className="grid grid-cols-[2rem_1fr] gap-4 border-b border-white/10 pb-5">
                   <span aria-hidden="true" className="font-mono text-xs text-slate-600">0{index + 1}</span>
@@ -112,11 +115,11 @@ export function LifeAlignmentHub() {
             <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#f5b971]">ME · WE · WHERE I AM GOING</p>
             <div>
               <h2 id="life-active-title" className="text-4xl font-black tracking-[-0.04em] text-white sm:text-6xl">{lifeUiValue(locale, "Choose the perspective that fits your question.", "Wähle die Perspektive, die zu deiner Frage passt.")}</h2>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{lifeUiValue(locale, "The three modules share a stance, but not the same questions or results.", "Die drei Module teilen eine Haltung, aber nicht dieselben Fragen oder Ergebnisse.")}</p>
+              <Link href={localizeHref("/life-alignment/sessions")} className="mt-7 inline-flex min-h-11 items-center rounded-full border border-[#74d8c8]/45 px-5 font-black text-[#74d8c8]">{relationshipUi(locale, "openSession")} →</Link>
             </div>
           </div>
 
-          <ol className="mt-14 grid gap-6 lg:grid-cols-3">
+          <ol className="mt-14 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {availableLifeAlignmentModules.map((module, index) => <ActiveModuleCard key={module.id} module={module} index={index} href={localizeHref(module.href)} locale={locale}/>)}
           </ol>
         </section>
@@ -147,7 +150,11 @@ export function LifeAlignmentHub() {
             <h2 id="life-principle-title" className="text-3xl font-black text-white sm:text-5xl">{lifeUiValue(locale, "Understand, don't measure.", "Verstehen statt vermessen.")}</h2>
             <p className="mt-6 max-w-4xl text-lg leading-8 text-slate-300">{lifeAlignmentHub.principle}</p>
             <ul className="mt-9 grid gap-3 sm:grid-cols-3">
-              {(lifeUiValue(locale, ["No life or compatibility score", "No diagnosis or correct answer", "Answers remain in the current local page state"], ["Kein Life- oder Kompatibilitätsscore", "Keine Diagnose oder richtige Antwort", "Antworten bleiben im jeweiligen lokalen Seitenzustand"])).map((principle) => <li key={principle} className="border-l border-[#f5b971]/55 px-5 py-3 font-bold leading-6 text-slate-200">{principle}</li>)}
+              {[
+                lifeUiValue(locale, "No life or compatibility score", "Kein Life- oder Kompatibilitätsscore"),
+                lifeUiValue(locale, "No diagnosis or correct answer", "Keine Diagnose oder richtige Antwort"),
+                relationshipUi(locale, "privacyBoundary"),
+              ].map((principle) => <li key={principle} className="border-l border-[#f5b971]/55 px-5 py-3 font-bold leading-6 text-slate-200">{principle}</li>)}
             </ul>
           </div>
         </section>

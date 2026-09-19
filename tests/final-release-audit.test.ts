@@ -36,7 +36,8 @@ test("privacy page renders actual V1 processing surfaces without inventing legal
     "privacyReleaseCopy",
     "configuredNewsletterControllerAddress",
     "legalOperator",
-    "copy.life.local",
+    "lifeAlignmentLocalPrivacyCopy",
+    "relationshipAlignmentPrivacyCopy",
     "copy.newsletter.storage",
     "PrivacySections",
   ]) assert.match(page, new RegExp(required.replaceAll(".", "\\."), "u"));

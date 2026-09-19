@@ -1,23 +1,22 @@
-# Life Alignment post-V1 backlog
+# Life Alignment post-V1.1 backlog
 
-Life Alignment Representative Modular V1 is intentionally local-only and qualitative. Self, Partner / Relationship, and Life Vision define the functional V1 family. Their V1 result standard includes visual descriptive summaries, evidence-linked cross-signal synthesis, concrete examples, internal paths, small tools, and closing orientation. The items below are explicitly outside V1 and must not be treated as implied follow-up work.
+Life Alignment V1 established Self, the local shared-device Partner comparison, and Life Vision. Relationship Engine V1.1 extends that accepted family with Partner, Friendship, and Founder Solo Reflection and private two-person Invite Sessions under [ADR 0001](decisions/0001-life-alignment-relationship-engine-v1-1.md). The items below remain explicitly outside V1.1 and must not be treated as implied follow-up work.
 
 ## Binding future modules
 
-The following modules remain part of the Life Alignment product vision, but their functional journeys, result models, visualizations, and module-specific safety treatment are post-V1:
+The following modules remain part of the Life Alignment product vision, but their functional journeys, result models, visualizations, and module-specific safety treatment are post-V1.1:
 
 - Family
-- Friendship
 - Career — focused on how work fits into a broader desired life, not a duplicate of FYNS Career
 - Team
-- Founder
 
-The V1 hub may name these modules with an honest unavailable state. It must not provide fake or empty journey routes for them.
+The hub may name these modules with an honest unavailable state. It must not provide fake or empty journey routes for them. Life Vision remains an accepted available V1 module; Relationship Engine V1.1 did not reopen it.
 
 ## Product decisions requiring a separate review
 
-- Cross-device Partner invitations, expiring anonymous/shared private sessions, account-linked private sessions, or encrypted relay sessions.
-- Saved history, repeat comparison over time, accounts, or cross-device synchronization.
+- Guest-to-account claiming or transferring a guest's historical participation into account ownership.
+- Timeline or trend comparison across repeated rounds; the V1.1 data model supports versioned future rounds but does not render them.
+- Whole-session or post-finalization deletion where two participants' ownership interests require a joint policy.
 - Multiple saved experiments, reminders, notifications, streaks, or follow-up analytics.
 - Habit, mood, task, calendar, journal, goal, or wearable tracking.
 - AI-generated coaching or conversational interpretation.
@@ -31,7 +30,7 @@ The V1 hub may name these modules with an honest unavailable state. It must not 
 
 ### Further depth beyond the V1 result layer
 
-V1 already requires qualitative, evidence-linked cross-signal synthesis and multiple concrete internal paths for Self, Partner, and Life Vision. Future work may deepen longitudinal or cross-session interpretation only after an explicit persistence and product review. It must remain traceable to explicit input, revisable, and free from pseudo-psychological certainty or hidden scoring.
+V1 and V1.1 require qualitative, evidence-linked synthesis and concrete action paths. Relationship Engine V1.1 persistence is versioned for future rounds, but longitudinal or cross-session interpretation remains a separate product decision. It must remain traceable to explicit input, revisable, and free from pseudo-psychological certainty or hidden scoring.
 
 ### Human Context Action Layer
 
@@ -56,9 +55,11 @@ Advanced spatial or constellation visualizations, capacity/support flows, and ri
 
 The architectural principle `INSIGHT → UNDERSTANDING → ACTION` may inform future Human Context work. FYNS V1 remains accepted and must not be reopened as part of Life Alignment; any FYNS depth changes require their own post-V1 review.
 
-## Persistence gate
+## Persistence boundary after V1.1
 
-Any future persistence needs an explicit product and privacy decision first. The design must cover consent, purpose limitation, ownership, row-level access, encryption and operational access, retention, backups, breach impact, export, deletion, account separation, and cross-device expectations. It must use a new additive data model and must not reuse comment identity/profile tables.
+[ADR 0001](decisions/0001-life-alignment-relationship-engine-v1-1.md) is the accepted product and privacy decision for two-person Partner, Friendship, and Founder Invite Sessions. The forward-only model separates sessions, rounds, participants, invites, answers, derived results, and agreements; uses deny-by-default RLS; and does not reuse comment identity tables.
+
+Persistence for other Life Alignment modules, multi-person sessions, guest account claiming, longitudinal interpretation, whole-session joint deletion, or new operational access still requires its own explicit product and privacy review. Incomplete-session cleanup is a documented V1.1 operational follow-up rather than an unimplemented promise.
 
 ## Research and accessibility follow-up
 

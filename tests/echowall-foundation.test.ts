@@ -414,6 +414,8 @@ test("robots and sitemap fail closed and expose only canonical production routes
       "/life-alignment/self",
       "/life-alignment/partner",
       "/life-alignment/life-vision",
+      "/life-alignment/friendship",
+      "/life-alignment/founder",
       "/find-your-next-step",
       "/find-your-next-step/self",
       "/find-your-next-step/career",

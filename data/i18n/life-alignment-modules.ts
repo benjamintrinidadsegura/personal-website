@@ -5,14 +5,16 @@ import {
   type AvailableLifeAlignmentModule,
   type FutureLifeAlignmentModule,
 } from "@/data/life-alignment-modules";
+import { getRelationshipModule, isRelationshipModuleId, relationshipText } from "@/data/life-alignment-relationship";
+import { relationshipUi } from "@/data/i18n/life-alignment-relationship-ui";
 import type { Locale } from "@/lib/i18n/config";
 
 type AvailableCopy = Pick<AvailableLifeAlignmentModule, "title" | "purpose" | "audience" | "statusLabel" | "privacy" | "duration">;
 type ModuleCopy = {
   hub: { title: string; description: string; principle: string };
-  available: readonly [AvailableCopy, AvailableCopy, AvailableCopy];
-  futurePurpose: readonly [string, string, string, string, string];
-  futureAudience: readonly [string, string, string, string, string];
+  available: readonly AvailableCopy[];
+  futurePurpose: readonly string[];
+  futureAudience: readonly string[];
   comingLater: string;
 };
 
@@ -79,12 +81,29 @@ const moduleCopy = {
   },
 } as const satisfies Record<Exclude<Locale, "de">, ModuleCopy>;
 
+const expandedHubTitle: Record<Locale, string> = {
+  de: "Persönliche Ausrichtung und Beziehungen bewusst verstehen.", en: "Understand personal direction and relationships deliberately.",
+  es: "Comprender con intención la dirección personal y las relaciones.", tr: "Kişisel yönü ve ilişkileri bilinçli biçimde anlamak.",
+  pl: "Świadomie rozumieć osobisty kierunek i relacje.", el: "Συνειδητή κατανόηση προσωπικής κατεύθυνσης και σχέσεων.",
+  ru: "Осознанно понимать личное направление и отношения.",
+};
+const futureOrder = ["family", "friendship", "career", "team", "founder"] as const;
+const countCopy: Record<Locale, (sections: number, questions: number) => string> = {
+  de: (sections, questions) => `${sections} Abschnitte · ${questions} Fragen`, en: (sections, questions) => `${sections} sections · ${questions} questions`,
+  es: (sections, questions) => `${sections} secciones · ${questions} preguntas`, tr: (sections, questions) => `${sections} bölüm · ${questions} soru`,
+  pl: (sections, questions) => `${sections} sekcji · ${questions} pytań`, el: (sections, questions) => `${sections} ενότητες · ${questions} ερωτήσεις`,
+  ru: (sections, questions) => `${sections} разделов · ${questions} вопросов`,
+};
+
 export function getLifeAlignmentHubContent(locale: Locale) {
   const copy = moduleCopy[locale as keyof typeof moduleCopy];
-  if (!copy) return { hub: lifeAlignmentHub, available: availableLifeAlignmentModules, future: futureLifeAlignmentModules };
   return {
-    hub: { ...lifeAlignmentHub, ...copy.hub },
-    available: availableLifeAlignmentModules.map((module, index) => ({ ...module, ...copy.available[index] })) as unknown as readonly AvailableLifeAlignmentModule[],
-    future: futureLifeAlignmentModules.map((module, index) => ({ ...module, purpose: copy.futurePurpose[index], audience: copy.futureAudience[index], statusLabel: copy.comingLater })) as readonly FutureLifeAlignmentModule[],
+    hub: { ...lifeAlignmentHub, ...(copy?.hub ?? {}), title: expandedHubTitle[locale] },
+    available: availableLifeAlignmentModules.map((module, index) => {
+      if (!isRelationshipModuleId(module.id)) return { ...module, ...(copy?.available[index] ?? {}) };
+      const relationship = getRelationshipModule(module.id);
+      return { ...module, title: relationshipText(relationship.title, locale), purpose: relationshipText(relationship.shortDescription, locale), audience: `${relationshipUi(locale, "reflectSolo")} · ${relationshipUi(locale, "inviteSomeone")}`, statusLabel: "V1.1", privacy: `${relationshipUi(locale, "reflectSolo")} · ${relationshipUi(locale, "privateInvite")}`, duration: countCopy[locale](relationship.sections.length, relationship.questions.length) };
+    }) as readonly AvailableLifeAlignmentModule[],
+    future: futureLifeAlignmentModules.map((module) => { const index = futureOrder.indexOf(module.id); return copy && index >= 0 ? { ...module, purpose: copy.futurePurpose[index], audience: copy.futureAudience[index], statusLabel: copy.comingLater } : module; }) as readonly FutureLifeAlignmentModule[],
   };
 }

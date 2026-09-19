@@ -22,6 +22,8 @@ const knownStaticRoutes = new Set([
   "/life-alignment/partner",
   "/life-alignment/life-vision",
   "/find-your-next-step",
+  "/life-alignment/friendship",
+  "/life-alignment/founder",
   "/find-your-next-step/self",
   "/find-your-next-step/career",
   "/find-your-next-step/problem",

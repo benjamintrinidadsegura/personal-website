@@ -26,7 +26,7 @@ type LifeAlignmentModuleBase = {
 export type AvailableLifeAlignmentModule = LifeAlignmentModuleBase & {
   status: "available";
   mode: LifeAlignmentModuleMode;
-  href: `/life-alignment/${"self" | "partner" | "life-vision"}`;
+  href: `/life-alignment/${"self" | "partner" | "friendship" | "founder" | "life-vision"}`;
   privacy: string;
   duration: string;
   scene: {
@@ -77,12 +77,12 @@ export const lifeAlignmentModules = [
     shortTitle: "Partner",
     mode: "WE",
     purpose: "Vergleicht zwei unabhängig beantwortete Perspektiven und macht Gesprächsbedarf sichtbar, ohne Kompatibilitätsurteil.",
-    audience: "Für zwei Menschen auf einem Gerät",
+    audience: "Solo oder für zwei Menschen in einer privaten Einladungssitzung",
     status: "available",
-    statusLabel: "Verfügbar · Beta",
+    statusLabel: "Verfügbar · V1.1",
     href: "/life-alignment/partner",
-    privacy: "Local-only · unabhängige Übergabe auf demselben Gerät",
-    duration: "Zwei Perspektiven · etwa 15–20 Minuten",
+    privacy: "Solo lokal · Einladungen in privater Sitzung; bestehender Shared-Device-Ablauf bleibt verfügbar",
+    duration: "6 Abschnitte · 18 Fragen",
     scene: { src: partnerScene.src, alt: partnerScene.alt },
   },
   {
@@ -117,15 +117,15 @@ export const lifeAlignmentModules = [
     id: "friendship",
     title: "Friendship",
     shortTitle: "Friendship",
-    mode: null,
+    mode: "WE",
     purpose: "Nähe, Gegenseitigkeit und unterschiedliche Erwartungen in Freundschaften reflektieren.",
     audience: "Für Freundschaftskontexte",
-    status: "coming-later",
-    statusLabel: "Kommt später",
-    href: null,
-    privacy: null,
-    duration: null,
-    scene: null,
+    status: "available",
+    statusLabel: "Verfügbar · V1.1",
+    href: "/life-alignment/friendship",
+    privacy: "Solo lokal · Einladungen in privater Sitzung",
+    duration: "5 Abschnitte · 16 Fragen",
+    scene: { src: lifeAlignmentScene.src, alt: lifeAlignmentScene.alt },
   },
   {
     id: "career",
@@ -159,15 +159,15 @@ export const lifeAlignmentModules = [
     id: "founder",
     title: "Founder",
     shortTitle: "Founder",
-    mode: null,
+    mode: "WE",
     purpose: "Unternehmerische Verantwortung, persönliche Kapazität und Richtung gemeinsam betrachten.",
     audience: "Für Founder-Kontexte",
-    status: "coming-later",
-    statusLabel: "Kommt später",
-    href: null,
-    privacy: null,
-    duration: null,
-    scene: null,
+    status: "available",
+    statusLabel: "Verfügbar · V1.1",
+    href: "/life-alignment/founder",
+    privacy: "Solo lokal · Einladungen in privater Sitzung",
+    duration: "7 Abschnitte · 30 Fragen",
+    scene: { src: lifeAlignmentScene.src, alt: lifeAlignmentScene.alt },
   },
 ] as const satisfies readonly LifeAlignmentModule[];
 

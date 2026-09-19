@@ -231,7 +231,8 @@ test("the route, result landscape, navigation, discovery, sitemap, and privacy s
   assert.match(journey, /<SelfClosingOrientation result=\{result\}/);
   for (const source of [header, discovery, sitemap]) assert.match(source, /life-alignment|lifeAlignment/);
   assert.match(privacy, /getPrivacyDictionary/);
-  assert.match(privacy, /copy\.life\.local/);
+  assert.match(privacy, /lifeAlignmentLocalPrivacyCopy/);
+  assert.match(privacy, /relationshipAlignmentPrivacyCopy/);
   assert.match(privacy, /copy\.life\.partner/);
   assert.match(privacy, /copy\.life\.export/);
 });
