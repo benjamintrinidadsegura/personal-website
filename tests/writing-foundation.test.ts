@@ -325,13 +325,17 @@ test("mode switching is local-only and publishing reads the latest snapshot ref"
 test("Writing editor dependency versions stay on the approved security patch", () => {
   const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
   const lock = JSON.parse(readFileSync(new URL("../package-lock.json", import.meta.url), "utf8"));
-  assert.equal(packageJson.dependencies.next, "16.2.11");
-  assert.equal(packageJson.devDependencies["eslint-config-next"], "16.2.11");
-  assert.equal(lock.packages["node_modules/next"].version, "16.2.11");
-  assert.equal(lock.packages["node_modules/eslint-config-next"].version, "16.2.11");
+  assert.equal(packageJson.dependencies.next, "16.3.5");
+  assert.equal(packageJson.devDependencies["eslint-config-next"], "16.3.5");
+  assert.equal(lock.packages["node_modules/next"].version, "16.3.5");
+  assert.equal(lock.packages["node_modules/eslint-config-next"].version, "16.3.5");
   for (const name of ["@blocknote/core", "@blocknote/react", "@blocknote/ariakit"]) {
     assert.equal(packageJson.dependencies[name], "0.52.1", name);
     assert.equal(lock.packages[`node_modules/${name}`].version, "0.52.1", name);
+  }
+  for (const name of ["@tiptap/core", "@tiptap/pm", "@tiptap/react"]) {
+    assert.equal(packageJson.overrides[name], "3.30.5", name);
+    assert.equal(lock.packages[`node_modules/${name}`].version, "3.30.5", name);
   }
 });
 

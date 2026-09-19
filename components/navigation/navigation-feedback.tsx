@@ -4,12 +4,15 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const PENDING_ATTRIBUTE = "data-navigation-pending";
+const SETTLING_ATTRIBUTE = "data-navigation-settling";
 const FALLBACK_TIMEOUT_MS = 10_000;
 const MINIMUM_VISIBLE_MS = 160;
 const CACHED_ROUTE_SETTLE_MS = 180;
+const VISUAL_SETTLE_MS = 300;
 
 let fallbackTimer: number | undefined;
-let settleTimer: number | undefined;
+let minimumTimer: number | undefined;
+let resetTimer: number | undefined;
 let feedbackStartedAt = 0;
 let loadingBoundaryObserved = false;
 
@@ -42,25 +45,41 @@ export function shouldStartNavigationFeedback(intent: NavigationFeedbackIntent):
 export function stopNavigationFeedback() {
   if (typeof document === "undefined") return;
   document.documentElement.removeAttribute(PENDING_ATTRIBUTE);
+  document.documentElement.removeAttribute(SETTLING_ATTRIBUTE);
   if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
-  if (settleTimer !== undefined) window.clearTimeout(settleTimer);
+  if (minimumTimer !== undefined) window.clearTimeout(minimumTimer);
+  if (resetTimer !== undefined) window.clearTimeout(resetTimer);
   fallbackTimer = undefined;
-  settleTimer = undefined;
+  minimumTimer = undefined;
+  resetTimer = undefined;
+  loadingBoundaryObserved = false;
+}
+
+function finishNavigationFeedback() {
+  if (!document.documentElement.hasAttribute(PENDING_ATTRIBUTE)) {
+    stopNavigationFeedback();
+    return;
+  }
+  document.documentElement.setAttribute(SETTLING_ATTRIBUTE, "true");
+  document.documentElement.removeAttribute(PENDING_ATTRIBUTE);
+  if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
+  fallbackTimer = undefined;
+  if (resetTimer !== undefined) window.clearTimeout(resetTimer);
+  resetTimer = window.setTimeout(stopNavigationFeedback, VISUAL_SETTLE_MS);
   loadingBoundaryObserved = false;
 }
 
 function stopNavigationFeedbackAfterMinimum() {
   const remaining = Math.max(0, MINIMUM_VISIBLE_MS - (performance.now() - feedbackStartedAt));
-  if (settleTimer !== undefined) window.clearTimeout(settleTimer);
-  settleTimer = window.setTimeout(stopNavigationFeedback, remaining);
+  if (minimumTimer !== undefined) window.clearTimeout(minimumTimer);
+  minimumTimer = window.setTimeout(finishNavigationFeedback, remaining);
 }
 
 export function startNavigationFeedback() {
   if (typeof document === "undefined") return;
+  stopNavigationFeedback();
   feedbackStartedAt = performance.now();
-  loadingBoundaryObserved = false;
   document.documentElement.setAttribute(PENDING_ATTRIBUTE, "true");
-  if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
   fallbackTimer = window.setTimeout(stopNavigationFeedback, FALLBACK_TIMEOUT_MS);
 }
 

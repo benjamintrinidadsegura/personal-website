@@ -95,3 +95,20 @@ test("the dynamic journey route owns static params, metadata, canonicals, and un
   assert.equal(route.includes('if (journey.slug === "career")'), true);
   assert.equal(route.includes("<FindYourNextStepCareer journey={journey} locale={locale} />"), true);
 });
+
+test("each visited FYNS journey owns a separate client loading boundary", () => {
+  const boundary = readFileSync(new URL("../components/find-your-next-step/journey-client.tsx", import.meta.url), "utf8");
+  const wrappers = expectedSlugs.map((slug) => readFileSync(
+    new URL(`../components/find-your-next-step/find-your-next-step-${slug}.tsx`, import.meta.url),
+    "utf8",
+  ));
+
+  assert.match(boundary, /^"use client";/u);
+  for (const moduleName of ["self-reflection-journey", "career-exploration-journey", "problem-journey", "idea-journey"]) {
+    assert.equal(boundary.includes(`dynamic(() => import("@/components/find-your-next-step/${moduleName}")`), true);
+  }
+  for (const [index, slug] of expectedSlugs.entries()) {
+    assert.equal(wrappers[index].includes(`<FynsJourneyClient journey="${slug}" />`), true);
+    assert.doesNotMatch(wrappers[index], /from "@\/components\/find-your-next-step\/(?:self-reflection-journey|career-exploration-journey|problem-journey|idea-journey)"/u);
+  }
+});

@@ -36,6 +36,8 @@ test("feedback is layout-neutral, reduced-motion safe and covers full-document l
   const switcher = readFileSync("components/i18n/language-switcher.tsx", "utf8");
 
   assert.match(css, /\.navigation-feedback\s*\{[\s\S]*position:\s*fixed/u);
+  assert.match(css, /data-navigation-settling/u);
+  assert.match(css, /navigation-feedback-sheen/u);
   assert.match(
     css,
     /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*\.navigation-feedback[\s\S]*animation:\s*none;[\s\S]*transform:\s*scaleX\(0\.82\)/u,
@@ -45,6 +47,7 @@ test("feedback is layout-neutral, reduced-motion safe and covers full-document l
   const feedback = readFileSync("components/navigation/navigation-feedback.tsx", "utf8");
   assert.match(feedback, /addEventListener\("click", handleClick, true\)/u);
   assert.match(feedback, /event\.defaultPrevented\) stopNavigationFeedback\(\)/u);
+  assert.match(feedback, /setAttribute\(SETTLING_ATTRIBUTE, "true"\)/u);
   assert.match(switcher, /startNavigationFeedback\(\);[\s\S]*window\.location\.assign/u);
   assert.doesNotMatch(switcher, /router\.(?:push|replace)/u);
 });

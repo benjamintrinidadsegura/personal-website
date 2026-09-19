@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { ContextScene } from "@/components/find-your-next-step/context-scene";
 import { FindYourNextStepJourneyBreadcrumb } from "@/components/find-your-next-step/find-your-next-step-journey";
-import { SelfReflectionJourney } from "@/components/find-your-next-step/self-reflection-journey";
+import { FynsJourneyClient } from "@/components/find-your-next-step/journey-client";
 import { StatusPill } from "@/components/ui/status-pill";
 import { getFindYourNextStep } from "@/data/find-your-next-step";
 import { getLocalizedFynsContextScene } from "@/data/find-your-next-step-figures";
@@ -50,7 +50,7 @@ export function FindYourNextStepSelf({ journey, locale }: { journey: NextStepJou
           <ContextScene scene={getLocalizedFynsContextScene("self", locale)} priority />
         </div>
 
-        <SelfReflectionJourney />
+        <FynsJourneyClient journey="self" />
 
         <div className="flex flex-col items-start justify-between gap-6 border-t border-white/15 py-14 sm:flex-row sm:items-center">
           <p className="max-w-xl text-slate-500">

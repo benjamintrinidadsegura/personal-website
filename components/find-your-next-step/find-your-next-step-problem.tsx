@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { ContextScene } from "@/components/find-your-next-step/context-scene";
 import { FindYourNextStepJourneyBreadcrumb } from "@/components/find-your-next-step/find-your-next-step-journey";
-import { ProblemJourney } from "@/components/find-your-next-step/problem-journey";
+import { FynsJourneyClient } from "@/components/find-your-next-step/journey-client";
 import { StatusPill } from "@/components/ui/status-pill";
 import { getFindYourNextStep } from "@/data/find-your-next-step";
 import { getLocalizedFynsContextScene } from "@/data/find-your-next-step-figures";
@@ -25,7 +25,7 @@ export function FindYourNextStepProblem({ journey, locale }: { journey: NextStep
           <p className="max-w-2xl border-l border-[var(--journey-accent)] pl-7 text-lg font-bold leading-8 text-slate-200 sm:pl-9 sm:text-xl">{journey.description}</p>
         </header>
         <div className="py-10 sm:py-14"><ContextScene scene={getLocalizedFynsContextScene("problem", locale)} priority /></div>
-        <ProblemJourney />
+        <FynsJourneyClient journey="problem" />
         <div className="flex flex-col items-start justify-between gap-6 border-t border-white/15 py-14 sm:flex-row sm:items-center"><p className="max-w-xl text-slate-500">{shell.problemBoundary}</p><Link href={localizeHref(findYourNextStep.href, locale)} className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 py-3 font-bold text-slate-200 hover:border-[var(--journey-accent)]/60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--journey-accent)]">← {shell.back}</Link></div>
       </div>
     </article>

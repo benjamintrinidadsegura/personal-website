@@ -20,6 +20,11 @@ Das verbindliche Betriebs- und Production-Readiness-Handbuch liegt unter
 Die Production- und Datenschutz-Gates für Newsletter V1 liegen unter
 [`docs/newsletter-production-readiness.md`](docs/newsletter-production-readiness.md).
 
+## Observability
+
+Die providerneutrale, datensparsame Fehlerdiagnose ist unter
+[`docs/observability-readiness.md`](docs/observability-readiness.md) dokumentiert.
+
 ## Prüfungen
 
 ```powershell
