@@ -1,239 +1,218 @@
-import { spotlights } from "@/data/spotlights";
-import { findYourNextStep } from "@/data/find-your-next-step";
-import { lifeAlignment } from "@/data/life-alignment";
-import { getProject } from "@/data/projects";
+import { projects } from "@/data/projects";
+import { publishedSpotlights } from "@/data/spotlights";
+import { createWorldMapConnections } from "@/data/world-map";
+import type { Project, SpotlightPulseSource } from "@/types/content";
+import type { DiscoveryItem } from "@/types/discovery";
 import type {
-  HqPulseCandidate,
+  HqPulseCurrentState,
   HqPulseItem,
-  HqPulseUpdate,
-  SpotlightPulseSource,
-} from "@/types/content";
+  HqPulseSource,
+  HqPulseSourceClassification,
+  HqPulseViewModel,
+  HumanPulseContent,
+} from "@/types/hq-pulse";
+import type { WorldMapConnection } from "@/types/world-map";
 import type { PublicWritingSummary } from "@/types/writing";
 
-export const HQ_PULSE_LIMIT = 5;
+export const HQ_PULSE_LIMIT = 8;
 
-function projectHref(slug: string) {
-  const project = getProject(slug);
-  if (!project) throw new Error(`HQ Pulse references an unknown project: ${slug}`);
-  return `/projects/${project.slug}`;
-}
+export const hqPulseSourceClassification: Readonly<Record<HqPulseSource, HqPulseSourceClassification>> = {
+  writing: "EVENT_CAPABLE",
+  projects: "CURRENT_STATE_ONLY",
+  people: "EVENT_CAPABLE",
+  "world-map": "CURRENT_STATE_ONLY",
+  discovery: "CURRENT_STATE_ONLY",
+};
+
+const emptyHumanPulse: HumanPulseContent = {
+  rightNow: [],
+  onMyMind: null,
+  next: null,
+  openLoops: [],
+};
 
 function validPublicDate(value: string | undefined): value is string {
   return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }
 
-/**
- * Editorial updates cover meaningful public releases without canonical public
- * timestamps. `sequence` is an explicit newest-first fallback, never a date.
- * Canonical content should use the same `identity` if it supersedes an entry.
- */
-export const hqPulseUpdates: readonly HqPulseUpdate[] = [
-  {
-    id: "ecosystem-contact-social-v1",
-    identity: "editorial:ecosystem-contact-social-v1",
-    origin: "editorial",
-    sequence: 5,
-    visibility: "public",
-    kind: "ecosystem",
-    type: "Digital HQ",
-    title: "Contact und Social Presence verbinden das HQ nach außen",
-    teaser:
-      "Verifizierte Profile, klare Projektwege und eine ehrliche Booking-Grenze machen sichtbar, wie Menschen Benjamin und GOATRECRUTAINER außerhalb des HQ erreichen können.",
-    href: "/#contact",
-    ctaLabel: "Contact & Social entdecken",
-    source: "Digital HQ",
-    status: "Live",
-  },
-  {
-    id: "goatrecrutainer-ecosystem-v1",
-    identity: "editorial:goatrecrutainer-ecosystem-v1",
-    origin: "editorial",
-    sequence: 4,
-    visibility: "public",
-    kind: "project",
-    type: "Project update",
-    title: "GOATRECRUTAINER öffnet sein professionelles Ökosystem",
-    teaser:
-      "Die Projektseite erklärt Marke, Recruiting-Angebot und Formate im Zusammenhang — und führt mit klarer externer Kennzeichnung zur offiziellen Website weiter.",
-    href: projectHref("goatrecrutainer"),
-    ctaLabel: "GOATRECRUTAINER entdecken",
-    source: "GOATRECRUTAINER",
-    status: "Active / Growing",
-  },
-  {
-    id: "ratecom-ecosystem-v1",
-    identity: "editorial:ratecom-ecosystem-v1",
-    origin: "editorial",
-    sequence: 3,
-    visibility: "public",
-    kind: "project",
-    type: "Project update",
-    title: "RateCom ist als eigener Produktweg im Digital HQ verankert",
-    teaser:
-      "RateCom hat eine vollständige Projektoberfläche und einen verifizierten Weg zur offiziellen Website — mit transparentem Rebuild-Status statt überzogener Produktversprechen.",
-    href: projectHref("ratecom"),
-    ctaLabel: "RateCom entdecken",
-    source: "RateCom",
-    status: "Rebuild",
-  },
-  {
-    id: "life-alignment-modular-v1",
-    identity: "editorial:life-alignment-modular-v1",
-    origin: "editorial",
-    sequence: 2,
-    visibility: "public",
-    kind: "tool",
-    type: "Tool / Module",
-    title: "Life Alignment V1 verbindet drei eigenständige Perspektiven",
-    teaser:
-      "Self, Partner / Relationship und Life Vision bilden eine modulare Reflexionsfamilie — lokal, nachvollziehbar und ohne Lebens-, Beziehungs- oder Kompatibilitätsscore.",
-    href: lifeAlignment.href,
-    ctaLabel: "Life Alignment öffnen",
-    source: "Human Context",
-    status: "V1 complete",
-  },
-  {
-    id: "find-your-next-step-v1",
-    identity: "editorial:find-your-next-step-v1",
-    origin: "editorial",
-    sequence: 1,
-    visibility: "public",
-    kind: "tool",
-    type: "Tool / Journey",
-    title: "Find Your Next Step V1 bündelt vier funktionale Journeys",
-    teaser:
-      "Self, Career, Problem und Idea führen von persönlichem Kontext zu einem nachvollziehbaren nächsten Schritt — ohne Konto, Speicherung oder fertige Antwort.",
-    href: findYourNextStep.href,
-    ctaLabel: "Find Your Next Step öffnen",
-    source: "Human Context",
-    status: "V1 complete",
-  },
-];
+function publicationTime(item: HqPulseItem): number {
+  return Date.parse(item.occurredAt);
+}
 
 export function createWritingPulseCandidates(
   articles: readonly PublicWritingSummary[],
-): HqPulseCandidate[] {
-  return articles
-    .filter((article) => validPublicDate(article.publishedAt))
-    .map((article) => ({
-      id: `writing-${article.id}`,
-      identity: `writing:${article.id}`,
-      origin: "canonical",
-      visibility: "public",
-      kind: "content",
-      type: "Article",
-      title: article.title,
-      teaser: article.excerpt,
-      href: `/writing/${article.slug}`,
-      ctaLabel: article.contentType === "essay" ? "Essay lesen" : "Note lesen",
-      date: article.publishedAt,
-      source: "Writing",
-      status: "Published",
-    }));
-}
-
-export function createInterviewPulseCandidates(
-  interviews: readonly SpotlightPulseSource[],
-): HqPulseCandidate[] {
-  return interviews.flatMap((interview) => {
-    if (interview.status !== "published" || !interview.title) return [];
+): HqPulseItem[] {
+  return articles.flatMap((article) => {
+    if (!validPublicDate(article.publishedAt)) return [];
     return [{
-      id: `spotlight-${interview.slug}`,
-      identity: `spotlight:${interview.slug}`,
-      origin: "canonical" as const,
-      visibility: "public" as const,
-      kind: "content" as const,
-      type: "Interview",
-      title: interview.title,
-      teaser: interview.teaser,
-      href: `/people/${interview.slug}`,
-      ctaLabel: `${interview.format} öffnen`,
-      ...(validPublicDate(interview.publishedAt) ? { date: interview.publishedAt } : {}),
-      source: "GOATRECRUTAINER",
-      status: "Published",
+      id: `writing-${article.id}`,
+      source: "writing" as const,
+      type: "publication" as const,
+      occurredAt: article.publishedAt,
+      title: article.title,
+      summary: article.excerpt,
+      href: `/writing/${article.slug}`,
+      provenance: {
+        source: "writing" as const,
+        entityId: article.id,
+        key: `writing:${article.id}:published`,
+      },
     }];
   });
 }
 
-function publicationTime(candidate: HqPulseCandidate): number | null {
-  return validPublicDate(candidate.date) ? Date.parse(candidate.date) : null;
+export function createPeoplePulseCandidates(
+  people: readonly SpotlightPulseSource[],
+): HqPulseItem[] {
+  return people.flatMap((person) => {
+    if (person.status !== "published" || !person.title || !validPublicDate(person.publishedAt)) return [];
+    return [{
+      id: `people-${person.slug}`,
+      source: "people" as const,
+      type: "conversation" as const,
+      occurredAt: person.publishedAt,
+      title: person.title,
+      summary: person.teaser,
+      href: `/people/${person.slug}`,
+      provenance: {
+        source: "people" as const,
+        entityId: person.slug,
+        key: `people:${person.slug}:published`,
+      },
+    }];
+  });
+}
+
+export const createInterviewPulseCandidates = createPeoplePulseCandidates;
+
+export function createProjectPulseCurrentStates(
+  sourceProjects: readonly Project[],
+): HqPulseCurrentState[] {
+  return sourceProjects
+    .filter(({ featured }) => featured)
+    .map((project) => ({
+      id: `project-state-${project.slug}`,
+      source: "projects" as const,
+      entityId: project.slug,
+      title: project.name,
+      summary: project.currentState,
+      href: `/projects/${project.slug}`,
+      status: project.status,
+    }));
+}
+
+export function createWorldMapPulseCurrentStates(
+  connections: readonly WorldMapConnection[],
+): HqPulseCurrentState[] {
+  const publicConnections = connections.filter((connection) => (
+    connection.relationships.length > 0
+    && connection.relationships.every(({ published }) => published)
+    && connection.entity.sourceHref.startsWith("/")
+  ));
+  if (publicConnections.length === 0) return [];
+
+  return [{
+    id: "world-map-state-public-context",
+    source: "world-map",
+    entityId: "public-context",
+    title: "World Map",
+    summary: "Veröffentlichte Gespräche und Beziehungen sind mit ihrem öffentlichen Ortskontext verbunden.",
+    href: "/world",
+    template: "world-map-public-context",
+  }];
+}
+
+export function createDiscoveryPulseCurrentStates(
+  items: readonly DiscoveryItem[],
+): HqPulseCurrentState[] {
+  const eligible = items.filter((item) => (
+    !item.id.startsWith("pulse-")
+    && item.id !== "page-pulse"
+    && (item.status === "Live" || item.status === "Beta")
+    && typeof item.href === "string"
+    && item.href.startsWith("/")
+  ));
+  if (eligible.length === 0) return [];
+
+  return [{
+    id: "discovery-state-available",
+    source: "discovery",
+    entityId: "public-index",
+    title: "Discovery",
+    summary: "Öffentliche Wege durch Projekte, Menschen, Writing und Tools sind über Discovery erreichbar.",
+    href: "/#home",
+    template: "discovery-available",
+  }];
 }
 
 /**
- * Ordering rule: canonical items with real public timestamps come first,
- * newest timestamp first. Undated editorial releases follow by descending
- * sequence. Undated canonical items remain eligible behind explicit editorial
- * order and use stable identity ordering. Ties always resolve by identity.
+ * Chronology is strict: only items with canonical public timestamps enter the
+ * timeline. Stable provenance keys deduplicate and break timestamp ties.
  */
-function compareCandidates(left: HqPulseCandidate, right: HqPulseCandidate): number {
-  const leftTime = publicationTime(left);
-  const rightTime = publicationTime(right);
-  if (leftTime !== null || rightTime !== null) {
-    if (leftTime === null) return 1;
-    if (rightTime === null) return -1;
-    if (leftTime !== rightTime) return rightTime - leftTime;
-  }
-
-  const sequenceDifference = (right.sequence ?? Number.MIN_SAFE_INTEGER) - (left.sequence ?? Number.MIN_SAFE_INTEGER);
-  if (sequenceDifference !== 0) return sequenceDifference;
-  return left.identity.localeCompare(right.identity, "en");
-}
-
-function mergeDuplicate(
-  current: HqPulseCandidate,
-  incoming: HqPulseCandidate,
-): HqPulseCandidate {
-  if (current.origin !== incoming.origin) {
-    const canonical = current.origin === "canonical" ? current : incoming;
-    const editorial = current.origin === "editorial" ? current : incoming;
-    return { ...canonical, sequence: canonical.sequence ?? editorial.sequence };
-  }
-  return compareCandidates(current, incoming) <= 0 ? current : incoming;
-}
-
 export function resolveHqPulseItems(
-  candidates: readonly HqPulseCandidate[],
+  candidates: readonly HqPulseItem[],
   limit = HQ_PULSE_LIMIT,
 ): HqPulseItem[] {
   if (limit <= 0) return [];
-
-  const byIdentity = new Map<string, HqPulseCandidate>();
+  const byProvenance = new Map<string, HqPulseItem>();
   for (const candidate of candidates) {
-    if (candidate.visibility !== "public") continue;
-    const current = byIdentity.get(candidate.identity);
-    byIdentity.set(candidate.identity, current ? mergeDuplicate(current, candidate) : candidate);
+    if (!validPublicDate(candidate.occurredAt)) continue;
+    const current = byProvenance.get(candidate.provenance.key);
+    if (!current || candidate.id.localeCompare(current.id, "en") < 0) {
+      byProvenance.set(candidate.provenance.key, candidate);
+    }
   }
 
-  return [...byIdentity.values()]
-    .sort(compareCandidates)
-    .slice(0, limit)
-    .map(({ identity, origin, sequence, visibility, ...item }) => {
-      void identity;
-      void origin;
-      void sequence;
-      void visibility;
-      return item;
-    });
+  return [...byProvenance.values()]
+    .sort((left, right) => (
+      publicationTime(right) - publicationTime(left)
+      || left.provenance.key.localeCompare(right.provenance.key, "en")
+      || left.id.localeCompare(right.id, "en")
+    ))
+    .slice(0, limit);
 }
 
-type HqPulseAggregationInput = {
+export type HqPulseCompositionInput = {
   publishedWriting?: readonly PublicWritingSummary[];
-  interviews?: readonly SpotlightPulseSource[];
-  editorialUpdates?: readonly HqPulseUpdate[];
+  people?: readonly SpotlightPulseSource[];
+  sourceProjects?: readonly Project[];
+  worldMapConnections?: readonly WorldMapConnection[];
+  discoveryItems?: readonly DiscoveryItem[];
+  human?: HumanPulseContent;
   limit?: number;
 };
 
-export function createHqPulseItems({
+export function createHqPulseViewModel({
   publishedWriting = [],
-  interviews = spotlights,
-  editorialUpdates = hqPulseUpdates,
+  people = publishedSpotlights,
+  sourceProjects = projects,
+  worldMapConnections = createWorldMapConnections(publishedSpotlights),
+  discoveryItems = [],
+  human = emptyHumanPulse,
   limit = HQ_PULSE_LIMIT,
-}: HqPulseAggregationInput = {}): HqPulseItem[] {
-  return resolveHqPulseItems([
+}: HqPulseCompositionInput = {}): HqPulseViewModel {
+  const allEvents = [
     ...createWritingPulseCandidates(publishedWriting),
-    ...createInterviewPulseCandidates(interviews),
-    ...editorialUpdates,
-  ], limit);
+    ...createPeoplePulseCandidates(people),
+  ];
+
+  return {
+    human,
+    timeline: resolveHqPulseItems(allEvents, limit),
+    timelineEligibleCount: new Set(allEvents.filter(({ occurredAt }) => validPublicDate(occurredAt)).map(({ provenance }) => provenance.key)).size,
+    timelineLimit: limit,
+    currentStates: [
+      ...createProjectPulseCurrentStates(sourceProjects),
+      ...createWorldMapPulseCurrentStates(worldMapConnections),
+      ...createDiscoveryPulseCurrentStates(discoveryItems),
+    ],
+    sourceClassifications: hqPulseSourceClassification,
+  };
+}
+
+/** Compatibility surface for Discovery: automatic events only, never Human Pulse. */
+export function createHqPulseItems(input: HqPulseCompositionInput = {}): HqPulseItem[] {
+  return [...createHqPulseViewModel(input).timeline];
 }
 
 export const hqPulseItems = createHqPulseItems();

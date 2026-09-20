@@ -495,8 +495,8 @@ test("context canvas stays homepage-local while the root layout remains server-r
   assert.equal(layout.includes("<DiscoveryProvider items={discoveryItems}>"), true);
   assert.equal(layout.includes("<ContextCanvas"), false);
   assert.ok(page.indexOf("<ContextCanvas>") < page.indexOf("<Hero />"));
-  assert.ok(page.indexOf("<Hero />") < page.indexOf("<Now />"));
-  assert.ok(page.indexOf("<Now />") < page.indexOf("</ContextCanvas>"));
+  assert.ok(page.indexOf("<Hero />") < page.indexOf("<HqPulse publishedWriting={publishedWriting} />"));
+  assert.ok(page.indexOf("<HqPulse publishedWriting={publishedWriting} />") < page.indexOf("</ContextCanvas>"));
   assert.equal(context.includes("localizeDiscoveryItems(items, locale)"), true);
   assert.equal(context.includes("discoverItems(localizedItems, query)"), true);
   assert.equal(context.includes("createAdaptiveDiscoveryView(matches, selectedMatchId)"), true);

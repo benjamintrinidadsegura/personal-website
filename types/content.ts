@@ -123,35 +123,6 @@ export interface NowItem {
   accent: "cyan" | "orange";
 }
 
-export type HqPulseKind = "ecosystem" | "project" | "tool" | "content";
-export type HqPulseOrigin = "canonical" | "editorial";
-export type HqPulseVisibility = "public" | "unpublished" | "internal";
-
-export interface HqPulseItem {
-  id: string;
-  kind: HqPulseKind;
-  type: string;
-  title: string;
-  teaser: string;
-  href: string;
-  ctaLabel: string;
-  date?: string;
-  source?: string;
-  status?: string;
-}
-
-export interface HqPulseCandidate extends HqPulseItem {
-  identity: string;
-  origin: HqPulseOrigin;
-  visibility: HqPulseVisibility;
-  sequence?: number;
-}
-
-export interface HqPulseUpdate extends HqPulseCandidate {
-  origin: "editorial";
-  sequence: number;
-}
-
 export interface WritingEntry {
   title: string;
   excerpt: string;
@@ -175,3 +146,17 @@ export interface SocialLink {
   url: string;
   context: string;
 }
+
+export type {
+  HqPulseCurrentState,
+  HqPulseItem,
+  HqPulseProvenance,
+  HqPulseSource,
+  HqPulseSourceClassification,
+  HqPulseViewModel,
+  HumanPulseContent,
+  HumanPulseEntry,
+  OpenLoop,
+  OpenLoopStatus,
+  OpenLoopType,
+} from "@/types/hq-pulse";

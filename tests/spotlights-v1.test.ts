@@ -131,9 +131,9 @@ test("HQ Pulse receives published Spotlight metadata and trustworthy dates", () 
   const candidates = createInterviewPulseCandidates(spotlights);
   assert.equal(candidates.length, 6);
   for (const candidate of candidates) {
-    assert.match(candidate.identity, /^spotlight:/u);
+    assert.match(candidate.provenance.key, /^people:/u);
     assert.match(candidate.href, /^\/people\//u);
-    assert.ok(candidate.date && !Number.isNaN(Date.parse(candidate.date)));
+    assert.ok(candidate.occurredAt && !Number.isNaN(Date.parse(candidate.occurredAt)));
   }
 });
 

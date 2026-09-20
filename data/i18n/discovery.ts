@@ -1,6 +1,6 @@
 import { getLocalizedProjects } from "@/data/i18n/projects";
 import { getLocalizedPublishedSpotlights } from "@/data/i18n/people";
-import { localizeHqPulseItem } from "@/data/i18n/hq-pulse";
+import { getHqPulseCopy } from "@/data/i18n/hq-pulse";
 import { getWorldMapDictionary } from "@/data/i18n/world-map";
 import { guidedDiscoveryPrompts } from "@/data/discovery-curation";
 import { projects } from "@/data/projects";
@@ -96,11 +96,10 @@ const englishStaticCopy: Record<string, Partial<DiscoveryItem>> = {
   "tool-find-your-next-step-idea": { description: "Structure an idea and turn it into a first realistic plan.", category: "Idea Journey", tags: ["idea", "concept", "project"], keywords: ["develop an idea", "start a project"] },
   "tool-echowall": { description: "A moderated community wall for thoughts, feedback, reactions and messages.", category: "Community Tool", tags: ["Community", "Feedback", "Signals"], keywords: ["Echo", "message", "wall"] },
   "page-home": { description: "Benjamin Trinidad Segura’s central digital home.", category: "Page", tags: ["Home", "bts.online"], keywords: ["homepage", "overview"] },
-  "page-now": { description: "Current projects, developments and areas of focus.", category: "Page", tags: ["Current", "Building"], keywords: ["Developing", "Rebuilding", "Exploring"] },
   "page-projects": { description: "All projects and ideas in the growing ecosystem.", category: "Page", tags: ["Projects", "Portfolio"], keywords: ["Building", "projects"] },
   "page-writing": { description: "Field Notes about work, identity, courage and development.", category: "Page", tags: ["Insights", "articles"], keywords: ["writing", "essays", "magazine"] },
   "page-interviews": { description: "Conversations about work, decisions, ideas and what lies behind visible roles.", category: "Page", tags: ["Insights", "Human Archive"], keywords: ["conversations", "people", "interviews"] },
-  "page-pulse": { description: "Recent stories, formats and project updates.", category: "Page", tags: ["Insights", "Updates"], keywords: ["current", "Pulse"] },
+  "page-pulse": { description: "Human focus and verifiable public developments in the Digital HQ.", category: "Page", tags: ["Insights", "Updates"], keywords: ["current", "Pulse", "Open Loops"] },
   "page-about": { description: "How Benjamin connects recruiting, talent acquisition, storytelling and product thinking to make missing human context visible.", category: "ProfilePage", tags: ["Benjamin Trinidad Segura", "Personal Positioning", "Human Context"], keywords: ["GOATRECRUTAINER", "RateCom", "Recruiting", "Talent Acquisition", "Product Thinking", "community", "Discovery"] },
   "page-contact": { description: "Contact, projects and verified profiles for Benjamin and GOATRECRUTAINER.", category: "Page", tags: ["Partners", "Contact", "Social"], keywords: ["Collaborations", "Recruiting", "LinkedIn", "TikTok", "Instagram", "YouTube"] },
   "page-career-spotlight": { description: "The shared Career and Service Spotlight archive.", category: "Page", tags: ["Career Spotlight", "Service Spotlight", "People"], keywords: ["GOATRECRUTAINER", "interviews"] },
@@ -124,6 +123,7 @@ const extendedStaticCopy: Record<ExtendedLocale, Record<string, Partial<Discover
     "page-projects": { description: "Todos los proyectos e ideas del ecosistema en crecimiento.", category: "Página", tags: ["proyectos"], keywords: ["proyectos", "ideas"] },
     "page-writing": { description: "Notas de campo sobre trabajo, identidad, valentía y desarrollo.", category: "Página", tags: ["artículos"], keywords: ["escritura", "artículos", "ensayos"] },
     "page-interviews": { description: "Conversaciones sobre trabajo, decisiones, ideas y lo que hay detrás de los roles visibles.", category: "Página", tags: ["archivo humano"], keywords: ["personas", "entrevistas", "conversaciones"] },
+    "page-pulse": { description: "Enfoque humano y avances públicos verificables en el Digital HQ.", category: "Página", tags: ["perspectivas", "actualizaciones"], keywords: ["actual", "pulso", "caminos abiertos"] },
     "page-about": { description: "Cómo Benjamin conecta recruiting, narrativa y pensamiento de producto para mostrar contexto humano.", category: "Perfil", tags: ["posicionamiento", "contexto humano"], keywords: ["recruiting", "personas", "proyectos"] },
     "page-contact": { description: "Contacto, proyectos y perfiles verificados de Benjamin y GOATRECRUTAINER.", category: "Página", tags: ["contacto"], keywords: ["colaboración", "recruiting"] },
     "page-career-spotlight": { description: "El archivo común de Career y Service Spotlight.", category: "Página", tags: ["personas"], keywords: ["entrevistas", "carreras", "recruiting"] },
@@ -143,6 +143,7 @@ const extendedStaticCopy: Record<ExtendedLocale, Record<string, Partial<Discover
     "page-projects": { description: "Büyüyen ekosistemdeki tüm projeler ve fikirler.", category: "Sayfa", tags: ["projeler"], keywords: ["projeler", "fikirler"] },
     "page-writing": { description: "İş, kimlik, cesaret ve gelişim üzerine saha notları.", category: "Sayfa", tags: ["makaleler"], keywords: ["yazı", "makaleler", "denemeler"] },
     "page-interviews": { description: "İş, kararlar, fikirler ve görünen rollerin arkasındakiler üzerine sohbetler.", category: "Sayfa", tags: ["insan arşivi"], keywords: ["insanlar", "röportajlar", "sohbetler"] },
+    "page-pulse": { description: "Digital HQ’daki insan odağı ve doğrulanabilir kamusal gelişmeler.", category: "Sayfa", tags: ["bağlam", "güncellemeler"], keywords: ["güncel", "pulse", "açık yollar"] },
     "page-about": { description: "Benjamin’in insan bağlamını görünür kılmak için işe alım, hikâye ve ürün düşüncesini bağlama biçimi.", category: "Profil", tags: ["konumlandırma", "insan bağlamı"], keywords: ["işe alım", "insanlar", "projeler"] },
     "page-contact": { description: "Benjamin ve GOATRECRUTAINER için iletişim, projeler ve doğrulanmış profiller.", category: "Sayfa", tags: ["iletişim"], keywords: ["iş birliği", "işe alım"] },
     "page-career-spotlight": { description: "Ortak Career ve Service Spotlight arşivi.", category: "Sayfa", tags: ["insanlar"], keywords: ["röportajlar", "kariyer", "işe alım"] },
@@ -162,6 +163,7 @@ const extendedStaticCopy: Record<ExtendedLocale, Record<string, Partial<Discover
     "page-projects": { description: "Wszystkie projekty i pomysły w rozwijającym się ekosystemie.", category: "Strona", tags: ["projekty"], keywords: ["projekty", "pomysły"] },
     "page-writing": { description: "Notatki o pracy, tożsamości, odwadze i rozwoju.", category: "Strona", tags: ["artykuły"], keywords: ["pisanie", "artykuły", "eseje"] },
     "page-interviews": { description: "Rozmowy o pracy, decyzjach, pomysłach i tym, co stoi za widocznymi rolami.", category: "Strona", tags: ["archiwum ludzi"], keywords: ["ludzie", "wywiady", "rozmowy"] },
+    "page-pulse": { description: "Ludzki fokus i potwierdzalne publiczne zmiany w Digital HQ.", category: "Strona", tags: ["kontekst", "aktualizacje"], keywords: ["aktualne", "puls", "otwarte ścieżki"] },
     "page-about": { description: "Jak Benjamin łączy rekrutację, storytelling i myślenie produktowe, by pokazywać ludzki kontekst.", category: "Profil", tags: ["pozycjonowanie", "ludzki kontekst"], keywords: ["rekrutacja", "ludzie", "projekty"] },
     "page-contact": { description: "Kontakt, projekty i zweryfikowane profile Benjamina i GOATRECRUTAINER.", category: "Strona", tags: ["kontakt"], keywords: ["współpraca", "rekrutacja"] },
     "page-career-spotlight": { description: "Wspólne archiwum Career i Service Spotlight.", category: "Strona", tags: ["ludzie"], keywords: ["wywiady", "kariera", "rekrutacja"] },
@@ -181,6 +183,7 @@ const extendedStaticCopy: Record<ExtendedLocale, Record<string, Partial<Discover
     "page-projects": { description: "Όλα τα έργα και οι ιδέες στο αναπτυσσόμενο οικοσύστημα.", category: "Σελίδα", tags: ["έργα"], keywords: ["έργα", "ιδέες"] },
     "page-writing": { description: "Σημειώσεις για εργασία, ταυτότητα, θάρρος και εξέλιξη.", category: "Σελίδα", tags: ["άρθρα"], keywords: ["γραφή", "άρθρα", "δοκίμια"] },
     "page-interviews": { description: "Συζητήσεις για εργασία, αποφάσεις, ιδέες και όσα βρίσκονται πίσω από ορατούς ρόλους.", category: "Σελίδα", tags: ["ανθρώπινο αρχείο"], keywords: ["άνθρωποι", "συνεντεύξεις", "συζητήσεις"] },
+    "page-pulse": { description: "Ανθρώπινη εστίαση και επαληθεύσιμες δημόσιες εξελίξεις στο Digital HQ.", category: "Σελίδα", tags: ["πλαίσιο", "ενημερώσεις"], keywords: ["τρέχον", "παλμός", "ανοιχτοί δρόμοι"] },
     "page-about": { description: "Πώς ο Benjamin συνδέει recruiting, αφήγηση και προϊοντική σκέψη για να δείξει ανθρώπινο πλαίσιο.", category: "Προφίλ", tags: ["τοποθέτηση", "ανθρώπινο πλαίσιο"], keywords: ["recruiting", "άνθρωποι", "έργα"] },
     "page-contact": { description: "Επικοινωνία, έργα και επαληθευμένα προφίλ του Benjamin και του GOATRECRUTAINER.", category: "Σελίδα", tags: ["επικοινωνία"], keywords: ["συνεργασία", "recruiting"] },
     "page-career-spotlight": { description: "Το κοινό αρχείο Career και Service Spotlight.", category: "Σελίδα", tags: ["άνθρωποι"], keywords: ["συνεντεύξεις", "σταδιοδρομία", "recruiting"] },
@@ -200,6 +203,7 @@ const extendedStaticCopy: Record<ExtendedLocale, Record<string, Partial<Discover
     "page-projects": { description: "Все проекты и идеи растущей экосистемы.", category: "Страница", tags: ["проекты"], keywords: ["проекты", "идеи"] },
     "page-writing": { description: "Полевые заметки о работе, идентичности, смелости и развитии.", category: "Страница", tags: ["статьи"], keywords: ["тексты", "статьи", "эссе"] },
     "page-interviews": { description: "Разговоры о работе, решениях, идеях и том, что стоит за видимыми ролями.", category: "Страница", tags: ["архив людей"], keywords: ["люди", "интервью", "разговоры"] },
+    "page-pulse": { description: "Человеческий фокус и подтверждаемые публичные изменения в Digital HQ.", category: "Страница", tags: ["контекст", "обновления"], keywords: ["текущее", "пульс", "открытые пути"] },
     "page-about": { description: "Как Benjamin соединяет рекрутинг, сторителлинг и продуктовое мышление, чтобы показывать человеческий контекст.", category: "Профиль", tags: ["позиционирование", "человеческий контекст"], keywords: ["рекрутинг", "люди", "проекты"] },
     "page-contact": { description: "Контакты, проекты и проверенные профили Benjamin и GOATRECRUTAINER.", category: "Страница", tags: ["контакт"], keywords: ["сотрудничество", "рекрутинг"] },
     "page-career-spotlight": { description: "Общий архив Career и Service Spotlight.", category: "Страница", tags: ["люди"], keywords: ["интервью", "карьера", "рекрутинг"] },
@@ -237,6 +241,7 @@ export function getDiscoveryUiCopy(locale: Locale): DiscoveryUiCopy {
 
 export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: Locale): DiscoveryItem[] {
   const people = new Map(getLocalizedPublishedSpotlights(locale).map((spotlight) => [spotlight.id, spotlight]));
+  const peopleBySlug = new Map(getLocalizedPublishedSpotlights(locale).map((spotlight) => [spotlight.slug, spotlight]));
   const localizedProjectCopy = projectCopyById(locale);
   return items.map((item) => {
     let localized: DiscoveryItem = { ...item, ...(staticCopyByLocale[locale][item.id] ?? localizedProjectCopy.get(item.id)) };
@@ -256,8 +261,15 @@ export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: 
     const person = people.get(item.id);
     if (person) localized = { ...localized, title: person.fullName, description: person.teaser, category: person.format, tags: [person.professionalContext, ...person.discovery.tags], keywords: [person.displayName, ...person.discovery.keywords, interviewKeyword[locale]] };
     if (item.id.startsWith("pulse-")) {
-      const pulse = localizeHqPulseItem({ ...item, id: item.id.slice("pulse-".length), kind: "content", type: item.category, teaser: item.description, href: item.href ?? "/", ctaLabel: "", title: item.title }, locale);
-      localized = { ...localized, title: pulse.title, description: pulse.teaser, category: pulse.type, tags: [pulse.source, pulse.status].filter((value): value is string => Boolean(value)) };
+      const pulseCopy = getHqPulseCopy(locale);
+      const peoplePrefix = "pulse-people-";
+      const person = item.id.startsWith(peoplePrefix) ? peopleBySlug.get(item.id.slice(peoplePrefix.length)) : undefined;
+      localized = {
+        ...localized,
+        ...(person ? { title: person.title, description: person.teaser } : {}),
+        category: item.category === "conversation" ? pulseCopy.typeLabels.conversation : pulseCopy.typeLabels.publication,
+        tags: item.tags.map((tag) => pulseCopy.sourceLabels[tag as keyof typeof pulseCopy.sourceLabels] ?? tag),
+      };
     }
     return { ...localized, href: localized.href ? localizeHref(localized.href, locale) : undefined };
   });
