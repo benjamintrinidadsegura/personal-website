@@ -17,6 +17,7 @@
     "20260819010000_newsletter_delivery_runtime_fix.sql": "26e0390b81a2882b5a67fe5c29d2a09b6cc708aee29fd723d6cad48025b3bff6",
     "20260919000000_life_alignment_relationship_engine.sql": "e04914c0ebce3a608706512520e77975a9ec2da5dd20203f2204f07594a9e430",
     "20260919010000_life_alignment_relationship_runtime_fix.sql": "b2d817ae064037b41dcd76773f5da81b7197c8cf79eb9a07b0e00fc70abd6330",
-    "20260920000000_private_feedback.sql": "a0acddd039851e9151b150457ff4df98b0e2ba7dc9e3b4103d3f8c6aa0f68e3b"
+    "20260920000000_private_feedback.sql": "a0acddd039851e9151b150457ff4df98b0e2ba7dc9e3b4103d3f8c6aa0f68e3b",
+    "20260921000000_private_feedback_contact.sql": "36ebc9c2615dfafb17704c55bc8454e7687ec3c3dc3b2907ba88006e62c26748"
   }
 }

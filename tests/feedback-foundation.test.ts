@@ -20,6 +20,8 @@ import {
 import { validateFeedbackSubmission } from "../lib/feedback/validation";
 import { locales } from "../lib/i18n/config";
 import {
+  feedbackContactMethods,
+  feedbackContactValueMaximum,
   feedbackMessageMaximum,
   feedbackNameMaximum,
   feedbackSourceContexts,
@@ -44,6 +46,8 @@ function raw(overrides: Partial<RawFeedbackSubmission> = {}): RawFeedbackSubmiss
   return {
     message: "A useful thought with <script>alert('inert')</script> and a line\nbreak.",
     name: "",
+    contactMethod: "",
+    contactValue: "",
     sourceContext: "home",
     website: "",
     formToken: createFeedbackFormToken(secrets.formTokenSecret, NOW - 4_000),
@@ -71,6 +75,8 @@ test("Feedback validation keeps the form minimal, bounded, multilingual and plai
   assert.equal(valid.success, true);
   if (valid.success) {
     assert.equal(valid.data.name, null);
+    assert.equal(valid.data.contactMethod, null);
+    assert.equal(valid.data.contactValue, null);
     assert.equal(valid.data.sourceContext, "home");
     assert.match(valid.data.message, /<script>alert/u);
     assert.match(valid.data.message, /line\nbreak/u);
@@ -79,17 +85,34 @@ test("Feedback validation keeps the form minimal, bounded, multilingual and plai
   assert.equal(validateFeedbackSubmission(raw({ message: "   " })).success, false);
   assert.equal(validateFeedbackSubmission(raw({ message: "x".repeat(feedbackMessageMaximum + 1) })).success, false);
   assert.equal(validateFeedbackSubmission(raw({ name: "x".repeat(feedbackNameMaximum + 1) })).success, false);
+  assert.equal(validateFeedbackSubmission(raw({ contactMethod: "email", contactValue: "" })).success, false);
+  assert.equal(validateFeedbackSubmission(raw({ contactMethod: "", contactValue: "hello@example.com" })).success, false);
+  assert.equal(validateFeedbackSubmission(raw({ contactMethod: "carrier-pigeon", contactValue: "Hill 4" })).success, false);
+  assert.equal(validateFeedbackSubmission(raw({ contactMethod: "other", contactValue: "x".repeat(feedbackContactValueMaximum + 1) })).success, false);
+  assert.equal(validateFeedbackSubmission(raw({ contactMethod: "email", contactValue: "safe@example.com\u202E" })).success, false);
   assert.equal(validateFeedbackSubmission(raw({ sourceContext: "https://bts.online/private?token=secret" })).success, false);
   assert.equal(validateFeedbackSubmission(raw({ website: "bot-filled" })).success, false);
   assert.deepEqual(feedbackSourceContexts, [
     "home", "writing", "fyns", "world-map", "life-alignment", "projects", "people", "discovery", "other",
   ]);
+  assert.deepEqual(feedbackContactMethods, [
+    "email", "linkedin", "instagram", "whatsapp", "phone", "other",
+  ]);
+  for (const method of feedbackContactMethods) {
+    const contact = validateFeedbackSubmission(raw({
+      contactMethod: method,
+      contactValue: method === "other" ? "@someone elsewhere" : `${method}-contact`,
+    }));
+    assert.equal(contact.success, true, method);
+  }
 });
 
 test("the Server Action rejects unexpected fields instead of accepting an open payload", async () => {
   const form = new FormData();
   form.set("message", "Useful feedback");
   form.set("name", "");
+  form.set("contactMethod", "");
+  form.set("contactValue", "");
   form.set("sourceContext", "home");
   form.set("website", "");
   form.set("formToken", "token");
@@ -116,6 +139,8 @@ test("Feedback request processing enforces origin, purpose-bound token, reduced-
   assert.ok(databaseInput);
   const capturedInput = databaseInput as unknown as Record<string, unknown>;
   assert.equal(capturedInput.name, null);
+  assert.equal(capturedInput.contactMethod, null);
+  assert.equal(capturedInput.contactValue, null);
   assert.equal(capturedInput.sourceContext, "home");
   assert.match(String(capturedInput.networkHash), /^[0-9a-f]{64}$/u);
   assert.match(String(capturedInput.formTokenHash), /^[0-9a-f]{64}$/u);
@@ -148,10 +173,12 @@ test("public Feedback copy, Header label and factual Privacy disclosure cover al
     assert.ok(feedback.messageLabel.length > 5, locale);
     assert.ok(feedback.successTitle.length > 4, locale);
     assert.ok(feedback.privacy.length > 40, locale);
+    assert.equal(Object.keys(feedback.contactMethods).length, 6, locale);
     assert.ok(globalDictionaries[locale].nav.feedback.length > 2, locale);
     assert.ok(privacyDictionaries[locale].feedback.storage.length > 100, locale);
     assert.ok(privacyDictionaries[locale].feedback.access.length > 100, locale);
     assert.ok(privacyDictionaries[locale].feedback.retention.length > 100, locale);
+    assert.match(privacyDictionaries[locale].feedback.access, /marketing|newsletter|bülten|μάρκετινγκ|рассылк|маркетинг/iu, locale);
     assert.ok(getHqPulseCopy(locale).participationMarker.length > 3, locale);
     assert.ok(getHqPulseCopy(locale).openLoops.length > 3, locale);
   }
@@ -212,6 +239,10 @@ test("homepage Feedback UI stays one low-friction private surface with accessibl
   assert.match(form, /<textarea/u);
   assert.match(form, /name="message"/u);
   assert.match(form, /name="name"/u);
+  assert.match(form, /name="contactMethod"/u);
+  assert.match(form, /name="contactValue"/u);
+  assert.match(form, /contactMethod \?/u);
+  assert.match(form, /feedbackContactMethods\.map/u);
   assert.match(form, /name="sourceContext" value="home"/u);
   assert.match(form, /aria-live="polite"/u);
   assert.match(form, /focus-visible/u);
@@ -251,6 +282,34 @@ test("migration creates a private least-privilege inbox, fail-closed throttling 
   assert.doesNotMatch(sql, /commit\s*;/u);
 });
 
+test("the forward contact migration is nullable, paired, private and preserves the rate identity", () => {
+  const sql = source("../supabase/migrations/20260921000000_private_feedback_contact.sql").toLowerCase();
+  for (const required of [
+    "create type public.feedback_contact_method as enum",
+    "'email'",
+    "'linkedin'",
+    "'instagram'",
+    "'whatsapp'",
+    "'phone'",
+    "'other'",
+    "add column contact_method",
+    "add column contact_value",
+    "private_feedback_contact_pair_check",
+    "char_length(contact_value) between 1 and 240",
+    "p_contact_method public.feedback_contact_method",
+    "p_contact_value text",
+    "feedback.contact_method",
+    "feedback.contact_value",
+    "to service_role",
+    "to authenticated",
+  ]) assert.equal(sql.includes(required), true, required);
+  assert.match(sql, /\(contact_method is null and contact_value is null\)[\s\S]*\(contact_method is not null and contact_value is not null\)/u);
+  assert.equal((sql.match(/p_network_hash/gu) ?? []).length > 5, true);
+  assert.doesNotMatch(sql, /grant execute on function public\.submit_private_feedback\([^;]*\) to (?:anon|authenticated);/u);
+  assert.doesNotMatch(sql, /\burl\b|analytics|newsletter|marketing|message_hash/u);
+  assert.doesNotMatch(sql, /alter table public\.private_feedback\s+(?:drop|rename)|delete from public\.private_feedback|truncate/u);
+});
+
 test("existing AAL2 Studio is reused with bounded list/detail, inert text and intentional delete confirmation", () => {
   const home = source("../app/admin/page.tsx");
   const list = source("../app/admin/feedback/page.tsx");
@@ -269,6 +328,10 @@ test("existing AAL2 Studio is reused with bounded list/detail, inert text and in
   assert.match(controls, /<dialog/u);
   assert.match(controls, /Type DELETE to confirm/u);
   assert.match(detail, /whitespace-pre-wrap break-words/u);
+  assert.match(list, />Contact</u);
+  assert.match(detail, />Contact</u);
+  assert.match(detail, /contactDisplay\(feedback\)/u);
+  assert.doesNotMatch(detail, /href=\{?feedback\.contact_value|mailto:|tel:/u);
   assert.doesNotMatch(detail, /dangerouslySetInnerHTML/u);
   assert.match(config, /source: "\/admin\/:path\*"[\s\S]*private, no-store/u);
   assert.doesNotMatch(sitemap, /admin\/feedback/u);

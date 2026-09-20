@@ -13,6 +13,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { getLocale } from "@/lib/i18n/server";
 import type {
   FeedbackActionState,
+  FeedbackContactMethod,
   FeedbackSourceContext,
   RawFeedbackSubmission,
   SubmitFeedbackErrorCode,
@@ -34,6 +35,8 @@ type FeedbackSecrets = {
 type FeedbackDatabaseInput = {
   message: string;
   name: string | null;
+  contactMethod: FeedbackContactMethod | null;
+  contactValue: string | null;
   sourceContext: FeedbackSourceContext;
   networkHash: string;
   formTokenHash: string;
@@ -46,6 +49,8 @@ type SubmitFeedbackInDatabase = (
 const feedbackFormFields = new Set([
   "message",
   "name",
+  "contactMethod",
+  "contactValue",
   "sourceContext",
   "website",
   "formToken",
@@ -83,6 +88,8 @@ export async function feedbackSubmissionFromFormData(formData: FormData): Promis
   return {
     message: formData.get("message"),
     name: formData.get("name"),
+    contactMethod: formData.get("contactMethod"),
+    contactValue: formData.get("contactValue"),
     sourceContext: formData.get("sourceContext"),
     website: formData.get("website"),
     formToken: formData.get("formToken"),
@@ -168,6 +175,8 @@ export async function submitFeedbackAction(
       const { data, error } = await getSupabaseServerClient().rpc("submit_private_feedback", {
         p_message: input.message,
         p_name: input.name,
+        p_contact_method: input.contactMethod,
+        p_contact_value: input.contactValue,
         p_source_context: input.sourceContext,
         p_network_hash: input.networkHash,
         p_form_token_hash: input.formTokenHash,

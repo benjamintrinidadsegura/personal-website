@@ -13,6 +13,7 @@
     "test:ecosystem": "tsx --test tests/ecosystem-integration.test.ts",
     "test:hq-pulse": "tsx --test tests/hq-pulse.test.ts",
     "test:feedback": "tsx --test tests/feedback-foundation.test.ts",
+    "test:navigation": "tsx --test tests/navigation-feedback.test.ts",
     "test:spotlights": "tsx --test tests/spotlights-v1.test.ts",
     "test:about": "tsx --test tests/about-positioning-v1.test.ts",
     "test:fyns": "tsx --test tests/find-your-next-step-foundation.test.ts",

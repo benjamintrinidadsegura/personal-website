@@ -15,6 +15,12 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Berlin",
 });
 
+function contactDisplay(feedback: AdminFeedback): string {
+  return feedback.contact_method && feedback.contact_value
+    ? `${feedback.contact_method} · ${feedback.contact_value}`
+    : "Not provided";
+}
+
 export default async function FeedbackDetailPage({
   params,
 }: {
@@ -42,13 +48,36 @@ export default async function FeedbackDetailPage({
           <article className="mt-7 border border-white/15 bg-white/[0.02] p-6 sm:p-9">
             <header className="flex flex-wrap items-start justify-between gap-5 border-b border-white/10 pb-6">
               <div>
-                <p className="font-mono text-xs font-black uppercase tracking-[0.18em] text-[#35d0e5]">{feedback.status} · {feedback.source_context}</p>
-                <h1 className="mt-4 break-words text-3xl font-black text-white sm:text-5xl">{feedback.name || "Name not provided"}</h1>
-                <p className="mt-2 text-sm text-slate-500">User-provided display text; identity is not verified.</p>
+                <p className="font-mono text-xs font-black uppercase tracking-[0.18em] text-[#35d0e5]">Private Feedback</p>
+                <h1 className="mt-4 text-3xl font-black text-white sm:text-5xl">Feedback message</h1>
               </div>
-              <time dateTime={feedback.created_at} className="font-mono text-xs text-slate-500">{dateFormatter.format(new Date(feedback.created_at))}</time>
             </header>
-            <p className="mt-8 whitespace-pre-wrap break-words text-lg leading-8 text-slate-200 [overflow-wrap:anywhere]">{feedback.message}</p>
+            <dl className="mt-7 grid gap-5 border-b border-white/10 pb-7 sm:grid-cols-2">
+              <div>
+                <dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Name</dt>
+                <dd className="mt-2 break-words text-slate-200 [overflow-wrap:anywhere]">{feedback.name || "Not provided"}</dd>
+              </div>
+              <div>
+                <dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Contact</dt>
+                <dd className="mt-2 break-words text-slate-200 [overflow-wrap:anywhere]">{contactDisplay(feedback)}</dd>
+              </div>
+              <div>
+                <dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Source</dt>
+                <dd className="mt-2 text-slate-200">{feedback.source_context}</dd>
+              </div>
+              <div>
+                <dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Status</dt>
+                <dd className="mt-2 text-slate-200">{feedback.status}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Submitted</dt>
+                <dd className="mt-2"><time dateTime={feedback.created_at} className="font-mono text-sm text-slate-300">{dateFormatter.format(new Date(feedback.created_at))}</time></dd>
+              </div>
+            </dl>
+            <section aria-labelledby="feedback-message-heading" className="mt-8">
+              <h2 id="feedback-message-heading" className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Message</h2>
+              <p className="mt-3 whitespace-pre-wrap break-words text-lg leading-8 text-slate-200 [overflow-wrap:anywhere]">{feedback.message}</p>
+            </section>
             <FeedbackAdminActions feedback={feedback} />
           </article>
         )}

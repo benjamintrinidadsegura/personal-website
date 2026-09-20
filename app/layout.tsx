@@ -52,7 +52,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     publisher: { "@id": "https://bts.online/about#benjamin" },
   };
   return (
-    <html lang={localeDetails[locale].htmlLang} data-scroll-behavior="smooth">
+    <html lang={localeDetails[locale].htmlLang} data-scroll-behavior="adaptive">
       <body className="min-h-full">
         <NavigationFeedback />
         <LocaleProvider locale={locale}>

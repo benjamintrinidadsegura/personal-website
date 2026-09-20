@@ -7,9 +7,12 @@ import { submitFeedbackAction } from "@/app/feedback/actions";
 import { useLocalizedHref } from "@/components/i18n/locale-context";
 import type { FeedbackCopy } from "@/data/i18n/feedback";
 import {
+  feedbackContactMethods,
+  feedbackContactValueMaximum,
   feedbackMessageMaximum,
   feedbackNameMaximum,
   type FeedbackActionState,
+  type FeedbackContactMethod,
   type FeedbackField,
 } from "@/types/feedback";
 
@@ -25,6 +28,7 @@ export function FeedbackForm({
   const localizedHref = useLocalizedHref();
   const [state, formAction, isPending] = useActionState(submitFeedbackAction, initialState);
   const [messageLength, setMessageLength] = useState(0);
+  const [contactMethod, setContactMethod] = useState<FeedbackContactMethod | "">("");
   const formRef = useRef<HTMLFormElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -120,6 +124,51 @@ export function FeedbackForm({
         />
         {fieldError("name") ? <p id="private-feedback-name-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("name")}</p> : null}
       </div>
+
+      <fieldset className="mt-7 max-w-xl rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+        <legend className="px-1 font-bold text-white">
+          {copy.contactMethodLabel} <span className="font-normal text-slate-400">({copy.optional})</span>
+        </legend>
+        <p id="private-feedback-contact-help" className="mt-1 text-sm leading-6 text-slate-400">{copy.contactMethodHelp}</p>
+        <select
+          id="private-feedback-contact-method"
+          name="contactMethod"
+          value={contactMethod}
+          onChange={(event) => setContactMethod(event.target.value as FeedbackContactMethod | "")}
+          aria-describedby={`private-feedback-contact-help${fieldError("contactMethod") ? " private-feedback-contact-method-error" : ""}`}
+          aria-invalid={fieldError("contactMethod") ? true : undefined}
+          className="mt-3 min-h-12 w-full rounded-xl border border-white/15 bg-[#04111b] px-4 py-3 text-white outline-none transition focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
+        >
+          <option value="">{copy.contactMethodPlaceholder}</option>
+          {feedbackContactMethods.map((method) => (
+            <option key={method} value={method}>{copy.contactMethods[method]}</option>
+          ))}
+        </select>
+        {fieldError("contactMethod") ? <p id="private-feedback-contact-method-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("contactMethod")}</p> : null}
+
+        {contactMethod ? (
+          <div className="mt-5">
+            <label htmlFor="private-feedback-contact-value" className="font-bold text-white">
+              {copy.contactValueLabel} — {copy.contactMethods[contactMethod]}
+            </label>
+            <p id="private-feedback-contact-value-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.contactValueHelp}</p>
+            <input
+              id="private-feedback-contact-value"
+              name="contactValue"
+              type="text"
+              required
+              maxLength={feedbackContactValueMaximum}
+              autoComplete={contactMethod === "email" ? "email" : contactMethod === "phone" || contactMethod === "whatsapp" ? "tel" : "off"}
+              aria-describedby={`private-feedback-contact-value-help${fieldError("contactValue") ? " private-feedback-contact-value-error" : ""}`}
+              aria-invalid={fieldError("contactValue") ? true : undefined}
+              className="mt-3 min-h-12 w-full rounded-xl border border-white/15 bg-[#04111b] px-4 py-3 text-white outline-none transition focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
+            />
+            {fieldError("contactValue") ? <p id="private-feedback-contact-value-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("contactValue")}</p> : null}
+          </div>
+        ) : (
+          <input type="hidden" name="contactValue" value="" />
+        )}
+      </fieldset>
 
       <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
         <input id="private-feedback-website" name="website" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" />
