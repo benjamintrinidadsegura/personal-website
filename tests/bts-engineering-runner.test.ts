@@ -71,8 +71,13 @@ function makeRunnerRepo(migrationNames = ["20260101000000_first.sql"]) {
   return root;
 }
 
-function ok(stdout = "") {
-  return { code: 0, signal: null, stdout, stderr: "" };
+function ok(stdout = "", stderr = "") {
+  return { code: 0, signal: null, stdout, stderr };
+}
+
+function isMigrationApply(args: string[]) {
+  const dbIndex = args.indexOf("db");
+  return dbIndex >= 0 && args[dbIndex + 1] === "push" && !args.includes("--dry-run");
 }
 
 test("DEV target is positively pinned and Production-shaped targets fail closed", () => {
@@ -188,7 +193,7 @@ test("preflight detects no-migration state without an apply command and emits on
     const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
     const result = await runner.preflight();
     assert.equal(result.status, "passed");
-    assert.equal(calls.some((args) => args[0] === "db" && args[1] === "push" && !args.includes("--dry-run")), false);
+    assert.equal(calls.some(isMigrationApply), false);
     assert.equal(messages.length, 1);
     assert.match(messages[0], /^BTS PREFLIGHT PASSED/);
   } finally {
@@ -212,7 +217,7 @@ test("pending migration stops at the explicit gate and repair batches fail close
     const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
     const result = await runner.preflight();
     assert.equal(result.status, "migration-required");
-    assert.equal(calls.some((args) => args[0] === "db" && args[1] === "push" && !args.includes("--dry-run")), false);
+    assert.equal(calls.some(isMigrationApply), false);
     await assert.rejects(
       runner.applyMigration({ confirmation: "yes" }),
       (error: unknown) => error instanceof RunnerError && error.code === "MIGRATION_GATE_REQUIRED",
@@ -236,6 +241,109 @@ test("pending migration stops at the explicit gate and repair batches fail close
     );
   } finally {
     rmSync(repairRoot, { recursive: true, force: true });
+  }
+});
+
+test("preflight accepts a pending migration filename emitted on stderr", async () => {
+  const root = makeRunnerRepo(["20260101000000_first.sql", "20260102000000_second.sql"]);
+  try {
+    const execute = async (_command: string, args: string[]) => {
+      if (_command === "git") return ok();
+      const joined = args.includes("--file") ? readFileSync(args.at(-1)!, "utf8") : args.join(" ");
+      if (joined.includes("BTS_TARGET_PROBE")) return ok("BTS_TARGET_PROBE|postgres|postgres\nBTS_MIGRATION|20260101000000\n");
+      if (args.includes("--dry-run")) {
+        return ok(
+          "Finished supabase db push.\n",
+          "Would push these migrations:\n20260102000000_second.sql\n",
+        );
+      }
+      return ok("BTS_ENGINEERING_RESIDUE_ZERO\n");
+    };
+    const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
+    const result = await runner.preflight();
+    assert.equal(result.status, "migration-required");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("preflight rejects a pending migration absent from both output streams", async () => {
+  const root = makeRunnerRepo(["20260101000000_first.sql", "20260102000000_second.sql"]);
+  try {
+    const execute = async (_command: string, args: string[]) => {
+      if (_command === "git") return ok();
+      const joined = args.includes("--file") ? readFileSync(args.at(-1)!, "utf8") : args.join(" ");
+      if (joined.includes("BTS_TARGET_PROBE")) return ok("BTS_TARGET_PROBE|postgres|postgres\nBTS_MIGRATION|20260101000000\n");
+      if (args.includes("--dry-run")) return ok("Finished supabase db push.\n", "Would push these migrations:\n");
+      return ok("BTS_ENGINEERING_RESIDUE_ZERO\n");
+    };
+    const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
+    await assert.rejects(
+      runner.preflight(),
+      (error: unknown) => error instanceof RunnerError && error.code === "MIGRATION_DRY_RUN_MISMATCH",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("apply accepts the approved migration filename emitted on stderr", async () => {
+  const root = makeRunnerRepo(["20260101000000_first.sql", "20260102000000_second.sql"]);
+  try {
+    const calls: string[][] = [];
+    const execute = async (_command: string, args: string[]) => {
+      calls.push(args);
+      if (_command === "git") return ok();
+      const joined = args.includes("--file") ? readFileSync(args.at(-1)!, "utf8") : args.join(" ");
+      if (joined.includes("BTS_TARGET_PROBE")) return ok("BTS_TARGET_PROBE|postgres|postgres\nBTS_MIGRATION|20260101000000\n");
+      if (args.includes("--dry-run")) {
+        return ok(
+          "Finished supabase db push.\n",
+          "Would push these migrations:\n20260102000000_second.sql\n",
+        );
+      }
+      return ok("BTS_ENGINEERING_RESIDUE_ZERO\n");
+    };
+    const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
+    const preflight = await runner.preflight();
+    assert.equal(preflight.status, "migration-required");
+    const result = await runner.applyMigration({
+      confirmation: "APPLY bts-online-dev 20260102000000_second.sql",
+    });
+    assert.equal(result.applied, "20260102000000_second.sql");
+    assert.equal(calls.filter(isMigrationApply).length, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("apply rejects an approved migration absent from both output streams", async () => {
+  const root = makeRunnerRepo(["20260101000000_first.sql", "20260102000000_second.sql"]);
+  try {
+    const calls: string[][] = [];
+    let dryRunCount = 0;
+    const execute = async (_command: string, args: string[]) => {
+      calls.push(args);
+      if (_command === "git") return ok();
+      const joined = args.includes("--file") ? readFileSync(args.at(-1)!, "utf8") : args.join(" ");
+      if (joined.includes("BTS_TARGET_PROBE")) return ok("BTS_TARGET_PROBE|postgres|postgres\nBTS_MIGRATION|20260101000000\n");
+      if (args.includes("--dry-run")) {
+        dryRunCount += 1;
+        if (dryRunCount === 1) return ok("20260102000000_second.sql\n");
+        return ok("Finished supabase db push.\n", "Would push these migrations:\n");
+      }
+      return ok("BTS_ENGINEERING_RESIDUE_ZERO\n");
+    };
+    const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
+    const preflight = await runner.preflight();
+    assert.equal(preflight.status, "migration-required");
+    await assert.rejects(
+      runner.applyMigration({ confirmation: "APPLY bts-online-dev 20260102000000_second.sql" }),
+      (error: unknown) => error instanceof RunnerError && error.code === "MIGRATION_DRY_RUN_MISMATCH",
+    );
+    assert.equal(calls.some(isMigrationApply), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 

@@ -1,6 +1,9 @@
 export const hqPulseSources = ["writing", "projects", "people", "world-map", "discovery"] as const;
 export type HqPulseSource = (typeof hqPulseSources)[number];
 
+export const hqPulseTileSizes = ["featured", "standard", "compact"] as const;
+export type HqPulseTileSize = (typeof hqPulseTileSizes)[number];
+
 export const hqPulseSourceClassifications = [
   "EVENT_CAPABLE",
   "CURRENT_STATE_ONLY",
@@ -25,6 +28,7 @@ export interface HqPulseItem {
   href: string;
   provenance: HqPulseProvenance;
   locationLabel?: string;
+  spotlightFormat?: "Career Spotlight" | "Service Spotlight" | "Spotlight Conversation";
 }
 
 export interface HqPulseCurrentState {

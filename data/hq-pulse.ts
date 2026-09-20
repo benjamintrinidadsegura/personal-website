@@ -8,6 +8,7 @@ import type {
   HqPulseItem,
   HqPulseSource,
   HqPulseSourceClassification,
+  HqPulseTileSize,
   HqPulseViewModel,
   HumanPulseContent,
 } from "@/types/hq-pulse";
@@ -74,6 +75,7 @@ export function createPeoplePulseCandidates(
       title: person.title,
       summary: person.teaser,
       href: `/people/${person.slug}`,
+      spotlightFormat: person.format,
       provenance: {
         source: "people" as const,
         entityId: person.slug,
@@ -84,6 +86,17 @@ export function createPeoplePulseCandidates(
 }
 
 export const createInterviewPulseCandidates = createPeoplePulseCandidates;
+
+/**
+ * Presentation size is a pure derivation from canonical source semantics.
+ * It never uses chronology, popularity, engagement, or render position.
+ */
+export function getHqPulseTileSize(item: HqPulseItem): HqPulseTileSize {
+  if (item.source === "writing" && item.type === "publication") return "featured";
+  if (item.source === "people" && item.spotlightFormat === "Career Spotlight") return "featured";
+  if (item.source === "people" && item.spotlightFormat === "Spotlight Conversation") return "standard";
+  return "compact";
+}
 
 export function createProjectPulseCurrentStates(
   sourceProjects: readonly Project[],

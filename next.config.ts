@@ -34,6 +34,13 @@ const nextConfig: NextConfig = {
         { key: "Referrer-Policy", value: "no-referrer" },
       ],
     },
+    {
+      source: "/admin/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+      ],
+    },
     ...locales.filter((locale) => locale !== defaultLocale).map((locale) => ({
       source: `/${locale}/newsletter/:path*`,
       headers: [

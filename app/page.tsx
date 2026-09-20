@@ -3,6 +3,7 @@ import { About } from "@/components/sections/about";
 import { Contact } from "@/components/sections/contact";
 import { CurrentlyBuilding } from "@/components/sections/currently-building";
 import { EchoWallPreview } from "@/components/sections/echowall-preview";
+import { Feedback } from "@/components/sections/feedback";
 import { Hero } from "@/components/sections/hero";
 import { HqPulse } from "@/components/sections/hq-pulse";
 import { Interviews } from "@/components/sections/interviews";
@@ -22,6 +23,7 @@ export default async function Home() {
       <Interviews />
       <EchoWallPreview />
       <About />
+      <Feedback />
       <Contact />
     </ContextCanvas>
   );

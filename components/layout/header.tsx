@@ -54,6 +54,7 @@ export function Header({ accountState }: { accountState: AccountState }) {
     },
     { id: "partners", label: copy.nav.partners, href: localizedHref("/#contact") },
     { id: "contact", label: copy.nav.contact, href: localizedHref("/#contact") },
+    { id: "feedback", label: copy.nav.feedback, href: localizedHref("/#feedback") },
   ];
   const [open, setOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -145,7 +146,7 @@ export function Header({ accountState }: { accountState: AccountState }) {
         <DiscoveryEngine onOpen={handleDiscoveryOpen} />
         <nav ref={desktopNavigation} aria-label={copy.mainNavigation} className="hidden lg:block">
           <ul className="flex items-center gap-1">
-            {navigation.map((item) => (
+            {navigation.filter((item) => item.id !== "home").map((item) => (
               <li key={item.id} className="relative">
                 {item.children ? (
                   <>

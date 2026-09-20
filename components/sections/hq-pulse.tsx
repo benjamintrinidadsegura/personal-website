@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { discoveryIndex } from "@/data/discovery-index";
 import { getHumanPulseContent } from "@/data/human-pulse";
-import { createHqPulseViewModel } from "@/data/hq-pulse";
+import { createHqPulseViewModel, getHqPulseTileSize } from "@/data/hq-pulse";
 import {
   getHqPulseCopy,
   localizeHqPulseCurrentStates,
@@ -10,7 +10,7 @@ import {
 } from "@/data/i18n/hq-pulse";
 import { localizeHref } from "@/lib/i18n/routing";
 import { getLocale } from "@/lib/i18n/server";
-import type { HqPulseSource, OpenLoop } from "@/types/hq-pulse";
+import type { HqPulseSource, HqPulseTileSize, OpenLoop } from "@/types/hq-pulse";
 import type { PublicWritingSummary } from "@/types/writing";
 
 const sourceAccent: Record<HqPulseSource, string> = {
@@ -19,6 +19,32 @@ const sourceAccent: Record<HqPulseSource, string> = {
   people: "#35d0e5",
   "world-map": "#7dd3a8",
   discovery: "#8ee8f2",
+};
+
+const timelineTileClasses: Record<HqPulseTileSize, {
+  item: string;
+  card: string;
+  title: string;
+  summary: string;
+}> = {
+  featured: {
+    item: "md:col-span-2 xl:col-span-2 xl:row-span-2",
+    card: "min-h-[20rem] md:min-h-[30rem]",
+    title: "text-2xl sm:text-3xl xl:text-4xl",
+    summary: "line-clamp-5 text-base sm:text-lg sm:leading-8",
+  },
+  standard: {
+    item: "md:col-span-1 xl:col-span-2",
+    card: "min-h-[19rem] md:min-h-72",
+    title: "text-2xl sm:text-3xl",
+    summary: "line-clamp-4",
+  },
+  compact: {
+    item: "md:col-span-1 xl:col-span-1",
+    card: "min-h-[18rem] md:min-h-64",
+    title: "text-xl sm:text-2xl",
+    summary: "line-clamp-3 text-sm leading-6",
+  },
 };
 
 function OpenLoopAction({ loop, href }: { loop: OpenLoop; href: string }) {
@@ -87,7 +113,7 @@ export async function HqPulse({ publishedWriting = [] }: { publishedWriting?: re
               ) : null}
 
               <section aria-labelledby="open-loops-title" className="min-w-0 rounded-[2rem] border border-[#ff9a3d]/25 bg-[#ff9a3d]/[0.035] p-6 sm:p-8 md:col-span-2">
-                <p className="font-mono text-[10px] font-black uppercase tracking-[0.24em] text-[#ffb36f]">{copy.humanMarker}</p>
+                <p className="font-mono text-[10px] font-black uppercase tracking-[0.24em] text-[#ffb36f]">{copy.participationMarker}</p>
                 <h4 id="open-loops-title" className="mt-3 text-2xl font-black text-white">{copy.openLoops}</h4>
                 <p className="mt-3 max-w-2xl leading-7 text-slate-400">{copy.openLoopsDescription}</p>
                 {human.openLoops.length > 0 ? (
@@ -121,22 +147,29 @@ export async function HqPulse({ publishedWriting = [] }: { publishedWriting?: re
             </header>
 
             {timeline.length > 0 ? (
-              <ol className="grid grid-cols-1 border-t border-white/10">
+              <ol className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 {timeline.map((item) => {
                   const accent = sourceAccent[item.source];
+                  const size = getHqPulseTileSize(item);
+                  const tile = timelineTileClasses[size];
                   return (
-                    <li key={item.id} className="min-w-0 border-b border-white/10">
-                      <Link href={localizeHref(item.href, locale)} className="group grid min-h-44 gap-5 px-1 py-7 outline-none transition hover:bg-white/[0.025] focus-visible:bg-white/[0.04] sm:grid-cols-[10rem_1fr_auto] sm:items-start sm:px-5">
-                        <div>
+                    <li key={item.id} data-pulse-size={size} className={`min-w-0 ${tile.item}`}>
+                      <Link
+                        href={localizeHref(item.href, locale)}
+                        aria-label={`${copy.sourceLabels[item.source]}: ${item.title}. ${copy.openSource}`}
+                        className={`group flex h-full flex-col rounded-[1.75rem] border border-t-2 border-white/10 bg-white/[0.025] p-6 outline-none transition hover:-translate-y-0.5 hover:bg-white/[0.045] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5] motion-reduce:transform-none sm:p-7 ${tile.card}`}
+                        style={{ borderTopColor: accent }}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
                           <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: accent }}>{copy.sourceLabels[item.source]}</p>
-                          <time dateTime={item.occurredAt} className="mt-3 block font-mono text-xs text-slate-500">{dateFormatter.format(new Date(item.occurredAt))}</time>
+                          <time dateTime={item.occurredAt} className="font-mono text-xs text-slate-500">{dateFormatter.format(new Date(item.occurredAt))}</time>
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 grow pt-8">
                           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">{copy.typeLabels[item.type]}</p>
-                          <h4 className="mt-2 text-xl font-black leading-tight text-white [overflow-wrap:anywhere] sm:text-2xl">{item.title}</h4>
-                          <p className="mt-3 max-w-3xl leading-7 text-slate-400">{item.summary}</p>
+                          <h4 className={`mt-3 font-black leading-tight text-white [overflow-wrap:anywhere] ${tile.title}`}>{item.title}</h4>
+                          <p className={`mt-5 text-slate-400 [overflow-wrap:anywhere] ${tile.summary}`}>{item.summary}</p>
                         </div>
-                        <span className="inline-flex min-h-11 items-center font-bold text-white transition group-hover:translate-x-1" style={{ color: accent }}>{copy.openSource} <span aria-hidden="true" className="ml-2">→</span></span>
+                        <span className="mt-6 inline-flex min-h-11 items-end font-bold transition group-hover:translate-x-1 motion-reduce:transform-none" style={{ color: accent }}>{copy.openSource} <span aria-hidden="true" className="ml-2">→</span></span>
                       </Link>
                     </li>
                   );
