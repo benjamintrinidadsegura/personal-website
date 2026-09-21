@@ -68,6 +68,13 @@ export default async function PrivacyPage() {
 
         <PrivacySections sections={sections.slice(3, 7)} />
 
+        <section id="feedback" aria-labelledby="feedback-privacy-title" className="scroll-mt-28 border-b border-white/15 py-14">
+          <h2 id="feedback-privacy-title" className="text-3xl font-black text-white">{copy.feedback.title}</h2>
+          <p className="mt-5 leading-7 text-slate-300">{copy.feedback.storage}</p>
+          <p className="mt-5 leading-7 text-slate-300">{copy.feedback.access}</p>
+          <p className="mt-5 leading-7 text-slate-300">{copy.feedback.retention}</p>
+        </section>
+
         <section id="newsletter" aria-labelledby="newsletter-privacy-title" className="scroll-mt-28 border-b border-white/15 py-14">
           <h2 id="newsletter-privacy-title" className="text-3xl font-black text-white">Newsletter</h2>
           {configuredNewsletterControllerAddress ? <>

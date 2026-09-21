@@ -549,10 +549,11 @@ export function createRunner(options = {}) {
       label: "migration dry-run",
     });
     const pending = migrations.pending[0] ?? null;
-    if (pending && !dryRun.stdout.includes(pending.name)) {
+    const dryRunOutput = `${dryRun.stdout}\n${dryRun.stderr}`;
+    if (pending && !dryRunOutput.includes(pending.name)) {
       throw new RunnerError("Dry-run did not identify the exact pending migration", "MIGRATION_DRY_RUN_MISMATCH");
     }
-    if (!pending && !/up to date|no migrations/i.test(`${dryRun.stdout}\n${dryRun.stderr}`)) {
+    if (!pending && !/up to date|no migrations/i.test(dryRunOutput)) {
       throw new RunnerError("Dry-run did not confirm a no-migration state", "MIGRATION_DRY_RUN_MISMATCH");
     }
     const state = {
@@ -786,7 +787,8 @@ export function createRunner(options = {}) {
       throw new RunnerError("Migration state changed after approval", "MIGRATION_GATE_REQUIRED");
     }
     const dryRun = await runTool("supabase", ["db", "push", "--db-url", target.url, "--dry-run"], { timeoutMs: config.timeoutsMs.databaseCommand, label: "final migration dry-run" });
-    if (!dryRun.stdout.includes(requested)) throw new RunnerError("Final dry-run does not match approval", "MIGRATION_DRY_RUN_MISMATCH");
+    const dryRunOutput = `${dryRun.stdout}\n${dryRun.stderr}`;
+    if (!dryRunOutput.includes(requested)) throw new RunnerError("Final dry-run does not match approval", "MIGRATION_DRY_RUN_MISMATCH");
     await runTool("supabase", ["db", "push", "--db-url", target.url], { timeoutMs: config.timeoutsMs.databaseCommand, label: "approved migration apply" });
     state.applied = { name: requested, hash: state.pending.hash, appliedAt: new Date().toISOString() };
     state.pending = null;

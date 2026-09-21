@@ -104,7 +104,7 @@ test("HQ Pulse localization changes presentation only and never duplicates relea
     const localized = localizeHqPulseItems(hqPulseItems, locale);
     assert.deepEqual(localized.map(({ id }) => id), hqPulseItems.map(({ id }) => id), locale);
     assert.deepEqual(localized.map(({ href }) => href), hqPulseItems.map(({ href }) => href), locale);
-    assert.deepEqual(localized.map(({ date }) => date), hqPulseItems.map(({ date }) => date), locale);
+    assert.deepEqual(localized.map(({ occurredAt }) => occurredAt), hqPulseItems.map(({ occurredAt }) => occurredAt), locale);
     assert.equal(new Set(localized.map(({ id }) => id)).size, localized.length, locale);
   }
 });

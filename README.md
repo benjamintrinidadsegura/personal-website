@@ -25,6 +25,11 @@ Die Production- und Datenschutz-Gates für Newsletter V1 liegen unter
 Die providerneutrale, datensparsame Fehlerdiagnose ist unter
 [`docs/observability-readiness.md`](docs/observability-readiness.md) dokumentiert.
 
+## HQ Pulse
+
+Die redaktionelle Pflege von Human Pulse und Open Loops ist unter
+[`docs/hq-pulse-authoring.md`](docs/hq-pulse-authoring.md) beschrieben.
+
 ## Prüfungen
 
 ```powershell

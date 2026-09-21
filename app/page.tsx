@@ -3,10 +3,10 @@ import { About } from "@/components/sections/about";
 import { Contact } from "@/components/sections/contact";
 import { CurrentlyBuilding } from "@/components/sections/currently-building";
 import { EchoWallPreview } from "@/components/sections/echowall-preview";
+import { Feedback } from "@/components/sections/feedback";
 import { Hero } from "@/components/sections/hero";
 import { HqPulse } from "@/components/sections/hq-pulse";
 import { Interviews } from "@/components/sections/interviews";
-import { Now } from "@/components/sections/now";
 import { Writing } from "@/components/sections/writing";
 import { getPublishedWriting } from "@/lib/writing/queries";
 
@@ -17,13 +17,13 @@ export default async function Home() {
   return (
     <ContextCanvas>
       <Hero />
-      <Now />
       <HqPulse publishedWriting={publishedWriting} />
       <CurrentlyBuilding />
       <Writing publishedWriting={publishedWriting} />
       <Interviews />
       <EchoWallPreview />
       <About />
+      <Feedback />
       <Contact />
     </ContextCanvas>
   );
