@@ -7,7 +7,7 @@ import { hashAlignmentToken, isValidAlignmentToken } from "@/lib/life-alignment-
 import { createContextHash } from "@/lib/security/submission";
 import { createSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { RelationshipInviteLandingView, RelationshipSessionView } from "@/types/life-alignment-relationship";
+import type { AlignmentRoundHistoryItem, RelationshipInviteLandingView, RelationshipSessionView, RelationshipSharedResult } from "@/types/life-alignment-relationship";
 
 export const ALIGNMENT_PARTICIPANT_COOKIE = "bts_alignment_participant";
 
@@ -119,6 +119,32 @@ export async function getRelationshipSessionView(sessionId: string): Promise<Rel
   } catch {
     return null;
   }
+}
+
+export async function getRelationshipRoundHistory(sessionId: string): Promise<AlignmentRoundHistoryItem[] | null> {
+  if (!relationshipPersistenceConfigured()) return [];
+  const actor = await currentAlignmentActor();
+  if (!actor.userId && !actor.capabilityHash) return [];
+  try {
+    const { data, error } = await getSupabaseServerClient().rpc("get_alignment_round_history", {
+      p_actor_user_id: actor.userId,
+      p_capability_hash: actor.capabilityHash,
+      p_session_id: sessionId,
+      p_limit: 20,
+    });
+    if (error || !Array.isArray(data)) return null;
+    const parsed = data.map((value): AlignmentRoundHistoryItem | null => {
+      if (!value || typeof value !== "object") return null;
+      const row = value as Record<string, unknown>;
+      const result = row.shared_result as RelationshipSharedResult | null;
+      const agreementStatus = row.agreement_status;
+      if (!Number.isInteger(row.round_number) || typeof row.completed_at !== "string" || !result || result.kind !== "shared" || !isRelationshipModuleId(result.moduleId)
+        || !["none", "draft", "awaiting-acknowledgement", "finalized"].includes(String(agreementStatus))) return null;
+      return { roundNumber: row.round_number as number, completedAt: row.completed_at, sharedResult: result, agreementStatus: agreementStatus as AlignmentRoundHistoryItem["agreementStatus"] };
+    });
+    if (!parsed.every((item): item is AlignmentRoundHistoryItem => item !== null)) return null;
+    return parsed.sort((a, b) => a.roundNumber - b.roundNumber);
+  } catch { return null; }
 }
 
 export async function getAuthenticatedAlignmentUserId(): Promise<string | null> {

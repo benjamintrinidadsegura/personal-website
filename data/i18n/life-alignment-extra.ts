@@ -311,6 +311,14 @@ const visionPacks = {
   },
 } as const satisfies Record<AddedLifeLocale, VisionPack>;
 
+const visionHistoryPrivacy: Readonly<Record<AddedLifeLocale, string>> = {
+  es: "Se guardan hasta 20 instantáneas privadas y derivadas con fecha en el almacenamiento local de este navegador para conservar la cronología entre visitas. No se envían a servidores, cuentas, cookies, URL ni analíticas.",
+  tr: "Zaman çizelgesinin ziyaretler arasında korunması için tarihli en fazla 20 özel ve türetilmiş anlık görüntü bu tarayıcının yerel depolamasında saklanır. Sunuculara, hesaplara, çerezlere, URL'lere veya analitiğe gönderilmez.",
+  pl: "Do 20 prywatnych, wyprowadzonych i datowanych migawek jest zapisywanych w lokalnej pamięci tej przeglądarki, aby oś czasu była zachowana między wizytami. Nie są wysyłane na serwery, do kont, plików cookie, adresów URL ani analityki.",
+  el: "Έως 20 ιδιωτικά, παραγόμενα στιγμιότυπα με ημερομηνία αποθηκεύονται στην τοπική αποθήκευση αυτού του προγράμματος περιήγησης, ώστε το χρονολόγιο να διατηρείται μεταξύ επισκέψεων. Δεν αποστέλλονται σε διακομιστές, λογαριασμούς, cookies, URL ή αναλυτικά στοιχεία.",
+  ru: "До 20 приватных производных снимков с датами сохраняются в локальном хранилище этого браузера, чтобы хронология сохранялась между посещениями. Они не отправляются на серверы, в аккаунты, cookie, URL или аналитику.",
+};
+
 export function buildAddedVisionContent<T extends {
   lifeVision: Record<string, unknown>; sections: readonly Record<string, unknown>[]; areas: readonly Record<string, unknown>[];
   horizon: Record<string, { label: string; description: string }>; emphasis: Record<string, { label: string; description: string }>;
@@ -321,7 +329,7 @@ export function buildAddedVisionContent<T extends {
   const pairRecord = (record: Record<string, { label: string; description: string }>, pairs: readonly Pair[]) => Object.fromEntries(Object.keys(record).map((key, index) => [key, { label: pairs[index][0], description: pairs[index][1] }]));
   const textRecord = (record: Record<string, string>, values: readonly string[]) => Object.fromEntries(Object.keys(record).map((key, index) => [key, values[index]]));
   return { ...base,
-    lifeVision: { ...base.lifeVision, title: pack.meta[0], description: pack.meta[1], duration: pack.meta[2], privacy: pack.meta[3], authority: pack.meta[4] },
+    lifeVision: { ...base.lifeVision, title: pack.meta[0], description: pack.meta[1], duration: pack.meta[2], privacy: visionHistoryPrivacy[locale], authority: pack.meta[4] },
     sections: base.sections.map((item, index) => ({ ...item, title: pack.sections[index][0], description: pack.sections[index][1] })), areas: base.areas.map((item, index) => ({ ...item, title: pack.areas[index][0], description: pack.areas[index][1] })),
     horizon: pairRecord(base.horizon, pack.horizon), emphasis: pairRecord(base.emphasis, pack.emphasis), protection: textRecord(base.protection, pack.protection), source: textRecord(base.source, pack.source), constraint: textRecord(base.constraint, pack.constraint), tradeoff: textRecord(base.tradeoff, pack.tradeoff),
     exploration: Object.fromEntries(Object.keys(base.exploration).map((key, index) => [key, { title: pack.exploration[index][0], description: pack.exploration[index][1] }])),

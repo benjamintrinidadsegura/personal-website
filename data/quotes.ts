@@ -112,7 +112,7 @@ export const quoteUniverse: readonly QuoteRecord[] = [
       "Принадлежность, ради которой приходится становиться меньше, — лишь одиночество в более удобной форме.",
     ),
     origin: "bts-original", themes: ["belonging", "boundaries", "self-trust"], tones: ["challenging", "grounded"], moods: ["connected", "stretched"], products: ["general", "life-alignment", "fyns"], semanticFamily: "belonging-without-shrinking", dailyEligible: true, shareEligible: true, status: "active",
-    lifeAlignment: { moduleIds: ["partner", "friendship", "founder"], signals: ["tension", "constrained"] },
+    lifeAlignment: { moduleIds: ["partner", "friendship", "founder", "family", "team"], signals: ["tension", "constrained"] },
     fyns: { journeys: ["self"], characterIds: ["connector", "independent", "harmonizer"], dimensions: ["connection", "agency", "harmony"] },
   },
   {
@@ -185,7 +185,7 @@ export const quoteUniverse: readonly QuoteRecord[] = [
       "Не всё, что остаётся, застряло. Иногда это осознанно сохранённое.",
     ),
     origin: "bts-original", themes: ["self-trust", "meaning", "boundaries"], tones: ["gentle", "grounded"], moods: ["steady"], products: ["general", "life-alignment"], semanticFamily: "steadiness-is-choice", dailyEligible: true, shareEligible: true, status: "active",
-    lifeAlignment: { snapshotGroups: ["support", "steady"], signals: ["supportive", "accepted", "steady"] },
+    lifeAlignment: { moduleIds: ["career", "life-vision"], snapshotGroups: ["support", "steady"], signals: ["supportive", "accepted", "steady"] },
   },
   {
     id: "btsq-relationship-conversation-before-conclusion",
@@ -199,7 +199,7 @@ export const quoteUniverse: readonly QuoteRecord[] = [
       "Не каждой разнице нужен вердикт. Иногда сначала нужен разговор, в котором помещаются обе реальности.",
     ),
     origin: "bts-original", themes: ["relationships", "clarity", "belonging"], tones: ["gentle", "grounded"], moods: ["connected", "uncertain"], products: ["life-alignment"], semanticFamily: "conversation-before-verdict", dailyEligible: true, shareEligible: true, status: "active",
-    lifeAlignment: { moduleIds: ["partner", "friendship", "founder"], partnerCategories: ["different-expectations", "direction-difference", "worth-discussing", "uncertainty"], relationshipCategories: ["different-workable", "needs-conversation", "potential-friction"] },
+    lifeAlignment: { moduleIds: ["partner", "friendship", "founder", "family", "team"], partnerCategories: ["different-expectations", "direction-difference", "worth-discussing", "uncertainty"], relationshipCategories: ["different-workable", "needs-conversation", "potential-friction"] },
   },
   {
     id: "btsq-partner-same-side",
@@ -227,7 +227,7 @@ export const quoteUniverse: readonly QuoteRecord[] = [
       "Забота без ясности быстро превращается в догадки. Скажи, что тебе нужно, и спроси, что имеется в виду на самом деле.",
     ),
     origin: "bts-original", themes: ["relationships", "clarity", "boundaries"], tones: ["grounded", "challenging"], moods: ["connected", "stretched"], products: ["life-alignment", "fyns"], semanticFamily: "care-needs-clarity", dailyEligible: true, shareEligible: true, status: "active",
-    lifeAlignment: { moduleIds: ["partner", "friendship"], partnerCategories: ["different-expectations", "uncertainty"], relationshipCategories: ["needs-conversation"] },
+    lifeAlignment: { moduleIds: ["partner", "friendship", "family"], partnerCategories: ["different-expectations", "uncertainty"], relationshipCategories: ["needs-conversation"] },
     fyns: { journeys: ["self"], characterIds: ["caregiver", "connector", "organizer"], dimensions: ["care", "connection", "orientation"] },
   },
   {
@@ -270,7 +270,7 @@ export const quoteUniverse: readonly QuoteRecord[] = [
       "Общая почва — не только то, что находят. Она создаётся и тем, что двое снова и снова делают друг для друга.",
     ),
     origin: "bts-original", themes: ["relationships", "belonging", "action"], tones: ["hopeful", "grounded"], moods: ["connected", "steady"], products: ["life-alignment"], semanticFamily: "shared-ground-is-practice", dailyEligible: true, shareEligible: true, status: "active",
-    lifeAlignment: { moduleIds: ["partner", "friendship", "founder"], partnerCategories: ["shared-ground", "accepted-difference"], relationshipCategories: ["strong-alignment", "complementary-strengths"] },
+    lifeAlignment: { moduleIds: ["partner", "friendship", "founder", "family", "team"], partnerCategories: ["shared-ground", "accepted-difference"], relationshipCategories: ["strong-alignment", "complementary-strengths"] },
   },
   {
     id: "btsq-explorer-needs-contact",

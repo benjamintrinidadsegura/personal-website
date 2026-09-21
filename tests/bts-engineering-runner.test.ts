@@ -403,6 +403,34 @@ test("apply accepts the approved migration filename emitted on stderr", async ()
   }
 });
 
+test("post-apply preflights preserve the recent hash-bound apply marker", async () => {
+  const root = makeRunnerRepo(["20260101000000_first.sql", "20260102000000_second.sql"]);
+  try {
+    let applied = false;
+    const execute = async (command: string, args: string[]) => {
+      if (command === "git") return ok(applied ? "?? supabase/migrations/20260102000000_second.sql\n" : "");
+      const joined = args.includes("--file") ? readFileSync(args.at(-1)!, "utf8") : args.join(" ");
+      if (joined.includes("BTS_TARGET_PROBE")) return ok(`BTS_TARGET_PROBE|postgres|postgres\nBTS_MIGRATION|20260101000000\n${applied ? "BTS_MIGRATION|20260102000000\n" : ""}`);
+      if (args.includes("--dry-run")) return ok(applied ? "Remote database is up to date.\n" : "20260102000000_second.sql\n");
+      if (isMigrationApply(args)) { applied = true; return ok("Finished supabase db push.\n"); }
+      return ok("BTS_ENGINEERING_RESIDUE_ZERO\n");
+    };
+    const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
+    await runner.preflight();
+    await runner.applyMigration({ confirmation: "APPLY bts-online-dev 20260102000000_second.sql" });
+    assert.equal((await runner.preflight()).status, "passed");
+    assert.equal((await runner.preflight()).status, "passed");
+    const state = JSON.parse(readFileSync(join(root, ".bts-engineering/state/preflight.json"), "utf8"));
+    assert.deepEqual(state.applied, {
+      name: "20260102000000_second.sql",
+      hash: migrationSha256(readFileSync(join(root, "supabase/migrations/20260102000000_second.sql"))),
+      appliedAt: state.applied.appliedAt,
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("apply rejects an approved migration absent from both output streams", async () => {
   const root = makeRunnerRepo(["20260101000000_first.sql", "20260102000000_second.sql"]);
   try {

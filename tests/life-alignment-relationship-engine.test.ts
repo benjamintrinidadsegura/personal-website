@@ -28,17 +28,21 @@ function answers(
 
 test("relationship registry is complete in all seven locales with stable module-specific content", () => {
   assert.doesNotThrow(assertRelationshipModuleCompleteness);
-  assert.deepEqual(relationshipModuleIds, ["partner", "friendship", "founder"]);
+  assert.deepEqual(relationshipModuleIds, ["partner", "friendship", "family", "team", "founder"]);
 
   const partner = getRelationshipModule("partner");
   const friendship = getRelationshipModule("friendship");
   const founder = getRelationshipModule("founder");
+  const family = getRelationshipModule("family");
+  const team = getRelationshipModule("team");
   assert.equal(partner.sections.length, 6);
   assert.equal(partner.dimensions.length, 12);
   assert.equal(partner.questions.length, 18);
   assert.equal(friendship.sections.length, 5);
   assert.equal(friendship.dimensions.length, 11);
   assert.equal(friendship.questions.length, 16);
+  assert.equal(family.questions.length, 14);
+  assert.equal(team.questions.length, 14);
   assert.equal(founder.sections.length, 7);
   assert.equal(founder.dimensions.length, 21);
   assert.equal(founder.questions.length, 30);

@@ -220,7 +220,7 @@ const visionEn = {
     title: "What direction should your life take — and what should not get lost along the way?",
     description: "A qualitative reflection on desired directions, protected priorities, real constraints and several possible paths. Not a finished life plan.",
     duration: "6 sections · about 10–14 minutes",
-    privacy: "Your answers stay only in the current page state. They are neither stored nor transmitted or linked to an account.",
+    privacy: "Up to 20 private derived snapshots with dates are stored in this browser's local storage so your timeline persists between visits. They are not sent to servers, accounts, cookies, URLs or analytics.",
     authority: "You decide what your answers mean. The result describes relationships between your selections, not an ideal life or the one right path.",
   },
   sections: [

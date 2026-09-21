@@ -578,6 +578,19 @@ export function createRunner(options = {}) {
     if (!pending && !/up to date|no migrations/i.test(dryRunOutput)) {
       throw new RunnerError("Dry-run did not confirm a no-migration state", "MIGRATION_DRY_RUN_MISMATCH");
     }
+    const statePath = join(stateRoot, "state/preflight.json");
+    let recentApply;
+    if (existsSync(statePath)) {
+      const previousState = readJson(statePath);
+      const appliedMigration = previousState.applied
+        ? migrations.local.find(({ name, hash }) => name === previousState.applied.name && hash === previousState.applied.hash)
+        : null;
+      if (appliedMigration
+        && previousState.target?.projectRef === config.target.projectRef
+        && migrations.remote.includes(appliedMigration.version)
+        && Date.now() - Date.parse(previousState.applied.appliedAt) <= 30 * 60 * 1000
+      ) recentApply = previousState.applied;
+    }
     const state = {
       schemaVersion: 1,
       createdAt: new Date().toISOString(),
@@ -585,9 +598,10 @@ export function createRunner(options = {}) {
       pending,
       evidenceFingerprint: migrationEvidenceFingerprint(migrations.local),
       dryRunHash: sha256(redact(`${dryRun.stdout}\n${dryRun.stderr}`, [...secrets])),
+      ...(recentApply ? { applied: recentApply } : {}),
     };
     mkdirSync(join(stateRoot, "state"), { recursive: true });
-    writeFileSync(join(stateRoot, "state/preflight.json"), `${JSON.stringify(state, null, 2)}\n`, "utf8");
+    writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
     if (pending) {
       status("MIGRATION APPROVAL REQUIRED", `${pending.name}; ${config.target.projectName}; sha256 ${pending.hash}`);
       return { status: "migration-required", pending, commandCount, evidenceFingerprint: state.evidenceFingerprint };

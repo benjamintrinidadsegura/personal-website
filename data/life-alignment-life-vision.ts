@@ -18,7 +18,7 @@ export const lifeVision = {
   title: "Welche Richtung soll dein Leben bekommen – und was soll dabei nicht verloren gehen?",
   description: "Eine qualitative Zukunftsreflexion über gewünschte Schwerpunkte, geschützte Prioritäten, reale Grenzen und mehrere mögliche Wege. Kein fertiger Lebensplan.",
   duration: "6 Abschnitte · etwa 10–14 Minuten",
-  privacy: "Deine Antworten bleiben nur im aktuellen Seitenzustand. Sie werden weder gespeichert noch übertragen oder mit einem Konto verbunden.",
+  privacy: "Bis zu 20 private, abgeleitete Momentaufnahmen mit Datum werden im lokalen Speicher dieses Browsers gesichert, damit deine Timeline zwischen Besuchen erhalten bleibt. Sie werden nicht an Server, Konten, Cookies, URLs oder Analytics übertragen.",
   authority: "Du entscheidest, welche Richtung zu dir gehört. Die Auswertung macht ausschließlich deine ausdrücklichen Angaben nachvollziehbar sichtbar.",
 } as const;
 

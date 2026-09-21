@@ -26,7 +26,7 @@ type LifeAlignmentModuleBase = {
 export type AvailableLifeAlignmentModule = LifeAlignmentModuleBase & {
   status: "available";
   mode: LifeAlignmentModuleMode;
-  href: `/life-alignment/${"self" | "partner" | "friendship" | "founder" | "life-vision"}`;
+  href: `/life-alignment/${"self" | "partner" | "friendship" | "founder" | "family" | "team" | "career" | "life-vision"}`;
   privacy: string;
   duration: string;
   scene: {
@@ -67,7 +67,7 @@ export const lifeAlignmentModules = [
     status: "available",
     statusLabel: "Verfügbar · Beta",
     href: "/life-alignment/self",
-    privacy: "Local-only · nur im aktuellen Seitenzustand",
+    privacy: "Local-only · bis zu 20 abgeleitete Momentaufnahmen in diesem Browser",
     duration: "5 Abschnitte · etwa 8–12 Minuten",
     scene: { src: lifeAlignmentScene.src, alt: lifeAlignmentScene.alt },
   },
@@ -103,15 +103,15 @@ export const lifeAlignmentModules = [
     id: "family",
     title: "Family",
     shortTitle: "Family",
-    mode: null,
+    mode: "WE",
     purpose: "Perspektiven, Verantwortung und Spielräume innerhalb einer Familie betrachten.",
     audience: "Für Familienkontexte",
-    status: "coming-later",
-    statusLabel: "Kommt später",
-    href: null,
-    privacy: null,
-    duration: null,
-    scene: null,
+    status: "available",
+    statusLabel: "Verfügbar · V1",
+    href: "/life-alignment/family",
+    privacy: "Solo lokal · Einladungen in privater Zwei-Personen-Sitzung",
+    duration: "4 Abschnitte · 14 Fragen",
+    scene: { src: lifeAlignmentScene.src, alt: lifeAlignmentScene.alt },
   },
   {
     id: "friendship",
@@ -131,29 +131,29 @@ export const lifeAlignmentModules = [
     id: "career",
     title: "Career",
     shortTitle: "Career",
-    mode: null,
+    mode: "ME",
     purpose: "Berufliche Richtung im Zusammenspiel mit dem übrigen Leben verstehen.",
     audience: "Für berufliche Kontexte",
-    status: "coming-later",
-    statusLabel: "Kommt später",
-    href: null,
-    privacy: null,
-    duration: null,
-    scene: null,
+    status: "available",
+    statusLabel: "Verfügbar · V1",
+    href: "/life-alignment/career",
+    privacy: "Local-only · private Momentaufnahmen in diesem Browser",
+    duration: "8 Themen · etwa 8–12 Minuten",
+    scene: { src: lifeAlignmentScene.src, alt: lifeAlignmentScene.alt },
   },
   {
     id: "team",
     title: "Team",
     shortTitle: "Team",
-    mode: null,
+    mode: "WE",
     purpose: "Zusammenarbeit, Erwartungen und tragfähige Vereinbarungen im Team sichtbar machen.",
     audience: "Für Teams",
-    status: "coming-later",
-    statusLabel: "Kommt später",
-    href: null,
-    privacy: null,
-    duration: null,
-    scene: null,
+    status: "available",
+    statusLabel: "Verfügbar · V1",
+    href: "/life-alignment/team",
+    privacy: "Solo lokal · Einladungen in privater Zwei-Personen-Sitzung",
+    duration: "4 Abschnitte · 14 Fragen",
+    scene: { src: lifeAlignmentScene.src, alt: lifeAlignmentScene.alt },
   },
   {
     id: "founder",
@@ -171,10 +171,10 @@ export const lifeAlignmentModules = [
   },
 ] as const satisfies readonly LifeAlignmentModule[];
 
-export const availableLifeAlignmentModules = lifeAlignmentModules.filter(
-  (module): module is (typeof lifeAlignmentModules)[number] & AvailableLifeAlignmentModule => module.status === "available",
+export const availableLifeAlignmentModules: readonly AvailableLifeAlignmentModule[] = (lifeAlignmentModules as readonly LifeAlignmentModule[]).filter(
+  (module): module is AvailableLifeAlignmentModule => module.status === "available",
 );
 
-export const futureLifeAlignmentModules = lifeAlignmentModules.filter(
-  (module): module is (typeof lifeAlignmentModules)[number] & FutureLifeAlignmentModule => module.status === "coming-later",
+export const futureLifeAlignmentModules: readonly FutureLifeAlignmentModule[] = (lifeAlignmentModules as readonly LifeAlignmentModule[]).filter(
+  (module): module is FutureLifeAlignmentModule => module.status === "coming-later",
 );

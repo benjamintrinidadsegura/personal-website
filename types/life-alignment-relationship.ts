@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/i18n/config";
 
-export type RelationshipModuleId = "partner" | "friendship" | "founder";
+export type RelationshipModuleId = "partner" | "friendship" | "founder" | "family" | "team";
 export type RelationshipMode = "solo" | "session";
 export type RelationshipQuestionKind = "preference" | "expectation" | "tradeoff" | "scenario" | "priority";
 export type RelationshipImportance = "low" | "medium" | "high";
@@ -130,6 +130,13 @@ export interface RelationshipSessionView {
   ownAnswers: RelationshipAnswerSet;
   sharedResult: RelationshipSharedResult | null;
   agreement: RelationshipAgreementView | null;
+}
+
+export interface AlignmentRoundHistoryItem {
+  roundNumber: number;
+  completedAt: string;
+  sharedResult: RelationshipSharedResult;
+  agreementStatus: AlignmentAgreementStatus;
 }
 
 export interface RelationshipAgreementView {

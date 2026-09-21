@@ -224,3 +224,21 @@ export async function deleteRelationshipParticipationAction(sessionId: string): 
   });
   return { ok: true, sessionId, status: "withdrawn" };
 }
+
+export async function startRelationshipRoundAction(sessionId: string, moduleId: RelationshipModuleId): Promise<RelationshipActionResult> {
+  if (!await requestIsTrusted() || !UUID_PATTERN.test(sessionId) || !isRelationshipModuleId(moduleId)) return { ok: false, code: "INVALID_REQUEST" };
+  const rateLimit = await enforceRateLimit("save-answers", 20, 100);
+  if (rateLimit) return rateLimit;
+  const actor = await currentAlignmentActor();
+  if (!actor.userId && !actor.capabilityHash) return { ok: false, code: "UNAUTHORIZED" };
+  const definition = getRelationshipModule(moduleId);
+  const { data, error } = await getSupabaseServerClient().rpc("start_alignment_round", {
+    p_actor_user_id: actor.userId,
+    p_capability_hash: actor.capabilityHash,
+    p_session_id: sessionId,
+    p_module_version: definition.version,
+    p_question_set_version: definition.questionSetVersion,
+    p_interpretation_version: definition.interpretationVersion,
+  });
+  return !error && typeof data === "number" ? { ok: true, sessionId, status: `round-${data}` } : mapDatabaseError(error?.message);
+}

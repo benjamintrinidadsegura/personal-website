@@ -5,6 +5,7 @@ import type { FynsCharacterConstellation } from "@/lib/find-your-next-step-const
 import type { LifeAlignmentResult } from "@/types/life-alignment";
 import type { PartnerComparisonResult } from "@/types/life-alignment-partner";
 import type { RelationshipModuleId, RelationshipSoloResult, RelationshipSharedResult } from "@/types/life-alignment-relationship";
+import type { PersonalAlignmentResult } from "@/types/life-alignment-personal";
 import type { QuoteTheme } from "@/types/quote";
 
 function lifeThemes(result: LifeAlignmentResult): readonly QuoteTheme[] {
@@ -26,6 +27,11 @@ export function PartnerResultQuote({ result }: { result: PartnerComparisonResult
 export function RelationshipResultQuote({ moduleId, result }: { moduleId: RelationshipModuleId; result: RelationshipSoloResult | RelationshipSharedResult }) {
   const relationshipCategories = result.kind === "shared" ? result.insights.map(({ category }) => category) : undefined;
   return <QuoteExperience context={{ surface: "life-alignment", themes: ["relationships", "belonging"], lifeAlignment: { moduleId, relationshipCategories } }} safeSharePath={`/life-alignment/${moduleId}`} />;
+}
+
+export function PersonalAlignmentResultQuote({ result }: { result: PersonalAlignmentResult }) {
+  const themes: readonly QuoteTheme[] = result.tensions.length ? ["change", "clarity"] : ["meaning", "self-trust"];
+  return <QuoteExperience context={{ surface: "life-alignment", themes, lifeAlignment: { moduleId: result.moduleId } }} safeSharePath={`/life-alignment/${result.moduleId}`} />;
 }
 
 export function FynsCharacterResultQuote({ constellation }: { constellation: FynsCharacterConstellation }) {

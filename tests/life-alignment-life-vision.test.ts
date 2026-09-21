@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { lifeVision, lifeVisionAreas, lifeVisionSections } from "../data/life-alignment-life-vision";
+import { getLifeVisionContent } from "../data/i18n/life-alignment";
+import { locales } from "../lib/i18n/config";
 import { buildLifeVisionClipboardSummary, buildLifeVisionResultText } from "../lib/life-alignment-life-vision-export";
 import {
   buildLifeVisionResult,
@@ -34,11 +36,12 @@ const completeAnswers: LifeVisionAnswers = {
   explorationModes: ["gather-information", "conversation", "reversible-experiment"],
 };
 
-test("Life Vision is a distinct six-section, local-only future-direction reflection", () => {
+test("Life Vision is a distinct six-section reflection with truthful browser-local history disclosure", () => {
   assert.equal(lifeVision.href, "/life-alignment/life-vision");
   assert.equal(lifeVisionSections.length, 6);
   assert.equal(lifeVisionAreas.length, 8);
-  assert.match(lifeVision.privacy, /weder gespeichert noch übertragen/i);
+  assert.match(lifeVision.privacy, /20.*lokalen Speicher/i);
+  for (const locale of locales) assert.match(getLifeVisionContent(locale).lifeVision.privacy, /20/u);
   assert.match(lifeVision.description, /kein fertiger Lebensplan/i);
 });
 
@@ -182,7 +185,7 @@ test("visual result and journey expose semantic structure, focus targets, eviden
   assert.match(landscape, /Abschließende Orientierung/);
 });
 
-test("Life Vision files have no persistence, network, account, or opaque personal measurement coupling", () => {
+test("Life Vision keeps raw journey answers out of persistence, network, accounts and opaque measurement", () => {
   const files = [
     "../types/life-alignment-life-vision.ts",
     "../data/life-alignment-life-vision.ts",
@@ -195,6 +198,9 @@ test("Life Vision files have no persistence, network, account, or opaque persona
   const source = files.map((file) => readFileSync(new URL(file, import.meta.url), "utf8")).join("\n");
   for (const prohibited of ["localStorage", "sessionStorage", "document.cookie", "@/lib/supabase", "fetch(", "sendBeacon", "useUser", "accountId"]) assert.equal(source.includes(prohibited), false, prohibited);
   assert.doesNotMatch(source, /life\s*score|alignment\s*percentage|ideal\s+life/i);
+  const timeline = readFileSync(new URL("../components/life-alignment/personal/life-vision-timeline.tsx", import.meta.url), "utf8");
+  assert.match(timeline, /localStorage\.setItem/);
+  assert.doesNotMatch(timeline, /rawAnswers|fetch\(|sendBeacon|URLSearchParams/u);
 });
 
 test("DE and EN Life Vision results preserve selected directions and evidence structure", () => {

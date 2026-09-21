@@ -87,7 +87,7 @@ test("Life Vision UI English sources have a complete explicit Vision-only regist
   const visionSources = allSources.filter((source) => !sharedLifeUiSourceKeys.has(source));
   const encounteredSharedSources = allSources.filter((source) => sharedLifeUiSourceKeys.has(source));
 
-  assert.equal(visionSources.length, 99);
+  assert.equal(visionSources.length, 98);
   assert.deepEqual(visionSources, [...LIFE_VISION_UI_SOURCE_KEYS].sort());
   assert.deepEqual(encounteredSharedSources, [...sharedLifeUiSourceKeys].sort());
   assert.doesNotThrow(assertLifeVisionUiVisionCopyCompleteness);

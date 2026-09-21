@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { getGlobalDictionary } from "@/data/i18n/global";
-import { getPrivacyDictionary, lifeAlignmentLocalPrivacyCopy, relationshipAlignmentPrivacyCopy } from "@/data/i18n/privacy";
+import { getPrivacyDictionary, lifeAlignmentHistoryPrivacyCopy, lifeAlignmentLocalPrivacyCopy, relationshipAlignmentPrivacyCopy } from "@/data/i18n/privacy";
 import { privacyReleaseCopy, type PrivacyReleaseCopy } from "@/data/i18n/privacy-release";
 import { legalOperator } from "@/data/legal";
 import { siteConfig } from "@/data/site";
@@ -64,6 +64,7 @@ export default async function PrivacyPage() {
           <p className="mt-5 leading-7 text-slate-300">{lifeAlignmentLocalPrivacyCopy[locale]}</p>
           <p className="mt-5 leading-7 text-slate-300">{copy.life.partner}</p>
           <p className="mt-5 leading-7 text-slate-300">{relationshipAlignmentPrivacyCopy[locale]}</p>
+          <p className="mt-5 leading-7 text-slate-300">{lifeAlignmentHistoryPrivacyCopy[locale]}</p>
           <p className="mt-5 leading-7 text-slate-300">{copy.life.export}</p>
         </section>
 

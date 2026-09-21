@@ -4,6 +4,8 @@ import type { AlignmentSignal, LifeAlignmentSnapshotGroupId } from "@/types/life
 import type { PartnerFindingCategory } from "@/types/life-alignment-partner";
 import type { RelationshipModuleId, RelationshipResultCategory } from "@/types/life-alignment-relationship";
 
+export type LifeAlignmentQuoteModuleId = RelationshipModuleId | "self" | "career" | "life-vision";
+
 export type QuoteOrigin = "bts-original" | "public-domain";
 export type QuoteStatus = "active" | "draft" | "retired";
 export type QuoteSurface = "daily" | "life-alignment" | "fyns";
@@ -46,7 +48,7 @@ export interface QuoteRecord {
   activeFrom?: string;
   activeUntil?: string;
   lifeAlignment?: {
-    moduleIds?: readonly RelationshipModuleId[];
+    moduleIds?: readonly LifeAlignmentQuoteModuleId[];
     snapshotGroups?: readonly LifeAlignmentSnapshotGroupId[];
     signals?: readonly AlignmentSignal[];
     partnerCategories?: readonly PartnerFindingCategory[];
@@ -68,7 +70,7 @@ export interface QuoteSelectionContext {
   excludeIds?: readonly string[];
   excludeFamilies?: readonly string[];
   lifeAlignment?: {
-    moduleId?: RelationshipModuleId | "self";
+    moduleId?: LifeAlignmentQuoteModuleId;
     snapshotGroup?: LifeAlignmentSnapshotGroupId;
     signal?: AlignmentSignal;
     partnerCategories?: readonly PartnerFindingCategory[];

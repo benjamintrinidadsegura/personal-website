@@ -51,7 +51,7 @@ test("all seven locales expose complete Life hub, Self, Partner and Life Vision 
   assert.deepEqual(locales, ["de", "en", "es", "tr", "pl", "el", "ru"]);
   for (const locale of locales) {
     const hub = getLifeAlignmentHubContent(locale); const self = getSelfAlignmentContent(locale); const partner = getPartnerAlignmentContent(locale); const vision = getLifeVisionContent(locale);
-    assert.equal(hub.available.length, 5); assert.ok(hub.available.every(({ purpose, privacy }) => purpose.length > 30 && privacy.length > 15));
+    assert.equal(hub.available.length, 8); assert.ok(hub.available.every(({ purpose, privacy }) => purpose.length > 30 && privacy.length > 15));
     assert.equal(self.sections.length, 5); assert.equal(self.areas.length, 8); assert.equal(Object.keys(self.experiments).length, 6);
     assert.equal(partner.sections.length, 4); assert.equal(partner.dimensions.length, 8); assert.ok(partner.dimensions.every(({ examples }) => examples.length === 3)); assert.equal(Object.keys(partner.pathCopy).length, 9);
     assert.equal(vision.sections.length, 6); assert.equal(vision.areas.length, 8); assert.equal(Object.keys(vision.exploration).length, 10);
