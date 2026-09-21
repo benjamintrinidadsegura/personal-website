@@ -10,7 +10,11 @@ import { LocaleProvider } from "../components/i18n/locale-context";
 import { WorldMapExperience } from "../components/world-map/world-map-experience";
 import { getLocalizedPublishedSpotlights } from "../data/i18n/people";
 import { getWorldMapDictionary, worldMapDictionaries } from "../data/i18n/world-map";
-import { createWorldMapConnections, worldMapPublicLocationAdapters } from "../data/world-map";
+import {
+  createWorldMapConnections,
+  mapSpotlightRelationshipToWorldMapCategory,
+  worldMapPublicLocationAdapters,
+} from "../data/world-map";
 import { locales } from "../lib/i18n/config";
 import {
   aggregateWorldMapCountries,
@@ -19,8 +23,10 @@ import {
   filterWorldMapConnections,
   getWorldMapZoomLevel,
   groupWorldMapConnectionsByLocation,
+  isSafeWorldMapHref,
   relationshipKinds,
   resolveWorldMapStage,
+  validateWorldMapConnection,
 } from "../lib/world-map";
 import { publishedSpotlights } from "../data/spotlights";
 import type {
@@ -80,6 +86,8 @@ test("MAP-01–MAP-04 and MAP-CORR-01 preserve thin People truth while separatin
   ]);
   for (const connection of connections) {
     assert.equal(connection.currentLocation.role, "current");
+    assert.equal(connection.entity.publicationState, "published");
+    assert.match(connection.entity.contentLocale, /^(?:de|en)$/u);
     assert.deepEqual(relationshipKinds(connection), ["interviewed"]);
     assert.match(connection.entity.sourceHref, /^\/people\//u);
   }
@@ -128,15 +136,38 @@ test("MAP-03 source gates: Amr stays country-level while accepted public and pro
   assert.deepEqual(groupWorldMapConnectionsByLocation([kevin]).map(({ locationId }) => locationId), ["city-blieskastel-de"]);
 });
 
-test("MAP-CORR-02/03 and MAP-05–MAP-08 support five strict, independent and multi-category relationship kinds", () => {
+test("MAP-CORR-02/03 and MAP-05–MAP-08 support strict, independent and multi-category relationship kinds", () => {
   const base = createWorldMapConnections(publishedSpotlights)[0];
-  const multi = withRelationships(base, "multi", ["interviewed", "team-up", "partner", "investor", "advertising-partner"]);
-  assert.deepEqual(relationshipKinds(multi), ["interviewed", "team-up", "partner", "investor", "advertising-partner"]);
+  const multi = withRelationships(base, "multi", ["interviewed", "team-up", "partner", "investor", "advertising-partner", "other"]);
+  assert.deepEqual(relationshipKinds(multi), ["interviewed", "team-up", "partner", "investor", "advertising-partner", "other"]);
   for (const kind of relationshipKinds(multi)) {
     assert.deepEqual(filterWorldMapConnections([multi], kind).map(({ id }) => id), ["multi"]);
   }
   assert.equal(multi.relationships.find(({ kind }) => kind === "investor")?.paid, false);
   assert.equal(multi.relationships.find(({ kind }) => kind === "advertising-partner")?.paid, true);
+  assert.equal(mapSpotlightRelationshipToWorldMapCategory("worked-with"), "team-up");
+  assert.equal(mapSpotlightRelationshipToWorldMapCategory("recommended"), null);
+  assert.equal(mapSpotlightRelationshipToWorldMapCategory("other"), "other");
+});
+
+test("B8 validates publication state, coordinates and public-only safe links", () => {
+  const base = createWorldMapConnections(publishedSpotlights)[0];
+  assert.deepEqual(validateWorldMapConnection(base), []);
+  assert.equal(isSafeWorldMapHref("/people/example", false), true);
+  assert.equal(isSafeWorldMapHref("//tracker.example/person", false), false);
+  assert.equal(isSafeWorldMapHref("https://example.com/profile", true), true);
+  assert.equal(isSafeWorldMapHref("http://example.com/profile", true), false);
+  assert.equal(isSafeWorldMapHref("javascript:alert(1)", true), false);
+
+  const unsafe: WorldMapConnection = {
+    ...base,
+    contentLinks: [{ id: "unsafe", kind: "video", label: "Unsafe", href: "javascript:alert(1)", external: true }],
+    publicContacts: [{ id: "private", label: "Private", href: "mailto:private@example.com" }],
+  };
+  assert.deepEqual(validateWorldMapConnection(unsafe), [
+    "content link is unsafe: unsafe",
+    "public contact link is unsafe: private",
+  ]);
 });
 
 test("MAP-09/MAP-10 and MAP-CORR-04 implement deterministic World → Country → City semantic zoom", () => {
@@ -291,6 +322,7 @@ test("MAP-25 supplies focused World Map copy for exactly seven locales including
     const copy = getWorldMapDictionary(locale);
     assert.equal(copy.categories["team-up"].description.length > 20, true, locale);
     assert.equal(copy.categories.investor.description.length > 20, true, locale);
+    assert.equal(copy.categories.other.description.length > 20, true, locale);
     assert.equal(copy.locations.countries.DE.length > 3, true, locale);
     assert.equal(copy.locations.cities.hamburg.length > 3, true, locale);
     assert.equal(copy.locations.cities.blieskastel, "Blieskastel", locale);
@@ -304,7 +336,7 @@ test("MAP-25 supplies focused World Map copy for exactly seven locales including
   assert.notEqual(getWorldMapDictionary("ru").categories.investor.description, getWorldMapDictionary("en").categories.investor.description);
 });
 
-test("MAP-02/MAP-09/MAP-12/MAP-26/MAP-27 render geography, semantic controls, shapes and text equivalent accessibly", () => {
+test("MAP-02/MAP-09/MAP-12/MAP-26/MAP-27 render geography, real filters and text equivalent accessibly", () => {
   const connections = createWorldMapConnections(getLocalizedPublishedSpotlights("en"));
   const html = renderToStaticMarkup(
     <LocaleProvider locale="en"><WorldMapExperience geometry={fakeGeometry(connections)} /></LocaleProvider>,
@@ -315,10 +347,9 @@ test("MAP-02/MAP-09/MAP-12/MAP-26/MAP-27 render geography, semantic controls, sh
   assert.match(html, /Germany/u);
   assert.match(html, /Accessible map list/u);
   assert.match(html, /aria-pressed="true"/u);
-  assert.match(html, /<select/u);
-  assert.match(html, /Team-Ups/u);
-  assert.match(html, /Investors/u);
-  assert.match(html, /clip-path/u);
+  assert.doesNotMatch(html, /<select/u, "one real category does not need a duplicate dropdown");
+  assert.doesNotMatch(html, /Team-Ups|Investors|Advertising partners|Other connections/u, "empty production categories stay hidden");
+  assert.match(source("../components/world-map/world-map-experience.tsx"), /aria-pressed=\{selected\?\.id === connection\.id\}/u);
   assert.match(html, /motion-reduce/u);
 });
 

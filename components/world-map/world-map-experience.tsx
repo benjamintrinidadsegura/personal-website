@@ -24,13 +24,14 @@ import type {
 } from "@/types/world-map";
 
 const relationshipFilters: readonly WorldMapRelationshipKind[] = ["interviewed", "team-up", "partner", "investor", "advertising-partner"];
-const quickFilters: readonly WorldMapFilter[] = ["all", ...relationshipFilters];
+const relationshipFilterOrder: readonly WorldMapRelationshipKind[] = [...relationshipFilters, "other"];
 const categoryTone: Record<WorldMapRelationshipKind, string> = {
   interviewed: "border-[#35d0e5] bg-[#35d0e5] text-[#041018]",
   "team-up": "border-emerald-300 bg-emerald-300 text-[#04140d]",
   partner: "border-[#ff9a3d] bg-[#ff9a3d] text-[#041018]",
   investor: "border-blue-200 bg-[#1d4ed8] text-white",
   "advertising-partner": "border-fuchsia-300 bg-fuchsia-300 text-[#17061c]",
+  other: "border-slate-200 bg-slate-200 text-[#071824]",
 };
 const categoryOutline: Record<WorldMapRelationshipKind, string> = {
   interviewed: "border-[#35d0e5]/50 text-[#8eeaf5]",
@@ -38,6 +39,7 @@ const categoryOutline: Record<WorldMapRelationshipKind, string> = {
   partner: "border-[#ff9a3d]/50 text-[#ffc17c]",
   investor: "border-blue-300/60 text-blue-200",
   "advertising-partner": "border-fuchsia-300/50 text-fuchsia-200",
+  other: "border-slate-300/50 text-slate-200",
 };
 const categoryGlyph: Record<WorldMapRelationshipKind, string> = {
   interviewed: "I",
@@ -45,6 +47,7 @@ const categoryGlyph: Record<WorldMapRelationshipKind, string> = {
   partner: "P",
   investor: "V",
   "advertising-partner": "A",
+  other: "O",
 };
 
 function locationLabel(location: WorldMapLocation, copy: ReturnType<typeof getWorldMapDictionary>) {
@@ -242,11 +245,13 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
   const zoomRef = useRef(1);
 
   const matchingConnections = useMemo(() => geometry.connections.filter((connection) => matchesWorldMapFilter(connection, filter)), [filter, geometry.connections]);
+  const availableRelationshipFilters = useMemo(() => relationshipFilterOrder.filter((kind) => geometry.connections.some((connection) => connection.relationships.some((relationship) => relationship.kind === kind))), [geometry.connections]);
+  const quickFilters: readonly WorldMapFilter[] = ["all", ...availableRelationshipFilters];
   const progress = useMemo(() => calculateWorldMapProgress(matchingConnections), [matchingConnections]);
   const countryProgress = useMemo(() => aggregateWorldMapCountries(geometry.connections, filter), [filter, geometry.connections]);
   const zoomLevel = getWorldMapZoomLevel(zoom);
   const selected = geometry.connections.find(({ id }) => id === selectedId && matchingConnections.some((entry) => entry.id === id)) ?? matchingConnections[0] ?? null;
-  const selectedPeers = selected ? geometry.connections.filter(({ currentLocation }) => currentLocation.id === selected.currentLocation.id) : [];
+  const selectedPeers = selected ? matchingConnections.filter(({ currentLocation }) => currentLocation.id === selected.currentLocation.id) : [];
 
   const locationGroups = useMemo(() => {
     const groups = new Map<string, ProjectedWorldMapConnection[]>();
@@ -333,10 +338,10 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
                     const step = 28;
                     if (event.key === "+" || event.key === "=") setMapZoom(zoom + 0.5);
                     else if (event.key === "-") setMapZoom(zoom - 0.5);
-                    else if (event.key === "ArrowLeft") setOffset((value) => ({ ...value, x: value.x + step }));
-                    else if (event.key === "ArrowRight") setOffset((value) => ({ ...value, x: value.x - step }));
-                    else if (event.key === "ArrowUp") setOffset((value) => ({ ...value, y: value.y + step }));
-                    else if (event.key === "ArrowDown") setOffset((value) => ({ ...value, y: value.y - step }));
+                    else if (event.key === "ArrowLeft" && zoom > 1) setOffset((value) => ({ ...value, x: value.x + step }));
+                    else if (event.key === "ArrowRight" && zoom > 1) setOffset((value) => ({ ...value, x: value.x - step }));
+                    else if (event.key === "ArrowUp" && zoom > 1) setOffset((value) => ({ ...value, y: value.y + step }));
+                    else if (event.key === "ArrowDown" && zoom > 1) setOffset((value) => ({ ...value, y: value.y - step }));
                     else return;
                     event.preventDefault();
                   }}
@@ -403,7 +408,7 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
                         const angle = (index / Math.max(matching.length, 1)) * Math.PI * 2;
                         const spread = matching.length > 1 ? 18 : 0;
                         return (
-                          <button key={connection.id} type="button" onClick={(event) => { event.stopPropagation(); setSelectedId(connection.id); }} aria-label={`${copy.pinFor} ${connection.entity.name}, ${locationLabel(connection.currentLocation, copy)}; ${kinds.map((kind) => copy.categories[kind].label).join(", ")}`} className={`absolute z-10 grid h-11 w-11 place-items-center border-2 font-mono text-[9px] font-black shadow-[0_0_0_4px_rgba(3,16,25,.72),0_0_24px_rgba(53,208,229,.42)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white ${categoryTone[primary]} ${primary === "interviewed" ? "rounded-full" : primary === "partner" ? "rotate-45 rounded-[0.3rem]" : primary === "team-up" ? "[clip-path:polygon(25%_0,75%_0,100%_50%,75%_100%,25%_100%,0_50%)]" : primary === "advertising-partner" ? "rounded-full" : "rounded-[0.1rem]"}`} style={{ left: `calc(${(connection.point.x / geometry.width) * 100}% + ${Math.cos(angle) * spread}px)`, top: `calc(${(connection.point.y / geometry.height) * 100}% + ${Math.sin(angle) * spread}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
+                          <button key={connection.id} type="button" onClick={(event) => { event.stopPropagation(); setSelectedId(connection.id); }} aria-pressed={selected?.id === connection.id} aria-label={`${copy.pinFor} ${connection.entity.name}, ${locationLabel(connection.currentLocation, copy)}; ${kinds.map((kind) => copy.categories[kind].label).join(", ")}`} className={`absolute z-10 grid h-11 w-11 place-items-center border-2 font-mono text-[9px] font-black shadow-[0_0_0_4px_rgba(3,16,25,.72),0_0_24px_rgba(53,208,229,.42)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white aria-pressed:outline aria-pressed:outline-2 aria-pressed:outline-offset-4 aria-pressed:outline-white ${categoryTone[primary]} ${primary === "interviewed" ? "rounded-full" : primary === "partner" ? "rotate-45 rounded-[0.3rem]" : primary === "team-up" ? "[clip-path:polygon(25%_0,75%_0,100%_50%,75%_100%,25%_100%,0_50%)]" : primary === "advertising-partner" ? "rounded-full" : "rounded-[0.1rem]"}`} style={{ left: `calc(${(connection.point.x / geometry.width) * 100}% + ${Math.cos(angle) * spread}px)`, top: `calc(${(connection.point.y / geometry.height) * 100}% + ${Math.sin(angle) * spread}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
                             <span className={primary === "partner" ? "-rotate-45" : ""}>{categoryGlyph[primary]}</span>
                           </button>
                         );
@@ -413,14 +418,14 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label={copy.filtersTitle}>
-                  {relationshipFilters.map((kind) => <div key={kind} className="flex gap-3 rounded-xl border border-white/10 p-3"><FilterIcon kind={kind} /><div><p className="text-xs font-black text-white">{copy.categories[kind].label}</p><p className="mt-1 text-[11px] leading-5 text-slate-500">{copy.categories[kind].description}</p></div></div>)}
+                  {availableRelationshipFilters.map((kind) => <div key={kind} className="flex gap-3 rounded-xl border border-white/10 p-3"><FilterIcon kind={kind} /><div><p className="text-xs font-black text-white">{copy.categories[kind].label}</p><p className="mt-1 text-[11px] leading-5 text-slate-500">{copy.categories[kind].description}</p></div></div>)}
                 </div>
               </div>
 
               <section aria-labelledby="filter-title" className="mt-7 rounded-[1.5rem] border border-white/10 bg-white/[0.02] p-5 sm:p-6">
                 <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
                   <div><h3 id="filter-title" className="text-xl font-black text-white">{copy.filtersTitle}</h3><p className="mt-2 text-sm text-slate-400">{copy.filtersDescription}</p><div className="mt-4 flex flex-wrap gap-2">{quickFilters.map((item) => <button key={item} type="button" aria-pressed={filter === item} onClick={() => setFilter(item)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-4 text-sm font-black text-slate-200 hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] aria-pressed:border-[#35d0e5] aria-pressed:bg-[#35d0e5] aria-pressed:text-[#041018]">{item === "all" ? null : <FilterIcon kind={item} />}{item === "all" ? copy.all : copy.categories[item].label}</button>)}</div></div>
-                  <label className="grid gap-2 font-mono text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">{copy.categorySelect}<select value={filter} onChange={(event) => setFilter(event.target.value as WorldMapFilter)} className="min-h-12 min-w-56 rounded-xl border border-white/15 bg-[#071824] px-4 text-sm font-bold normal-case tracking-normal text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5]"><option value="all">{copy.all}</option>{relationshipFilters.map((kind) => <option key={kind} value={kind}>{copy.categories[kind].label}</option>)}</select></label>
+                  {availableRelationshipFilters.length > 1 ? <label className="grid gap-2 font-mono text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">{copy.categorySelect}<select value={filter} onChange={(event) => setFilter(event.target.value as WorldMapFilter)} className="min-h-12 min-w-56 rounded-xl border border-white/15 bg-[#071824] px-4 text-sm font-bold normal-case tracking-normal text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5]"><option value="all">{copy.all}</option>{availableRelationshipFilters.map((kind) => <option key={kind} value={kind}>{copy.categories[kind].label}</option>)}</select></label> : null}
                 </div>
                 <p role="status" className="mt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">{matchingConnections.length} / {geometry.connections.length} {copy.progress.relationships}</p>
               </section>

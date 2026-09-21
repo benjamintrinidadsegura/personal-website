@@ -15,6 +15,45 @@ export type WorldMapWheelZoomInput = {
   origin: { x: number; y: number };
 };
 
+const safeExternalProtocols = new Set(["https:"]);
+
+export function isSafeWorldMapHref(href: string, external: boolean): boolean {
+  if (!external) return href.startsWith("/") && !href.startsWith("//");
+  try {
+    return safeExternalProtocols.has(new URL(href).protocol);
+  } catch {
+    return false;
+  }
+}
+
+export function validateWorldMapConnection(connection: WorldMapConnection): readonly string[] {
+  const errors: string[] = [];
+  const { longitude, latitude } = connection.currentLocation.coordinate;
+
+  if (connection.entity.publicationState !== "published") errors.push("entity must be published");
+  if (!connection.entity.name.trim()) errors.push("entity name is required");
+  if (!connection.entity.description.trim()) errors.push("entity story is required");
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) errors.push("longitude is invalid");
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) errors.push("latitude is invalid");
+  if (connection.relationships.length === 0) errors.push("at least one public category is required");
+  if (connection.relationships.some(({ published }) => published !== true)) errors.push("relationships must be published");
+  if (!isSafeWorldMapHref(connection.entity.sourceHref, false)) errors.push("entity source link is unsafe");
+  for (const link of connection.contentLinks) {
+    if (!isSafeWorldMapHref(link.href, link.external)) errors.push(`content link is unsafe: ${link.id}`);
+  }
+  for (const contact of connection.publicContacts) {
+    if (!isSafeWorldMapHref(contact.href, true)) errors.push(`public contact link is unsafe: ${contact.id}`);
+  }
+
+  return errors;
+}
+
+export function assertValidWorldMapConnection(connection: WorldMapConnection): WorldMapConnection {
+  const errors = validateWorldMapConnection(connection);
+  if (errors.length > 0) throw new Error(`Invalid World Map connection ${connection.id}: ${errors.join("; ")}`);
+  return connection;
+}
+
 export function bindWorldMapWheelZoom(
   viewport: HTMLElement,
   onZoom: (input: WorldMapWheelZoomInput) => void,

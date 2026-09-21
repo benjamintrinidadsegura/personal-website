@@ -4,6 +4,7 @@ export const worldMapRelationshipKinds = [
   "partner",
   "investor",
   "advertising-partner",
+  "other",
 ] as const;
 
 export type WorldMapRelationshipKind = (typeof worldMapRelationshipKinds)[number];
@@ -39,6 +40,9 @@ export type WorldMapEntity = {
   kind: "person" | "organization";
   name: string;
   description: string;
+  publicationState: "published";
+  contentLocale: "de" | "en";
+  publishedAt?: string;
   image?: { src: string; alt: string };
   sourceHref: string;
   sourceKind: "people-spotlight" | "project" | "public-partner";

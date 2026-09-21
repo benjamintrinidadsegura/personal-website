@@ -1,4 +1,5 @@
-import type { SpotlightPerson } from "@/types/content";
+import type { PublicRelationshipType, SpotlightPerson } from "@/types/content";
+import { assertValidWorldMapConnection } from "@/lib/world-map";
 import type {
   WorldMapConnection,
   WorldMapLocation,
@@ -120,8 +121,10 @@ export const worldMapPublicLocationAdapters: Readonly<Record<string, PublicLocat
   },
 };
 
-function isSupportedRelationship(value: string): boolean {
-  return value === "interviewed" || value === "team-up" || value === "partner" || value === "investor" || value === "advertising-partner";
+export function mapSpotlightRelationshipToWorldMapCategory(value: PublicRelationshipType): WorldMapRelationshipKind | null {
+  if (value === "worked-with") return "team-up";
+  if (value === "recommended") return null;
+  return value;
 }
 
 export function createWorldMapConnections(spotlights: readonly SpotlightPerson[]): WorldMapConnection[] {
@@ -136,7 +139,10 @@ export function createWorldMapConnections(spotlights: readonly SpotlightPerson[]
     ) return [];
 
     const supportedKinds = [...new Set(spotlight.worldMap.relationshipTypes)]
-      .flatMap((kind) => isSupportedRelationship(kind) ? [kind as WorldMapRelationshipKind] : []);
+      .flatMap((kind) => {
+        const category = mapSpotlightRelationshipToWorldMapCategory(kind);
+        return category ? [category] : [];
+      });
     const relationships = supportedKinds
       .map((kind) => ({
         id: `${spotlight.id}:${kind}`,
@@ -165,13 +171,16 @@ export function createWorldMapConnections(spotlights: readonly SpotlightPerson[]
       }] : []),
     ];
 
-    return [{
+    return [assertValidWorldMapConnection({
       id: `${spotlight.id}:${adapter.currentLocation.id}`,
       entity: {
         id: spotlight.id,
         kind: "person" as const,
         name: spotlight.fullName,
         description: spotlight.teaser,
+        publicationState: "published" as const,
+        contentLocale: spotlight.language,
+        ...(spotlight.publishedAt ? { publishedAt: spotlight.publishedAt } : {}),
         ...(spotlight.cover ? { image: spotlight.cover } : {}),
         sourceHref: `/people/${spotlight.slug}`,
         sourceKind: "people-spotlight" as const,
@@ -183,6 +192,6 @@ export function createWorldMapConnections(spotlights: readonly SpotlightPerson[]
       // Organisation links are sources/context, not automatically personal
       // contact channels. The privacy-preserving default remains empty.
       publicContacts: [],
-    }];
+    })];
   });
 }

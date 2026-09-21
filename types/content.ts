@@ -14,7 +14,8 @@ export type PublicRelationshipType =
   | "partner"
   | "worked-with"
   | "recommended"
-  | "advertising-partner";
+  | "advertising-partner"
+  | "other";
 
 export interface SpotlightChapter {
   title: string;
