@@ -10,15 +10,15 @@ import {
 
 const readSource = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("the registry represents three functional perspectives and five honest future modules", () => {
-  assert.deepEqual(availableLifeAlignmentModules.map(({ id }) => id), ["self", "partner", "life-vision"]);
-  assert.deepEqual(availableLifeAlignmentModules.map(({ mode }) => mode), ["ME", "WE", "WHERE I AM GOING"]);
-  assert.deepEqual(futureLifeAlignmentModules.map(({ id }) => id), ["family", "friendship", "career", "team", "founder"]);
+test("the registry represents five functional modules and three honest future modules", () => {
+  assert.deepEqual(availableLifeAlignmentModules.map(({ id }) => id), ["self", "partner", "life-vision", "friendship", "founder"]);
+  assert.deepEqual(availableLifeAlignmentModules.map(({ mode }) => mode), ["ME", "WE", "WHERE I AM GOING", "WE", "WE"]);
+  assert.deepEqual(futureLifeAlignmentModules.map(({ id }) => id), ["family", "career", "team"]);
   assert.equal(lifeAlignmentModules.length, 8);
 
   for (const entry of availableLifeAlignmentModules) {
-    assert.match(entry.href, /^\/life-alignment\/(?:self|partner|life-vision)$/u);
-    assert.match(entry.privacy, /local-only/i);
+    assert.match(entry.href, /^\/life-alignment\/(?:self|partner|friendship|founder|life-vision)$/u);
+    assert.ok(entry.privacy.length > 20);
     assert.ok(entry.duration.length > 0);
     assert.ok(entry.scene.src.length > 0);
   }

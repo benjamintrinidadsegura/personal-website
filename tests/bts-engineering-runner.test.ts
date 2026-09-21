@@ -202,6 +202,44 @@ test("preflight detects no-migration state without an apply command and emits on
   }
 });
 
+test("preflight accepts an up-to-date message emitted on stderr", async () => {
+  const root = makeRunnerRepo();
+  try {
+    const execute = async (_command: string, args: string[]) => {
+      if (_command === "git") return ok();
+      const joined = args.includes("--file") ? readFileSync(args.at(-1)!, "utf8") : args.join(" ");
+      if (joined.includes("BTS_TARGET_PROBE")) return ok("BTS_TARGET_PROBE|postgres|postgres\nBTS_MIGRATION|20260101000000\n");
+      if (args.includes("--dry-run")) return ok("Finished supabase db push.\n", "Remote database is up to date.\n");
+      return ok("BTS_ENGINEERING_RESIDUE_ZERO\n");
+    };
+    const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
+    const result = await runner.preflight();
+    assert.equal(result.status, "passed");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("preflight rejects a no-migration state absent from both output streams", async () => {
+  const root = makeRunnerRepo();
+  try {
+    const execute = async (_command: string, args: string[]) => {
+      if (_command === "git") return ok();
+      const joined = args.includes("--file") ? readFileSync(args.at(-1)!, "utf8") : args.join(" ");
+      if (joined.includes("BTS_TARGET_PROBE")) return ok("BTS_TARGET_PROBE|postgres|postgres\nBTS_MIGRATION|20260101000000\n");
+      if (args.includes("--dry-run")) return ok("Finished supabase db push.\n", "Connecting to remote database...\n");
+      return ok("BTS_ENGINEERING_RESIDUE_ZERO\n");
+    };
+    const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
+    await assert.rejects(
+      runner.preflight(),
+      (error: unknown) => error instanceof RunnerError && error.code === "MIGRATION_DRY_RUN_MISMATCH",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("pending migration stops at the explicit gate and repair batches fail closed", async () => {
   const root = makeRunnerRepo(["20260101000000_first.sql", "20260102000000_second.sql"]);
   try {
@@ -254,7 +292,7 @@ test("preflight accepts a pending migration filename emitted on stderr", async (
       if (args.includes("--dry-run")) {
         return ok(
           "Finished supabase db push.\n",
-          "Would push these migrations:\n20260102000000_second.sql\n",
+          "Would push these migrations:\n • 20260102000000_second.sql\n",
         );
       }
       return ok("BTS_ENGINEERING_RESIDUE_ZERO\n");
@@ -299,7 +337,7 @@ test("apply accepts the approved migration filename emitted on stderr", async ()
       if (args.includes("--dry-run")) {
         return ok(
           "Finished supabase db push.\n",
-          "Would push these migrations:\n20260102000000_second.sql\n",
+          "Would push these migrations:\n • 20260102000000_second.sql\n",
         );
       }
       return ok("BTS_ENGINEERING_RESIDUE_ZERO\n");
@@ -311,7 +349,10 @@ test("apply accepts the approved migration filename emitted on stderr", async ()
       confirmation: "APPLY bts-online-dev 20260102000000_second.sql",
     });
     assert.equal(result.applied, "20260102000000_second.sql");
-    assert.equal(calls.filter(isMigrationApply).length, 1);
+    assert.equal(
+      calls.filter(isMigrationApply).length,
+      1,
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -341,7 +382,10 @@ test("apply rejects an approved migration absent from both output streams", asyn
       runner.applyMigration({ confirmation: "APPLY bts-online-dev 20260102000000_second.sql" }),
       (error: unknown) => error instanceof RunnerError && error.code === "MIGRATION_DRY_RUN_MISMATCH",
     );
-    assert.equal(calls.some(isMigrationApply), false);
+    assert.equal(
+      calls.some(isMigrationApply),
+      false,
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

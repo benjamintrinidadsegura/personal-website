@@ -78,8 +78,8 @@ test("Self, hub, validator and export English sources have a complete explicit r
   const uses = lifeUiEnglishStrings();
   const uniqueSources = [...new Set(uses)].sort();
 
-  assert.equal(uses.length, 176);
-  assert.equal(uniqueSources.length, 161);
+  assert.equal(uses.length, 173);
+  assert.equal(uniqueSources.length, 158);
   assert.deepEqual([...lifeAlignmentUiSelfSourceStrings].sort(), uniqueSources);
   assert.doesNotThrow(assertLifeAlignmentUiSelfCopyCompleteness);
 });
@@ -97,7 +97,7 @@ test("every added locale has natural non-baseline copy for every Self UI source"
       `${locale} must not fall back to an English source string`,
     );
     assert.ok(
-      new Set(values).size >= 159,
+      new Set(values).size >= lifeAlignmentUiSelfSourceStrings.length - 2,
       `${locale} must not collapse distinct source strings into generic repeated copy`,
     );
   }

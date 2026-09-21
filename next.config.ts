@@ -41,6 +41,38 @@ const nextConfig: NextConfig = {
         { key: "Referrer-Policy", value: "no-referrer" },
       ],
     },
+    {
+      source: "/life-alignment/invite/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+        { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+      ],
+    },
+    {
+      source: "/life-alignment/session/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+        { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+      ],
+    },
+    {
+      source: "/life-alignment/sessions",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+        { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+      ],
+    },
+    ...locales.filter((locale) => locale !== defaultLocale).flatMap((locale) => ["invite", "session", "sessions"].map((kind) => ({
+      source: `/${locale}/life-alignment/${kind}/:path*`,
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+        { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+      ],
+    }))),
     ...locales.filter((locale) => locale !== defaultLocale).map((locale) => ({
       source: `/${locale}/newsletter/:path*`,
       headers: [
