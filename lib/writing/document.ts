@@ -5,6 +5,7 @@ import type {
   WritingText,
   WritingTextStyles,
 } from "@/types/writing";
+import { writingEditorialBlockTypes } from "@/types/writing";
 
 export const WRITING_DOCUMENT_VERSION = 1;
 export const MAX_WRITING_DOCUMENT_BYTES = 128 * 1024;
@@ -16,6 +17,7 @@ export const MAX_WRITING_LINK_LENGTH = 2_048;
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
 const SAFE_RELATIVE_LINK = /^(?:\/(?:$|[^/])|#)/u;
 const UNSAFE_SCHEME_PREFIX = /^(?:javascript|data|file|blob)\s*:/iu;
+const STABLE_BLOCK_ID = /^[A-Za-z0-9_-]{1,64}$/u;
 
 export type WritingDocumentValidationResult =
   | { success: true; data: WritingDocumentV1; plainText: string }
@@ -85,16 +87,18 @@ function parseBlocks(value: unknown, depth: number, counters: ParseCounters): Wr
   for (const candidate of value) {
     counters.blocks += 1;
     if (counters.blocks > MAX_WRITING_BLOCKS || !isRecord(candidate) || typeof candidate.type !== "string") return null;
-    const allowedKeys = candidate.type === "heading" ? ["type", "level", "content", "children"] : candidate.type === "divider" ? ["type", "children"] : ["type", "content", "children"];
+    const allowedKeys = candidate.type === "heading" ? ["id", "type", "level", "content", "children"] : candidate.type === "divider" ? ["id", "type", "children"] : ["id", "type", "content", "children"];
     if (!hasOnlyKeys(candidate, allowedKeys)) return null;
+    if (candidate.id !== undefined && (typeof candidate.id !== "string" || !STABLE_BLOCK_ID.test(candidate.id))) return null;
+    const withIdentity = typeof candidate.id === "string" ? { id: candidate.id } : {};
     const children = candidate.children === undefined ? undefined : parseBlocks(candidate.children, depth + 1, counters);
     if (candidate.children !== undefined && children === null) return null;
     const withChildren = children && children.length > 0 ? { children } : {};
     if (candidate.type === "divider") {
-      blocks.push({ type: "divider", ...withChildren });
+      blocks.push({ ...withIdentity, type: "divider", ...withChildren });
       continue;
     }
-    if (!["paragraph", "heading", "bulletListItem", "numberedListItem", "quote"].includes(candidate.type) || !Array.isArray(candidate.content)) return null;
+    if (!["paragraph", "heading", "bulletListItem", "numberedListItem", "quote", ...writingEditorialBlockTypes].includes(candidate.type) || !Array.isArray(candidate.content)) return null;
     const content = candidate.content.map(parseInline);
     if (content.some((item) => item === null)) return null;
     for (const item of content as WritingInlineContent[]) {
@@ -103,21 +107,25 @@ function parseBlocks(value: unknown, depth: number, counters: ParseCounters): Wr
     }
     if (candidate.type === "heading") {
       if (candidate.level !== 2 && candidate.level !== 3) return null;
-      blocks.push({ type: "heading", level: candidate.level, content: content as WritingInlineContent[], ...withChildren });
+      blocks.push({ ...withIdentity, type: "heading", level: candidate.level, content: content as WritingInlineContent[], ...withChildren });
     } else {
-      blocks.push({ type: candidate.type as "paragraph" | "bulletListItem" | "numberedListItem" | "quote", content: content as WritingInlineContent[], ...withChildren });
+      blocks.push({ ...withIdentity, type: candidate.type as "paragraph" | "bulletListItem" | "numberedListItem" | "quote" | "keyThought" | "pullQuote" | "shareable", content: content as WritingInlineContent[], ...withChildren });
     }
   }
   return blocks;
 }
 
-function inlineText(content: WritingInlineContent[]): string {
+export function writingInlineToPlainText(content: WritingInlineContent[]): string {
   return content.map((item) => item.type === "text" ? item.text : item.content.map((text) => text.text).join("")).join("");
 }
 
 function blockText(block: WritingDocumentBlock): string[] {
-  const own = block.type === "divider" ? [] : [inlineText(block.content)];
+  const own = block.type === "divider" ? [] : [writingInlineToPlainText(block.content)];
   return [...own, ...(block.children ?? []).flatMap(blockText)];
+}
+
+export function writingBlockToPlainText(block: WritingDocumentBlock): string {
+  return blockText(block).map((text) => text.trim()).filter(Boolean).join("\n\n");
 }
 
 export function writingDocumentToPlainText(document: WritingDocumentV1): string {

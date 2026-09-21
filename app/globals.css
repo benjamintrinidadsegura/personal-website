@@ -219,6 +219,298 @@ html[data-navigation-settling="true"] .navigation-feedback::before {
   flex-wrap: wrap;
 }
 
+.writing-editor .bn-writing-key-thought,
+.writing-editor .bn-writing-pull-quote,
+.writing-editor .bn-writing-shareable {
+  position: relative;
+  margin-block: 1rem;
+  padding: 1rem 1.25rem;
+  border-left: 2px solid var(--primary);
+  background: rgba(53, 208, 229, 0.045);
+}
+
+.writing-editor .bn-writing-pull-quote {
+  border-left-color: var(--accent);
+  color: #e7edf3;
+  font-size: 1.18em;
+  font-weight: 750;
+}
+
+.writing-editor .bn-writing-shareable { border-left-style: dashed; }
+
+.writing-document {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 2.65rem);
+}
+
+.writing-opening-thought > p:first-child {
+  color: #e7edf3;
+  font-size: 1.08em;
+  font-weight: 650;
+  line-height: 1.8;
+}
+
+.writing-section-moment {
+  margin-top: clamp(2.75rem, 7vw, 5.25rem);
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(53, 208, 229, 0.28);
+}
+
+.writing-section-moment h2 {
+  margin-top: 0.75rem;
+  color: white;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+
+.writing-editorial-label {
+  display: block;
+  color: var(--primary);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.writing-key-thought {
+  margin-block: clamp(2.5rem, 7vw, 5.5rem);
+  padding: clamp(1.5rem, 5vw, 3rem) clamp(1.25rem, 5vw, 3.2rem);
+  border-block: 1px solid rgba(53, 208, 229, 0.26);
+  background: linear-gradient(120deg, rgba(53, 208, 229, 0.075), rgba(53, 208, 229, 0.012));
+}
+
+.writing-key-thought > p {
+  margin-top: 1rem;
+  color: white;
+  font-size: clamp(1.45rem, 4vw, 2.35rem);
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  line-height: 1.35;
+}
+
+.writing-pull-quote {
+  margin-block: clamp(2.75rem, 8vw, 6rem);
+  padding-left: clamp(1.25rem, 5vw, 3rem);
+  border-left: 3px solid var(--accent);
+}
+
+.writing-pull-quote blockquote {
+  color: #eef4f8;
+  font-size: clamp(1.55rem, 4.5vw, 2.8rem);
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1.28;
+}
+
+.writing-shareable-thought {
+  padding: 1.25rem 1.35rem;
+  border-left: 1px dashed rgba(53, 208, 229, 0.55);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.writing-editorial-divider {
+  margin-block: clamp(2.8rem, 8vw, 5.5rem);
+  width: min(8rem, 30%);
+  border: 0;
+  border-top: 2px solid var(--accent);
+}
+
+.writing-share-trigger {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 999px;
+  padding: 0.55rem 0.8rem;
+  color: #9aaabd;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+.writing-share-trigger svg { width: 1rem; height: 1rem; flex: none; }
+.writing-share-trigger:hover,
+.writing-share-trigger:focus-visible,
+.writing-share-trigger-featured { border-color: rgba(53,208,229,.48); color: #9debf4; background: rgba(53,208,229,.045); }
+
+@media (min-width: 1180px) {
+  .writing-thought:not(.writing-shareable-thought) > .writing-share-trigger {
+    position: absolute;
+    top: -0.35rem;
+    left: calc(100% + 1.5rem);
+    width: max-content;
+    max-width: 10rem;
+    margin-top: 0;
+    opacity: 0;
+  }
+  .writing-thought:hover > .writing-share-trigger,
+  .writing-thought:focus-within > .writing-share-trigger { opacity: 1; }
+}
+
+.writing-index-featured {
+  box-shadow: inset 3px 0 0 rgba(53,208,229,.68), 0 28px 80px rgba(0,0,0,.16);
+}
+
+.writing-index-row { position: relative; }
+.writing-index-row::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  transform: scaleY(0);
+  background: var(--primary);
+  transition: transform 180ms ease;
+}
+.writing-index-row:hover::before,
+.writing-index-row:focus-visible::before { transform: scaleY(1); }
+
+.writing-share-dialog {
+  width: min(96vw, 78rem);
+  max-width: none;
+  max-height: min(94svh, 58rem);
+  margin: auto;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 1.25rem;
+  padding: 0;
+  background: #061521;
+  color: var(--foreground);
+  box-shadow: 0 32px 120px rgba(0,0,0,.58);
+}
+.writing-share-dialog::backdrop { background: rgba(2,8,13,.82); backdrop-filter: blur(8px); }
+.writing-share-dialog-screenshot { width: 100vw; height: 100svh; max-height: none; border: 0; border-radius: 0; background: #02070c; }
+
+.writing-share-composer { max-height: min(94svh, 58rem); overflow: auto; }
+.writing-share-composer-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+  padding: 1rem 1.1rem;
+  background: rgba(6,21,33,.96);
+  backdrop-filter: blur(16px);
+}
+.writing-share-close {
+  display: inline-flex;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 999px;
+  color: white;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+.writing-share-composer-grid { display: grid; }
+.writing-share-preview {
+  display: grid;
+  min-height: 32rem;
+  place-items: center;
+  overflow: hidden;
+  padding: 1.25rem;
+  background: radial-gradient(circle at 50% 18%, rgba(53,208,229,.11), transparent 22rem), #030b12;
+}
+.writing-share-controls { display: grid; align-content: start; gap: 1.25rem; padding: 1.25rem; border-top: 1px solid rgba(255,255,255,.09); }
+.writing-share-control-label { color: white; font-size: .75rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.writing-share-choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .45rem; margin-top: .65rem; }
+.writing-share-choice { min-height: 2.75rem; border: 1px solid rgba(255,255,255,.13); border-radius: .75rem; padding: .55rem .45rem; color: #aebbc9; font-size: .76rem; font-weight: 800; }
+.writing-share-choice[aria-pressed="true"] { border-color: var(--primary); background: rgba(53,208,229,.1); color: white; box-shadow: inset 0 0 0 1px rgba(53,208,229,.18); }
+.writing-share-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.writing-share-secondary,
+.writing-share-primary { min-height: 2.75rem; border-radius: 999px; padding: .65rem 1rem; font-size: .82rem; font-weight: 900; }
+.writing-share-secondary { border: 1px solid rgba(255,255,255,.16); color: #e2e8f0; }
+.writing-share-primary { margin-left: auto; background: var(--primary); color: #041018; }
+.writing-share-secondary:disabled { cursor: not-allowed; opacity: .36; }
+
+.writing-share-card {
+  position: relative;
+  container-type: inline-size;
+  width: min(100%, 38.25svh);
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  background: #071826;
+  color: white;
+  box-shadow: 0 28px 80px rgba(0,0,0,.34);
+}
+.writing-share-card[data-format="portrait"] { width: min(100%, 54.4svh); aspect-ratio: 4 / 5; }
+.writing-share-card[data-format="square"] { width: min(100%, 68svh); aspect-ratio: 1 / 1; }
+.writing-share-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,.026) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.026) 1px, transparent 1px);
+  background-size: 12.5% 12.5%;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+.writing-share-card-safe-area { position: relative; z-index: 1; display: grid; height: 100%; grid-template-rows: auto 1fr auto; padding: clamp(1.25rem, 8.5cqw, 3.25rem); }
+.writing-share-card-header,
+.writing-share-card-footer { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.writing-share-card-marker,
+.writing-share-card-progress,
+.writing-share-card-note-label { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: clamp(.55rem, 2.7cqw, .78rem); font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+.writing-share-card-marker { color: #69e0ef; }
+.writing-share-card-progress { color: #8fa2b5; }
+.writing-share-card-content { display: flex; min-height: 0; flex-direction: column; justify-content: center; padding-block: 5cqw; }
+.writing-share-card-thought { overflow-wrap: anywhere; white-space: pre-line; font-size: clamp(1.3rem, 8.2cqw, 3.45rem); font-weight: 900; letter-spacing: -.042em; line-height: 1.06; }
+.writing-share-card[data-scale="medium"] .writing-share-card-thought { font-size: clamp(1.12rem, 6.7cqw, 2.75rem); line-height: 1.13; }
+.writing-share-card[data-scale="long"] .writing-share-card-thought { font-size: clamp(.98rem, 5.25cqw, 2.15rem); line-height: 1.22; letter-spacing: -.028em; }
+.writing-share-card-footer { align-items: flex-end; border-top: 1px solid rgba(255,255,255,.18); padding-top: 4cqw; }
+.writing-share-card-author { font-size: clamp(.62rem, 3.2cqw, .9rem); font-weight: 850; }
+.writing-share-card-title { display: -webkit-box; max-width: 30ch; margin-top: .3rem; overflow: hidden; color: #92a4b7; font-size: clamp(.52rem, 2.65cqw, .76rem); line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.writing-share-card-domain { flex: none; color: #ffae62; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: clamp(.58rem, 3cqw, .84rem); font-weight: 900; }
+
+.writing-share-card[data-variant="marginNote"] { background: linear-gradient(90deg, transparent 14%, rgba(255,122,0,.32) 14%, rgba(255,122,0,.32) calc(14% + 1px), transparent calc(14% + 1px)), #0b202d; }
+.writing-share-card[data-variant="marginNote"]::before { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 7.9%, rgba(255,255,255,.04) 8%); mask-image: none; }
+.writing-share-card[data-variant="marginNote"] .writing-share-card-content { padding-left: 9%; justify-content: flex-start; padding-top: 24%; }
+.writing-share-card-note-label { margin-bottom: 7cqw; color: #ffae62; }
+.writing-share-card[data-variant="marginNote"] .writing-share-card-thought { font-weight: 760; letter-spacing: -.028em; line-height: 1.2; }
+
+.writing-share-card[data-variant="statement"] { background: #35d0e5; color: #041018; }
+.writing-share-card[data-variant="statement"]::before { background: radial-gradient(circle at 82% 18%, rgba(4,16,24,.13), transparent 4px, transparent 18%, rgba(4,16,24,.08) 18.2%, transparent 18.5%); mask-image: none; }
+.writing-share-card[data-variant="statement"] .writing-share-card-content { justify-content: flex-end; padding-bottom: 13%; }
+.writing-share-card[data-variant="statement"] .writing-share-card-marker,
+.writing-share-card[data-variant="statement"] .writing-share-card-progress,
+.writing-share-card[data-variant="statement"] .writing-share-card-title { color: rgba(4,16,24,.67); }
+.writing-share-card[data-variant="statement"] .writing-share-card-footer { border-color: rgba(4,16,24,.26); }
+.writing-share-card[data-variant="statement"] .writing-share-card-domain { color: #041018; }
+
+.writing-screenshot-surface { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; background: #02070c; }
+.writing-screenshot-card { display: grid; width: 100%; height: 100%; place-items: center; }
+.writing-screenshot-card .writing-share-card { width: min(100vw, 56.25svh); box-shadow: none; }
+.writing-screenshot-card .writing-share-card[data-format="portrait"] { width: min(100vw, 80svh); }
+.writing-screenshot-card .writing-share-card[data-format="square"] { width: min(100vw, 100svh); }
+.writing-screenshot-exit { position: fixed; z-index: 3; top: max(.75rem, env(safe-area-inset-top)); left: max(.75rem, env(safe-area-inset-left)); min-height: 2.75rem; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; padding: .65rem .9rem; background: rgba(2,7,12,.84); color: white; font-size: .75rem; font-weight: 850; opacity: 1; backdrop-filter: blur(12px); transition: opacity 160ms ease; }
+.writing-screenshot-exit[data-visible="false"] { pointer-events: none; opacity: 0; }
+.writing-screenshot-exit:focus-visible { pointer-events: auto; opacity: 1; }
+
+@media (min-width: 860px) {
+  .writing-share-composer-grid { grid-template-columns: minmax(0,1.45fr) minmax(19rem,.75fr); }
+  .writing-share-preview { min-height: 45rem; padding: 2rem; }
+  .writing-share-controls { border-top: 0; border-left: 1px solid rgba(255,255,255,.09); padding: 1.5rem; }
+}
+
+@media (max-width: 420px) {
+  .writing-share-dialog { width: 100vw; max-height: 100svh; border-inline: 0; border-radius: 0; }
+  .writing-share-composer { max-height: 100svh; }
+  .writing-share-preview { min-height: 28rem; padding: 1rem; }
+  .writing-share-choice-grid { gap: .35rem; }
+  .writing-share-choice { padding-inline: .3rem; font-size: .7rem; }
+  .writing-share-primary { width: 100%; margin-left: 0; }
+}
+
 @media (min-width: 640px) {
   .writing-editor .bn-editor {
     max-width: 72ch;

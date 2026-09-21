@@ -7,6 +7,7 @@ import { NewsletterCta } from "@/components/newsletter/newsletter-cta";
 import { Discussion } from "@/components/writing/comments/discussion";
 import { WritingDocument } from "@/components/writing/writing-document";
 import { getWritingDictionary, localizeWritingTopic, writingTaxonomies } from "@/data/i18n/writing";
+import { getWritingShareDictionary } from "@/data/i18n/writing-share";
 import { getWritingTranslationSlug } from "@/data/writing-localization";
 import { siteConfig } from "@/data/site";
 import { getWritingDiscussionPageData } from "@/lib/comments/queries";
@@ -14,6 +15,7 @@ import { localeDetails, locales } from "@/lib/i18n/config";
 import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
 import { getLocale } from "@/lib/i18n/server";
 import { getPublishedWritingBySlug } from "@/lib/writing/queries";
+import type { WritingShareContext } from "@/types/writing";
 
 export const dynamic = "force-dynamic";
 
@@ -46,11 +48,21 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
   if (!article) notFound();
   const { discussion, participation } = await getWritingDiscussionPageData(article.id);
   const copy = getWritingDictionary(locale).article;
+  const shareCopy = getWritingShareDictionary(locale);
   const dateFormatter = new Intl.DateTimeFormat(localeDetails[locale].htmlLang, { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
   const sourceDiffers = article.language !== locale;
   const translationSlug = getWritingTranslationSlug(article.slug, locale);
   const taxonomy = writingTaxonomies[locale];
-  const canonicalUrl = `https://bts.online${getLocalizedPathname(`/writing/${article.slug}`, article.language)}`;
+  const canonicalUrl = new URL(getLocalizedPathname(`/writing/${article.slug}`, article.language), `https://${siteConfig.domain}`).toString();
+  const shareContext: WritingShareContext = {
+    articleId: article.id,
+    articleSlug: article.slug,
+    articleTitle: article.title,
+    authorName: siteConfig.name,
+    canonicalUrl,
+    domain: siteConfig.domain,
+    language: article.language,
+  };
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -87,8 +99,17 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
         <nav aria-label={copy.breadcrumb} className="font-mono text-xs text-slate-400"><ol className="flex flex-wrap items-center gap-2"><li><Link href={localizeHref("/", locale)} className="inline-flex min-h-11 items-center hover:text-white">Digital HQ</Link></li><li aria-hidden="true">/</li><li><Link href={localizeHref("/writing", locale)} className="inline-flex min-h-11 items-center hover:text-white">Writing</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="max-w-full truncate text-[#35d0e5]" lang={sourceDiffers ? article.language : undefined}>{article.title}</li></ol></nav>
         {sourceDiffers ? <aside role="note" className="mt-8 border-l-2 border-[#ff9a3d] bg-[#ff9a3d]/[0.035] p-5 text-sm leading-6 text-slate-300"><p>{copy.sourceNotice}</p>{translationSlug ? <Link href={localizeHref(`/writing/${translationSlug}`, locale)} className="mt-3 inline-flex font-black text-[#35d0e5]">{copy.availableIn} {localeDetails[locale].languageName} →</Link> : null}</aside> : null}
         <div lang={sourceDiffers ? article.language : undefined}>
-          <header className="border-b border-white/15 py-16 sm:py-24"><div lang={localeDetails[locale].htmlLang} className="flex flex-wrap gap-3 font-mono text-xs font-black uppercase tracking-[0.18em] text-[#35d0e5]"><span>{taxonomy.contentTypes[article.contentType]}</span><span aria-hidden="true">&middot;</span><span>{article.language.toUpperCase()}</span><span aria-hidden="true">&middot;</span><span>{article.topics.map((topic) => localizeWritingTopic(topic, locale)).join(" / ")}</span></div><h1 className="mt-8 max-w-6xl break-words text-[clamp(3rem,8vw,7.6rem)] font-black leading-[0.92] tracking-[-0.055em] text-white">{article.title}</h1>{article.deck ? <p className="mt-10 max-w-5xl text-xl font-bold leading-8 text-slate-200 sm:text-3xl sm:leading-snug">{article.deck}</p> : null}<div lang={localeDetails[locale].htmlLang} className="mt-12 flex flex-wrap gap-x-8 gap-y-3 border-l-2 border-[#ff9a3d] pl-6 text-sm text-slate-400"><p><span className="font-bold text-white">{siteConfig.name}</span></p><time dateTime={article.publishedAt}>{dateFormatter.format(new Date(article.publishedAt))}</time><p>{article.readingMinutes} {copy.minRead}</p></div></header>
-          <section aria-label={copy.contentLabel} className="mx-auto max-w-[72ch] py-16 sm:py-24">{article.bodyJson ? <WritingDocument document={article.bodyJson} /> : <ArticleBody body={article.body} />}</section>
+          <header className="writing-article-hero border-b border-white/15 py-16 sm:py-24">
+            <div lang={localeDetails[locale].htmlLang} className="flex flex-wrap gap-3 font-mono text-[0.7rem] font-black uppercase tracking-[0.2em] text-[#35d0e5]"><span>{taxonomy.contentTypes[article.contentType]}</span><span aria-hidden="true">&middot;</span><span>{article.language.toUpperCase()}</span><span aria-hidden="true">&middot;</span><span>{article.topics.map((topic) => localizeWritingTopic(topic, locale)).join(" / ")}</span></div>
+            <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.34fr)] lg:items-end">
+              <h1 className="max-w-5xl break-words text-[clamp(3rem,7vw,6.6rem)] font-black leading-[0.91] tracking-[-0.052em] text-white">{article.title}</h1>
+              <div className="border-l-2 border-[#ff9a3d] pl-6">
+                {article.deck ? <p className="text-xl font-bold leading-8 text-slate-200 sm:text-2xl sm:leading-9">{article.deck}</p> : null}
+                <div lang={localeDetails[locale].htmlLang} className="mt-7 space-y-2 font-mono text-xs leading-5 text-slate-400"><p className="font-bold text-white">{siteConfig.name}</p><time dateTime={article.publishedAt}>{dateFormatter.format(new Date(article.publishedAt))}</time><p>{article.readingMinutes} {copy.minRead}</p></div>
+              </div>
+            </div>
+          </header>
+          <section aria-label={copy.contentLabel} className="mx-auto max-w-[68ch] py-16 sm:py-28">{article.bodyJson ? <WritingDocument document={article.bodyJson} shareContext={shareContext} shareCopy={shareCopy} /> : <ArticleBody body={article.body} shareContext={shareContext} shareCopy={shareCopy} />}</section>
         </div>
         <NewsletterCta />
         <Discussion articleId={article.id} discussion={discussion} participation={participation} />

@@ -28,10 +28,17 @@ export type WritingLink = {
 
 export type WritingInlineContent = WritingText | WritingLink;
 
+export const writingEditorialBlockTypes = ["keyThought", "pullQuote", "shareable"] as const;
+export type WritingEditorialBlockType = (typeof writingEditorialBlockTypes)[number];
+
+type WritingBlockIdentity = {
+  id?: string;
+};
+
 export type WritingDocumentBlock =
-  | { type: "paragraph" | "bulletListItem" | "numberedListItem" | "quote"; content: WritingInlineContent[]; children?: WritingDocumentBlock[] }
-  | { type: "heading"; level: 2 | 3; content: WritingInlineContent[]; children?: WritingDocumentBlock[] }
-  | { type: "divider"; children?: WritingDocumentBlock[] };
+  | (WritingBlockIdentity & { type: "paragraph" | "bulletListItem" | "numberedListItem" | "quote" | WritingEditorialBlockType; content: WritingInlineContent[]; children?: WritingDocumentBlock[] })
+  | (WritingBlockIdentity & { type: "heading"; level: 2 | 3; content: WritingInlineContent[]; children?: WritingDocumentBlock[] })
+  | (WritingBlockIdentity & { type: "divider"; children?: WritingDocumentBlock[] });
 
 export type WritingDocumentV1 = {
   version: 1;
@@ -77,6 +84,26 @@ export interface PublicWritingArticle extends PublicWritingSummary {
   body: string;
   bodyJson: WritingDocumentV1 | null;
 }
+
+export const writingShareFormats = ["story", "portrait", "square"] as const;
+export type WritingShareFormat = (typeof writingShareFormats)[number];
+
+export const writingShareVariants = ["editorial", "marginNote", "statement"] as const;
+export type WritingShareVariant = (typeof writingShareVariants)[number];
+
+export type WritingShareSource = {
+  articleId: string;
+  articleSlug: string | null;
+  articleTitle: string;
+  authorName: string;
+  blockId?: string;
+  canonicalUrl: string | null;
+  domain: string;
+  language: WritingLanguage;
+  text: string;
+};
+
+export type WritingShareContext = Omit<WritingShareSource, "blockId" | "text">;
 
 export type WritingActionState = {
   ok: boolean;
