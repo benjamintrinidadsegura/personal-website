@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { LocaleProvider } from "../components/i18n/locale-context";
-import { WorldMapExperience } from "../components/world-map/world-map-experience";
+import { ContextCard, WorldMapExperience } from "../components/world-map/world-map-experience";
 import { getLocalizedPublishedSpotlights } from "../data/i18n/people";
 import { getWorldMapDictionary, worldMapDictionaries } from "../data/i18n/world-map";
 import {
@@ -20,6 +20,9 @@ import {
   aggregateWorldMapCountries,
   bindWorldMapWheelZoom,
   calculateWorldMapProgress,
+  centerWorldMapPoint,
+  clampWorldMapOffset,
+  clampWorldMapZoom,
   filterWorldMapConnections,
   getWorldMapZoomLevel,
   groupWorldMapConnectionsByLocation,
@@ -27,6 +30,8 @@ import {
   relationshipKinds,
   resolveWorldMapStage,
   validateWorldMapConnection,
+  WORLD_MAP_MAX_ZOOM,
+  zoomWorldMapAt,
 } from "../lib/world-map";
 import { publishedSpotlights } from "../data/spotlights";
 import type {
@@ -170,7 +175,7 @@ test("B8 validates publication state, coordinates and public-only safe links", (
   ]);
 });
 
-test("MAP-09/MAP-10 and MAP-CORR-04 implement deterministic World → Country → City semantic zoom", () => {
+test("MAP-09/MAP-10 and MAP-CORR-04 retain semantic zoom while pins stay primary", () => {
   assert.equal(getWorldMapZoomLevel(1), "world");
   assert.equal(getWorldMapZoomLevel(1.59), "world");
   assert.equal(getWorldMapZoomLevel(1.6), "country");
@@ -180,7 +185,18 @@ test("MAP-09/MAP-10 and MAP-CORR-04 implement deterministic World → Country �
   assert.match(component, /bindWorldMapWheelZoom/u);
   assert.match(component, /onPointerMove=/u);
   assert.match(component, /ArrowLeft/u);
-  assert.match(component, /focusCountry/u);
+  assert.match(component, /world-map-pin-cluster/u);
+  assert.match(component, /data-map-transform/u);
+  assert.doesNotMatch(component, /focusCountry/u);
+});
+
+test("FOLLOW-UP map math keeps zoom bounded, pointer-centred and panning inside the canvas", () => {
+  const viewport = { width: 1000, height: 500 };
+  assert.equal(clampWorldMapZoom(0), 1);
+  assert.equal(clampWorldMapZoom(99), WORLD_MAP_MAX_ZOOM);
+  assert.deepEqual(clampWorldMapOffset({ x: 900, y: -900 }, viewport, 2), { x: 544, y: -280 });
+  assert.deepEqual(zoomWorldMapAt({ x: 0, y: 0 }, 1, 2, { x: 25, y: 75 }, viewport), { x: 250, y: -125 });
+  assert.deepEqual(centerWorldMapPoint({ x: 250, y: 127.5 }, { width: 1000, height: 510 }, viewport, 2), { x: 500, y: 250 });
 });
 
 test("FINAL FIX 2: a non-passive listener gives active-map wheel input exclusive, pointer-centred zoom ownership", () => {
@@ -201,7 +217,7 @@ test("FINAL FIX 2: a non-passive listener gives active-map wheel input exclusive
     getBoundingClientRect: () => ({ left: 100, top: 200, width: 400, height: 200 }),
   } as unknown as HTMLElement;
   const received: Array<{ delta: number; origin: { x: number; y: number } }> = [];
-  const unbind = bindWorldMapWheelZoom(target, (input) => received.push(input));
+  const unbind = bindWorldMapWheelZoom(target, (input) => { received.push(input); });
 
   assert.deepEqual(listenerOptions, { passive: false });
   assert.equal(received.length, 0, "outside-map wheel input has no path into the map-scoped listener");
@@ -219,6 +235,22 @@ test("FINAL FIX 2: a non-passive listener gives active-map wheel input exclusive
   assert.deepEqual(received[1], { delta: -0.35, origin: { x: 100, y: 100 } });
   unbind();
   assert.equal(removed, true);
+
+  let passivePrevented = false;
+  const passiveTarget = {
+    ...target,
+    addEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
+      wheelListener = listener as (event: WheelEvent) => void;
+    },
+  } as unknown as HTMLElement;
+  bindWorldMapWheelZoom(passiveTarget, () => false);
+  wheelListener?.({
+    deltaY: 12,
+    clientX: 300,
+    clientY: 250,
+    preventDefault: () => { passivePrevented = true; },
+  } as WheelEvent);
+  assert.equal(passivePrevented, false, "a passive mobile map boundary leaves page scrolling untouched");
 
   const component = source("../components/world-map/world-map-experience.tsx");
   assert.doesNotMatch(component, /window\.addEventListener\(["']wheel/u);
@@ -274,8 +306,9 @@ test("MAP-CORR-04/05 same-city grouping is stable and exposes every connection i
 
 test("MAP-11–MAP-14 and MAP-CORR-08 render human Context Cards with current context, origin, provenance and content", () => {
   const connections = createWorldMapConnections(getLocalizedPublishedSpotlights("en"));
+  const projected = fakeGeometry(connections).connections;
   const html = renderToStaticMarkup(
-    <LocaleProvider locale="en"><WorldMapExperience geometry={fakeGeometry(connections)} /></LocaleProvider>,
+    <LocaleProvider locale="en"><ContextCard connection={projected[0]} peers={[projected[0]]} onSelect={() => undefined} /></LocaleProvider>,
   );
   assert.match(html, /Current context/u);
   assert.match(html, /Bremen, Germany/u);
@@ -291,8 +324,9 @@ test("FINAL FIX 1: Kevin renders as Business context — Blieskastel, Germany wi
   const kevin = createWorldMapConnections(getLocalizedPublishedSpotlights("en"))
     .find(({ entity }) => entity.id === "person-kevin-schweisfurth");
   assert.ok(kevin);
+  const projected = fakeGeometry([kevin]).connections[0];
   const html = renderToStaticMarkup(
-    <LocaleProvider locale="en"><WorldMapExperience geometry={fakeGeometry([kevin])} /></LocaleProvider>,
+    <LocaleProvider locale="en"><ContextCard connection={projected} peers={[projected]} onSelect={() => undefined} /></LocaleProvider>,
   );
   assert.match(html, /Business context/u);
   assert.match(html, /Blieskastel, Germany/u);
@@ -330,6 +364,9 @@ test("MAP-25 supplies focused World Map copy for exactly seven locales including
     assert.equal(copy.context.current.length > 3, true, locale);
     assert.equal(copy.context.origin.length > 3, true, locale);
     assert.equal(copy.cta.somethingElseHint.length > 20, true, locale);
+    assert.equal(copy.activateMap.length > 3, true, locale);
+    assert.equal(copy.releaseMap.length > 8, true, locale);
+    assert.equal(copy.selectedPin.length > 3, true, locale);
   }
   assert.notEqual(getWorldMapDictionary("es").cta.somethingElse, getWorldMapDictionary("en").cta.somethingElse);
   assert.notEqual(getWorldMapDictionary("el").context.current, getWorldMapDictionary("en").context.current);
@@ -346,6 +383,9 @@ test("MAP-02/MAP-09/MAP-12/MAP-26/MAP-27 render geography, real filters and text
   assert.match(html, /World/u);
   assert.match(html, /Germany/u);
   assert.match(html, /Accessible map list/u);
+  assert.match(html, /data-map-selection="empty"/u);
+  assert.match(html, /data-map-interaction="passive"/u);
+  assert.match(html, /data-map-interaction-toggle/u);
   assert.match(html, /aria-pressed="true"/u);
   assert.doesNotMatch(html, /<select/u, "one real category does not need a duplicate dropdown");
   assert.doesNotMatch(html, /Team-Ups|Investors|Advertising partners|Other connections/u, "empty production categories stay hidden");

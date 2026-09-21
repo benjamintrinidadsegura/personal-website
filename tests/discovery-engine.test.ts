@@ -45,7 +45,7 @@ const knownStaticRoutes = new Set([
   "/projects/bts-online",
 ]);
 
-const knownHomeAnchors = new Set(["home", "now", "pulse", "building", "writing", "interviews", "echowall", "about", "contact"]);
+const knownHomeAnchors = new Set(["home", "now", "quote", "pulse", "building", "writing", "interviews", "echowall", "about", "contact"]);
 
 test("discovery index has unique, valid records", () => {
   assert.ok(discoveryIndex.length > 0);

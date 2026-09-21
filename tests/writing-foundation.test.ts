@@ -60,6 +60,7 @@ test("Writing validation accepts structured publish input and permits incomplete
   draft.set("title", "");
   draft.set("excerpt", "");
   draft.set("bodyJson", JSON.stringify(legacyBodyToWritingDocument("")));
+  draft.delete("topics");
   assert.equal(parseWritingInput(draft, "draft").success, true);
 
   const invalid = validFormData();
@@ -69,6 +70,23 @@ test("Writing validation accepts structured publish input and permits incomplete
   const result = parseWritingInput(invalid, "publish");
   assert.equal(result.success, false);
   if (!result.success) assert.deepEqual(Object.keys(result.fieldErrors).sort(), ["bodyJson", "title", "topics"]);
+});
+
+test("Writing draft accepts ordinary editor input before publication metadata is complete", () => {
+  const draft = new FormData();
+  draft.set("title", "Test");
+  draft.set("deck", "Hier ist ein Test");
+  draft.set("excerpt", "Hier ist ein Test");
+  draft.set("bodyJson", JSON.stringify(legacyBodyToWritingDocument("Testquote - finden wir das gut?")));
+  draft.set("contentType", "essay");
+  const saved = parseWritingInput(draft, "draft");
+  assert.equal(saved.success, true);
+
+  const publish = parseWritingInput(draft, "publish");
+  assert.equal(publish.success, false);
+  if (!publish.success) assert.deepEqual(publish.fieldErrors, {
+    topics: "Choose at least one topic before publishing. You can select up to 8.",
+  });
 });
 
 test("WritingDocumentV1 rejects malformed, unexpected, oversized, deeply nested, and overlong content", () => {
@@ -250,7 +268,9 @@ test("Studio implements debounced serialized draft autosave and explicit publish
   assert.equal(form.includes("savedGenerationRef.current"), true);
   assert.equal(form.includes('article.status !== "draft"'), true);
   assert.equal(form.includes("runDraftSave"), true);
-  assert.equal(form.includes("publishWritingAction(null, toFormData"), true);
+  assert.equal(form.includes('const formData = toFormData(article.id, expectedUpdatedAtRef.current, savingSnapshot)'), true);
+  assert.equal(form.includes('parseWritingInput(formData, "publish")'), true);
+  assert.equal(form.includes("publishWritingAction(null, formData)"), true);
   assert.equal(form.includes("Update Published"), true);
   assert.equal(form.includes("Unpublished changes"), true);
   assert.equal(form.includes("beforeunload"), true);
@@ -261,7 +281,7 @@ test("Studio implements debounced serialized draft autosave and explicit publish
 test("Studio guards every local-change phase across links, reload, Back, and Forward", () => {
   const form = readFileSync(new URL("../components/admin/writing-form.tsx", import.meta.url), "utf8");
   for (const phase of ["dirty", "waiting", "saving", "failed", "conflict"]) assert.equal(form.includes(`"${phase}"`), true, phase);
-  assert.equal(form.includes('const hasUnsavedChanges = phase !== "saved"'), true);
+  assert.equal(form.includes('const hasUnsavedChanges = isDirty'), true);
   assert.equal(form.includes("if (!hasUnsavedChanges) return"), true);
   assert.equal(form.includes('addEventListener("beforeunload"'), true);
   assert.equal(form.includes('addEventListener("navigate", guardNavigation)'), true);
@@ -279,7 +299,8 @@ test("Studio synchronizes the latest editor snapshot before save or publish", ()
   assert.equal(markChanged.includes("snapshotRef.current = next"), true);
   assert.equal(markChanged.indexOf("snapshotRef.current = next") < markChanged.indexOf("setSnapshot(next)"), true);
   assert.equal(form.includes("useEffect(() => { snapshotRef.current = snapshot; }, [snapshot])"), false);
-  assert.equal(form.includes("toFormData(article.id, expectedUpdatedAtRef.current, snapshotRef.current)"), true);
+  assert.equal(form.includes("const savingSnapshot = snapshotRef.current"), true);
+  assert.equal(form.includes("const publishingSnapshot = snapshotRef.current"), true);
 });
 
 test("Edit and Preview remount the editor from the current lossless local snapshot", () => {
@@ -318,7 +339,9 @@ test("mode switching is local-only and publishing reads the latest snapshot ref"
   assert.equal(modeControls.includes("publishWritingAction"), false);
   assert.equal(modeControls.includes("saveWritingAction"), false);
   assert.equal(modeControls.includes("runDraftSave"), false);
-  assert.equal(form.includes("publishWritingAction(null, toFormData(article.id, expectedUpdatedAtRef.current, snapshotRef.current))"), true);
+  assert.equal(form.includes("const savingSnapshot = snapshotRef.current"), true);
+  assert.equal(form.includes("const publishingSnapshot = snapshotRef.current"), true);
+  assert.equal(form.includes("publishWritingAction(null, formData)"), true);
   assert.equal(form.includes('if (article.status !== "draft" || phase !== "waiting" || editorError) return'), true);
 });
 
@@ -374,7 +397,7 @@ test("Writing Studio polish keeps writing primary and secondary settings compact
   assert.equal(form.includes('placeholder="Deck or subtitle"'), true);
   assert.equal(form.includes('aria-label={article.status === "published" ? "Update published article" : "Publish article"}'), true);
   assert.equal(form.includes('const settingsSummary ='), true);
-  assert.match(form, /<details className="[^"]*group[^"]*">/u);
+  assert.match(form, /<details[^>]*className="[^"]*group[^"]*">/u);
   assert.equal(form.includes('<details className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:p-7" open>'), false);
   assert.equal(form.includes("initialDocument={snapshot.document}"), true);
   assert.equal(form.includes("initialDocument={initialDocument}"), false);

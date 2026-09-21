@@ -1,3 +1,4 @@
+import { isPublicCommentReady } from "@/lib/public-content-hygiene";
 import type { DiscussionState, PublicDiscussionResult, PublicWritingComment } from "@/types/comments";
 
 type UnknownRow = Record<string, unknown>;
@@ -96,7 +97,8 @@ export function resolvePublicDiscussionRead(
 
   const comments = commentsResult.data
     .map((row) => mapPublicWritingComment(row as UnknownRow))
-    .filter((comment): comment is PublicWritingComment => comment !== null);
+    .filter((comment): comment is PublicWritingComment => comment !== null)
+    .filter(isPublicCommentReady);
   return comments.length > 0
     ? { status: "data", state, comments }
     : { status: "empty", state, comments: [] };

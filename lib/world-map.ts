@@ -15,6 +15,58 @@ export type WorldMapWheelZoomInput = {
   origin: { x: number; y: number };
 };
 
+export const WORLD_MAP_MIN_ZOOM = 1;
+export const WORLD_MAP_MAX_ZOOM = 4.4;
+
+export type WorldMapOffset = { x: number; y: number };
+
+export function clampWorldMapZoom(value: number): number {
+  return Math.max(WORLD_MAP_MIN_ZOOM, Math.min(WORLD_MAP_MAX_ZOOM, value));
+}
+
+export function clampWorldMapOffset(offset: WorldMapOffset, viewport: { width: number; height: number }, zoom: number): WorldMapOffset {
+  const boundedZoom = clampWorldMapZoom(zoom);
+  const xLimit = Math.max(44, ((boundedZoom - 1) * viewport.width) / 2 + 44);
+  const yLimit = Math.max(30, ((boundedZoom - 1) * viewport.height) / 2 + 30);
+  return {
+    x: Math.max(-xLimit, Math.min(xLimit, offset.x)),
+    y: Math.max(-yLimit, Math.min(yLimit, offset.y)),
+  };
+}
+
+export function zoomWorldMapAt(
+  offset: WorldMapOffset,
+  currentZoom: number,
+  nextZoom: number,
+  origin: { x: number; y: number },
+  viewport: { width: number; height: number },
+): WorldMapOffset {
+  const boundedCurrent = clampWorldMapZoom(currentZoom);
+  const boundedNext = clampWorldMapZoom(nextZoom);
+  const ratio = boundedNext / boundedCurrent;
+  const pointer = {
+    x: (Math.max(0, Math.min(100, origin.x)) / 100 - 0.5) * viewport.width,
+    y: (Math.max(0, Math.min(100, origin.y)) / 100 - 0.5) * viewport.height,
+  };
+  return clampWorldMapOffset({
+    x: pointer.x - (pointer.x - offset.x) * ratio,
+    y: pointer.y - (pointer.y - offset.y) * ratio,
+  }, viewport, boundedNext);
+}
+
+export function centerWorldMapPoint(
+  point: { x: number; y: number },
+  geometry: { width: number; height: number },
+  viewport: { width: number; height: number },
+  zoom: number,
+): WorldMapOffset {
+  const boundedZoom = clampWorldMapZoom(zoom);
+  return clampWorldMapOffset({
+    x: -(point.x / geometry.width - 0.5) * viewport.width * boundedZoom,
+    y: -(point.y / geometry.height - 0.5) * viewport.height * boundedZoom,
+  }, viewport, boundedZoom);
+}
+
 const safeExternalProtocols = new Set(["https:"]);
 
 export function isSafeWorldMapHref(href: string, external: boolean): boolean {
@@ -56,17 +108,18 @@ export function assertValidWorldMapConnection(connection: WorldMapConnection): W
 
 export function bindWorldMapWheelZoom(
   viewport: HTMLElement,
-  onZoom: (input: WorldMapWheelZoomInput) => void,
+  onZoom: (input: WorldMapWheelZoomInput) => boolean | void,
 ): () => void {
   const handleWheel = (event: WheelEvent) => {
-    if (event.deltaY === 0) return;
-    event.preventDefault();
+    const primaryDelta = event.deltaY !== 0 ? event.deltaY : event.deltaX;
+    if (primaryDelta === 0) return;
     const rect = viewport.getBoundingClientRect();
     const width = Math.max(rect.width, 1);
     const height = Math.max(rect.height, 1);
     const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / width) * 100));
     const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / height) * 100));
-    onZoom({ delta: event.deltaY < 0 ? 0.35 : -0.35, origin: { x, y } });
+    const handled = onZoom({ delta: primaryDelta < 0 ? 0.35 : -0.35, origin: { x, y } });
+    if (handled !== false) event.preventDefault();
   };
 
   viewport.addEventListener("wheel", handleWheel, { passive: false });

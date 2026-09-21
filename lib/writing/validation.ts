@@ -44,8 +44,10 @@ export function parseWritingInput(formData: FormData, mode: "draft" | "publish" 
   }
   const contentType = writingContentTypes.find((candidate) => candidate === contentTypeValue);
   if (!contentType) fieldErrors.contentType = "Choose a valid content type.";
-  if (topics.length < 1 || topics.length > MAX_TOPICS || topics.some((topic) => characterLength(topic) > 40 || CONTROL_CHARACTERS.test(topic))) {
-    fieldErrors.topics = "Choose 1 to 8 valid topics of at most 40 characters each.";
+  if ((mode === "publish" && topics.length < 1) || topics.length > MAX_TOPICS || topics.some((topic) => characterLength(topic) > 40 || CONTROL_CHARACTERS.test(topic))) {
+    fieldErrors.topics = mode === "publish"
+      ? "Choose at least one topic before publishing. You can select up to 8."
+      : "Choose no more than 8 valid topics of at most 40 characters each.";
   }
 
   if (Object.keys(fieldErrors).length > 0 || !contentType || !document.success) return { success: false, fieldErrors };

@@ -6,6 +6,8 @@ import { ArticleBody } from "@/components/writing/article-body";
 import { NewsletterCta } from "@/components/newsletter/newsletter-cta";
 import { Discussion } from "@/components/writing/comments/discussion";
 import { WritingDocument } from "@/components/writing/writing-document";
+import { ShareFormatSignal } from "@/components/writing/share/share-format-signal";
+import { ShareArticleTrigger } from "@/components/writing/share/share-thought-trigger";
 import { getWritingDictionary, localizeWritingTopic, writingTaxonomies } from "@/data/i18n/writing";
 import { getWritingShareDictionary } from "@/data/i18n/writing-share";
 import { getWritingTranslationSlug } from "@/data/writing-localization";
@@ -15,7 +17,7 @@ import { localeDetails, locales } from "@/lib/i18n/config";
 import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
 import { getLocale } from "@/lib/i18n/server";
 import { getPublishedWritingBySlug } from "@/lib/writing/queries";
-import type { WritingShareContext } from "@/types/writing";
+import type { WritingShareContext, WritingShareSource } from "@/types/writing";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +65,11 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
     domain: siteConfig.domain,
     language: article.language,
   };
+  const articleShareSource: WritingShareSource = {
+    ...shareContext,
+    kind: "article",
+    text: article.excerpt,
+  };
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -109,7 +116,13 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
               </div>
             </div>
           </header>
-          <section aria-label={copy.contentLabel} className="mx-auto max-w-[68ch] py-16 sm:py-28">{article.bodyJson ? <WritingDocument document={article.bodyJson} shareContext={shareContext} shareCopy={shareCopy} /> : <ArticleBody body={article.body} shareContext={shareContext} shareCopy={shareCopy} />}</section>
+          <section aria-label={copy.contentLabel} className="mx-auto max-w-[68ch] py-16 sm:py-28">
+            <aside lang={localeDetails[locale].htmlLang} className="writing-share-guide" aria-label={shareCopy.dialogTitle}>
+              <div><p className="writing-share-guide-eyebrow">{shareCopy.articleTrigger}</p><p className="writing-share-guide-title">{shareCopy.dialogTitle}</p></div>
+              <div className="writing-share-guide-actions"><ShareArticleTrigger copy={shareCopy} featured source={articleShareSource} /><ShareFormatSignal copy={shareCopy} detailed /></div>
+            </aside>
+            {article.bodyJson ? <WritingDocument document={article.bodyJson} shareContext={shareContext} shareCopy={shareCopy} /> : <ArticleBody body={article.body} shareContext={shareContext} shareCopy={shareCopy} />}
+          </section>
         </div>
         <NewsletterCta />
         <Discussion articleId={article.id} discussion={discussion} participation={participation} />

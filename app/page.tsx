@@ -9,19 +9,20 @@ import { HqPulse } from "@/components/sections/hq-pulse";
 import { HomeQuote } from "@/components/quotes/home-quote";
 import { Interviews } from "@/components/sections/interviews";
 import { Writing } from "@/components/sections/writing";
-import { getPublishedWriting } from "@/lib/writing/queries";
+import { getPublishedWritingResult } from "@/lib/writing/queries";
 
 export const revalidate = 300;
 
 export default async function Home() {
-  const publishedWriting = await getPublishedWriting();
+  const publishedWritingResult = await getPublishedWritingResult();
+  const publishedWriting = publishedWritingResult.data;
   return (
     <ContextCanvas>
       <Hero />
-      <HqPulse publishedWriting={publishedWriting} />
       <HomeQuote dateKey={new Date().toISOString().slice(0, 10)} />
+      <HqPulse publishedWriting={publishedWriting} />
       <CurrentlyBuilding />
-      <Writing publishedWriting={publishedWriting} />
+      <Writing publishedWriting={publishedWriting} publishedWritingStatus={publishedWritingResult.status} />
       <Interviews />
       <EchoWallPreview />
       <About />

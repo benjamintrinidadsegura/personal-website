@@ -26,6 +26,7 @@ export function ShareCard({
       aria-hidden="true"
       className="writing-share-card"
       data-format={format}
+      data-content={source.kind ?? "thought"}
       data-scale={scale}
       data-variant={variant}
     >
@@ -36,12 +37,18 @@ export function ShareCard({
         </header>
         <div className="writing-share-card-content">
           {variant === "marginNote" ? <span className="writing-share-card-note-label">FIELD NOTE</span> : null}
-          <p className="writing-share-card-thought">{text}</p>
+          {source.kind === "article" ? (
+            <>
+              <p className="writing-share-card-article-kicker">A BTS WRITING</p>
+              <p className="writing-share-card-article-title">{source.articleTitle}</p>
+              <p className="writing-share-card-article-teaser">{text}</p>
+            </>
+          ) : <p className="writing-share-card-thought">{text}</p>}
         </div>
         <footer className="writing-share-card-footer">
           <div className="min-w-0">
             <p className="writing-share-card-author">{source.authorName}</p>
-            <p className="writing-share-card-title">{source.articleTitle}</p>
+            <p className="writing-share-card-title">{source.kind === "article" ? sourceLabel : source.articleTitle}</p>
           </div>
           <p className="writing-share-card-domain">{source.domain}</p>
         </footer>

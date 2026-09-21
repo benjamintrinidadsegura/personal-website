@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { NewsletterCta } from "@/components/newsletter/newsletter-cta";
+import { ShareFormatSignal } from "@/components/writing/share/share-format-signal";
 import { getWritingDictionary, localizeWritingTopic, writingTaxonomies } from "@/data/i18n/writing";
+import { getWritingShareDictionary } from "@/data/i18n/writing-share";
 import { getGlobalDictionary } from "@/data/i18n/global";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
 import { localizeHref } from "@/lib/i18n/routing";
@@ -20,6 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function WritingPage() {
   const [articles, locale] = await Promise.all([getPublishedWriting(), getLocale()]);
   const copy = getWritingDictionary(locale).page;
+  const shareCopy = getWritingShareDictionary(locale);
   const globalCopy = getGlobalDictionary(locale);
   const dateFormatter = new Intl.DateTimeFormat(localeDetails[locale].htmlLang, { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
   const taxonomy = writingTaxonomies[locale];
@@ -40,14 +43,27 @@ export default async function WritingPage() {
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">{copy.featured}</p>
             <Link href={localizeHref(`/writing/${featured.slug}`, locale)} className="writing-index-featured group mt-8 grid gap-8 border border-white/10 bg-white/[0.02] p-7 transition hover:border-[#35d0e5]/50 sm:p-10 lg:grid-cols-[1fr_0.35fr]">
               <div><div lang={localeDetails[locale].htmlLang} className="flex flex-wrap gap-3 font-mono text-xs uppercase tracking-[0.16em] text-[#35d0e5]"><span>{taxonomy.contentTypes[featured.contentType]}</span><span aria-hidden="true">·</span><span>{featured.language.toUpperCase()}</span><span aria-hidden="true">·</span><span>{featured.topics.map((topic) => localizeWritingTopic(topic, locale)).join(" · ")}</span></div><div lang={sourceLang(featured.language)}><h2 id="featured-writing-title" className="mt-7 break-words text-4xl font-black leading-tight text-white sm:text-6xl">{featured.title}</h2><p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{featured.excerpt}</p></div></div>
-              <div className="flex flex-col justify-end border-t border-white/10 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><time dateTime={featured.publishedAt} className="font-mono text-xs text-slate-500">{dateFormatter.format(new Date(featured.publishedAt))}</time><p className="mt-3 text-sm text-slate-400">{featured.readingMinutes} {copy.readingTime}</p><p className="mt-8 font-black text-[#35d0e5]">{copy.readArticle} →</p></div>
+              <div className="flex flex-col justify-end border-t border-white/10 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><ShareFormatSignal copy={shareCopy} detailed /><time dateTime={featured.publishedAt} className="mt-8 font-mono text-xs text-slate-500">{dateFormatter.format(new Date(featured.publishedAt))}</time><p className="mt-3 text-sm text-slate-400">{featured.readingMinutes} {copy.readingTime}</p><p className="mt-8 font-black text-[#35d0e5]">{copy.readArticle} →</p></div>
             </Link>
           </section>
         ) : (
           <section aria-labelledby="empty-writing-title" className="border-b border-white/15 py-20"><h2 id="empty-writing-title" className="text-3xl font-black text-white">{copy.firstTitle}</h2><p className="mt-4 max-w-2xl leading-7 text-slate-300">{copy.firstBody}</p></section>
         )}
         {latest.length ? (
-          <section aria-labelledby="latest-writing-title" className="py-20 sm:py-28"><h2 id="latest-writing-title" className="text-4xl font-black text-white sm:text-6xl">{copy.latest}</h2><ol className="writing-index-list mt-12 border-t border-white/15">{latest.map((article) => <li key={article.id}><Link href={localizeHref(`/writing/${article.slug}`, locale)} className="writing-index-row group grid gap-5 border-b border-white/15 py-9 transition hover:bg-white/[0.025] sm:px-4 lg:grid-cols-[0.25fr_1fr_0.3fr] lg:items-center"><div><p className="font-mono text-xs uppercase tracking-[0.18em] text-[#35d0e5]">{taxonomy.contentTypes[article.contentType]} · {article.language.toUpperCase()}</p><p className="mt-2 text-sm text-slate-500">{article.topics.map((topic) => localizeWritingTopic(topic, locale)).join(" · ")}</p></div><div lang={sourceLang(article.language)}><h3 className="break-words text-2xl font-black leading-tight text-white sm:text-3xl">{article.title}</h3><p className="mt-4 max-w-2xl leading-7 text-slate-300">{article.excerpt}</p></div><div className="lg:text-right"><time dateTime={article.publishedAt} className="font-mono text-xs text-slate-500">{dateFormatter.format(new Date(article.publishedAt))}</time><p className="mt-3 text-sm text-slate-400">{article.readingMinutes} {copy.readingTime}</p></div></Link></li>)}</ol></section>
+          <section aria-labelledby="latest-writing-title" className="py-20 sm:py-28">
+            <h2 id="latest-writing-title" className="text-4xl font-black text-white sm:text-6xl">{copy.latest}</h2>
+            <ol data-writing-index-mosaic className="writing-index-list mt-12 grid gap-4 lg:grid-cols-12">
+              {latest.map((article, index) => (
+                <li key={article.id} className={index % 3 === 0 ? "lg:col-span-7" : "lg:col-span-5"}>
+                  <Link href={localizeHref(`/writing/${article.slug}`, locale)} className="writing-index-row group flex h-full min-h-[25rem] flex-col rounded-[1.5rem] border border-white/12 bg-white/[0.018] p-6 transition hover:border-[#35d0e5]/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5] sm:p-8">
+                    <div><p className="font-mono text-xs uppercase tracking-[0.18em] text-[#35d0e5]">{taxonomy.contentTypes[article.contentType]} · {article.language.toUpperCase()}</p><p className="mt-2 text-sm text-slate-500">{article.topics.map((topic) => localizeWritingTopic(topic, locale)).join(" · ")}</p></div>
+                    <div lang={sourceLang(article.language)} className="mt-auto pt-14"><h3 className={`break-words font-black leading-[1.02] text-white ${index % 3 === 0 ? "text-3xl sm:text-5xl" : "text-3xl sm:text-4xl"}`}>{article.title}</h3><p className="mt-5 max-w-2xl leading-7 text-slate-300">{article.excerpt}</p></div>
+                    <div className="mt-8 flex flex-wrap items-end justify-between gap-4 border-t border-white/10 pt-5"><div><time dateTime={article.publishedAt} className="font-mono text-xs text-slate-500">{dateFormatter.format(new Date(article.publishedAt))}</time><p className="mt-2 text-sm text-slate-400">{article.readingMinutes} {copy.readingTime}</p></div><p className="font-black text-[#35d0e5]">{copy.readArticle} →</p></div>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </section>
         ) : null}
         <NewsletterCta />
       </div>

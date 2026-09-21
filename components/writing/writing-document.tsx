@@ -30,12 +30,14 @@ function renderInline(content: WritingInlineContent[]): ReactNode[] {
 
 function thoughtSource(context: WritingShareContext, block: WritingDocumentBlock): WritingShareSource | null {
   const text = writingBlockToPlainText(block).trim();
-  if (!text || text.length < 32) return null;
+  const authorCurated = block.type === "keyThought" || block.type === "pullQuote" || block.type === "shareable";
+  if (!text || (!authorCurated && text.length < 32)) return null;
   const anchor = block.id ? `writing-thought-${block.id}` : null;
   return {
     ...context,
     blockId: block.id,
     canonicalUrl: context.canonicalUrl && anchor ? `${context.canonicalUrl}#${anchor}` : context.canonicalUrl,
+    kind: "thought",
     text,
   };
 }

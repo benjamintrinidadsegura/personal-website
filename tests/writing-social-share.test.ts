@@ -108,9 +108,13 @@ test("composer is lazy, keyboard-addressable, progressive, and does not add a re
   const composer = source("../components/writing/share/share-composer.tsx");
   const page = source("../app/writing/[slug]/page.tsx");
   const queries = source("../lib/writing/queries.ts");
+  const fileActions = source("../components/sharing/share-file-actions.tsx");
+  const nativeShare = source("../lib/sharing/native-card-share.ts");
   assert.equal(trigger.includes("dynamic(() => import"), true);
   assert.equal(trigger.includes("ssr: false"), true);
-  for (const behavior of ["showModal()", "onCancel", "aria-pressed", "navigator.clipboard.writeText", "navigator.share", "AbortError", "Screenshot"]) assert.equal(composer.includes(behavior), true, behavior);
+  for (const behavior of ["showModal()", "onCancel", "aria-pressed", "navigator.clipboard.writeText", "Screenshot", "ShareFileActions"]) assert.equal(composer.includes(behavior), true, behavior);
+  for (const behavior of ["supportsNativeFileShare", "downloadShareCardFile", "copyShareCardFile", "AbortError"]) assert.equal(fileActions.includes(behavior), true, behavior);
+  assert.equal(nativeShare.includes("navigator.share({ files: [file]"), true, "native file share");
   assert.equal(page.includes("getPublishedWritingBySlug"), true);
   assert.equal(queries.includes('.eq("status", "published")'), true);
   assert.equal(existsSync(new URL("../app/api/writing/share/route.ts", import.meta.url)), false);

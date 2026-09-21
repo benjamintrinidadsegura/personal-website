@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 
 import { FynsCharacterShareDialog } from "@/components/find-your-next-step/character-share-dialog";
 import { useLocale } from "@/components/i18n/locale-context";
+import { ShareIcon } from "@/components/sharing/share-icon";
 import { getFynsCharacterPresentation } from "@/data/find-your-next-step-characters";
 import type { FynsCharacterId } from "@/data/find-your-next-step-characters";
 import { fynsResultActionsCopy } from "@/data/find-your-next-step-ui-locales";
@@ -201,9 +202,10 @@ export function FynsResultActions({
               type="button"
               disabled={busyAction !== null}
               onClick={handleShare}
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/20 px-6 py-3 text-center font-bold text-slate-200 transition hover:border-[var(--result-actions-accent)]/65 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--result-actions-accent)] disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+              className="bts-share-action inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-white/20 px-6 py-3 text-center font-bold text-slate-200 transition hover:border-[var(--result-actions-accent)]/65 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--result-actions-accent)] disabled:cursor-wait disabled:opacity-60 sm:w-auto"
             >
-              {shareCharacter ? characterShareUi.trigger : busyAction === "share" ? ui.sharing : ui.share}
+              <ShareIcon className="h-4 w-4" />
+              <span>{shareCharacter ? characterShareUi.trigger : busyAction === "share" ? ui.sharing : ui.share}</span>
             </button>
           ) : null}
         </div>

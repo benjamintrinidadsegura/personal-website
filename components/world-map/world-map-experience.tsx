@@ -10,9 +10,14 @@ import {
   aggregateWorldMapCountries,
   bindWorldMapWheelZoom,
   calculateWorldMapProgress,
+  centerWorldMapPoint,
+  clampWorldMapOffset,
+  clampWorldMapZoom,
   getWorldMapZoomLevel,
   matchesWorldMapFilter,
   relationshipKinds,
+  WORLD_MAP_MAX_ZOOM,
+  zoomWorldMapAt,
 } from "@/lib/world-map";
 import type {
   ProjectedWorldMapConnection,
@@ -86,9 +91,21 @@ const placeCalloutOffset: Record<string, { x: number; y: number }> = {
   "region-wuerzburg-de": { x: 94, y: 56 },
 };
 
-function stageLabel(stage: WorldMapStage, copy: ReturnType<typeof getWorldMapDictionary>) {
-  return copy.progress[stage];
-}
+const countryLabelOffset: Record<string, { x: number; y: number }> = {
+  DE: { x: -16, y: 18 },
+  EG: { x: 20, y: 20 },
+  RU: { x: 0, y: 0 },
+};
+
+const placeLabelOffset: Record<string, { x: number; y: number }> = {
+  "city-bremen-de": { x: -92, y: -58 },
+  "city-hamburg-de": { x: 76, y: -56 },
+  "city-blieskastel-de": { x: 88, y: 38 },
+  "region-frankfurt-rhine-main-de": { x: -80, y: 24 },
+  "region-wuerzburg-de": { x: 72, y: 76 },
+};
+
+const mapLabelTextShadow = "-1px -1px 0 #031019, 1px -1px 0 #031019, -1px 1px 0 #031019, 1px 1px 0 #031019, 0 2px 6px #031019";
 
 function stageFill(stage: WorldMapStage | undefined) {
   if (stage === "growing") return "rgba(255,154,61,.48)";
@@ -114,12 +131,16 @@ function FilterIcon({ kind }: { kind: WorldMapRelationshipKind }) {
   );
 }
 
-function ContextCard({
+export function ContextCard({
   connection,
+  compact = false,
+  onClose,
   onSelect,
   peers,
 }: {
   connection: ProjectedWorldMapConnection | null;
+  compact?: boolean;
+  onClose?: () => void;
   onSelect: (id: string) => void;
   peers: readonly ProjectedWorldMapConnection[];
 }) {
@@ -139,19 +160,22 @@ function ContextCard({
 
   const kinds = relationshipKinds(connection);
   return (
-    <aside aria-live="polite" aria-labelledby="context-card-title" className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#071824]/95 shadow-2xl shadow-black/20">
-      {connection.entity.image ? (
+    <aside aria-live="polite" aria-labelledby="context-card-title" className={`overflow-hidden rounded-[1.75rem] border border-[#35d0e5]/35 bg-[#071824]/95 shadow-2xl shadow-black/20 ${compact ? "world-map-context-card-compact" : ""}`}>
+      {!compact && connection.entity.image ? (
         <div className="relative h-36 overflow-hidden border-b border-white/10 sm:h-44 lg:h-36">
           <Image src={connection.entity.image.src} alt={connection.entity.image.alt} fill sizes="(max-width: 1024px) 100vw, 30vw" className="object-cover" />
           <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#071824] via-transparent to-transparent" />
         </div>
-      ) : (
+      ) : !compact ? (
         <div aria-hidden="true" className="grid h-24 place-items-center border-b border-white/10 bg-[radial-gradient(circle_at_center,rgba(53,208,229,0.18),transparent_65%)] font-mono text-4xl font-black text-[#35d0e5]/35">
           {connection.entity.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}
         </div>
-      )}
-      <div className="p-6 sm:p-8">
-        <p className="font-mono text-[10px] font-black uppercase tracking-[0.22em] text-[#35d0e5]">{copy.context.eyebrow}</p>
+      ) : null}
+      <div className={compact ? "p-5 sm:p-6" : "p-6 sm:p-8"}>
+        <div className="flex items-start justify-between gap-4">
+          <p className="font-mono text-[10px] font-black uppercase tracking-[0.22em] text-[#35d0e5]">{copy.context.eyebrow} <span aria-hidden="true">·</span> {copy.selectedPin}</p>
+          {onClose ? <button type="button" onClick={onClose} aria-label={copy.context.close} className="grid size-11 shrink-0 place-items-center rounded-full border border-white/15 text-xl text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5]">×</button> : null}
+        </div>
         <h2 id="context-card-title" className="mt-4 text-3xl font-black leading-tight text-white">{connection.entity.name}</h2>
         {connection.currentLocation.context === "public-professional-context" || connection.currentLocation.context === "business-context" ? (
           <p className="mt-3 inline-flex min-h-8 items-center rounded-full border border-amber-300/40 bg-amber-300/[0.06] px-3 font-mono text-[9px] font-black uppercase tracking-[0.12em] text-amber-200">
@@ -234,15 +258,15 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
   const href = useLocalizedHref();
   const copy = getWorldMapDictionary(locale);
   const [filter, setFilter] = useState<WorldMapFilter>("all");
-  const [selectedId, setSelectedId] = useState<string | null>(geometry.connections[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [origin, setOrigin] = useState({ x: 50, y: 50 });
-  const [focusedCountry, setFocusedCountry] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [mapInteractionActive, setMapInteractionActive] = useState(false);
   const drag = useRef<{ pointerId: number; x: number; y: number; ox: number; oy: number } | null>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ distance: number; zoom: number; offset: { x: number; y: number } } | null>(null);
   const mapViewport = useRef<HTMLDivElement | null>(null);
-  const zoomRef = useRef(1);
 
   const matchingConnections = useMemo(() => geometry.connections.filter((connection) => matchesWorldMapFilter(connection, filter)), [filter, geometry.connections]);
   const availableRelationshipFilters = useMemo(() => relationshipFilterOrder.filter((kind) => geometry.connections.some((connection) => connection.relationships.some((relationship) => relationship.kind === kind))), [geometry.connections]);
@@ -250,42 +274,80 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
   const progress = useMemo(() => calculateWorldMapProgress(matchingConnections), [matchingConnections]);
   const countryProgress = useMemo(() => aggregateWorldMapCountries(geometry.connections, filter), [filter, geometry.connections]);
   const zoomLevel = getWorldMapZoomLevel(zoom);
-  const selected = geometry.connections.find(({ id }) => id === selectedId && matchingConnections.some((entry) => entry.id === id)) ?? matchingConnections[0] ?? null;
+  const selected = geometry.connections.find(({ id }) => id === selectedId && matchingConnections.some((entry) => entry.id === id)) ?? null;
   const selectedPeers = selected ? matchingConnections.filter(({ currentLocation }) => currentLocation.id === selected.currentLocation.id) : [];
 
   const locationGroups = useMemo(() => {
     const groups = new Map<string, ProjectedWorldMapConnection[]>();
-    for (const connection of geometry.connections) {
+    for (const connection of matchingConnections) {
       groups.set(connection.currentLocation.id, [...(groups.get(connection.currentLocation.id) ?? []), connection]);
     }
     return [...groups.values()];
-  }, [geometry.connections]);
+  }, [matchingConnections]);
 
-  const setMapZoom = useCallback((next: number) => {
-    const bounded = Math.max(1, Math.min(4.6, next));
-    zoomRef.current = bounded;
+  const viewportSize = useCallback(() => {
+    const rect = mapViewport.current?.getBoundingClientRect();
+    return rect ? { width: Math.max(rect.width, 1), height: Math.max(rect.height, 1) } : null;
+  }, []);
+
+  const setMapZoom = useCallback((next: number, nextOrigin = { x: 50, y: 50 }) => {
+    const bounded = clampWorldMapZoom(next);
+    const size = viewportSize();
+    if (size) setOffset((current) => zoomWorldMapAt(current, zoom, bounded, nextOrigin, size));
     setZoom(bounded);
     if (bounded === 1) {
       setOffset({ x: 0, y: 0 });
-      setOrigin({ x: 50, y: 50 });
-      setFocusedCountry(null);
     }
-  }, []);
+  }, [viewportSize, zoom]);
 
   useEffect(() => {
     const viewport = mapViewport.current;
     if (!viewport) return;
     return bindWorldMapWheelZoom(viewport, ({ delta, origin: nextOrigin }) => {
-      setOrigin(nextOrigin);
-      setMapZoom(zoomRef.current + delta);
+      if (window.matchMedia("(pointer: coarse)").matches) return false;
+      const nextZoom = clampWorldMapZoom(zoom + delta);
+      if (nextZoom !== zoom) setMapZoom(nextZoom, nextOrigin);
+      return true;
     });
-  }, [setMapZoom]);
+  }, [setMapZoom, zoom]);
 
-  const focusCountry = (countryId: string, point: { x: number; y: number }) => {
-    setFocusedCountry(countryId);
-    setOrigin({ x: (point.x / geometry.width) * 100, y: (point.y / geometry.height) * 100 });
+  const selectConnection = useCallback((connection: ProjectedWorldMapConnection, recenter = false, size?: { width: number; height: number }) => {
+    setSelectedId(connection.id);
+    if (recenter || zoom < 1.45) {
+      const nextZoom = Math.max(2.05, zoom);
+      setZoom(nextZoom);
+      if (size) setOffset(centerWorldMapPoint(connection.point, geometry, size, nextZoom));
+    }
+  }, [geometry, zoom]);
+
+  const closeDetail = useCallback(() => {
+    setSelectedId(null);
+    window.requestAnimationFrame(() => mapViewport.current?.focus());
+  }, []);
+
+  const moveMap = useCallback((next: { x: number; y: number }) => {
+    const size = viewportSize();
+    setOffset(size ? clampWorldMapOffset(next, size, zoom) : next);
+  }, [viewportSize, zoom]);
+
+  const resetMap = () => {
+    setSelectedId(null);
+    setMapInteractionActive(false);
+    setZoom(1);
     setOffset({ x: 0, y: 0 });
-    setMapZoom(2.25);
+  };
+
+  const chooseFilter = (next: WorldMapFilter) => {
+    setFilter(next);
+    setSelectedId(null);
+  };
+
+  const openFromFallbackList = (connection: ProjectedWorldMapConnection) => {
+    selectConnection(connection, true, viewportSize() ?? undefined);
+    window.requestAnimationFrame(() => mapViewport.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "center",
+    }));
   };
 
   const progressStats = [
@@ -315,51 +377,79 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
         </header>
 
         <section aria-labelledby="map-title" className="py-14 sm:py-20">
-          <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(19rem,0.58fr)] lg:items-start">
+          <div className="min-w-0">
             <div className="min-w-0">
               <div className="flex flex-col gap-6 border-b border-white/10 pb-7 xl:flex-row xl:items-end xl:justify-between">
                 <div><p className="font-mono text-[10px] font-black uppercase tracking-[0.22em] text-[#ff9a3d]">01 / Map</p><h2 id="map-title" className="mt-3 text-3xl font-black text-white sm:text-5xl">{copy.mapTitle}</h2><p id="map-instructions" className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">{copy.mapInstructions}</p><p role="status" className="mt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#35d0e5]">{copy.semantic.view}: {semanticTrail}</p></div>
-                <div className="flex gap-2" aria-label={copy.mapTitle}>
-                  <button type="button" onClick={() => setMapZoom(zoom + 0.5)} disabled={zoom >= 4.6} aria-label={copy.zoomIn} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/15 text-xl font-black text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] disabled:opacity-30">+</button>
+                <div className="flex flex-wrap gap-2" aria-label={copy.mapTitle}>
+                  <button type="button" onClick={() => { setMapInteractionActive(true); setMapZoom(zoom + 0.5); }} disabled={zoom >= WORLD_MAP_MAX_ZOOM} aria-label={copy.zoomIn} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/15 text-xl font-black text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] disabled:opacity-30">+</button>
                   <button type="button" onClick={() => setMapZoom(zoom - 0.5)} disabled={zoom <= 1} aria-label={copy.zoomOut} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/15 text-xl font-black text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] disabled:opacity-30">−</button>
-                  <button type="button" onClick={() => setMapZoom(1)} className="min-h-11 rounded-full border border-white/15 px-4 font-mono text-[10px] font-black uppercase tracking-[0.12em] text-slate-300 hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5]">{copy.resetMap}</button>
+                  <button type="button" onClick={resetMap} className="min-h-11 rounded-full border border-white/15 px-4 font-mono text-[10px] font-black uppercase tracking-[0.12em] text-slate-300 hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5]">{copy.resetMap}</button>
                 </div>
               </div>
 
-              <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-[#031019] p-3 sm:p-5">
+              <div className="world-map-stage mt-6">
+                <div className="mb-3 grid gap-2 lg:hidden">
+                  <p role="status" className="font-mono text-[10px] font-black uppercase tracking-[0.13em] text-slate-400">{mapInteractionActive ? copy.releaseMap : copy.activateMap}</p>
+                  <button type="button" data-map-interaction-toggle aria-pressed={mapInteractionActive} onClick={() => setMapInteractionActive((active) => !active)} className="min-h-11 w-full rounded-full border border-[#35d0e5]/50 px-4 py-2 text-xs font-black leading-5 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5]">{mapInteractionActive ? copy.releaseMap : copy.activateMap}</button>
+                </div>
                 <div
                   ref={mapViewport}
                   role="group"
                   tabIndex={0}
                   aria-label={copy.mapAria}
                   aria-describedby="map-instructions"
-                  className={`relative aspect-[1000/510] min-h-[15rem] w-full overflow-hidden rounded-[1rem] border border-white/10 bg-[radial-gradient(circle_at_50%_45%,rgba(53,208,229,0.07),transparent_60%)] cursor-grab focus-visible:outline-2 focus-visible:outline-[#35d0e5] active:cursor-grabbing ${zoom > 1 ? "touch-none" : "touch-pan-y"}`}
+                  data-map-interaction={mapInteractionActive ? "active" : "passive"}
+                  data-map-selection={selected ? "selected" : "empty"}
+                  className={`world-map-viewport relative w-full overflow-hidden rounded-[1rem] border border-white/10 bg-[radial-gradient(circle_at_50%_45%,rgba(53,208,229,0.07),transparent_60%)] cursor-grab focus-visible:outline-2 focus-visible:outline-[#35d0e5] active:cursor-grabbing ${mapInteractionActive ? "touch-none" : "touch-pan-y"}`}
                   onKeyDown={(event) => {
                     const step = 28;
-                    if (event.key === "+" || event.key === "=") setMapZoom(zoom + 0.5);
+                    if (event.key === "Escape") { if (selected) closeDetail(); else setMapInteractionActive(false); event.preventDefault(); return; }
+                    if (event.key === "Home") { resetMap(); event.preventDefault(); return; }
+                    if (event.key === "+" || event.key === "=") { setMapInteractionActive(true); setMapZoom(zoom + 0.5); }
                     else if (event.key === "-") setMapZoom(zoom - 0.5);
-                    else if (event.key === "ArrowLeft" && zoom > 1) setOffset((value) => ({ ...value, x: value.x + step }));
-                    else if (event.key === "ArrowRight" && zoom > 1) setOffset((value) => ({ ...value, x: value.x - step }));
-                    else if (event.key === "ArrowUp" && zoom > 1) setOffset((value) => ({ ...value, y: value.y + step }));
-                    else if (event.key === "ArrowDown" && zoom > 1) setOffset((value) => ({ ...value, y: value.y - step }));
+                    else if (event.key === "ArrowLeft" && zoom > 1) moveMap({ ...offset, x: offset.x + step });
+                    else if (event.key === "ArrowRight" && zoom > 1) moveMap({ ...offset, x: offset.x - step });
+                    else if (event.key === "ArrowUp" && zoom > 1) moveMap({ ...offset, y: offset.y + step });
+                    else if (event.key === "ArrowDown" && zoom > 1) moveMap({ ...offset, y: offset.y - step });
                     else return;
                     event.preventDefault();
                   }}
                   onPointerDown={(event) => {
-                    if (zoom <= 1 || (event.target as HTMLElement).closest("button")) return;
-                    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y };
+                    if ((event.target as HTMLElement).closest("button") || (event.pointerType === "touch" && !mapInteractionActive)) return;
+                    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                    if (pointers.current.size === 2) {
+                      const [first, second] = [...pointers.current.values()];
+                      pinch.current = { distance: Math.hypot(second.x - first.x, second.y - first.y), zoom, offset };
+                      drag.current = null;
+                    } else {
+                      drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y };
+                    }
                     setDragging(true);
                     event.currentTarget.setPointerCapture(event.pointerId);
                   }}
                   onPointerMove={(event) => {
+                    if (pointers.current.has(event.pointerId)) pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                    if (pinch.current && pointers.current.size >= 2) {
+                      const [first, second] = [...pointers.current.values()];
+                      const distance = Math.hypot(second.x - first.x, second.y - first.y);
+                      const rect = mapViewport.current?.getBoundingClientRect();
+                      if (!rect) return;
+                      const nextZoom = clampWorldMapZoom(pinch.current.zoom * (distance / Math.max(pinch.current.distance, 1)));
+                      const nextOrigin = { x: (((first.x + second.x) / 2 - rect.left) / rect.width) * 100, y: (((first.y + second.y) / 2 - rect.top) / rect.height) * 100 };
+                      setZoom(nextZoom);
+                      setOffset(zoomWorldMapAt(pinch.current.offset, pinch.current.zoom, nextZoom, nextOrigin, { width: rect.width, height: rect.height }));
+                      setDragging(true);
+                      return;
+                    }
                     if (!drag.current || drag.current.pointerId !== event.pointerId) return;
-                    const limit = 230 * zoom;
-                    setOffset({ x: Math.max(-limit, Math.min(limit, drag.current.ox + event.clientX - drag.current.x)), y: Math.max(-limit * 0.55, Math.min(limit * 0.55, drag.current.oy + event.clientY - drag.current.y)) });
+                    moveMap({ x: drag.current.ox + event.clientX - drag.current.x, y: drag.current.oy + event.clientY - drag.current.y });
                   }}
-                  onPointerUp={(event) => { if (drag.current?.pointerId === event.pointerId) drag.current = null; setDragging(false); }}
-                  onPointerCancel={() => { drag.current = null; setDragging(false); }}
+                  onPointerUp={(event) => { pointers.current.delete(event.pointerId); if (pointers.current.size < 2) pinch.current = null; if (drag.current?.pointerId === event.pointerId) drag.current = null; setDragging(false); }}
+                  onPointerCancel={(event) => { pointers.current.delete(event.pointerId); pinch.current = null; drag.current = null; setDragging(false); }}
                 >
-                  <div className="absolute inset-0 motion-reduce:transition-none" style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: `${origin.x}% ${origin.y}%`, transition: dragging ? "none" : "transform 220ms ease" }}>
+                  {!selected && zoom === 1 ? <div className="pointer-events-none absolute bottom-3 left-3 z-20 rounded-full border border-[#35d0e5]/35 bg-[#04141f]/90 px-3 py-2 font-mono text-[9px] font-black uppercase tracking-[0.12em] text-[#9debf4] shadow-xl">Map <span aria-hidden="true">→</span> {copy.activateMap}</div> : null}
+                  <div data-map-transform className={`absolute inset-0 ${dragging ? "transition-none" : "transition-transform duration-200 ease-out motion-reduce:transition-none"}`} style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${zoom})`, transformOrigin: "50% 50%" }}>
                     <svg viewBox={`0 0 ${geometry.width} ${geometry.height}`} role="img" aria-label={copy.mapAria} className="absolute inset-0 h-full w-full">
                       <path d={geometry.spherePath} fill="#061923" stroke="rgba(148,163,184,.16)" strokeWidth="1" />
                       <path d={geometry.landPath} fill="#0c2a35" stroke="rgba(53,208,229,.16)" strokeWidth="1" />
@@ -370,68 +460,136 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
                       <path d={geometry.borderPath} fill="none" stroke="rgba(148,163,184,.18)" strokeWidth=".65" vectorEffect="non-scaling-stroke" />
                     </svg>
 
-                    {zoomLevel === "world" ? geometry.countries.map((country) => {
-                      const summary = countryProgress.find(({ id }) => id === country.id);
-                      if (!summary) return null;
-                      const continent = geometry.connections.find(({ currentLocation }) => currentLocation.countryId === country.id)?.currentLocation.continentId;
-                      return (
-                        <button key={country.id} type="button" onClick={(event) => { event.stopPropagation(); focusCountry(country.id, country.point); }} aria-label={`${copy.locations.countries[country.id]}: ${summary.entityCount} ${copy.semantic.aggregate}; ${stageLabel(summary.stage, copy)}`} className="absolute z-10 min-h-11 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[#8eeaf5]/70 bg-[#04141f]/95 px-3 py-2 text-left shadow-[0_0_28px_rgba(53,208,229,.38)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white" style={{ left: `${(country.point.x / geometry.width) * 100}%`, top: `${(country.point.y / geometry.height) * 100}%` }}>
-                          <span className="block font-mono text-[8px] font-black uppercase tracking-[0.14em] text-slate-400">{continent ? copy.locations.continents[continent] : copy.semantic.world} · {stageLabel(summary.stage, copy)}</span>
-                          <span className="mt-1 block whitespace-nowrap font-mono text-[10px] font-black uppercase tracking-[0.1em] text-white">{copy.locations.countries[country.id]} <strong className="text-[#35d0e5]">{summary.entityCount}</strong></span>
-                        </button>
-                      );
-                    }) : null}
+                    <div aria-hidden="true" data-map-country-labels className="absolute inset-0 z-[8]">
+                      {geometry.countries.map((country) => {
+                        const baseOffset = countryLabelOffset[country.id] ?? { x: 0, y: 0 };
+                        const labelOffset = zoom >= 1.6
+                          ? country.id === "DE"
+                            ? { x: 0, y: 126 }
+                            : country.id === "RU"
+                              ? { x: 0, y: 32 }
+                              : baseOffset
+                          : baseOffset;
+                        return (
+                          <span
+                            key={country.id}
+                            data-map-country-label={country.id}
+                            className="world-map-country-label"
+                            style={{
+                              position: "absolute",
+                              left: `calc(${(country.point.x / geometry.width) * 100}% + ${labelOffset.x / zoom}px)`,
+                              top: `calc(${(country.point.y / geometry.height) * 100}% + ${labelOffset.y / zoom}px)`,
+                              transform: `translate(-50%, -50%) scale(${1 / zoom})`,
+                              transformOrigin: "center",
+                              pointerEvents: "none",
+                              color: "#8da3b1",
+                              fontFamily: 'ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace',
+                              fontSize: "10px",
+                              fontWeight: 850,
+                              lineHeight: 1,
+                              letterSpacing: ".12em",
+                              textTransform: "uppercase",
+                              textShadow: mapLabelTextShadow,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {copy.locations.countries[country.id]}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    {zoom >= 1.6 ? (
+                      <div aria-hidden="true" data-map-place-labels data-label-zoom={zoomLevel} className="absolute inset-0 z-10">
+                        {locationGroups.map((group) => {
+                          const connection = group[0];
+                          const location = connection.currentLocation;
+                          if (!location.cityId && !location.regionId) return null;
+                          const labelOffset = placeLabelOffset[location.id] ?? { x: 0, y: 22 };
+                          return (
+                            <span
+                              key={location.id}
+                              data-map-place-label={location.id}
+                              className="world-map-place-label"
+                              style={{
+                                position: "absolute",
+                                left: `calc(${(connection.point.x / geometry.width) * 100}% + ${labelOffset.x / zoom}px)`,
+                                top: `calc(${(connection.point.y / geometry.height) * 100}% + ${labelOffset.y / zoom}px)`,
+                                transform: `translate(-50%, -50%) scale(${1 / zoom})`,
+                                transformOrigin: "center",
+                                pointerEvents: "none",
+                                border: "1px solid rgba(142, 234, 245, .16)",
+                                borderRadius: "999px",
+                                background: "rgba(3, 16, 25, .82)",
+                                color: "#d5e5eb",
+                                fontSize: "11px",
+                                fontWeight: 850,
+                                lineHeight: 1,
+                                letterSpacing: ".025em",
+                                padding: ".22rem .38rem",
+                                textShadow: mapLabelTextShadow,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {placeLabel(location, copy)}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : null}
 
-                    {zoomLevel === "country" ? locationGroups.map((group) => {
+                    {zoom < 1.75 ? locationGroups.map((group) => {
                       const point = group[0].point;
-                      const matching = group.filter((connection) => matchesWorldMapFilter(connection, filter));
-                      if (matching.length === 0 || (focusedCountry && group[0].currentLocation.countryId !== focusedCountry)) return null;
                       const label = locationLabel(group[0].currentLocation, copy);
                       const shortLabel = placeLabel(group[0].currentLocation, copy);
                       const callout = placeCalloutOffset[group[0].currentLocation.id] ?? { x: 0, y: 0 };
                       return (
-                        <div key={group[0].currentLocation.id}>
-                          <span aria-hidden="true" className="absolute h-2.5 w-2.5 rounded-full border border-white bg-[#35d0e5] shadow-[0_0_18px_rgba(53,208,229,.9)]" style={{ left: `${(point.x / geometry.width) * 100}%`, top: `${(point.y / geometry.height) * 100}%`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }} />
-                          <button type="button" onClick={(event) => { event.stopPropagation(); setSelectedId(matching[0].id); setOrigin({ x: (point.x / geometry.width) * 100, y: (point.y / geometry.height) * 100 }); setMapZoom(3.4); }} aria-label={`${label}; ${matching.length} ${copy.entriesAtLocation}`} className="absolute z-10 min-h-11 whitespace-nowrap rounded-full border border-[#35d0e5] bg-[#061923]/95 px-3 py-2 font-mono text-[9px] font-black uppercase tracking-[0.08em] text-white shadow-[0_0_24px_rgba(53,208,229,.42)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white" style={{ left: `calc(${(point.x / geometry.width) * 100}% + ${callout.x / zoom}px)`, top: `calc(${(point.y / geometry.height) * 100}% + ${callout.y / zoom}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
-                            {shortLabel} <span className="text-[#35d0e5]">{matching.length}</span>
-                          </button>
-                        </div>
+                        <button key={group[0].currentLocation.id} type="button" onClick={(event) => { event.stopPropagation(); const rect = event.currentTarget.closest<HTMLElement>("[data-map-interaction]")?.getBoundingClientRect(); selectConnection(group[0], true, rect ? { width: rect.width, height: rect.height } : undefined); }} aria-pressed={selected?.currentLocation.id === group[0].currentLocation.id} aria-label={`${label}; ${group.length} ${copy.entriesAtLocation}`} className="world-map-pin world-map-pin-cluster" style={{ left: `calc(${(point.x / geometry.width) * 100}% + ${(callout.x * 0.35) / zoom}px)`, top: `calc(${(point.y / geometry.height) * 100}% + ${(callout.y * 0.35) / zoom}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
+                          <span aria-hidden="true">{group.length}</span>
+                          <span className="world-map-pin-tooltip">{shortLabel}</span>
+                        </button>
                       );
                     }) : null}
 
-                    {zoomLevel === "city" ? locationGroups.flatMap((group) => {
-                      if (selected && group[0].currentLocation.id !== selected.currentLocation.id) return [];
-                      const matching = group.filter((connection) => matchesWorldMapFilter(connection, filter));
-                      return matching.map((connection, index) => {
-                        const kinds = relationshipKinds(connection);
-                        const primary = kinds[0];
-                        const angle = (index / Math.max(matching.length, 1)) * Math.PI * 2;
-                        const spread = matching.length > 1 ? 18 : 0;
-                        return (
-                          <button key={connection.id} type="button" onClick={(event) => { event.stopPropagation(); setSelectedId(connection.id); }} aria-pressed={selected?.id === connection.id} aria-label={`${copy.pinFor} ${connection.entity.name}, ${locationLabel(connection.currentLocation, copy)}; ${kinds.map((kind) => copy.categories[kind].label).join(", ")}`} className={`absolute z-10 grid h-11 w-11 place-items-center border-2 font-mono text-[9px] font-black shadow-[0_0_0_4px_rgba(3,16,25,.72),0_0_24px_rgba(53,208,229,.42)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white aria-pressed:outline aria-pressed:outline-2 aria-pressed:outline-offset-4 aria-pressed:outline-white ${categoryTone[primary]} ${primary === "interviewed" ? "rounded-full" : primary === "partner" ? "rotate-45 rounded-[0.3rem]" : primary === "team-up" ? "[clip-path:polygon(25%_0,75%_0,100%_50%,75%_100%,25%_100%,0_50%)]" : primary === "advertising-partner" ? "rounded-full" : "rounded-[0.1rem]"}`} style={{ left: `calc(${(connection.point.x / geometry.width) * 100}% + ${Math.cos(angle) * spread}px)`, top: `calc(${(connection.point.y / geometry.height) * 100}% + ${Math.sin(angle) * spread}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
-                            <span className={primary === "partner" ? "-rotate-45" : ""}>{categoryGlyph[primary]}</span>
-                          </button>
-                        );
-                      });
-                    }) : null}
-                  </div>
-                </div>
+                    {zoom >= 1.75 ? locationGroups.flatMap((group) => group.map((connection, index) => {
+                      const kinds = relationshipKinds(connection);
+                      const primary = kinds[0];
+                      const angle = (index / Math.max(group.length, 1)) * Math.PI * 2;
+                      const spread = group.length > 1 ? 25 : 0;
+                      return (
+                        <button key={connection.id} type="button" onClick={(event) => { event.stopPropagation(); selectConnection(connection); }} aria-pressed={selected?.id === connection.id} aria-label={`${selected?.id === connection.id ? `${copy.selectedPin}: ` : ""}${copy.pinFor} ${connection.entity.name}, ${locationLabel(connection.currentLocation, copy)}; ${kinds.map((kind) => copy.categories[kind].label).join(", ")}`} className={`world-map-pin ${categoryTone[primary]} ${primary === "interviewed" || primary === "advertising-partner" ? "rounded-full" : primary === "partner" ? "rotate-45 rounded-[0.3rem]" : primary === "team-up" ? "rounded-xl" : "rounded-[0.1rem]"}`} style={{ left: `calc(${(connection.point.x / geometry.width) * 100}% + ${Math.cos(angle) * spread}px)`, top: `calc(${(connection.point.y / geometry.height) * 100}% + ${Math.sin(angle) * spread}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
+                          <span className={primary === "partner" ? "-rotate-45" : ""}>{selected?.id === connection.id ? "✓" : categoryGlyph[primary]}</span>
+                          <span className={`world-map-pin-tooltip ${primary === "partner" ? "-rotate-45" : ""}`}>{connection.entity.name}</span>
+                        </button>
+                      );
+                    })) : null}
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label={copy.filtersTitle}>
-                  {availableRelationshipFilters.map((kind) => <div key={kind} className="flex gap-3 rounded-xl border border-white/10 p-3"><FilterIcon kind={kind} /><div><p className="text-xs font-black text-white">{copy.categories[kind].label}</p><p className="mt-1 text-[11px] leading-5 text-slate-500">{copy.categories[kind].description}</p></div></div>)}
+                  </div>
+                  {selected ? (
+                    <div id="world-map-context" data-map-selection="selected" className="world-map-detail" onPointerDown={(event) => event.stopPropagation()}>
+                      <ContextCard
+                        compact
+                        connection={selected}
+                        peers={selectedPeers}
+                        onClose={closeDetail}
+                        onSelect={(id) => {
+                          const connection = geometry.connections.find((entry) => entry.id === id);
+                          if (connection) selectConnection(connection);
+                        }}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
-              <section aria-labelledby="filter-title" className="mt-7 rounded-[1.5rem] border border-white/10 bg-white/[0.02] p-5 sm:p-6">
+              <section aria-labelledby="filter-title" className="world-map-filter-bar mt-4">
                 <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
-                  <div><h3 id="filter-title" className="text-xl font-black text-white">{copy.filtersTitle}</h3><p className="mt-2 text-sm text-slate-400">{copy.filtersDescription}</p><div className="mt-4 flex flex-wrap gap-2">{quickFilters.map((item) => <button key={item} type="button" aria-pressed={filter === item} onClick={() => setFilter(item)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-4 text-sm font-black text-slate-200 hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] aria-pressed:border-[#35d0e5] aria-pressed:bg-[#35d0e5] aria-pressed:text-[#041018]">{item === "all" ? null : <FilterIcon kind={item} />}{item === "all" ? copy.all : copy.categories[item].label}</button>)}</div></div>
-                  {availableRelationshipFilters.length > 1 ? <label className="grid gap-2 font-mono text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">{copy.categorySelect}<select value={filter} onChange={(event) => setFilter(event.target.value as WorldMapFilter)} className="min-h-12 min-w-56 rounded-xl border border-white/15 bg-[#071824] px-4 text-sm font-bold normal-case tracking-normal text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5]"><option value="all">{copy.all}</option>{availableRelationshipFilters.map((kind) => <option key={kind} value={kind}>{copy.categories[kind].label}</option>)}</select></label> : null}
+                  <div><h3 id="filter-title" className="text-base font-black text-white">{copy.filtersTitle}</h3><p className="mt-1 text-xs leading-5 text-slate-400">{copy.filtersDescription}</p><div className="mt-3 flex flex-wrap gap-2">{quickFilters.map((item) => <button key={item} type="button" aria-pressed={filter === item} onClick={() => chooseFilter(item)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-4 text-sm font-black text-slate-200 hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] aria-pressed:border-[#35d0e5] aria-pressed:bg-[#35d0e5] aria-pressed:text-[#041018]">{item === "all" ? null : <FilterIcon kind={item} />}{item === "all" ? copy.all : copy.categories[item].label}</button>)}</div></div>
+                  {availableRelationshipFilters.length > 1 ? <label className="grid min-w-0 gap-2 font-mono text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">{copy.categorySelect}<select value={filter} onChange={(event) => chooseFilter(event.target.value as WorldMapFilter)} className="min-h-12 w-full min-w-0 rounded-xl border border-white/15 bg-[#071824] px-4 text-sm font-bold normal-case tracking-normal text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5] md:min-w-56"><option value="all">{copy.all}</option>{availableRelationshipFilters.map((kind) => <option key={kind} value={kind}>{copy.categories[kind].label}</option>)}</select></label> : null}
                 </div>
                 <p role="status" className="mt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">{matchingConnections.length} / {geometry.connections.length} {copy.progress.relationships}</p>
               </section>
             </div>
 
-            <div className="lg:sticky lg:top-24"><ContextCard connection={selected} peers={selectedPeers} onSelect={setSelectedId} /></div>
           </div>
         </section>
 
@@ -447,7 +605,7 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
             <div><p className="font-mono text-xs font-black uppercase tracking-[0.2em] text-[#35d0e5]">02 / Text view</p><h2 id="map-list-title" className="mt-5 text-4xl font-black text-white sm:text-5xl">{copy.list.title}</h2><p className="mt-5 leading-7 text-slate-400">{copy.list.description}</p></div>
             <div>
               {matchingConnections.length === 0 ? <p role="status" className="mb-5 rounded-xl border border-[#ff9a3d]/30 bg-[#ff9a3d]/[0.04] p-5 text-sm font-bold text-slate-200">{copy.list.empty}</p> : null}
-              <ul className="border-t border-white/15">{geometry.connections.map((connection) => { const active = matchesWorldMapFilter(connection, filter); const kinds = relationshipKinds(connection); return <li key={connection.id} className={`grid gap-4 border-b border-white/10 py-5 transition sm:grid-cols-[1fr_auto] sm:items-center motion-reduce:transition-none ${active ? "opacity-100" : "opacity-30"}`}><div><p className="text-xl font-black text-white">{connection.entity.name}</p><p className="mt-1 text-sm text-slate-400">{locationLabel(connection.currentLocation, copy)}</p>{connection.origin ? <p className="mt-1 text-xs text-slate-500">{copy.context.origin}: {locationLabel(connection.origin, copy)}</p> : null}<div className="mt-3 flex flex-wrap gap-2">{kinds.map((kind) => <span key={kind} className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-[0.12em] ${categoryOutline[kind]}`}><FilterIcon kind={kind} />{copy.categories[kind].short}</span>)}</div></div><button type="button" disabled={!active} onClick={() => { setSelectedId(connection.id); document.getElementById("context-card-title")?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="min-h-11 rounded-full border border-white/15 px-5 text-sm font-black text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] disabled:cursor-not-allowed">{active ? copy.list.open : copy.list.receded}</button></li>; })}</ul>
+              <ul className="border-t border-white/15">{geometry.connections.map((connection) => { const active = matchesWorldMapFilter(connection, filter); const kinds = relationshipKinds(connection); return <li key={connection.id} className={`grid gap-4 border-b border-white/10 py-5 transition sm:grid-cols-[1fr_auto] sm:items-center motion-reduce:transition-none ${active ? "opacity-100" : "opacity-30"}`}><div><p className="text-xl font-black text-white">{connection.entity.name}</p><p className="mt-1 text-sm text-slate-400">{locationLabel(connection.currentLocation, copy)}</p>{connection.origin ? <p className="mt-1 text-xs text-slate-500">{copy.context.origin}: {locationLabel(connection.origin, copy)}</p> : null}<div className="mt-3 flex flex-wrap gap-2">{kinds.map((kind) => <span key={kind} className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-[0.12em] ${categoryOutline[kind]}`}><FilterIcon kind={kind} />{copy.categories[kind].short}</span>)}</div></div><button type="button" disabled={!active} onClick={() => openFromFallbackList(connection)} className="min-h-11 rounded-full border border-white/15 px-5 text-sm font-black text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] disabled:cursor-not-allowed">{active ? copy.list.open : copy.list.receded}</button></li>; })}</ul>
             </div>
           </div>
         </section>

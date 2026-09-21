@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 
 import { QuoteShareDialog } from "@/components/quotes/quote-share-dialog";
+import { ShareIcon } from "@/components/sharing/share-icon";
 import { useLocale } from "@/components/i18n/locale-context";
 import { quoteDictionaries } from "@/data/i18n/quotes";
 import { selectQuote } from "@/lib/quotes";
@@ -46,7 +47,7 @@ export function QuoteExperience({ context, description, safeSharePath = "/", tit
         </blockquote>
         <div className="quote-experience-actions">
           <button type="button" onClick={another}>{copy.another}</button>
-          {current.shareEligible ? <button type="button" onClick={() => setShareOpen(true)} className="quote-experience-share">{copy.share} ↗</button> : null}
+          {current.shareEligible ? <button type="button" onClick={() => setShareOpen(true)} className="bts-share-action quote-experience-share"><ShareIcon /><span>{copy.share}</span></button> : null}
         </div>
       </div>
       {shareOpen ? <QuoteShareDialog copy={copy} onClose={() => setShareOpen(false)} quote={current} safeSharePath={safeSharePath} surfaceLabel={eyebrow} /> : null}

@@ -99,6 +99,7 @@ export type WritingShareSource = {
   blockId?: string;
   canonicalUrl: string | null;
   domain: string;
+  kind?: "article" | "thought";
   language: WritingLanguage;
   text: string;
 };

@@ -27,21 +27,9 @@ export function createWorldMapGeometry(connections: readonly WorldMapConnection[
   const supportedCountries = (Object.entries(countryFeatureIds) as [WorldMapCountryId, string][]).flatMap(([id, featureId]) => {
     const country = land.features.find((entry) => String(entry.id) === featureId);
     if (!country) return [];
-    const relevant = connections.filter(({ currentLocation }) => currentLocation.countryId === id);
-    if (relevant.length === 0) return [];
-    const average = relevant.reduce(
-      (sum, { currentLocation }) => ({
-        longitude: sum.longitude + currentLocation.coordinate.longitude,
-        latitude: sum.latitude + currentLocation.coordinate.latitude,
-      }),
-      { longitude: 0, latitude: 0 },
-    );
-    const projected = projection([
-      average.longitude / relevant.length,
-      average.latitude / relevant.length,
-    ]);
-    if (!projected) return [];
-    return [{ id, path: path(country as Feature<Geometry>) ?? "", point: { x: projected[0], y: projected[1] } }];
+    const centroid = path.centroid(country as Feature<Geometry>);
+    if (!centroid.every(Number.isFinite)) return [];
+    return [{ id, path: path(country as Feature<Geometry>) ?? "", point: { x: centroid[0], y: centroid[1] } }];
   });
 
   return {

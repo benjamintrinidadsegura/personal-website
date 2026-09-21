@@ -87,7 +87,7 @@ export function WritingEditor({
         <button type="button" onClick={() => editor.redo()} className="inline-flex size-10 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#35d0e5]/70" aria-label="Redo document change" title="Redo (Ctrl+Shift+Z)">
           <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 7 4 4-4 4"/><path d="M19 11h-8a5 5 0 0 0-5 5v1"/></svg>
         </button>
-        <span className="ml-auto pr-1 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-600">/ commands · Key Thought · Pull Quote · Shareable</span>
+        <span className="ml-auto pr-1 text-right font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-500">Share-ready via / · Key Thought · Pull Quote · Shareable</span>
       </div>
       <BlockNoteView
         editor={editor}

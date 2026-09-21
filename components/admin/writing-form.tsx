@@ -9,6 +9,9 @@ import { getWritingShareDictionary } from "@/data/i18n/writing-share";
 import { siteConfig } from "@/data/site";
 import { getWritingLocalization } from "@/data/writing-localization";
 import { legacyBodyToWritingDocument } from "@/lib/writing/document";
+import { isWritingSnapshotDirty, writingNavigationLeavesDocument, writingSnapshotFingerprint } from "@/lib/writing/dirty-state";
+import { deriveWritingTeaser } from "@/lib/writing/teaser";
+import { parseWritingInput } from "@/lib/writing/validation";
 import {
   suggestedWritingTopics,
   type AdminWritingArticle,
@@ -40,9 +43,20 @@ const UNSAVED_CHANGES_MESSAGE = "You have unsaved Writing changes. Leave this pa
 type BrowserNavigation = EventTarget;
 type BrowserNavigationEvent = Event & {
   canIntercept?: boolean;
+  destination?: { url?: string };
   downloadRequest?: string | null;
   hashChange?: boolean;
 };
+
+const writingFieldLabels: Record<WritingField, string> = {
+  title: "Title",
+  deck: "Deck / subtitle",
+  excerpt: "Excerpt / teaser",
+  bodyJson: "Document",
+  contentType: "Content type",
+  topics: "Topics",
+};
+const publicationSettingsFields: WritingField[] = ["contentType", "topics", "excerpt"];
 
 function toFormData(articleId: string, updatedAt: string, snapshot: Snapshot): FormData {
   const data = new FormData();
@@ -60,40 +74,52 @@ function toFormData(articleId: string, updatedAt: string, snapshot: Snapshot): F
 export function WritingForm({ article }: { article: AdminWritingArticle }) {
   const initialDocument = useMemo(() => article.bodyJson ?? legacyBodyToWritingDocument(article.body), [article.body, article.bodyJson]);
   const [snapshot, setSnapshot] = useState<Snapshot>({ title: article.title, deck: article.deck, excerpt: article.excerpt, contentType: article.contentType, topics: article.topics, document: initialDocument });
+  const [persistedFingerprint, setPersistedFingerprint] = useState(() => writingSnapshotFingerprint({ title: article.title, deck: article.deck, excerpt: article.excerpt, contentType: article.contentType, topics: article.topics, document: initialDocument }));
   const [phase, setPhase] = useState<SavePhase>("saved");
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [feedback, setFeedback] = useState<WritingActionState>(null);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [lastAction, setLastAction] = useState<"save" | "publish" | null>(null);
   const expectedUpdatedAtRef = useRef(article.updatedAt);
   const snapshotRef = useRef(snapshot);
+  const currentFingerprintRef = useRef(writingSnapshotFingerprint(snapshot));
+  const persistedFingerprintRef = useRef(persistedFingerprint);
   const generationRef = useRef(0);
   const savedGenerationRef = useRef(0);
   const savePromiseRef = useRef<Promise<WritingActionState> | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confirmedNavigationRef = useRef(false);
+  const settingsRef = useRef<HTMLDetailsElement | null>(null);
 
-  const isDirty = phase !== "saved";
-  const hasUnsavedChanges = phase !== "saved";
+  const isDirty = isWritingSnapshotDirty(writingSnapshotFingerprint(snapshot), persistedFingerprint);
+  const hasUnsavedChanges = isDirty;
 
   const markChanged = useCallback((update: (current: Snapshot) => Snapshot) => {
     const next = update(snapshotRef.current);
+    const nextFingerprint = writingSnapshotFingerprint(next);
     snapshotRef.current = next;
+    if (nextFingerprint === currentFingerprintRef.current) return;
+    currentFingerprintRef.current = nextFingerprint;
     setSnapshot(next);
     generationRef.current += 1;
     setFeedback(null);
-    setPhase((current) => current === "conflict" ? "conflict" : article.status === "draft" ? "waiting" : "dirty");
+    setLastAction(null);
+    setPhase((current) => !isWritingSnapshotDirty(nextFingerprint, persistedFingerprintRef.current) ? "saved" : current === "conflict" ? "conflict" : article.status === "draft" ? "waiting" : "dirty");
   }, [article.status]);
 
   const runDraftSave = useCallback(async (): Promise<WritingActionState> => {
     if (article.status !== "draft" || editorError) return { ok: false, code: "validation", message: editorError ?? "Published articles do not autosave." };
     if (savePromiseRef.current) {
       await savePromiseRef.current;
-      if (generationRef.current <= savedGenerationRef.current) return { ok: true, message: "Draft saved.", updatedAt: expectedUpdatedAtRef.current };
+      if (!isWritingSnapshotDirty(currentFingerprintRef.current, persistedFingerprintRef.current)) return { ok: true, message: "Draft saved.", updatedAt: expectedUpdatedAtRef.current };
     }
 
     const generation = generationRef.current;
-    const formData = toFormData(article.id, expectedUpdatedAtRef.current, snapshotRef.current);
+    const savingSnapshot = snapshotRef.current;
+    const savingFingerprint = writingSnapshotFingerprint(savingSnapshot);
+    const formData = toFormData(article.id, expectedUpdatedAtRef.current, savingSnapshot);
+    setLastAction("save");
     setPhase("saving");
     const request = saveWritingAction(null, formData);
     savePromiseRef.current = request;
@@ -103,10 +129,12 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
     if (result?.ok && result.updatedAt) {
       expectedUpdatedAtRef.current = result.updatedAt;
       savedGenerationRef.current = Math.max(savedGenerationRef.current, generation);
-      if (generationRef.current === generation) setPhase("saved");
+      persistedFingerprintRef.current = savingFingerprint;
+      setPersistedFingerprint(savingFingerprint);
+      if (!isWritingSnapshotDirty(currentFingerprintRef.current, savingFingerprint)) setPhase("saved");
       else setPhase("waiting");
     } else {
-      setPhase(result?.code === "conflict" ? "conflict" : "failed");
+      setPhase(!isWritingSnapshotDirty(currentFingerprintRef.current, persistedFingerprintRef.current) ? "saved" : result?.code === "conflict" ? "conflict" : "failed");
     }
     return result;
   }, [article.id, article.status, editorError]);
@@ -125,20 +153,20 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
     const allowConfirmedNavigation = () => {
       confirmedNavigationRef.current = true;
       if (bypassReset) clearTimeout(bypassReset);
-      bypassReset = setTimeout(() => { confirmedNavigationRef.current = false; }, 0);
+      bypassReset = setTimeout(() => { confirmedNavigationRef.current = false; }, 1_500);
     };
+    const stillDirty = () => isWritingSnapshotDirty(currentFingerprintRef.current, persistedFingerprintRef.current);
     const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (confirmedNavigationRef.current) return;
+      if (confirmedNavigationRef.current || !stillDirty()) return;
       event.preventDefault();
       event.returnValue = "";
     };
     const guardLinks = (event: MouseEvent) => {
+      if (!stillDirty()) return;
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !(event.target instanceof Element)) return;
       const link = event.target.closest<HTMLAnchorElement>("a[href]");
       if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
-      const target = new URL(link.href, window.location.href);
-      const current = new URL(window.location.href);
-      if (target.origin === current.origin && target.pathname === current.pathname && target.search === current.search && target.hash !== current.hash) return;
+      if (!writingNavigationLeavesDocument(window.location.href, link.href)) return;
       if (!window.confirm(UNSAVED_CHANGES_MESSAGE)) {
         event.preventDefault();
         event.stopPropagation();
@@ -148,9 +176,10 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
     };
     const navigation = (window as Window & { navigation?: BrowserNavigation }).navigation;
     const guardNavigation = (event: Event) => {
-      if (confirmedNavigationRef.current) return;
+      if (confirmedNavigationRef.current || !stillDirty()) return;
       const navigationEvent = event as BrowserNavigationEvent;
       if (!event.cancelable || navigationEvent.canIntercept === false || navigationEvent.downloadRequest || navigationEvent.hashChange) return;
+      if (!navigationEvent.destination?.url || !writingNavigationLeavesDocument(window.location.href, navigationEvent.destination.url)) return;
       if (!window.confirm(UNSAVED_CHANGES_MESSAGE)) {
         event.preventDefault();
         return;
@@ -160,7 +189,7 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
     const guardedUrl = window.location.href;
     const guardedState = window.history.state;
     const guardHistory = (event: PopStateEvent) => {
-      if (confirmedNavigationRef.current) return;
+      if (confirmedNavigationRef.current || !stillDirty() || !writingNavigationLeavesDocument(guardedUrl, window.location.href)) return;
       if (window.confirm(UNSAVED_CHANGES_MESSAGE)) {
         allowConfirmedNavigation();
         return;
@@ -186,20 +215,60 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
     if (timerRef.current) clearTimeout(timerRef.current);
     setPublishing(true);
     if (savePromiseRef.current) await savePromiseRef.current;
-    const result = await publishWritingAction(null, toFormData(article.id, expectedUpdatedAtRef.current, snapshotRef.current));
+    setLastAction("publish");
+    const publishingSnapshot = snapshotRef.current;
+    const publishingFingerprint = writingSnapshotFingerprint(publishingSnapshot);
+    const publishingGeneration = generationRef.current;
+    const formData = toFormData(article.id, expectedUpdatedAtRef.current, publishingSnapshot);
+    const localValidation = parseWritingInput(formData, "publish");
+    if (!localValidation.success) {
+      setFeedback({ ok: false, code: "validation", message: "Complete the publication details before publishing.", fieldErrors: localValidation.fieldErrors });
+      setPublishing(false);
+      return;
+    }
+    const result = await publishWritingAction(null, formData);
     setFeedback(result);
     if (result?.ok && result.updatedAt) {
       expectedUpdatedAtRef.current = result.updatedAt;
-      savedGenerationRef.current = generationRef.current;
-      setPhase("saved");
-    } else setPhase(result?.code === "conflict" ? "conflict" : "failed");
+      savedGenerationRef.current = Math.max(savedGenerationRef.current, publishingGeneration);
+      persistedFingerprintRef.current = publishingFingerprint;
+      setPersistedFingerprint(publishingFingerprint);
+      setPhase(!isWritingSnapshotDirty(currentFingerprintRef.current, publishingFingerprint) ? "saved" : "dirty");
+    } else if (result?.code !== "validation") setPhase(result?.code === "conflict" ? "conflict" : "failed");
     setPublishing(false);
   };
 
+  const draftValidation = useMemo(() => parseWritingInput(toFormData(article.id, article.updatedAt, snapshot), "draft"), [article.id, article.updatedAt, snapshot]);
+  const publicationValidation = useMemo(() => parseWritingInput(toFormData(article.id, article.updatedAt, snapshot), "publish"), [article.id, article.updatedAt, snapshot]);
+  const publicationIssues = publicationValidation.success ? [] : Object.entries(publicationValidation.fieldErrors) as Array<[WritingField, string]>;
+  const settingsRequirementCount = publicationIssues.filter(([field]) => publicationSettingsFields.includes(field)).length;
+  const publicationIssueCount = publicationIssues.length;
+  const teaserSuggestion = useMemo(() => deriveWritingTeaser(snapshot.deck, snapshot.document), [snapshot.deck, snapshot.document]);
   const fieldError = (field: WritingField) => feedback && !feedback.ok ? feedback.fieldErrors?.[field] : undefined;
+  const validationErrors = useMemo(() => feedback && !feedback.ok && feedback.code === "validation"
+    ? Object.entries(feedback.fieldErrors ?? {}) as Array<[WritingField, string]>
+    : [], [feedback]);
+  const hasSettingsErrors = validationErrors.some(([field]) => field === "contentType" || field === "topics" || field === "excerpt");
+  useEffect(() => {
+    if (lastAction !== "publish" || validationErrors.length === 0) return;
+    if (hasSettingsErrors) settingsRef.current?.setAttribute("open", "");
+    const firstField = validationErrors[0]?.[0];
+    const selectorByField: Record<WritingField, string> = {
+      title: "#writing-title",
+      deck: "#writing-deck",
+      excerpt: "#writing-excerpt",
+      bodyJson: '.writing-editor [contenteditable="true"]',
+      contentType: "#writing-content-type",
+      topics: "[data-writing-topics] input",
+    };
+    window.requestAnimationFrame(() => document.querySelector<HTMLElement>(selectorByField[firstField])?.focus());
+  }, [hasSettingsErrors, lastAction, validationErrors]);
   const fieldClass = "mt-2 min-h-12 w-full rounded-lg border border-white/15 bg-[#04111b] px-4 py-3 text-white outline-none focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30";
-  const statusLabel = article.status === "published" && isDirty ? "Unpublished changes" : phase === "saving" ? "Saving..." : phase === "waiting" || phase === "dirty" ? "Unsaved changes" : phase === "failed" ? "Save failed" : phase === "conflict" ? "Conflict" : "Saved";
-  const settingsSummary = [snapshot.contentType === "essay" ? "Essay" : "Note", ...snapshot.topics].join(" · ");
+  const publishBlocked = lastAction === "publish" && feedback && !feedback.ok && feedback.code === "validation";
+  const statusLabel = publishBlocked ? "Publish blocked" : article.status === "published" && isDirty ? "Unpublished changes" : phase === "saving" ? "Saving..." : phase === "waiting" || phase === "dirty" ? "Unsaved changes" : phase === "failed" ? "Save failed" : phase === "conflict" ? "Conflict" : "Saved";
+  const settingsSummary = settingsRequirementCount > 0
+    ? `${settingsRequirementCount} ${settingsRequirementCount === 1 ? "detail" : "details"} required before publishing`
+    : [snapshot.contentType === "essay" ? "Essay" : "Note", ...snapshot.topics, "Publish ready"].join(" · ");
   const previewShareContext: WritingShareContext = {
     articleId: article.id,
     articleSlug: article.slug,
@@ -216,6 +285,8 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
         <div className="flex min-w-0 flex-wrap items-center gap-2 px-1" aria-live="polite">
           <span className={`rounded-full border px-3 py-1 font-mono text-xs font-black uppercase tracking-[0.14em] ${article.status === "published" ? "border-emerald-300/40 text-emerald-300" : "border-[#ffb36d]/40 text-[#ffb36d]"}`}>{article.status}</span>
           <span className={`text-sm ${phase === "failed" || phase === "conflict" ? "font-bold text-[#ffb36d]" : article.status === "published" && isDirty ? "font-bold text-[#ffb36d]" : "text-slate-400"}`}>{statusLabel}</span>
+          <span data-draft-readiness className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-black uppercase tracking-[0.11em] ${draftValidation.success ? "border-emerald-300/25 text-emerald-200" : "border-[#ff9a3d]/35 text-[#ffcfaa]"}`}>{draftValidation.success ? "Draft-save ready" : "Draft needs attention"}</span>
+          <span data-publication-readiness className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-black uppercase tracking-[0.11em] ${publicationIssueCount === 0 ? "border-[#35d0e5]/35 text-[#9debf4]" : "border-[#ff9a3d]/35 text-[#ffcfaa]"}`}>{publicationIssueCount === 0 ? "Publish ready" : `Publish needs ${publicationIssueCount} ${publicationIssueCount === 1 ? "detail" : "details"}`}</span>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
           <div role="group" aria-label="Editor view" className="flex min-w-0 flex-1 rounded-full border border-white/15 p-1 sm:flex-none">
@@ -226,7 +297,12 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
         </div>
       </div>
 
-      {feedback && !feedback.ok ? <div role="alert" className="mb-7 border-l-2 border-[#ff9a3d] p-4 text-[#ffcfaa]">{feedback.message}</div> : null}
+      {feedback && !feedback.ok ? (
+        <div role="alert" className="mb-7 border-l-2 border-[#ff9a3d] p-4 text-[#ffcfaa]">
+          <p className="font-bold">{validationErrors.length > 0 ? "Fix these fields before continuing:" : feedback.message}</p>
+          {validationErrors.length > 0 ? <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6">{validationErrors.map(([field, message]) => <li key={field}><strong>{writingFieldLabels[field]}:</strong> {message}</li>)}</ul> : null}
+        </div>
+      ) : null}
       {feedback?.ok && feedback.slug ? <div role="status" className="mb-7 border-l-2 border-[#35d0e5] p-4 text-slate-200">{feedback.message} <a href={`/writing/${feedback.slug}`} className="font-bold text-[#35d0e5] underline">Open public article</a></div> : null}
 
       {mode === "preview" ? (
@@ -243,15 +319,15 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
             <h2 id="writing-main-fields" className="sr-only">Article</h2>
             <div><label htmlFor="writing-title" className="sr-only">Title</label><input id="writing-title" value={snapshot.title} placeholder="Article title" onChange={(event) => markChanged((current) => ({ ...current, title: event.target.value }))} maxLength={160} className="min-h-14 w-full border-b border-white/10 bg-transparent px-0 py-2 text-3xl font-black leading-tight text-white outline-none placeholder:text-slate-600 focus-visible:border-[#35d0e5]/70 sm:text-5xl" aria-invalid={!!fieldError("title")} />{fieldError("title") ? <p className="mt-2 text-sm text-[#ffb16a]">{fieldError("title")}</p> : null}</div>
             <div><label htmlFor="writing-deck" className="sr-only">Deck / subtitle</label><textarea id="writing-deck" value={snapshot.deck} placeholder="Deck or subtitle" onChange={(event) => markChanged((current) => ({ ...current, deck: event.target.value }))} maxLength={240} rows={2} className="min-h-20 w-full resize-y border-b border-white/10 bg-transparent px-0 py-3 text-lg font-medium leading-8 text-slate-200 outline-none placeholder:text-slate-600 focus-visible:border-[#35d0e5]/70 sm:text-xl" aria-invalid={!!fieldError("deck")} />{fieldError("deck") ? <p className="mt-2 text-sm text-[#ffb16a]">{fieldError("deck")}</p> : null}</div>
-            <div><div className="mb-3 flex flex-wrap items-baseline justify-between gap-2"><p className="font-bold text-white">Document</p><p className="text-xs text-slate-500">Use / for blocks · select text to format</p></div><WritingEditor initialDocument={snapshot.document} onInvalid={setEditorError} onChange={(document) => markChanged((current) => ({ ...current, document }))} />{editorError || fieldError("bodyJson") ? <p role="alert" className="mt-3 text-sm text-[#ffb16a]">{editorError ?? fieldError("bodyJson")}</p> : null}</div>
+            <div><div className="mb-3 flex flex-wrap items-baseline justify-between gap-2"><p className="font-bold text-white">Document</p><p className="max-w-xl text-xs leading-5 text-slate-500">Use / for blocks or mark Key Thoughts, Pull Quotes, and Shareable passages for stronger share cards.</p></div><WritingEditor initialDocument={snapshot.document} onInvalid={setEditorError} onChange={(document) => markChanged((current) => ({ ...current, document }))} />{editorError || fieldError("bodyJson") ? <p role="alert" className="mt-3 text-sm text-[#ffb16a]">{editorError ?? fieldError("bodyJson")}</p> : null}</div>
           </section>
 
-          <details className="group rounded-2xl border border-white/[0.08] bg-white/[0.015] p-4 sm:p-5">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-lg text-white outline-none focus-visible:ring-2 focus-visible:ring-[#35d0e5]/60 [&::-webkit-details-marker]:hidden"><span className="whitespace-nowrap font-black">Article settings</span><span className="min-w-0 truncate text-sm text-slate-500">{settingsSummary}</span><svg aria-hidden="true" viewBox="0 0 20 20" className="ml-auto size-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m5 7.5 5 5 5-5"/></svg></summary>
+          <details ref={settingsRef} className="writing-article-settings group rounded-2xl border border-white/[0.08] bg-white/[0.015] p-4 sm:p-5">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-lg text-white outline-none focus-visible:ring-2 focus-visible:ring-[#35d0e5]/60 [&::-webkit-details-marker]:hidden"><span className="whitespace-nowrap font-black">Article settings</span><span className={`min-w-0 truncate text-sm ${settingsRequirementCount > 0 ? "font-bold text-[#ffbf82]" : "text-slate-500"}`}>{settingsSummary}</span><svg aria-hidden="true" viewBox="0 0 20 20" className="ml-auto size-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m5 7.5 5 5 5-5"/></svg></summary>
             <div className="mt-5 grid gap-6 border-t border-white/[0.07] pt-5 sm:grid-cols-2">
-              <div><label htmlFor="writing-content-type" className="font-bold text-white">Content Type</label><select id="writing-content-type" value={snapshot.contentType} onChange={(event) => markChanged((current) => ({ ...current, contentType: event.target.value as WritingContentType }))} className={fieldClass}><option value="essay">Essay</option><option value="note">Note</option></select></div>
-              <fieldset><legend className="font-bold text-white">Topics</legend><div className="mt-3 flex flex-wrap gap-3">{suggestedWritingTopics.map((topic) => <label key={topic} className="flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-4 text-sm text-slate-200"><input type="checkbox" checked={snapshot.topics.includes(topic)} onChange={(event) => markChanged((current) => ({ ...current, topics: event.target.checked ? [...current.topics, topic] : current.topics.filter((value) => value !== topic) }))} className="h-4 w-4 accent-[#35d0e5]" />{topic}</label>)}</div>{fieldError("topics") ? <p className="mt-2 text-sm text-[#ffb16a]">{fieldError("topics")}</p> : null}</fieldset>
-              <div className="sm:col-span-2"><label htmlFor="writing-excerpt" className="font-bold text-white">Excerpt / Teaser</label><textarea id="writing-excerpt" value={snapshot.excerpt} onChange={(event) => markChanged((current) => ({ ...current, excerpt: event.target.value }))} maxLength={320} rows={4} className={fieldClass} aria-invalid={!!fieldError("excerpt")} />{fieldError("excerpt") ? <p className="mt-2 text-sm text-[#ffb16a]">{fieldError("excerpt")}</p> : null}</div>
+              <div><label htmlFor="writing-content-type" className="font-bold text-white">Content Type</label><p className="mt-1 text-xs text-slate-500">Required to publish.</p><select id="writing-content-type" value={snapshot.contentType} onChange={(event) => markChanged((current) => ({ ...current, contentType: event.target.value as WritingContentType }))} className={fieldClass} aria-invalid={!!fieldError("contentType")}><option value="essay">Essay</option><option value="note">Note</option></select></div>
+              <fieldset data-writing-topics><legend className="font-bold text-white">Topics</legend><p className="mt-1 text-xs text-slate-500">Choose at least one before publishing.</p><div className="mt-3 flex flex-wrap gap-3">{suggestedWritingTopics.map((topic) => <label key={topic} className="flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-4 text-sm text-slate-200"><input type="checkbox" checked={snapshot.topics.includes(topic)} onChange={(event) => markChanged((current) => ({ ...current, topics: event.target.checked ? [...current.topics, topic] : current.topics.filter((value) => value !== topic) }))} className="h-4 w-4 accent-[#35d0e5]" />{topic}</label>)}</div>{fieldError("topics") ? <p className="mt-2 text-sm text-[#ffb16a]">{fieldError("topics")}</p> : null}</fieldset>
+              <div className="sm:col-span-2"><label htmlFor="writing-excerpt" className="font-bold text-white">Excerpt / Teaser</label><p className="mt-1 text-xs text-slate-500">Required to publish · 10–320 characters · shown on Writing previews and article share cards.</p>{teaserSuggestion && teaserSuggestion !== snapshot.excerpt ? <div data-teaser-suggestion className="mt-4 rounded-xl border border-[#35d0e5]/25 bg-[#35d0e5]/[0.045] p-4"><p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#8eeaf5]">Suggested from your article</p><p className="mt-2 text-sm leading-6 text-slate-300">{teaserSuggestion}</p><button type="button" onClick={() => markChanged((current) => ({ ...current, excerpt: teaserSuggestion }))} className="mt-3 min-h-11 rounded-full border border-[#35d0e5]/45 px-4 text-sm font-black text-white hover:border-[#35d0e5]">Use this teaser</button></div> : null}<textarea id="writing-excerpt" value={snapshot.excerpt} placeholder="A concise reason to open the full story" onChange={(event) => markChanged((current) => ({ ...current, excerpt: event.target.value }))} maxLength={320} rows={4} className={fieldClass} aria-invalid={!!fieldError("excerpt")} />{fieldError("excerpt") ? <p className="mt-2 text-sm text-[#ffb16a]">{fieldError("excerpt")}</p> : null}</div>
             </div>
           </details>
         </div>

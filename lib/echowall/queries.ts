@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { isPublicEchoReady } from "@/lib/public-content-hygiene";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   echoCategories,
@@ -66,7 +67,8 @@ const queryApprovedEchoes = unstable_cache(
 
       const echoes = (data as PublicEchoRow[])
         .map(mapPublicEcho)
-        .filter((echo): echo is PublicEcho => echo !== null);
+        .filter((echo): echo is PublicEcho => echo !== null)
+        .filter(isPublicEchoReady);
 
       return echoes.length > 0
         ? { status: "data", echoes }
