@@ -407,6 +407,19 @@ function ResultView({
 
       {constellation ? <FynsCharacterResultQuote constellation={constellation} /> : null}
 
+      {constellation ? (
+        <FynsActionLayer
+          accent="#35d0e5"
+          context={{
+            journey: "self",
+            seed: constellation.combination?.title ?? constellation.dominant.id,
+            characterIds: [constellation.dominant, ...constellation.supporting].map(({ id }) => id),
+            dimensions: [constellation.dominant, ...constellation.supporting].map(({ sourceDimension }) => sourceDimension),
+            tensionIds: constellation.tensions.map(({ id }) => id),
+          }}
+        />
+      ) : null}
+
       <HumanContextReflection accent="#35d0e5" titleId="self-human-context-title" />
 
       {profileIdentity ? (
@@ -455,22 +468,14 @@ function ResultView({
         />
       )}
 
-      {constellation ? (
-        <FynsActionLayer
-          accent="#35d0e5"
-          context={{
-            journey: "self",
-            seed: constellation.combination?.title ?? constellation.dominant.id,
-            characterIds: [constellation.dominant, ...constellation.supporting].map(({ id }) => id),
-            dimensions: [constellation.dominant, ...constellation.supporting].map(({ sourceDimension }) => sourceDimension),
-            tensionIds: constellation.tensions.map(({ id }) => id),
-          }}
-        />
-      ) : null}
-
       <FynsResultActions
         accent="#35d0e5"
         copyText={copyText}
+        characterShare={constellation ? {
+          characterId: constellation.dominant.id,
+          supportingIds: constellation.supporting.map(({ id }) => id),
+          safeSharePath: "/find-your-next-step/self",
+        } : undefined}
         shareTitle={selfResultTitle[locale]}
         shareText={shareText}
         printTitle={selfResultTitle[locale]}

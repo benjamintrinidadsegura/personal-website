@@ -24,6 +24,30 @@ export interface FynsCharacterDefinition {
   subtitle: string;
 }
 
+export const fynsCharacterMotifs = [
+  "orbit",
+  "steps",
+  "bridge",
+  "compass",
+  "layers",
+  "anchor",
+  "spark",
+  "embrace",
+  "prism",
+  "grid",
+  "balance",
+  "momentum",
+] as const;
+
+export type FynsCharacterMotif = (typeof fynsCharacterMotifs)[number];
+
+export interface FynsCharacterPresentation extends FynsCharacterDefinition {
+  /** Presentation-only metadata. It must never participate in Character assignment. */
+  accent: string;
+  motif: FynsCharacterMotif;
+  identityStatement: string;
+}
+
 export const fynsCharacterRegistry: readonly FynsCharacterDefinition[] = [
   { id: "explorer", name: "Explorer", subtitle: "Neugier & Entdeckung" },
   { id: "builder", name: "Builder", subtitle: "Gestaltung & Umsetzung" },
@@ -80,10 +104,44 @@ const subtitles: Record<Exclude<Locale, "de">, Record<FynsCharacterId, string>> 
 
 const registryById = new Map(fynsCharacterRegistry.map((character) => [character.id, character]));
 
+const presentationVisuals: Readonly<Record<FynsCharacterId, Pick<FynsCharacterPresentation, "accent" | "motif">>> = {
+  explorer: { accent: "#70d7ff", motif: "orbit" },
+  builder: { accent: "#ffad66", motif: "steps" },
+  connector: { accent: "#e19cff", motif: "bridge" },
+  independent: { accent: "#8fe3c0", motif: "compass" },
+  thinker: { accent: "#8eb8ff", motif: "layers" },
+  stabilizer: { accent: "#e6c77a", motif: "anchor" },
+  challenger: { accent: "#ff7e72", motif: "spark" },
+  caregiver: { accent: "#ff9fbd", motif: "embrace" },
+  creator: { accent: "#c2a0ff", motif: "prism" },
+  organizer: { accent: "#82d9d0", motif: "grid" },
+  harmonizer: { accent: "#b8dc8a", motif: "balance" },
+  achiever: { accent: "#ffc95f", motif: "momentum" },
+};
+
+const identityStatement = (locale: Locale, subtitle: string): string => ({
+  de: `${subtitle} wird zu einer Art, Situationen zu lesen und zu gestalten.`,
+  en: `${subtitle} becomes a way to read and shape situations.`,
+  es: `${subtitle} se convierte en una forma de leer y dar forma a las situaciones.`,
+  tr: `${subtitle}, durumları okuma ve şekillendirme biçimine dönüşür.`,
+  pl: `${subtitle} staje się sposobem odczytywania i kształtowania sytuacji.`,
+  el: `${subtitle} γίνεται ένας τρόπος να διαβάζεις και να διαμορφώνεις καταστάσεις.`,
+  ru: `${subtitle} становится способом понимать и формировать ситуации.`,
+})[locale];
+
 export function getFynsCharacter(id: FynsCharacterId, locale: Locale): FynsCharacterDefinition {
   const definition = registryById.get(id);
   if (!definition) throw new Error(`Unknown FYNS character: ${id}`);
   return locale === "de" ? definition : { ...definition, subtitle: subtitles[locale][id] };
+}
+
+export function getFynsCharacterPresentation(id: FynsCharacterId, locale: Locale): FynsCharacterPresentation {
+  const character = getFynsCharacter(id, locale);
+  return {
+    ...character,
+    ...presentationVisuals[id],
+    identityStatement: identityStatement(locale, character.subtitle),
+  };
 }
 
 export type FynsCharacterArtworkSet = Readonly<Record<FynsFigureRepresentation, string>>;
@@ -120,6 +178,9 @@ export function getFynsCharacterArtwork(
 
 export type FynsCharacterConstellationCopy = {
   eyebrow: string;
+  reveal: string;
+  whyThisFits: string;
+  howThisShowsUp: string;
   dominant: string;
   supporting: string;
   why: string;
@@ -150,7 +211,7 @@ export type FynsCharacterConstellationCopy = {
 
 export const fynsCharacterConstellationCopy: Record<Locale, FynsCharacterConstellationCopy> = {
   de: {
-    eyebrow: "Deine aktuelle Character Constellation", dominant: "Aktuell am sichtbarsten", supporting: "Unterstützende Facetten",
+    eyebrow: "Deine aktuelle Character Constellation", reveal: "Das ist dein Character", whyThisFits: "Warum das zu deiner Momentaufnahme passt", howThisShowsUp: "Wie sich das zeigen kann", dominant: "Aktuell am sichtbarsten", supporting: "Das prägt ebenfalls, wie du handelst",
     why: "Warum sichtbar", contribution: "Was sie beiträgt", conditions: "Welche Bedingungen helfen", needs: "Was sie praktisch braucht", notice: "Worauf du achten kannst",
     combination: "Was in der Kombination sichtbar wird", evidence: "Evidenz", interpretation: "Einordnung", possibility: "Mögliche Lesart",
     synthesis: "Deine Konstellation im Zusammenhang", tensions: "Mögliche Dynamiken", application: "Damit weiterarbeiten",
@@ -164,7 +225,7 @@ export const fynsCharacterConstellationCopy: Record<Locale, FynsCharacterConstel
     facetExperiment: (evidence) => `Wähle eine kleine aktuelle Situation, in der „${evidence}“ zählt. Verändere für eine Woche nur eine passende Bedingung und beobachte, ob dein Handeln leichter, klarer oder wirksamer wird.`,
   },
   en: {
-    eyebrow: "Your current Character Constellation", dominant: "Currently most visible", supporting: "Supporting facets",
+    eyebrow: "Your current Character Constellation", reveal: "This is your Character", whyThisFits: "Why this fits your current snapshot", howThisShowsUp: "How this may show up", dominant: "Currently most visible", supporting: "This also shapes how you operate",
     why: "Why it is visible", contribution: "What it contributes", conditions: "Conditions that may help", needs: "What it may need in practice", notice: "What to notice",
     combination: "What becomes visible in combination", evidence: "Evidence", interpretation: "Interpretation", possibility: "Possible reading",
     synthesis: "Your constellation in context", tensions: "Possible dynamics", application: "Put it to use",
@@ -178,7 +239,7 @@ export const fynsCharacterConstellationCopy: Record<Locale, FynsCharacterConstel
     facetExperiment: (evidence) => `Choose one small current situation where “${evidence}” matters. Change just one relevant condition for a week and observe whether acting becomes easier, clearer or more effective.`,
   },
   es: {
-    eyebrow: "Tu Character Constellation actual", dominant: "La faceta más visible ahora", supporting: "Facetas de apoyo",
+    eyebrow: "Tu Character Constellation actual", reveal: "Este es tu Character", whyThisFits: "Por qué encaja con tu situación actual", howThisShowsUp: "Cómo puede manifestarse", dominant: "La faceta más visible ahora", supporting: "Esto también influye en tu forma de actuar",
     why: "Por qué es visible", contribution: "Qué aporta", conditions: "Qué condiciones pueden ayudar", needs: "Qué puede necesitar en la práctica", notice: "Qué conviene observar",
     combination: "Qué se hace visible en la combinación", evidence: "Evidencia", interpretation: "Interpretación", possibility: "Lectura posible",
     synthesis: "Tu constelación en contexto", tensions: "Dinámicas posibles", application: "Llevarlo a la práctica",
@@ -192,7 +253,7 @@ export const fynsCharacterConstellationCopy: Record<Locale, FynsCharacterConstel
     facetExperiment: (evidence) => `Elige una situación actual pequeña en la que cuente «${evidence}». Cambia solo una condición relevante durante una semana y observa si actuar resulta más fácil, claro o eficaz.`,
   },
   tr: {
-    eyebrow: "Güncel Character Constellation'ın", dominant: "Şu anda en görünür", supporting: "Destekleyici yönler",
+    eyebrow: "Güncel Character Constellation'ın", reveal: "Bu senin Character'ın", whyThisFits: "Bu anlık görünümüne neden uyuyor", howThisShowsUp: "Nasıl ortaya çıkabilir", dominant: "Şu anda en görünür", supporting: "Bu da hareket etme biçimini şekillendiriyor",
     why: "Neden görünür", contribution: "Ne katıyor", conditions: "Hangi koşullar yardımcı olabilir", needs: "Pratikte neye ihtiyaç duyabilir", notice: "Neye dikkat etmeli",
     combination: "Birlikte ne görünür oluyor", evidence: "Kanıt", interpretation: "Yorum", possibility: "Olası okuma",
     synthesis: "Bağlam içinde konstelasyonun", tensions: "Olası dinamikler", application: "Bunu kullanmak",
@@ -206,7 +267,7 @@ export const fynsCharacterConstellationCopy: Record<Locale, FynsCharacterConstel
     facetExperiment: (evidence) => `“${evidence}” ifadesinin önemli olduğu küçük bir güncel durum seç. Bir hafta boyunca yalnızca ilgili bir koşulu değiştir ve hareket etmenin kolaylaşıp kolaylaşmadığını gözlemle.`,
   },
   pl: {
-    eyebrow: "Twoja aktualna Character Constellation", dominant: "Obecnie najbardziej widoczna", supporting: "Wspierające aspekty",
+    eyebrow: "Twoja aktualna Character Constellation", reveal: "To Twój Character", whyThisFits: "Dlaczego pasuje do Twojej obecnej sytuacji", howThisShowsUp: "Jak może się przejawiać", dominant: "Obecnie najbardziej widoczna", supporting: "To także kształtuje Twój sposób działania",
     why: "Dlaczego jest widoczna", contribution: "Co wnosi", conditions: "Jakie warunki mogą pomagać", needs: "Czego może potrzebować w praktyce", notice: "Co warto zauważać",
     combination: "Co ujawnia się w połączeniu", evidence: "Podstawa", interpretation: "Interpretacja", possibility: "Możliwe odczytanie",
     synthesis: "Twoja konstelacja w kontekście", tensions: "Możliwe dynamiki", application: "Jak z tym pracować",
@@ -220,7 +281,7 @@ export const fynsCharacterConstellationCopy: Record<Locale, FynsCharacterConstel
     facetExperiment: (evidence) => `Wybierz małą obecną sytuację, w której liczy się „${evidence}”. Przez tydzień zmień tylko jeden odpowiedni warunek i obserwuj, czy działanie staje się łatwiejsze, jaśniejsze lub skuteczniejsze.`,
   },
   el: {
-    eyebrow: "Το τρέχον Character Constellation σου", dominant: "Πιο ορατή τώρα", supporting: "Υποστηρικτικές όψεις",
+    eyebrow: "Το τρέχον Character Constellation σου", reveal: "Αυτό είναι το Character σου", whyThisFits: "Γιατί ταιριάζει στην τωρινή σου εικόνα", howThisShowsUp: "Πώς μπορεί να εκφράζεται", dominant: "Πιο ορατή τώρα", supporting: "Αυτό επίσης διαμορφώνει τον τρόπο που λειτουργείς",
     why: "Γιατί είναι ορατή", contribution: "Τι συνεισφέρει", conditions: "Ποιες συνθήκες μπορεί να βοηθούν", needs: "Τι μπορεί να χρειάζεται στην πράξη", notice: "Τι να παρατηρείς",
     combination: "Τι γίνεται ορατό στον συνδυασμό", evidence: "Τεκμήρια", interpretation: "Ερμηνεία", possibility: "Πιθανή ανάγνωση",
     synthesis: "Ο αστερισμός σου στο πλαίσιο", tensions: "Πιθανές δυναμικές", application: "Αξιοποίησέ το",
@@ -234,7 +295,7 @@ export const fynsCharacterConstellationCopy: Record<Locale, FynsCharacterConstel
     facetExperiment: (evidence) => `Επίλεξε μια μικρή τρέχουσα κατάσταση όπου μετρά το «${evidence}». Άλλαξε μόνο μία σχετική συνθήκη για μία εβδομάδα και παρατήρησε αν η δράση γίνεται ευκολότερη, σαφέστερη ή αποτελεσματικότερη.`,
   },
   ru: {
-    eyebrow: "Твоя текущая Character Constellation", dominant: "Сейчас заметнее всего", supporting: "Поддерживающие грани",
+    eyebrow: "Твоя текущая Character Constellation", reveal: "Это твой Character", whyThisFits: "Почему это соответствует твоей текущей картине", howThisShowsUp: "Как это может проявляться", dominant: "Сейчас заметнее всего", supporting: "Это тоже влияет на то, как ты действуешь",
     why: "Почему это видно", contribution: "Что это привносит", conditions: "Какие условия могут помогать", needs: "Что может требоваться на практике", notice: "Что стоит замечать",
     combination: "Что проявляется в сочетании", evidence: "Основание", interpretation: "Интерпретация", possibility: "Возможное прочтение",
     synthesis: "Твоя констелляция в контексте", tensions: "Возможные динамики", application: "Как это применить",

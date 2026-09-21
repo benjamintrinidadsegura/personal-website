@@ -495,6 +495,49 @@ html[data-navigation-settling="true"] .navigation-feedback::before {
 }
 .quote-share-card .writing-share-card-thought { text-wrap: balance; }
 
+.fyns-character-share-card {
+  background:
+    radial-gradient(circle at 82% 20%, color-mix(in srgb, var(--fyns-character-accent) 22%, transparent), transparent 28%),
+    linear-gradient(145deg, #0a1f2c, #041019 72%);
+}
+.fyns-character-share-card::before { background-size: 16.666% 12.5%; opacity: .75; }
+.fyns-character-share-card .writing-share-card-marker { color: var(--fyns-character-accent); }
+.fyns-character-share-content { position: relative; display: flex; min-height: 0; flex-direction: column; justify-content: center; }
+.fyns-character-share-name { position: relative; z-index: 1; max-width: 10ch; overflow-wrap: anywhere; color: white; font-size: clamp(2.4rem, 16cqw, 6.8rem); font-weight: 950; letter-spacing: -.065em; line-height: .86; }
+.fyns-character-share-subtitle { position: relative; z-index: 1; max-width: 26ch; margin-top: 5cqw; color: var(--fyns-character-accent); font-size: clamp(.85rem, 4.6cqw, 1.6rem); font-weight: 900; line-height: 1.2; }
+.fyns-character-share-identity { position: relative; z-index: 1; max-width: 33ch; margin-top: 4cqw; color: #c8d3dd; font-size: clamp(.72rem, 3.6cqw, 1.12rem); font-weight: 680; line-height: 1.5; }
+.fyns-share-motif { position: absolute; top: 6%; right: -3%; width: 46%; aspect-ratio: 1; color: var(--fyns-character-accent); opacity: .28; transform: rotate(-8deg); }
+.fyns-share-motif > span { position: absolute; inset: 8%; display: block; border: 1px solid currentColor; border-radius: 50%; }
+.fyns-share-motif > span:nth-child(2) { inset: 27%; }
+.fyns-share-motif > span:nth-child(3) { inset: 43%; background: currentColor; }
+.fyns-character-share-card[data-motif="steps"] .fyns-share-motif,
+.fyns-character-share-card[data-motif="layers"] .fyns-share-motif,
+.fyns-character-share-card[data-motif="grid"] .fyns-share-motif { border-radius: 0; transform: rotate(0); }
+.fyns-character-share-card[data-motif="steps"] .fyns-share-motif > span,
+.fyns-character-share-card[data-motif="layers"] .fyns-share-motif > span,
+.fyns-character-share-card[data-motif="grid"] .fyns-share-motif > span { inset: 12% 4% 70%; border-radius: 0; }
+.fyns-character-share-card[data-motif="steps"] .fyns-share-motif > span:nth-child(2),
+.fyns-character-share-card[data-motif="layers"] .fyns-share-motif > span:nth-child(2),
+.fyns-character-share-card[data-motif="grid"] .fyns-share-motif > span:nth-child(2) { inset-block: 40% 42%; }
+.fyns-character-share-card[data-motif="steps"] .fyns-share-motif > span:nth-child(3),
+.fyns-character-share-card[data-motif="layers"] .fyns-share-motif > span:nth-child(3),
+.fyns-character-share-card[data-motif="grid"] .fyns-share-motif > span:nth-child(3) { inset-block: 68% 14%; background: transparent; }
+.fyns-character-share-card[data-motif="compass"] .fyns-share-motif,
+.fyns-character-share-card[data-motif="prism"] .fyns-share-motif,
+.fyns-character-share-card[data-motif="momentum"] .fyns-share-motif { transform: rotate(45deg); }
+.fyns-character-share-card[data-motif="compass"] .fyns-share-motif > span,
+.fyns-character-share-card[data-motif="prism"] .fyns-share-motif > span,
+.fyns-character-share-card[data-motif="momentum"] .fyns-share-motif > span { border-radius: 0; }
+.fyns-character-share-card[data-motif="spark"] .fyns-share-motif > span { inset: 7% 44%; border-radius: 0; background: currentColor; transform: rotate(28deg); }
+.fyns-character-share-card[data-motif="spark"] .fyns-share-motif > span:nth-child(2) { transform: rotate(88deg); }
+.fyns-character-share-card[data-motif="spark"] .fyns-share-motif > span:nth-child(3) { transform: rotate(148deg); }
+.fyns-character-share-card[data-motif="bridge"] .fyns-share-motif > span,
+.fyns-character-share-card[data-motif="embrace"] .fyns-share-motif > span,
+.fyns-character-share-card[data-motif="balance"] .fyns-share-motif > span,
+.fyns-character-share-card[data-motif="anchor"] .fyns-share-motif > span { inset: 12% 2%; border-radius: 999px 999px 0 0; background: transparent; }
+.fyns-character-share-card[data-format="square"] .fyns-character-share-name { font-size: clamp(2.2rem, 13cqw, 5rem); }
+.fyns-character-share-card[data-format="square"] .fyns-character-share-identity { font-size: clamp(.68rem, 3.2cqw, 1rem); }
+
 .quote-experience {
   display: grid;
   gap: clamp(2rem, 5vw, 4.5rem);
@@ -585,6 +628,65 @@ html[data-navigation-settling="true"] .navigation-feedback::before {
   .writing-share-primary { width: 100%; margin-left: 0; }
 }
 
+.fyns-character-reveal {
+  animation: fyns-character-arrive 640ms cubic-bezier(.2,.76,.24,1) both;
+}
+
+@keyframes fyns-character-arrive {
+  from { opacity: .001; transform: translateY(1rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fyns-character-motif {
+  position: absolute;
+  z-index: 1;
+  top: 1rem;
+  right: 1rem;
+  width: clamp(4.5rem, 18vw, 8rem);
+  aspect-ratio: 1;
+  pointer-events: none;
+  color: var(--fyns-character-accent);
+  opacity: .3;
+}
+
+.fyns-character-motif > span { position: absolute; display: block; border: 1px solid currentColor; }
+.fyns-character-motif[data-motif="orbit"] > span { inset: 12%; border-radius: 50%; }
+.fyns-character-motif[data-motif="orbit"] > span:nth-child(2) { inset: 29%; }
+.fyns-character-motif[data-motif="orbit"] > span:nth-child(3) { inset: 45%; background: currentColor; }
+.fyns-character-motif[data-motif="steps"] > span { right: 8%; bottom: 10%; width: 76%; height: 18%; background: currentColor; border: 0; }
+.fyns-character-motif[data-motif="steps"] > span:nth-child(2) { width: 52%; bottom: 34%; }
+.fyns-character-motif[data-motif="steps"] > span:nth-child(3) { width: 28%; bottom: 58%; }
+.fyns-character-motif[data-motif="bridge"] > span:first-child { inset: 22% 8%; border-width: 1px 1px 0; border-radius: 999px 999px 0 0; }
+.fyns-character-motif[data-motif="bridge"] > span:nth-child(2) { inset: 48% 4% auto; }
+.fyns-character-motif[data-motif="bridge"] > span:nth-child(3) { inset: 10% 49%; }
+.fyns-character-motif[data-motif="compass"] > span { inset: 18%; transform: rotate(45deg); }
+.fyns-character-motif[data-motif="compass"] > span:nth-child(2) { inset: 35%; background: currentColor; }
+.fyns-character-motif[data-motif="compass"] > span:nth-child(3) { inset: 47%; background: #07151f; }
+.fyns-character-motif[data-motif="layers"] > span { inset: 20% 8% 58%; }
+.fyns-character-motif[data-motif="layers"] > span:nth-child(2) { inset-block: 41% 37%; }
+.fyns-character-motif[data-motif="layers"] > span:nth-child(3) { inset-block: 62% 16%; }
+.fyns-character-motif[data-motif="anchor"] > span:first-child { inset: 8% 38% 18%; border-radius: 999px; }
+.fyns-character-motif[data-motif="anchor"] > span:nth-child(2) { inset: 36% 12% auto; }
+.fyns-character-motif[data-motif="anchor"] > span:nth-child(3) { left: 18%; right: 18%; bottom: 10%; height: 38%; border-width: 0 1px 1px; border-radius: 0 0 999px 999px; }
+.fyns-character-motif[data-motif="spark"] > span { inset: 15% 42%; background: currentColor; transform: rotate(38deg); }
+.fyns-character-motif[data-motif="spark"] > span:nth-child(2) { transform: rotate(98deg); }
+.fyns-character-motif[data-motif="spark"] > span:nth-child(3) { transform: rotate(158deg); }
+.fyns-character-motif[data-motif="embrace"] > span { width: 58%; height: 76%; top: 12%; border-radius: 50%; }
+.fyns-character-motif[data-motif="embrace"] > span:nth-child(2) { right: 0; }
+.fyns-character-motif[data-motif="embrace"] > span:nth-child(3) { inset: 38%; border-radius: 50%; background: currentColor; }
+.fyns-character-motif[data-motif="prism"] > span:first-child { inset: 11%; transform: rotate(45deg); }
+.fyns-character-motif[data-motif="prism"] > span:nth-child(2) { inset: 28%; transform: rotate(45deg); }
+.fyns-character-motif[data-motif="prism"] > span:nth-child(3) { inset: 45%; background: currentColor; transform: rotate(45deg); }
+.fyns-character-motif[data-motif="grid"] > span { inset: 9% 49%; }
+.fyns-character-motif[data-motif="grid"] > span:nth-child(2) { inset: 49% 9%; }
+.fyns-character-motif[data-motif="grid"] > span:nth-child(3) { inset: 22%; }
+.fyns-character-motif[data-motif="balance"] > span:first-child { inset: 48% 8% auto; }
+.fyns-character-motif[data-motif="balance"] > span:nth-child(2) { inset: 18% 48% 14%; }
+.fyns-character-motif[data-motif="balance"] > span:nth-child(3) { left: 22%; right: 22%; bottom: 10%; border-width: 1px 0 0; }
+.fyns-character-motif[data-motif="momentum"] > span { left: 8%; top: 58%; width: 44%; transform: rotate(-28deg); transform-origin: right; }
+.fyns-character-motif[data-motif="momentum"] > span:nth-child(2) { left: 32%; top: 42%; }
+.fyns-character-motif[data-motif="momentum"] > span:nth-child(3) { left: 54%; top: 26%; }
+
 @media (min-width: 640px) {
   .writing-editor .bn-editor {
     max-width: 72ch;
@@ -602,6 +704,7 @@ html[data-navigation-settling="true"] .navigation-feedback::before {
     transition-duration: 0.01ms !important;
   }
   .signal-dot { animation: none; }
+  .fyns-character-reveal { animation: none; }
   .navigation-feedback { transition: none; }
   .navigation-feedback::after { display: none; }
   html[data-navigation-pending="true"] .navigation-feedback::before {

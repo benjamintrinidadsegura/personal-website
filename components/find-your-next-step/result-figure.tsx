@@ -8,6 +8,7 @@ import { useLocale } from "@/components/i18n/locale-context";
 import {
   fynsCharacterConstellationCopy,
   getFynsCharacterArtwork,
+  getFynsCharacterPresentation,
 } from "@/data/find-your-next-step-characters";
 import {
   createFynsResultFigureModel,
@@ -25,24 +26,39 @@ import type {
   FynsVisibleCharacter,
 } from "@/lib/find-your-next-step-constellation";
 
+function CharacterMotif({ motif }: { motif: string }) {
+  return (
+    <span aria-hidden="true" className="fyns-character-motif" data-motif={motif}>
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
+
 function CharacterEvidence({ character, dominant = false }: { character: FynsVisibleCharacter; dominant?: boolean }) {
   const locale = useLocale();
   const copy = fynsCharacterConstellationCopy[locale];
+  const presentation = getFynsCharacterPresentation(character.id, locale);
 
   return (
     <article
       data-fyns-character={character.id}
       data-fyns-character-role={dominant ? "dominant" : "supporting"}
+      data-fyns-character-motif={presentation.motif}
+      style={{ "--fyns-character-accent": presentation.accent } as CSSProperties}
       className={dominant
-        ? "border-l-4 border-[var(--fyns-figure-accent)] bg-white/[0.045] p-6 sm:p-8"
+        ? "relative overflow-hidden border-l-4 border-[var(--fyns-character-accent)] bg-white/[0.045] p-6 sm:p-8"
         : "border-l border-white/20 bg-white/[0.022] p-5 sm:p-6"}
     >
+      {dominant ? <CharacterMotif motif={presentation.motif} /> : null}
       {dominant ? (
-        <p className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[var(--fyns-figure-accent)]">{copy.dominant}</p>
+        <p className="relative z-10 font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[var(--fyns-character-accent)]">{copy.dominant}</p>
       ) : null}
-      <h4 className={`${dominant ? "mt-3 text-3xl sm:text-4xl" : "text-xl"} font-black text-white`}>{character.name}</h4>
-      <p className="mt-2 font-bold text-slate-300">{character.subtitle}</p>
-      <dl className={`mt-6 grid gap-5 ${dominant ? "sm:grid-cols-2" : ""}`}>
+      <h4 className={`${dominant ? "relative z-10 mt-3 text-3xl sm:text-4xl" : "text-xl"} font-black text-white`}>{character.name}</h4>
+      <p className="relative z-10 mt-2 font-bold text-slate-300">{character.subtitle}</p>
+      <p className="relative z-10 mt-3 max-w-xl text-sm leading-6 text-slate-400">{presentation.identityStatement}</p>
+      <dl className={`relative z-10 mt-6 grid gap-5 ${dominant ? "sm:grid-cols-2" : ""}`}>
         {[
           [copy.why, character.why],
           [copy.contribution, character.contribution],
@@ -74,7 +90,10 @@ function ConstellationDetails({ constellation }: { constellation: FynsCharacterC
 
   return (
     <div className="border-t border-white/10 p-6 sm:p-8 lg:p-10">
-      <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+      <section aria-labelledby="fyns-why-fit-title">
+        <p className="font-mono text-xs font-black uppercase tracking-[0.18em] text-[var(--fyns-figure-accent)]">{copy.eyebrow}</p>
+        <h3 id="fyns-why-fit-title" className="mt-3 max-w-3xl text-2xl font-black text-white sm:text-4xl">{copy.whyThisFits}</h3>
+      <div className="mt-7 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
         <CharacterEvidence character={constellation.dominant} dominant />
         {constellation.supporting.length > 0 ? (
           <section aria-labelledby="fyns-supporting-facets-title" className="min-w-0">
@@ -85,6 +104,7 @@ function ConstellationDetails({ constellation }: { constellation: FynsCharacterC
           </section>
         ) : null}
       </div>
+      </section>
 
       {constellation.combination ? (
         <section aria-labelledby="fyns-constellation-combination-title" className="mt-10 border-y border-white/10 py-8">
@@ -107,7 +127,7 @@ function ConstellationDetails({ constellation }: { constellation: FynsCharacterC
 
       <section aria-labelledby="fyns-constellation-synthesis-title" className="mt-10 grid gap-8 lg:grid-cols-[0.68fr_1fr]">
         <div>
-          <p className="font-mono text-xs font-black uppercase tracking-[0.18em] text-[var(--fyns-figure-accent)]">{copy.synthesis}</p>
+          <p className="font-mono text-xs font-black uppercase tracking-[0.18em] text-[var(--fyns-figure-accent)]">{copy.howThisShowsUp}<span className="mt-2 block text-slate-500">{copy.synthesis}</span></p>
           <h3 id="fyns-constellation-synthesis-title" className="mt-4 text-2xl font-black leading-tight text-white sm:text-3xl">{copy.currentFacet(constellation.dominant.name)}</h3>
         </div>
         <div className="border-l-2 border-white/15 pl-5">
@@ -209,7 +229,11 @@ export function FynsResultFigure({
     : "context-scene";
   const representationDisabled = Boolean(constellation) && !hasCompleteCharacterArtwork;
   const selectedLabel = copy.options[representation];
-  const style = { "--fyns-figure-accent": accent } as CSSProperties;
+  const dominantPresentation = constellation ? getFynsCharacterPresentation(constellation.dominant.id, locale) : null;
+  const style = {
+    "--fyns-figure-accent": accent,
+    "--fyns-character-accent": dominantPresentation?.accent ?? accent,
+  } as CSSProperties;
 
   return (
     <section
@@ -218,8 +242,9 @@ export function FynsResultFigure({
       data-fyns-figure-model={model.id}
       data-fyns-figure-representation={representation}
       data-fyns-visual-status={visualStatus}
+      data-fyns-character-motif={dominantPresentation?.motif}
       style={style}
-      className="overflow-hidden rounded-[1.75rem] border border-white/12 bg-[linear-gradient(145deg,rgba(255,255,255,0.055),rgba(4,16,24,0.88))] shadow-[0_28px_90px_rgba(0,0,0,0.22)]"
+      className="fyns-character-reveal overflow-hidden rounded-[1.75rem] border border-white/12 bg-[linear-gradient(145deg,rgba(255,255,255,0.055),rgba(4,16,24,0.88))] shadow-[0_28px_90px_rgba(0,0,0,0.22)]"
     >
       <div className="grid md:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] md:items-start">
         <div
@@ -239,6 +264,7 @@ export function FynsResultFigure({
             className="h-full w-full scale-[1.035] object-cover"
           />
           <div aria-hidden="true" className={`absolute inset-0 ${constellation ? "bg-[linear-gradient(180deg,rgba(4,16,24,0.58),rgba(4,16,24,0.48)_42%,rgba(4,16,24,0.9))] backdrop-blur-[1px]" : "bg-[linear-gradient(180deg,rgba(4,16,24,0.12),rgba(4,16,24,0.08)_42%,rgba(4,16,24,0.82))]"}`} />
+          {dominantPresentation ? <CharacterMotif motif={dominantPresentation.motif} /> : null}
           {constellation && hasCompleteCharacterArtwork ? (
             <>
               <ol aria-hidden="true" className="absolute inset-0 z-10">
@@ -270,7 +296,8 @@ export function FynsResultFigure({
         </div>
 
         <div className="flex min-w-0 flex-col justify-center p-6 sm:p-8 lg:p-10">
-          <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-[var(--fyns-figure-accent)]">{constellation ? constellationCopy.eyebrow : copy.eyebrow}</p>
+          <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-[var(--fyns-character-accent)]">{constellation ? constellationCopy.reveal : copy.eyebrow}</p>
+          {constellation ? <p className="mt-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{constellationCopy.eyebrow}</p> : null}
           <h2
             ref={headingRef}
             tabIndex={-1}
@@ -282,7 +309,8 @@ export function FynsResultFigure({
           </h2>
           {constellation ? (
             <>
-              <p className="mt-4 text-lg font-black leading-7 text-slate-200">{constellationCopy.currentFacet(constellation.dominant.name)}</p>
+              <p className="mt-4 text-xl font-black leading-7 text-slate-100">{dominantPresentation?.identityStatement}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-400">{constellationCopy.currentFacet(constellation.dominant.name)}</p>
               <p className="mt-3 text-sm font-bold text-slate-500">{title}</p>
             </>
           ) : null}

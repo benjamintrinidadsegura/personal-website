@@ -3,8 +3,12 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
+import { FynsCharacterShareDialog } from "@/components/find-your-next-step/character-share-dialog";
 import { useLocale } from "@/components/i18n/locale-context";
+import { getFynsCharacterPresentation } from "@/data/find-your-next-step-characters";
+import type { FynsCharacterId } from "@/data/find-your-next-step-characters";
 import { fynsResultActionsCopy } from "@/data/find-your-next-step-ui-locales";
+import { fynsCharacterShareCopy } from "@/data/i18n/fyns-character-share";
 
 interface FynsResultActionsProps {
   accent: string;
@@ -12,6 +16,11 @@ interface FynsResultActionsProps {
   shareTitle: string;
   shareText: string;
   printTitle: string;
+  characterShare?: {
+    characterId: FynsCharacterId;
+    supportingIds: readonly FynsCharacterId[];
+    safeSharePath: string;
+  };
 }
 
 type Feedback = {
@@ -66,14 +75,19 @@ export function FynsResultActions({
   shareTitle,
   shareText,
   printTitle,
+  characterShare,
 }: FynsResultActionsProps) {
   const locale = useLocale();
   const ui = fynsResultActionsCopy[locale];
+  const characterShareUi = fynsCharacterShareCopy[locale];
   const [shareAvailable, setShareAvailable] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [showManualCopy, setShowManualCopy] = useState(false);
   const [busyAction, setBusyAction] = useState<"copy" | "share" | null>(null);
+  const [characterShareOpen, setCharacterShareOpen] = useState(false);
   const sharePayload: ShareData = { title: shareTitle, text: shareText };
+  const shareCharacter = characterShare ? getFynsCharacterPresentation(characterShare.characterId, locale) : null;
+  const supportingNames = characterShare?.supportingIds.map((id) => getFynsCharacterPresentation(id, locale).name) ?? [];
 
   useEffect(() => {
     const detectionFrame = window.requestAnimationFrame(() => {
@@ -129,6 +143,10 @@ export function FynsResultActions({
   };
 
   const handleShare = async () => {
+    if (shareCharacter) {
+      setCharacterShareOpen(true);
+      return;
+    }
     if (!canUseNativeShare(sharePayload)) return;
     setBusyAction("share");
     setFeedback(null);
@@ -178,14 +196,14 @@ export function FynsResultActions({
           >
             {busyAction === "copy" ? ui.copying : ui.copy}
           </button>
-          {shareAvailable ? (
+          {shareCharacter || shareAvailable ? (
             <button
               type="button"
               disabled={busyAction !== null}
               onClick={handleShare}
               className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/20 px-6 py-3 text-center font-bold text-slate-200 transition hover:border-[var(--result-actions-accent)]/65 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--result-actions-accent)] disabled:cursor-wait disabled:opacity-60 sm:w-auto"
             >
-              {busyAction === "share" ? ui.sharing : ui.share}
+              {shareCharacter ? characterShareUi.trigger : busyAction === "share" ? ui.sharing : ui.share}
             </button>
           ) : null}
         </div>
@@ -215,6 +233,15 @@ export function FynsResultActions({
           </div>
         ) : null}
       </div>
+      {characterShareOpen && shareCharacter && characterShare ? (
+        <FynsCharacterShareDialog
+          character={shareCharacter}
+          copy={characterShareUi}
+          onClose={() => setCharacterShareOpen(false)}
+          safeSharePath={characterShare.safeSharePath}
+          supportingNames={supportingNames}
+        />
+      ) : null}
     </section>
   );
 }
