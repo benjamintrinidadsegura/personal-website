@@ -119,7 +119,9 @@ The final ticket report must keep four assessments separate: human interruption,
 
 ## Migration integrity
 
-Every migration is registered in `scripts/bts-engineering/migration-checksums.json`. A new migration must be added with its SHA-256 hash before preflight. Any modification, removal, or unregistered migration fails local validation. Preflight also compares remote-applied versions with Git status, so changing both an applied migration and its checksum entry still fails. A just-applied, not-yet-committed migration is accepted only when it exactly matches the fresh gated apply state. Applied migrations are never repaired in place; create an additive migration.
+Every migration is registered in `scripts/bts-engineering/migration-checksums.json`. Registry SHA-256 values use canonical migration bytes: CRLF and lone CR line endings are converted to LF before hashing. This makes the checksum independent of Git checkout EOL materialization across platforms. Canonicalization changes no other bytes: spaces, tabs, SQL formatting and ordering, comments, case, Unicode/encoding content, and final-newline presence all remain integrity-sensitive. The narrow `supabase/migrations/*.sql text eol=lf` repository attribute is defense-in-depth for future checkouts; canonical hashing remains the integrity authority.
+
+A new migration must be added with its canonical SHA-256 hash before preflight. Any meaningful modification, removal, or unregistered migration fails local validation. Registry validation, remote-applied comparison, pending approval reporting, and migration evidence fingerprints all consume the same canonical migration hash. Preflight also compares remote-applied versions with Git status, so changing both an applied migration and its checksum entry still fails. A just-applied, not-yet-committed migration is accepted only when it exactly matches the fresh gated apply state. Applied migrations are never repaired in place; create an additive migration.
 
 ## Credential cleanup
 

@@ -65,6 +65,28 @@ export function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+export function canonicalMigrationBytes(value) {
+  const input = Buffer.isBuffer(value) ? value : Buffer.from(value);
+  const output = Buffer.allocUnsafe(input.length);
+  let writeIndex = 0;
+
+  for (let readIndex = 0; readIndex < input.length; readIndex += 1) {
+    if (input[readIndex] === 0x0d) {
+      if (input[readIndex + 1] === 0x0a) readIndex += 1;
+      output[writeIndex] = 0x0a;
+    } else {
+      output[writeIndex] = input[readIndex];
+    }
+    writeIndex += 1;
+  }
+
+  return output.subarray(0, writeIndex);
+}
+
+export function migrationSha256(value) {
+  return sha256(canonicalMigrationBytes(value));
+}
+
 export function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
@@ -403,7 +425,7 @@ export function createRunner(options = {}) {
     return readdirSync(migrationDir)
       .filter((name) => name.endsWith(".sql"))
       .sort()
-      .map((name) => ({ name, version: migrationVersion(name), hash: sha256(readFileSync(join(migrationDir, name))) }));
+      .map((name) => ({ name, version: migrationVersion(name), hash: migrationSha256(readFileSync(join(migrationDir, name))) }));
   }
 
   function validateMigrationIntegrity() {

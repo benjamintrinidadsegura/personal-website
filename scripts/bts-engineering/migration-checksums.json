@@ -15,8 +15,8 @@
     "20260818000000_newsletter_subscription_foundation.sql": "2d56d4e9a90bb51cb565109dda828cbaa125551e136ea6396f033bab4c5781d6",
     "20260819000000_newsletter_delivery.sql": "1d1e10587d776f2d796b8bc7e6747dbc77483c3b681d60d706b31c55aa292d8b",
     "20260819010000_newsletter_delivery_runtime_fix.sql": "26e0390b81a2882b5a67fe5c29d2a09b6cc708aee29fd723d6cad48025b3bff6",
-    "20260919000000_life_alignment_relationship_engine.sql": "e04914c0ebce3a608706512520e77975a9ec2da5dd20203f2204f07594a9e430",
-    "20260919010000_life_alignment_relationship_runtime_fix.sql": "b2d817ae064037b41dcd76773f5da81b7197c8cf79eb9a07b0e00fc70abd6330",
+    "20260919000000_life_alignment_relationship_engine.sql": "f4503dd731c83d9a4dae6ee7b1d27450167002ec5eea98e118d0d994a412a41b",
+    "20260919010000_life_alignment_relationship_runtime_fix.sql": "7e9559b37f2e8075b8e745056d27a52c78df5e364a8777b3d7214ac228752d28",
     "20260920000000_private_feedback.sql": "a0acddd039851e9151b150457ff4df98b0e2ba7dc9e3b4103d3f8c6aa0f68e3b",
     "20260921000000_private_feedback_contact.sql": "36ebc9c2615dfafb17704c55bc8454e7687ec3c3dc3b2907ba88006e62c26748"
   }

@@ -12,6 +12,7 @@ import { HumanContextJourneyDock } from "@/components/human-context/journey-dock
 import { AlignmentLandscape } from "./alignment-landscape";
 import { LifeAlignmentContext } from "./life-alignment-context";
 import { LifeAlignmentResultActions } from "./life-alignment-result-actions";
+import { LifeAlignmentResultQuote } from "@/components/quotes/result-quotes";
 import { SelfClosingOrientation, SelfContextualPaths, SelfInsightSynthesis, SelfMicroTools, } from "./self-depth/self-depth-sections";
 const ACCENT = "#f5b971";
 const currentOrder: readonly CurrentEmphasis[] = ["little", "workable", "a-lot", "unclear"];
@@ -217,6 +218,8 @@ function ResultView({ result, onEdit, restart }: {
           <p className="mt-8 max-w-4xl text-lg leading-8 text-slate-300">{result.description}</p>
           <div className="mt-8 grid gap-4">{result.summary.map((line) => <p key={line} className="border-l-2 border-[#f5b971] pl-5 text-xl font-black leading-8 text-white">{line}</p>)}</div>
         </header>
+
+        <LifeAlignmentResultQuote result={result}/>
 
         <AlignmentLandscape result={result} onEdit={() => onEdit(1)}/>
 

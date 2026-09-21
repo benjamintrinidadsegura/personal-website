@@ -8,12 +8,13 @@ import { test } from "node:test";
 import {
   RunnerError,
   assertCheckpointPaths,
+  canonicalMigrationBytes,
   createRunner,
   executeProcess,
+  migrationSha256,
   parseRemoteMigrations,
   redact,
   safeChildEnvironment,
-  sha256,
   validateDatabaseUrl,
   validateVerificationSql,
 } from "../scripts/bts-engineering/runner.mjs";
@@ -54,7 +55,7 @@ function makeRunnerRepo(migrationNames = ["20260101000000_first.sql"]) {
   for (const name of migrationNames) {
     const sql = `select '${name}';\n`;
     writeFileSync(join(root, "supabase/migrations", name), sql);
-    checksums[name] = sha256(sql);
+    checksums[name] = migrationSha256(sql);
   }
   writeFileSync(join(root, "scripts/bts-engineering/config.json"), JSON.stringify(config()));
   writeFileSync(join(root, "scripts/bts-engineering/migration-checksums.json"), JSON.stringify({ schemaVersion: 1, algorithm: "sha256", migrations: checksums }));
@@ -105,18 +106,57 @@ test("migration output parsing is deterministic", () => {
   assert.deepEqual(parseRemoteMigrations("BTS_MIGRATION|20260102\nBTS_MIGRATION|20260101\nBTS_MIGRATION|20260102"), ["20260101", "20260102"]);
 });
 
+test("migration hashing canonicalizes only EOL representation", () => {
+  const lf = "-- café access policy\ncreate function public.answer() returns integer language sql as 'select 1';\nalter table public.items enable row level security;\ncreate policy read_items\n  on public.items for select\n  using (true);\n";
+  const canonicalHash = migrationSha256(lf);
+
+  assert.equal(canonicalMigrationBytes(lf).toString("utf8"), lf);
+  assert.equal(migrationSha256(lf.replaceAll("\n", "\r\n")), canonicalHash);
+  assert.equal(migrationSha256(lf.replaceAll("\n", "\r")), canonicalHash);
+
+  for (const meaningfulChange of [
+    lf.replace("select 1", "select 2"),
+    lf.replace("for select", "for update"),
+    lf.replace("using (true)", "using (false)"),
+    lf.replace("  on public.items", "\ton public.items"),
+    lf.replace("-- café access policy", "-- changed access policy"),
+    lf.replace("café", "cafe"),
+    lf.slice(0, -1),
+  ]) assert.notEqual(migrationSha256(meaningfulChange), canonicalHash);
+
+  assert.notEqual(migrationSha256(Buffer.from([0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0xff, 0x3b, 0x0a])), migrationSha256("select �;\n"));
+});
+
 test("migration checksum integrity rejects modified and unregistered migrations", () => {
   const root = makeRunnerRepo();
   try {
     const runner = createRunner({ repoRoot: root, config: config(), env: {} });
     assert.equal(runner.validateMigrationIntegrity().length, 1);
-    writeFileSync(join(root, "supabase/migrations/20260101000000_first.sql"), "select 'changed';\n");
+    const migrationPath = join(root, "supabase/migrations/20260101000000_first.sql");
+    const original = readFileSync(migrationPath, "utf8");
+    for (const changed of [
+      "select 'changed';\n",
+      original.replace("select", "select "),
+      `-- changed comment\n${original}`,
+      original.slice(0, -1),
+    ]) {
+      writeFileSync(migrationPath, changed);
+      assert.throws(
+        () => runner.validateMigrationIntegrity(),
+        (error: unknown) => error instanceof RunnerError && error.code === "MIGRATION_INTEGRITY_FAILED",
+      );
+    }
+    writeFileSync(migrationPath, original.replaceAll("\n", "\r\n"));
+    assert.equal(runner.validateMigrationIntegrity().length, 1);
+    writeFileSync(migrationPath, original.replaceAll("\n", "\r"));
+    assert.equal(runner.validateMigrationIntegrity().length, 1);
+    writeFileSync(join(root, "supabase/migrations/20260102000000_unregistered.sql"), "select 2;\n");
     assert.throws(
       () => runner.validateMigrationIntegrity(),
-      (error: unknown) => error instanceof RunnerError && error.code === "MIGRATION_INTEGRITY_FAILED",
+      (error: unknown) => error instanceof RunnerError
+        && error.code === "MIGRATION_INTEGRITY_FAILED"
+        && (error.details as { missing: string[] }).missing.includes("20260102000000_unregistered.sql"),
     );
-    writeFileSync(join(root, "supabase/migrations/20260102000000_unregistered.sql"), "select 2;\n");
-    assert.throws(() => runner.validateMigrationIntegrity(), RunnerError);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -243,6 +283,9 @@ test("preflight rejects a no-migration state absent from both output streams", a
 test("pending migration stops at the explicit gate and repair batches fail closed", async () => {
   const root = makeRunnerRepo(["20260101000000_first.sql", "20260102000000_second.sql"]);
   try {
+    const pendingPath = join(root, "supabase/migrations/20260102000000_second.sql");
+    const pendingLf = readFileSync(pendingPath, "utf8");
+    writeFileSync(pendingPath, pendingLf.replaceAll("\n", "\r\n"));
     const calls: string[][] = [];
     const execute = async (_command: string, args: string[]) => {
       calls.push(args);
@@ -255,6 +298,8 @@ test("pending migration stops at the explicit gate and repair batches fail close
     const runner = createRunner({ repoRoot: root, config: config(), env: {}, execute });
     const result = await runner.preflight();
     assert.equal(result.status, "migration-required");
+    assert.equal(result.pending.hash, migrationSha256(pendingLf));
+    assert.equal(JSON.parse(readFileSync(join(root, ".bts-engineering/state/preflight.json"), "utf8")).pending.hash, migrationSha256(pendingLf));
     assert.equal(calls.some(isMigrationApply), false);
     await assert.rejects(
       runner.applyMigration({ confirmation: "yes" }),
@@ -404,7 +449,7 @@ test("an applied migration cannot be hidden by updating its checksum entry", asy
     writeFileSync(migrationPath, changedSql);
     writeFileSync(
       join(root, "scripts/bts-engineering/migration-checksums.json"),
-      JSON.stringify({ schemaVersion: 1, algorithm: "sha256", migrations: { "20260101000000_first.sql": sha256(changedSql) } }),
+      JSON.stringify({ schemaVersion: 1, algorithm: "sha256", migrations: { "20260101000000_first.sql": migrationSha256(changedSql) } }),
     );
     const execute = async (command: string, args: string[], options: Parameters<typeof executeProcess>[2]) => {
       if (command === "git") return await executeProcess(command, args, options);

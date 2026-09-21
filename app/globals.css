@@ -487,6 +487,80 @@ html[data-navigation-settling="true"] .navigation-feedback::before {
 .writing-share-card[data-variant="statement"] .writing-share-card-footer { border-color: rgba(4,16,24,.26); }
 .writing-share-card[data-variant="statement"] .writing-share-card-domain { color: #041018; }
 
+.quote-share-card {
+  background:
+    radial-gradient(circle at 84% 18%, rgba(245,185,113,.16), transparent 24%),
+    radial-gradient(circle at 10% 88%, rgba(53,208,229,.13), transparent 26%),
+    #071826;
+}
+.quote-share-card .writing-share-card-thought { text-wrap: balance; }
+
+.quote-experience {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  border-block: 1px solid rgba(255,255,255,.14);
+  padding-block: clamp(2.5rem, 7vw, 5.5rem);
+}
+.quote-experience-daily { grid-template-columns: minmax(0,.62fr) minmax(0,1fr); }
+.quote-experience-result {
+  margin-top: clamp(2.75rem, 8vw, 5rem);
+  border: 1px solid rgba(245,185,113,.22);
+  border-radius: 1.75rem;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  background: linear-gradient(135deg, rgba(245,185,113,.055), rgba(53,208,229,.025));
+}
+.quote-experience-eyebrow {
+  color: #f5b971;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.quote-experience-title {
+  margin-top: .9rem;
+  color: white;
+  font-size: clamp(1.75rem, 4vw, 3.35rem);
+  font-weight: 900;
+  letter-spacing: -.04em;
+  line-height: 1;
+  text-wrap: balance;
+}
+.quote-experience-description { max-width: 35rem; margin-top: 1rem; color: #94a3b8; line-height: 1.75; }
+.quote-experience-quote { align-self: center; min-width: 0; }
+.quote-experience blockquote > p {
+  color: #f8fafc;
+  font-size: clamp(1.55rem, 4vw, 3rem);
+  font-weight: 820;
+  letter-spacing: -.035em;
+  line-height: 1.18;
+  text-wrap: balance;
+}
+.quote-experience blockquote footer { margin-top: 1.4rem; color: #8394a7; font-size: .78rem; font-weight: 750; }
+.quote-experience blockquote cite { color: #9debf4; font-style: normal; }
+.quote-experience-actions { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 2rem; }
+.quote-experience-actions button {
+  min-height: 2.75rem;
+  border: 1px solid rgba(255,255,255,.17);
+  border-radius: 999px;
+  padding: .65rem 1rem;
+  color: #e2e8f0;
+  font-size: .82rem;
+  font-weight: 900;
+}
+.quote-experience-actions button:hover,
+.quote-experience-actions button:focus-visible { border-color: rgba(53,208,229,.58); color: white; background: rgba(53,208,229,.06); }
+.quote-experience-actions .quote-experience-share { border-color: #35d0e5; background: #35d0e5; color: #041018; }
+.quote-experience-actions .quote-experience-share:hover,
+.quote-experience-actions .quote-experience-share:focus-visible { background: #9debf4; color: #041018; }
+
+@media (max-width: 760px) {
+  .quote-experience-daily { grid-template-columns: 1fr; }
+  .quote-experience { gap: 2.25rem; }
+  .quote-experience-result { border-inline: 0; border-radius: 0; margin-inline: -1.25rem; padding-inline: 1.25rem; }
+  .quote-experience blockquote > p { font-size: clamp(1.55rem, 7.5vw, 2.25rem); }
+}
+
 .writing-screenshot-surface { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; background: #02070c; }
 .writing-screenshot-card { display: grid; width: 100%; height: 100%; place-items: center; }
 .writing-screenshot-card .writing-share-card { width: min(100vw, 56.25svh); box-shadow: none; }

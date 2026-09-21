@@ -6,6 +6,7 @@ import { HumanContextJourneyDock } from "@/components/human-context/journey-dock
 import { HumanContextScene } from "@/components/human-context/context-scene";
 import { PartnerActionPaths, PartnerComparisonLandscape, PartnerConversationTools, PartnerExperiments } from "@/components/life-alignment/partner/comparison-landscape";
 import { PartnerResultActions } from "@/components/life-alignment/partner/partner-result-actions";
+import { PartnerResultQuote } from "@/components/quotes/result-quotes";
 import { useLocale, useLocalizedHref } from "@/components/i18n/locale-context";
 import { getPartnerAlignmentContent } from "@/data/i18n/life-alignment";
 import { buildPartnerClipboardSummary } from "@/lib/life-alignment-partner-export";
@@ -154,6 +155,7 @@ function ResultView({ result, restart }: {
           <p className="mt-7 max-w-4xl text-xl leading-8 text-slate-300">{result.description}</p>
           <p className="mt-6 max-w-4xl border-l-2 border-[#f5b971] pl-5 leading-7 text-slate-400">{result.disclaimer}</p>
         </header>
+        <PartnerResultQuote result={result}/>
         <PartnerComparisonLandscape result={result}/>
         <PartnerActionPaths result={result}/>
         <PartnerExperiments result={result}/>

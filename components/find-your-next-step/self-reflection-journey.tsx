@@ -19,6 +19,7 @@ import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { HumanContextReflection } from "@/components/find-your-next-step/human-context-reflection";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
 import { FynsResultFigure } from "@/components/find-your-next-step/result-figure";
+import { FynsCharacterResultQuote } from "@/components/quotes/result-quotes";
 import {
   fynsCharacterConstellationCopy,
   getFynsCharacterArtwork,
@@ -402,6 +403,8 @@ function ResultView({
         representation={representation}
         onRepresentationChange={setRepresentation}
       />
+
+      {constellation ? <FynsCharacterResultQuote constellation={constellation} /> : null}
 
       <HumanContextReflection accent="#35d0e5" titleId="self-human-context-title" />
 

@@ -6,6 +6,7 @@ import { EchoWallPreview } from "@/components/sections/echowall-preview";
 import { Feedback } from "@/components/sections/feedback";
 import { Hero } from "@/components/sections/hero";
 import { HqPulse } from "@/components/sections/hq-pulse";
+import { HomeQuote } from "@/components/quotes/home-quote";
 import { Interviews } from "@/components/sections/interviews";
 import { Writing } from "@/components/sections/writing";
 import { getPublishedWriting } from "@/lib/writing/queries";
@@ -18,6 +19,7 @@ export default async function Home() {
     <ContextCanvas>
       <Hero />
       <HqPulse publishedWriting={publishedWriting} />
+      <HomeQuote dateKey={new Date().toISOString().slice(0, 10)} />
       <CurrentlyBuilding />
       <Writing publishedWriting={publishedWriting} />
       <Interviews />
