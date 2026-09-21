@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useReducer, useRef } from "react";
 import type { CSSProperties } from "react";
 
+import { FynsActionLayer } from "@/components/find-your-next-step/action-layer";
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
 import { FynsResultFigure } from "@/components/find-your-next-step/result-figure";
@@ -377,6 +378,15 @@ function ResultView({
       <aside aria-label={ui.authority} className="mt-8 border-l-2 border-[#b8a5ff] pl-6 leading-7 text-slate-300">
         {result.authorityNote}
       </aside>
+
+      <FynsActionLayer
+        accent={IDEA_ACCENT}
+        context={{
+          journey: "idea",
+          seed: `idea-${result.known.length}-${result.uncertain.length}-${result.assumptions.length}`,
+          resultSignals: ["learning-experiment"],
+        }}
+      />
 
       <FynsResultActions
         accent={IDEA_ACCENT}

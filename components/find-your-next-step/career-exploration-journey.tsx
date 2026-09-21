@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useReducer, useRef } from "react";
 
+import { FynsActionLayer } from "@/components/find-your-next-step/action-layer";
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { HumanContextReflection } from "@/components/find-your-next-step/human-context-reflection";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
@@ -511,6 +512,16 @@ function ResultView({
           <p className="mt-6 max-w-4xl text-lg font-bold leading-8 text-slate-200">{result.nextStep.text}</p>
         </section>
       </div>
+
+      <FynsActionLayer
+        accent="#ff9a3d"
+        context={{
+          journey: "career",
+          seed: result.primaryDirections.map(({ id }) => id).join("|") || "open-map",
+          resultSignals: [result.nextStep.mode, ...result.primaryDirections.map(({ id }) => id)],
+          tensionIds: result.tensions.map(({ id }) => id),
+        }}
+      />
 
       <FynsResultActions
         accent="#ff9a3d"

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useReducer, useRef } from "react";
 
+import { FynsActionLayer } from "@/components/find-your-next-step/action-layer";
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
 import { FynsResultFigure } from "@/components/find-your-next-step/result-figure";
@@ -213,6 +214,16 @@ function ResultView({
           <h3 id="problem-human-context-title" className="mt-4 text-2xl font-black text-white sm:text-4xl">{ui.context}</h3>
           <p className="mt-5 max-w-4xl leading-7 text-slate-300">{ui.contextText}</p>
         </aside>
+
+        <FynsActionLayer
+          accent="#b8a5ff"
+          context={{
+            journey: "problem",
+            seed: result.boundary.level,
+            resultSignals: [result.boundary.level, ...result.nextStep.evidence.map(({ optionId }) => optionId)],
+            unsupported: urgent,
+          }}
+        />
 
         <FynsResultActions accent="#b8a5ff" copyText={copyText} shareTitle={problemResultTitle[locale]} shareText={shareText} printTitle={problemResultTitle[locale]} />
 

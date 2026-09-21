@@ -17,6 +17,7 @@ import {
 } from "@/lib/find-your-next-step-self";
 import { JourneyDock } from "@/components/find-your-next-step/journey-dock";
 import { HumanContextReflection } from "@/components/find-your-next-step/human-context-reflection";
+import { FynsActionLayer } from "@/components/find-your-next-step/action-layer";
 import { FynsResultActions } from "@/components/find-your-next-step/result-actions";
 import { FynsResultFigure } from "@/components/find-your-next-step/result-figure";
 import { FynsCharacterResultQuote } from "@/components/quotes/result-quotes";
@@ -453,6 +454,19 @@ function ResultView({
           title={ui.handbookUnavailable}
         />
       )}
+
+      {constellation ? (
+        <FynsActionLayer
+          accent="#35d0e5"
+          context={{
+            journey: "self",
+            seed: constellation.combination?.title ?? constellation.dominant.id,
+            characterIds: [constellation.dominant, ...constellation.supporting].map(({ id }) => id),
+            dimensions: [constellation.dominant, ...constellation.supporting].map(({ sourceDimension }) => sourceDimension),
+            tensionIds: constellation.tensions.map(({ id }) => id),
+          }}
+        />
+      ) : null}
 
       <FynsResultActions
         accent="#35d0e5"
