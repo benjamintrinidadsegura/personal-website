@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { getLocalizedBrainManual, type BrainManualUiCopy } from "@/data/brain-manual-locales";
-import type { BrainChapter } from "@/data/brain-manual";
+import { getLocalizedBrainManual, type BrainManualCognitiveNavigation, type BrainManualUiCopy } from "@/data/brain-manual-locales";
+import type { BrainChapter, BrainPattern } from "@/data/brain-manual";
 import type { Locale } from "@/lib/i18n/config";
 import { localizeHref } from "@/lib/i18n/routing";
 
@@ -17,7 +17,7 @@ const domainPositions = [
 
 export function BrainManualPage({ locale }: { locale: Locale }) {
   const manual = getLocalizedBrainManual(locale);
-  const { chapters, metaPattern, patternById, ui: copy } = manual;
+  const { chapters, cognitiveNavigation, metaPattern, patternById, ui: copy } = manual;
 
   return (
     <article className="section-lines relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36">
@@ -54,6 +54,7 @@ export function BrainManualPage({ locale }: { locale: Locale }) {
 
           <div className="min-w-0">
             <PatternMap copy={copy.patternMap} />
+            <CognitiveNavigation copy={cognitiveNavigation} patternById={patternById} />
 
             {chapters.map((chapter, chapterIndex) => (
               <section key={chapter.id} id={`chapter-${chapter.id}`} aria-labelledby={`chapter-${chapter.id}-title`} className="scroll-mt-28 border-b border-white/15 py-20 sm:py-28">
@@ -113,6 +114,47 @@ export function BrainManualPage({ locale }: { locale: Locale }) {
         </section>
       </div>
     </article>
+  );
+}
+
+function CognitiveNavigation({ copy, patternById }: { copy: BrainManualCognitiveNavigation; patternById: ReadonlyMap<string, BrainPattern> }) {
+  return (
+    <section id="cognitive-navigation" aria-labelledby="cognitive-navigation-title" className="border-b border-white/15 py-20 sm:py-24">
+      <div className="grid gap-8 lg:grid-cols-[.62fr_1fr]">
+        <div>
+          <p className="font-mono text-[10px] font-black uppercase tracking-[.22em] text-[#b8a5ff]">{copy.eyebrow}</p>
+          <h2 id="cognitive-navigation-title" lang="en" className="mt-5 text-4xl font-black leading-none tracking-[-.04em] text-white sm:text-6xl">{copy.title}</h2>
+        </div>
+        <p className="border-l-2 border-[#b8a5ff]/60 pl-6 text-lg leading-8 text-slate-300">{copy.introduction}</p>
+      </div>
+
+      <div className="mt-12">
+        <h3 className="font-mono text-xs font-black uppercase tracking-[.2em] text-[#35d0e5]">{copy.speedTitle}</h3>
+        <div className="mt-5 grid gap-px bg-white/10 sm:grid-cols-2">
+          {copy.speedItems.map((item, index) => (
+            <a key={item.patternId} href={`#pattern-${item.patternId}`} className="group bg-[#071824] p-6 hover:bg-[#0a2030]">
+              <span className="font-mono text-[10px] text-slate-600">0{index + 1}</span>
+              <strong lang="en" className="mt-3 block text-xl text-white group-hover:text-[#35d0e5]">{patternById.get(item.patternId)?.title}</strong>
+              <span className="mt-3 block text-sm leading-6 text-slate-400">{item.description}</span>
+            </a>
+          ))}
+        </div>
+        <p className="border-x border-b border-[#35d0e5]/25 bg-[#35d0e5]/[.055] px-6 py-5 text-center font-black text-[#8be8f4]">{copy.sequence}</p>
+      </div>
+
+      <div className="mt-10 grid gap-6 lg:grid-cols-[.45fr_1fr]">
+        <h3 className="font-mono text-xs font-black uppercase tracking-[.2em] text-[#ffbd7c]">{copy.distinctionTitle}</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {copy.distinctionItems.map((item) => (
+            <a key={item.patternId} href={`#pattern-${item.patternId}`} className="border-l-2 border-[#ff9a3d]/60 bg-[#ff9a3d]/[.045] p-5">
+              <strong lang="en" className="block text-lg text-white">{patternById.get(item.patternId)?.title}</strong>
+              <span className="mt-2 block text-sm leading-6 text-slate-400">{item.description}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+      <p className="mt-8 max-w-4xl text-xs leading-6 text-slate-500">{copy.disclaimer}</p>
+    </section>
   );
 }
 
