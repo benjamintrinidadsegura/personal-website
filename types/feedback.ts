@@ -12,6 +12,21 @@ export const feedbackSourceContexts = [
 
 export type FeedbackSourceContext = (typeof feedbackSourceContexts)[number];
 
+export const resultFeedbackProducts = ["personal-advantage", "money-profile"] as const;
+export type ResultFeedbackProduct = (typeof resultFeedbackProducts)[number];
+
+export const resultFeedbackFits = ["mostly", "partly", "not_really"] as const;
+export type ResultFeedbackFit = (typeof resultFeedbackFits)[number];
+
+export const resultFeedbackUsefulnessCategories = [
+  "pattern",
+  "tradeoffs",
+  "next_steps",
+  "stress_context",
+  "other",
+] as const;
+export type ResultFeedbackUsefulnessCategory = (typeof resultFeedbackUsefulnessCategories)[number];
+
 export const feedbackContactMethods = [
   "email",
   "linkedin",
@@ -32,13 +47,17 @@ export type FeedbackAdminFilter = (typeof feedbackAdminFilters)[number];
 export const feedbackMessageMaximum = 4_000;
 export const feedbackNameMaximum = 80;
 export const feedbackContactValueMaximum = 240;
+export const resultFeedbackMessageMaximum = 1_200;
 
 export type FeedbackField =
   | "message"
   | "name"
   | "contactMethod"
   | "contactValue"
-  | "sourceContext";
+  | "sourceContext"
+  | "resultProduct"
+  | "resultFit"
+  | "usefulnessCategory";
 
 export type RawFeedbackSubmission = {
   message: unknown;
@@ -48,6 +67,9 @@ export type RawFeedbackSubmission = {
   sourceContext: unknown;
   website: unknown;
   formToken: unknown;
+  resultProduct?: unknown;
+  resultFit?: unknown;
+  usefulnessCategory?: unknown;
 };
 
 export type FeedbackSubmission = {
@@ -56,6 +78,10 @@ export type FeedbackSubmission = {
   contactMethod: FeedbackContactMethod | null;
   contactValue: string | null;
   sourceContext: FeedbackSourceContext;
+  resultProduct: ResultFeedbackProduct | null;
+  resultFit: ResultFeedbackFit | null;
+  usefulnessCategory: ResultFeedbackUsefulnessCategory | null;
+  locale: string;
 };
 
 export type SubmitFeedbackErrorCode =
@@ -81,8 +107,12 @@ export type AdminFeedbackSummary = {
   name: string | null;
   contact_method: FeedbackContactMethod | null;
   contact_value: string | null;
-  message_preview: string;
+  message_preview: string | null;
   source_context: FeedbackSourceContext;
+  result_product: ResultFeedbackProduct | null;
+  result_fit: ResultFeedbackFit | null;
+  usefulness_category: ResultFeedbackUsefulnessCategory | null;
+  locale: string | null;
   status: FeedbackStatus;
   created_at: string;
   updated_at: string;
@@ -93,8 +123,12 @@ export type AdminFeedback = {
   name: string | null;
   contact_method: FeedbackContactMethod | null;
   contact_value: string | null;
-  message: string;
+  message: string | null;
   source_context: FeedbackSourceContext;
+  result_product: ResultFeedbackProduct | null;
+  result_fit: ResultFeedbackFit | null;
+  usefulness_category: ResultFeedbackUsefulnessCategory | null;
+  locale: string | null;
   status: FeedbackStatus;
   created_at: string;
   updated_at: string;

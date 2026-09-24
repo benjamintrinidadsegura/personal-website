@@ -5,6 +5,10 @@ import {
   feedbackMessageMaximum,
   feedbackNameMaximum,
   feedbackSourceContexts,
+  resultFeedbackFits,
+  resultFeedbackMessageMaximum,
+  resultFeedbackProducts,
+  resultFeedbackUsefulnessCategories,
   type FeedbackField,
   type FeedbackSubmission,
   type RawFeedbackSubmission,
@@ -48,6 +52,16 @@ export function validateFeedbackSubmission(
   }
 
   const message = typeof raw.message === "string" ? normalizeText(raw.message) : "";
+  const resultProduct = typeof raw.resultProduct === "string"
+    ? resultFeedbackProducts.find((candidate) => candidate === raw.resultProduct) ?? null
+    : null;
+  const resultFit = typeof raw.resultFit === "string"
+    ? resultFeedbackFits.find((candidate) => candidate === raw.resultFit) ?? null
+    : null;
+  const usefulnessCategory = typeof raw.usefulnessCategory === "string" && raw.usefulnessCategory
+    ? resultFeedbackUsefulnessCategories.find((candidate) => candidate === raw.usefulnessCategory) ?? null
+    : null;
+  const isResultFeedback = resultProduct !== null;
   const normalizedName = typeof raw.name === "string" ? normalizeText(raw.name) : "";
   const normalizedContactValue = typeof raw.contactValue === "string"
     ? normalizeText(raw.contactValue)
@@ -60,7 +74,10 @@ export function validateFeedbackSubmission(
     : undefined;
   const formToken = typeof raw.formToken === "string" ? raw.formToken : "";
 
-  if (characterLength(message) < 1 || characterLength(message) > feedbackMessageMaximum) {
+  if (
+    (!isResultFeedback && characterLength(message) < 1)
+    || characterLength(message) > (isResultFeedback ? resultFeedbackMessageMaximum : feedbackMessageMaximum)
+  ) {
     fieldErrors.message = validationCopy[locale].message;
   } else if (CONTROL_OR_BIDI_CHARACTERS.test(message)) {
     fieldErrors.message = validationCopy[locale].content;
@@ -89,6 +106,11 @@ export function validateFeedbackSubmission(
   }
 
   if (!sourceContext) fieldErrors.sourceContext = validationCopy[locale].source;
+  if (isResultFeedback && !resultFit) fieldErrors.resultFit = validationCopy[locale].form;
+  if (raw.resultProduct !== undefined && !resultProduct) fieldErrors.resultProduct = validationCopy[locale].form;
+  if (raw.resultFit !== undefined && !resultFit) fieldErrors.resultFit = validationCopy[locale].form;
+  if (typeof raw.usefulnessCategory === "string" && raw.usefulnessCategory && !usefulnessCategory) fieldErrors.usefulnessCategory = validationCopy[locale].form;
+  if (isResultFeedback && (normalizedName || contactMethod || normalizedContactValue || sourceContext !== "other")) fieldErrors.resultProduct = validationCopy[locale].form;
   if (!formToken) fieldErrors.message ??= validationCopy[locale].form;
 
   return Object.keys(fieldErrors).length > 0
@@ -101,6 +123,10 @@ export function validateFeedbackSubmission(
           contactMethod,
           contactValue: normalizedContactValue || null,
           sourceContext: sourceContext!,
+          resultProduct,
+          resultFit,
+          usefulnessCategory,
+          locale,
         },
         formToken,
       };

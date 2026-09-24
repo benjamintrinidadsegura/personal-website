@@ -1,4 +1,4 @@
-import type { WritingLanguage, WritingShareFormat, WritingShareVariant } from "@/types/writing";
+import type { WritingLanguage, WritingShareComposition, WritingShareFormat } from "@/types/writing";
 
 export const MAX_WRITING_SHARE_CARDS = 4;
 
@@ -11,10 +11,10 @@ export type WritingSegmentationResult =
   | { status: "ready"; canonicalText: string; segments: WritingThoughtSegment[] }
   | { status: "empty" | "tooLong"; canonicalText: string; segments: [] };
 
-const capacityByFormat: Record<WritingShareFormat, Record<WritingShareVariant, number>> = {
-  story: { editorial: 360, marginNote: 310, statement: 260 },
-  portrait: { editorial: 170, marginNote: 150, statement: 120 },
-  square: { editorial: 150, marginNote: 130, statement: 100 },
+const capacityByFormat: Record<WritingShareFormat, Record<WritingShareComposition, number>> = {
+  story: { editorial: 360, marginNote: 310, statement: 260, socialPost: 320 },
+  portrait: { editorial: 170, marginNote: 150, statement: 120, socialPost: 160 },
+  square: { editorial: 150, marginNote: 130, statement: 100, socialPost: 125 },
 };
 
 export function normalizeWritingThought(value: string): string {
@@ -103,7 +103,7 @@ function thoughtUnits(canonicalText: string, capacity: number, locale: WritingLa
 export function segmentWritingThought(
   value: string,
   format: WritingShareFormat,
-  variant: WritingShareVariant,
+  variant: WritingShareComposition,
   locale: WritingLanguage,
 ): WritingSegmentationResult {
   const canonicalText = normalizeWritingThought(value);
@@ -132,7 +132,7 @@ export function reconstructWritingThought(segments: WritingThoughtSegment[]): st
   return segments.map((segment) => `${segment.separatorBefore}${segment.text}`).join("");
 }
 
-export function writingShareTextScale(text: string, variant: WritingShareVariant, locale: WritingLanguage): "short" | "medium" | "long" {
+export function writingShareTextScale(text: string, variant: WritingShareComposition, locale: WritingLanguage): "short" | "medium" | "long" {
   const length = lengthOf(text, locale);
   const shortBoundary = variant === "statement" ? 70 : 100;
   const longBoundary = variant === "statement" ? 190 : 300;

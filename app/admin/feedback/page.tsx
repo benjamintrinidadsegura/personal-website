@@ -90,7 +90,8 @@ export default async function FeedbackAdminPage({
                     <p className="font-mono text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">Status</p>
                     <p className="mt-1 font-mono text-xs font-black uppercase tracking-[0.16em] text-[#35d0e5]">{item.status}</p>
                     <p className="mt-4 font-mono text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">Source</p>
-                    <p className="mt-1 text-sm text-slate-300">{sourceLabels[item.source_context]}</p>
+                    <p className="mt-1 text-sm text-slate-300">{item.result_product ?? sourceLabels[item.source_context]}</p>
+                    {item.result_fit ? <p className="mt-2 font-mono text-xs text-[#b8a5ff]">Fit · {item.result_fit}</p> : null}
                   </div>
                   <div className="min-w-0">
                     <p className="font-mono text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">Name</p>
@@ -98,7 +99,7 @@ export default async function FeedbackAdminPage({
                     <p className="mt-4 font-mono text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">Contact</p>
                     <p className="mt-1 break-words text-sm text-slate-300 [overflow-wrap:anywhere]">{contactDisplay(item)}</p>
                     <p className="mt-4 font-mono text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">Message</p>
-                    <p className="mt-1 break-words leading-7 text-slate-300 [overflow-wrap:anywhere]">{item.message_preview}</p>
+                    <p className="mt-1 break-words leading-7 text-slate-300 [overflow-wrap:anywhere]">{item.message_preview || "No optional comment."}</p>
                   </div>
                   <div>
                     <p className="font-mono text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">Submitted</p>

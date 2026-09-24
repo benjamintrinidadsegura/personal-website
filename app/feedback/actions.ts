@@ -15,6 +15,9 @@ import type {
   FeedbackActionState,
   FeedbackContactMethod,
   FeedbackSourceContext,
+  ResultFeedbackFit,
+  ResultFeedbackProduct,
+  ResultFeedbackUsefulnessCategory,
   RawFeedbackSubmission,
   SubmitFeedbackErrorCode,
   SubmitFeedbackResult,
@@ -38,6 +41,10 @@ type FeedbackDatabaseInput = {
   contactMethod: FeedbackContactMethod | null;
   contactValue: string | null;
   sourceContext: FeedbackSourceContext;
+  resultProduct: ResultFeedbackProduct | null;
+  resultFit: ResultFeedbackFit | null;
+  usefulnessCategory: ResultFeedbackUsefulnessCategory | null;
+  locale: string;
   networkHash: string;
   formTokenHash: string;
 };
@@ -178,6 +185,10 @@ export async function submitFeedbackAction(
         p_contact_method: input.contactMethod,
         p_contact_value: input.contactValue,
         p_source_context: input.sourceContext,
+        p_result_product: input.resultProduct,
+        p_result_fit: input.resultFit,
+        p_usefulness_category: input.usefulnessCategory,
+        p_locale: input.locale,
         p_network_hash: input.networkHash,
         p_form_token_hash: input.formTokenHash,
       });

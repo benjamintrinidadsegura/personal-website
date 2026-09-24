@@ -18,6 +18,51 @@ const aboutUtilityCopy: Record<Locale, { breadcrumb: string; external: string; b
   el: { breadcrumb: "Διαδρομή πλοήγησης", external: "Εξωτερικό", bookingBoundary: "Η κράτηση παραμένει κλειστή μέχρι να υπάρχει επαληθευμένος δημόσιος σύνδεσμος." },
   ru: { breadcrumb: "Навигационная цепочка", external: "Внешний ресурс", bookingBoundary: "Запись остаётся закрытой, пока не появится проверенная публичная ссылка." },
 };
+
+const brainManualEntryCopy: Record<Locale, { eyebrow: string; title: string; body: string; cta: string }> = {
+  de: {
+    eyebrow: "Deep Dive / Personal Operating Manual",
+    title: "How my brain works + Quirks, Patterns, Abilities",
+    body: "27 ausführliche Muster darüber, wie ich Ideen verbinde, Systeme baue, Menschenkontext wahrnehme, Scope erzeuge – und warum Curation, Fokus und bewusstes Stoppen dazugehören.",
+    cta: "Brain Manual öffnen",
+  },
+  en: {
+    eyebrow: "Deep Dive / Personal Operating Manual",
+    title: "How my brain works + Quirks, Patterns, Abilities",
+    body: "Twenty-seven connected patterns about how I connect ideas, build systems, read human context and create scope—and why curation, focus and deliberately stopping belong in the same manual.",
+    cta: "Open the Brain Manual",
+  },
+  es: {
+    eyebrow: "Deep Dive / Manual personal",
+    title: "How my brain works + Quirks, Patterns, Abilities",
+    body: "Veintisiete patrones conectados sobre cómo relaciono ideas, construyo sistemas y percibo el contexto humano, con sus fortalezas y contrapesos.",
+    cta: "Abrir el Brain Manual",
+  },
+  tr: {
+    eyebrow: "Deep Dive / Kişisel kullanım kılavuzu",
+    title: "How my brain works + Quirks, Patterns, Abilities",
+    body: "Fikirleri bağlama, sistem kurma ve insan bağlamını okuma biçimime dair, güçlü yanları ve karşı ağırlıklarıyla birlikte 27 bağlantılı örüntü.",
+    cta: "Brain Manual'ı aç",
+  },
+  pl: {
+    eyebrow: "Deep Dive / Osobista instrukcja",
+    title: "How my brain works + Quirks, Patterns, Abilities",
+    body: "Dwadzieścia siedem połączonych wzorców o tym, jak łączę idee, buduję systemy i odczytuję ludzki kontekst — wraz z mocnymi stronami i przeciwwagami.",
+    cta: "Otwórz Brain Manual",
+  },
+  el: {
+    eyebrow: "Deep Dive / Προσωπικό εγχειρίδιο",
+    title: "How my brain works + Quirks, Patterns, Abilities",
+    body: "Είκοσι επτά συνδεδεμένα μοτίβα για το πώς συνδέω ιδέες, χτίζω συστήματα και διαβάζω το ανθρώπινο πλαίσιο, μαζί με τα δυνατά σημεία και τα αντίβαρά τους.",
+    cta: "Άνοιγμα Brain Manual",
+  },
+  ru: {
+    eyebrow: "Deep Dive / Личное руководство",
+    title: "How my brain works + Quirks, Patterns, Abilities",
+    body: "Двадцать семь связанных паттернов о том, как я соединяю идеи, строю системы и считываю человеческий контекст — с сильными сторонами и противовесами.",
+    cta: "Открыть Brain Manual",
+  },
+};
 import { getLocale } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -60,7 +105,7 @@ export default async function AboutPage() {
         "@type": "ProfilePage", "@id": `${canonical}#profile`, url: canonical,
         name: copy.title, description: copy.description, inLanguage: locale,
         mainEntity: { "@id": personEntityId },
-        relatedLink: [goatProject?.externalUrl, ratecomProject?.externalUrl, ...["/people", "/writing", "/find-your-next-step", "/life-alignment"].map((path) => `https://bts.online${getLocalizedPathname(path, locale)}`)].filter(Boolean),
+        relatedLink: [goatProject?.externalUrl, ratecomProject?.externalUrl, ...["/people", "/writing", "/find-your-next-step", "/life-alignment", "/about/how-my-brain-works", "/tools/personal-advantage"].map((path) => `https://bts.online${getLocalizedPathname(path, locale)}`)].filter(Boolean),
       },
       {
         "@type": "Person", "@id": personEntityId, name: positioning.name, url: "https://bts.online/about",
@@ -156,6 +201,22 @@ export default async function AboutPage() {
                 </li>
               ))}
             </ol>
+          </div>
+        </section>
+
+        <section aria-labelledby="brain-manual-entry-title" className="border-b border-white/15 py-20 sm:py-28">
+          <div className="relative overflow-hidden rounded-[2rem] border border-[#35d0e5]/25 bg-[#071824] p-8 sm:p-12 lg:p-16">
+            <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_82%_18%,rgba(53,208,229,0.17),transparent_24rem),radial-gradient(circle_at_12%_88%,rgba(255,122,0,0.11),transparent_22rem)]" />
+            <div className="relative grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-end">
+              <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ff9a3d]">{brainManualEntryCopy[locale].eyebrow}</p>
+              <div>
+                <h2 id="brain-manual-entry-title" className="[overflow-wrap:anywhere] text-4xl font-black leading-[0.96] tracking-[-0.045em] text-white sm:text-6xl">{brainManualEntryCopy[locale].title}</h2>
+                <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-300">{brainManualEntryCopy[locale].body}</p>
+                <Link href={localizeHref("/about/how-my-brain-works", locale)} className="mt-9 inline-flex min-h-12 items-center rounded-full bg-[#35d0e5] px-6 py-3 font-black text-[#041018] transition hover:-translate-y-0.5 hover:bg-[#73e3f1]">
+                  {brainManualEntryCopy[locale].cta} →
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
 

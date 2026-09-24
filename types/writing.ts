@@ -90,6 +90,7 @@ export type WritingShareFormat = (typeof writingShareFormats)[number];
 
 export const writingShareVariants = ["editorial", "marginNote", "statement"] as const;
 export type WritingShareVariant = (typeof writingShareVariants)[number];
+export type WritingShareComposition = WritingShareVariant | "socialPost";
 
 export type WritingShareSource = {
   articleId: string;
@@ -101,6 +102,7 @@ export type WritingShareSource = {
   domain: string;
   kind?: "article" | "thought";
   language: WritingLanguage;
+  readingMinutes?: number;
   text: string;
 };
 

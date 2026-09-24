@@ -64,6 +64,7 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
     canonicalUrl,
     domain: siteConfig.domain,
     language: article.language,
+    readingMinutes: article.readingMinutes,
   };
   const articleShareSource: WritingShareSource = {
     ...shareContext,

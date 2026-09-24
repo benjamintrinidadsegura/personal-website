@@ -7,6 +7,7 @@ import { DiscoveryEngine } from "@/components/discovery/discovery-engine";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useLocale, useLocalizedHref } from "@/components/i18n/locale-context";
 import { getGlobalDictionary } from "@/data/i18n/global";
+import { getMoneyProfileUiCopy } from "@/data/money-profile-locales";
 import type { AccountState } from "@/lib/account/state";
 import { acquireScrollLock } from "@/lib/scroll-lock";
 
@@ -24,6 +25,7 @@ export function Header({ accountState }: { accountState: AccountState }) {
   const locale = useLocale();
   const localizedHref = useLocalizedHref();
   const copy = getGlobalDictionary(locale);
+  const moneyCopy = getMoneyProfileUiCopy(locale);
   const navigation: NavigationItem[] = [
     { id: "home", label: copy.nav.home, href: localizedHref("/#home") },
     { id: "about", label: copy.nav.about, href: localizedHref("/about") },
@@ -50,6 +52,8 @@ export function Header({ accountState }: { accountState: AccountState }) {
       children: [
         { id: "life-alignment", label: "Life Alignment", href: localizedHref("/life-alignment") },
         { id: "fyns", label: "Find Your Next Step", href: localizedHref("/find-your-next-step") },
+        { id: "personal-advantage", label: "What's Your Unfair Advantage?", href: localizedHref("/tools/personal-advantage") },
+        { id: "money-profile", label: moneyCopy.publicTitle, href: localizedHref("/tools/money-profile") },
         { id: "echowall", label: "EchoWall", href: localizedHref("/echowall") },
       ],
     },

@@ -65,6 +65,12 @@ export default async function FeedbackDetailPage({
                 <dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Source</dt>
                 <dd className="mt-2 text-slate-200">{feedback.source_context}</dd>
               </div>
+              {feedback.result_product ? <>
+                <div><dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Result product</dt><dd className="mt-2 text-slate-200">{feedback.result_product}</dd></div>
+                <div><dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Fit</dt><dd className="mt-2 text-slate-200">{feedback.result_fit}</dd></div>
+                <div><dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Most useful</dt><dd className="mt-2 text-slate-200">{feedback.usefulness_category || "Not provided"}</dd></div>
+                <div><dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Locale</dt><dd className="mt-2 text-slate-200">{feedback.locale || "Not recorded"}</dd></div>
+              </> : null}
               <div>
                 <dt className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Status</dt>
                 <dd className="mt-2 text-slate-200">{feedback.status}</dd>
@@ -76,7 +82,7 @@ export default async function FeedbackDetailPage({
             </dl>
             <section aria-labelledby="feedback-message-heading" className="mt-8">
               <h2 id="feedback-message-heading" className="font-mono text-xs font-black uppercase tracking-[0.16em] text-slate-500">Message</h2>
-              <p className="mt-3 whitespace-pre-wrap break-words text-lg leading-8 text-slate-200 [overflow-wrap:anywhere]">{feedback.message}</p>
+              <p className="mt-3 whitespace-pre-wrap break-words text-lg leading-8 text-slate-200 [overflow-wrap:anywhere]">{feedback.message || "No optional comment."}</p>
             </section>
             <FeedbackAdminActions feedback={feedback} />
           </article>

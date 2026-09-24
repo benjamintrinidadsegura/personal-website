@@ -266,7 +266,7 @@ test("Writing article rendering isolates Comments failures and supports all publ
   const componentBody = page.slice(page.indexOf("export default async function WritingArticlePage"));
   assert.ok(componentBody.indexOf("getPublishedWritingBySlug") < componentBody.indexOf("getWritingDiscussionPageData"));
   assert.equal(queries.includes('status: "unavailable", state: null, comments: []'), true);
-  assert.equal(domain.includes('settingsResult.data === null\n    ? "open"'), true);
+  assert.match(domain, /settingsResult\.data === null\r?\n    \? "open"/u);
   assert.equal(discussion.includes('discussion.status === "disabled"'), true);
   assert.equal(discussion.includes('discussion.state === "closed"'), true);
   assert.equal(discussion.includes('discussion.status === "empty"'), true);

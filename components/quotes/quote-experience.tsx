@@ -50,7 +50,7 @@ export function QuoteExperience({ context, description, safeSharePath = "/", tit
           {current.shareEligible ? <button type="button" onClick={() => setShareOpen(true)} className="bts-share-action quote-experience-share"><ShareIcon /><span>{copy.share}</span></button> : null}
         </div>
       </div>
-      {shareOpen ? <QuoteShareDialog copy={copy} onClose={() => setShareOpen(false)} quote={current} safeSharePath={safeSharePath} surfaceLabel={eyebrow} /> : null}
+      {shareOpen ? <QuoteShareDialog copy={copy} onClose={() => setShareOpen(false)} quote={current} safeSharePath={safeSharePath} socialPostEnabled={variant === "daily"} surfaceLabel={eyebrow} /> : null}
     </section>
   );
 }

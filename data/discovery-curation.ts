@@ -10,6 +10,18 @@ import type {
  * project copy, and capped at four entries per active dimension.
  */
 export const discoveryDimensionsByItemId: Readonly<Record<string, DiscoveryDimensions>> = {
+  "tool-money-profile": {
+    intent: ["Meine Beziehung zu Geld verstehen", "Geldmuster unter Stress erkennen", "Passende kleine Strukturen finden"],
+    goals: ["Money Profile erstellen", "Baseline und Stressreaktion unterscheiden", "Einen kleinen Money-Versuch wählen"],
+    problems: ["Geldentscheidungen fühlen sich widersprüchlich an", "Unter Stress verliere ich Zugang zu hilfreichen Routinen"],
+    useCases: ["Tiefe finanzielle Verhaltensreflexion", "Money Meaning und Trade-offs", "Money Playbook ohne Finanzdaten"],
+  },
+  "tool-personal-advantage": {
+    intent: ["Meine persönliche Vorteilskombination verstehen", "Eigene Stärken im Zusammenspiel erkennen", "Verborgene Vorteile entdecken"],
+    goals: ["Personal Advantage Map erstellen", "Stärken konkret anwenden", "Einen echten Advantage-Versuch wählen"],
+    problems: ["Einzelne Stärken erklären mein Muster nicht", "Unklarheit wann Fähigkeiten besonders nützlich werden"],
+    useCases: ["Tiefe Selbstreflexion", "Advantage Stack", "Arbeitsumfeld und Gegengewichte verstehen"],
+  },
   "tool-life-alignment": {
     intent: ["Life Alignment Perspektive wählen", "Mein heutiges Leben einordnen", "Lebensbereiche ausrichten", "Heutige Lage und zukünftige Richtung verstehen"],
     goals: ["Passendes Life Alignment Modul finden", "ME WE und WHERE I AM GOING unterscheiden"],

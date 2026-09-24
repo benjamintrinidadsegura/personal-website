@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ShareComposerHeading } from "@/components/sharing/share-composer-heading";
 import { ShareFileActions } from "@/components/sharing/share-file-actions";
+import { ShareStyleSelector } from "@/components/sharing/share-style-selector";
 import { ShareCard } from "@/components/writing/share/share-card";
+import { WritingSocialPostCard } from "@/components/writing/share/social-post-card";
 import type { WritingShareDictionary } from "@/data/i18n/writing-share";
 import { segmentWritingThought } from "@/lib/writing/share-segmentation";
 import {
@@ -14,6 +16,7 @@ import {
   type WritingShareSource,
   type WritingShareVariant,
 } from "@/types/writing";
+import type { ShareCardStyle } from "@/types/sharing";
 
 type Feedback = "copied" | "clipboardFailed" | null;
 
@@ -26,13 +29,15 @@ export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDic
   const cardRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   const [format, setFormat] = useState<WritingShareFormat>("story");
+  const [style, setStyle] = useState<ShareCardStyle>("editorial");
   const [variant, setVariant] = useState<WritingShareVariant>("editorial");
   const [cardIndex, setCardIndex] = useState(0);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [clipboardFallback, setClipboardFallback] = useState("");
   const [screenshotMode, setScreenshotMode] = useState(false);
   const [screenshotControlsVisible, setScreenshotControlsVisible] = useState(true);
-  const segmentation = useMemo(() => segmentWritingThought(source.text, format, variant, source.language), [format, source.language, source.text, variant]);
+  const composition = style === "socialPost" ? "socialPost" : variant;
+  const segmentation = useMemo(() => segmentWritingThought(source.text, format, composition, source.language), [composition, format, source.language, source.text]);
   const selectionLabel = source.kind === "article" ? copy.selectedArticle : copy.selectedThought;
   const segments = segmentation.status === "ready" ? segmentation.segments : [];
   const safeCardIndex = Math.min(cardIndex, Math.max(segments.length - 1, 0));
@@ -84,7 +89,16 @@ export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDic
     }
   };
 
-  const card = selected ? (
+  const card = selected ? style === "socialPost" ? (
+    <WritingSocialPostCard
+      cardIndex={safeCardIndex}
+      cardTotal={segments.length}
+      copy={copy}
+      format={format}
+      source={source}
+      text={selected.text}
+    />
+  ) : (
     <ShareCard
       cardIndex={safeCardIndex}
       cardTotal={segments.length}
@@ -130,6 +144,13 @@ export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDic
                 <blockquote className="mt-2 max-h-28 overflow-auto border-l-2 border-[#35d0e5] pl-4 text-sm leading-6 text-slate-300">{source.text}</blockquote>
               </div>
 
+              <ShareStyleSelector
+                label={copy.style}
+                labels={copy.styles}
+                value={style}
+                onChange={(value) => { setStyle(value); setCardIndex(0); setFeedback(null); }}
+              />
+
               <fieldset>
                 <legend className="writing-share-control-label">{copy.format}</legend>
                 <div className="writing-share-choice-grid">
@@ -137,12 +158,12 @@ export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDic
                 </div>
               </fieldset>
 
-              <fieldset>
+              {style === "editorial" ? <fieldset>
                 <legend className="writing-share-control-label">{copy.variant}</legend>
                 <div className="writing-share-choice-grid writing-share-choice-grid-variants">
                   {writingShareVariants.map((value) => <button key={value} type="button" aria-pressed={variant === value} onClick={() => { setVariant(value); setCardIndex(0); setFeedback(null); }} className="writing-share-choice">{copy.variants[value]}</button>)}
                 </div>
-              </fieldset>
+              </fieldset> : null}
 
               {segments.length > 1 ? (
                 <div className="flex items-center justify-between gap-3" aria-live="polite">
@@ -155,7 +176,7 @@ export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDic
               {feedback ? <p role="status" className="text-sm text-[#9debf4]">{copy[feedback]}</p> : null}
               {feedback === "clipboardFailed" ? <textarea aria-label={copy.manualCopy} readOnly onFocus={(event) => event.currentTarget.select()} value={clipboardFallback} rows={3} className="w-full rounded-lg border border-white/15 bg-[#04111b] p-3 text-sm text-white" /> : null}
 
-              {card ? <ShareFileActions key={`${format}:${variant}:${safeCardIndex}:${selected?.text ?? ""}`} cardRef={cardRef} fileName={`bts-writing-${source.articleSlug ?? "preview"}-${format}`} format={format} renderKey={`${format}:${variant}:${safeCardIndex}:${selected?.text ?? ""}`} text={selected?.text ?? source.text} title={source.articleTitle} url={source.canonicalUrl} /> : null}
+              {card ? <ShareFileActions key={`${style}:${format}:${variant}:${safeCardIndex}:${selected?.text ?? ""}`} cardRef={cardRef} fileName={`bts-writing-${source.articleSlug ?? "preview"}${style === "socialPost" ? "-social-post" : ""}-${format}`} format={format} renderKey={`${style}:${format}:${variant}:${safeCardIndex}:${selected?.text ?? ""}`} text={selected?.text ?? source.text} title={source.articleTitle} url={source.canonicalUrl} /> : null}
 
               <div className="writing-share-actions">
                 <button type="button" onClick={() => void copyContent([selected?.text ?? source.text, source.canonicalUrl].filter(Boolean).join("\n"))} className="writing-share-secondary">{copy.copyText}</button>
