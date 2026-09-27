@@ -16,7 +16,7 @@ import type { MoneyAnswer, MoneyCalibration, MoneyCalibrationValue, MoneyProfile
 
 type Phase = "intro" | PersistedMoneyProfileState["phase"];
 
-export function MoneyProfileExperience({ formToken, locale }: { formToken: string | null; locale: Locale }) {
+export function MoneyProfileExperience({ formToken, introPrimer, locale }: { formToken: string | null; introPrimer: React.ReactNode; locale: Locale }) {
   const copy = getMoneyProfileUiCopy(locale);
   const [phase, setPhase] = useState<Phase>("intro");
   const [answers, setAnswers] = useState<Record<string, MoneyAnswer>>({});
@@ -60,7 +60,7 @@ export function MoneyProfileExperience({ formToken, locale }: { formToken: strin
   };
   const reset = () => { if (window.confirm(copy.resetConfirm)) startFresh(); };
 
-  if (phase === "intro") return <MoneyIntro copy={copy} locale={locale} resumeState={resumeState} onResume={resume} onStart={startFresh} />;
+  if (phase === "intro") return <MoneyIntro copy={copy} locale={locale} primer={introPrimer} resumeState={resumeState} onResume={resume} onStart={startFresh} />;
   if (phase === "questions" && question) return <MoneyQuestionView copy={copy} question={question} answer={answers[question.id]} currentIndex={currentIndex} total={activeQuestions.length} onAnswer={(answer) => setAnswers((current) => reconcileMoneyAnswers({ ...current, [question.id]: answer }))} onBack={() => { if (currentIndex > 0) setCurrentQuestionId(activeQuestions[currentIndex - 1].id); }} onNext={() => {
     const nextQuestions = getVisibleMoneyQuestions(answers); const index = nextQuestions.findIndex(({ id }) => id === question.id); const next = nextQuestions[index + 1];
     if (next) { if (next.chapter !== question.chapter) emitMoneyProfileEvent("money_profile_chapter_completed"); setCurrentQuestionId(next.id); }
@@ -71,9 +71,10 @@ export function MoneyProfileExperience({ formToken, locale }: { formToken: strin
   return <MoneyResult copy={copy} formToken={formToken} locale={locale} result={result} selectedExperiment={selectedExperiment} onSelectExperiment={() => { setSelectedExperiment((current) => !current); emitMoneyProfileEvent("money_profile_experiment_selected"); }} onRetake={reset} onShare={() => setShareOpen(true)} shareOpen={shareOpen} onShareClose={() => setShareOpen(false)} />;
 }
 
-function MoneyIntro({ copy, locale, onResume, onStart, resumeState }: { copy: ReturnType<typeof getMoneyProfileUiCopy>; locale: Locale; onResume: () => void; onStart: () => void; resumeState: PersistedMoneyProfileState | null }) {
+function MoneyIntro({ copy, locale, onResume, onStart, primer, resumeState }: { copy: ReturnType<typeof getMoneyProfileUiCopy>; locale: Locale; onResume: () => void; onStart: () => void; primer: React.ReactNode; resumeState: PersistedMoneyProfileState | null }) {
   return <article className="section-lines relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36"><div aria-hidden="true" className="absolute inset-x-0 top-0 h-[72rem] bg-[radial-gradient(circle_at_78%_12%,rgba(184,165,255,.14),transparent_30rem),radial-gradient(circle_at_15%_38%,rgba(255,154,61,.1),transparent_24rem)]" /><div className="relative mx-auto max-w-[90rem]">
     <header className="grid min-h-[70svh] content-center border-b border-white/15 py-16"><p className="font-mono text-xs font-black uppercase tracking-[.26em] text-[#b8a5ff]">BTS.ONLINE / MONEY PROFILE</p><h1 className="mt-7 max-w-6xl text-[clamp(4rem,10vw,9rem)] font-black leading-[.86] tracking-[-.07em] text-white">{copy.publicTitle}</h1><p className="mt-8 max-w-3xl text-2xl font-bold leading-10 text-slate-200">{copy.subtitle}</p><div className="mt-8 flex flex-wrap gap-3 font-mono text-xs text-slate-400"><span>{copy.duration}</span><span aria-hidden="true">·</span><span>{copy.depth}</span><span aria-hidden="true">·</span><span>{copy.noData}</span></div><div className="mt-10 flex flex-wrap gap-3"><button onClick={onStart} className="min-h-14 rounded-full bg-[#b8a5ff] px-8 text-lg font-black text-[#041018]">{copy.cta} →</button>{resumeState ? <button onClick={onResume} className="min-h-14 rounded-full border border-white/15 px-7 font-bold text-white">{copy.resume}</button> : null}</div></header>
+    {primer}
     <section className="grid gap-10 border-b border-white/15 py-20 lg:grid-cols-2"><div><p className="font-mono text-xs uppercase tracking-[.2em] text-[#35d0e5]">{copy.beforeTitle}</p><h2 className="mt-5 text-4xl font-black text-white sm:text-5xl">{copy.trustIntro}</h2><div className="mt-10 grid gap-6 sm:grid-cols-2"><div><h3 className="font-black text-white">{copy.noAskTitle}</h3><ul className="mt-4 space-y-3 text-slate-400">{copy.noAsk.map((item) => <li key={item}>— {item}</li>)}</ul></div><div><h3 className="font-black text-white">{copy.patternsTitle}</h3><ul className="mt-4 space-y-3 text-slate-400">{copy.patterns.map((item) => <li key={item}>— {item}</li>)}</ul></div></div></div><aside className="rounded-[2rem] border border-[#ff9a3d]/25 bg-[#ff9a3d]/[.035] p-7 sm:p-9"><p className="font-mono text-xs uppercase tracking-[.2em] text-[#ffbd7c]">Privacy + boundary</p><p className="mt-5 text-2xl font-black text-white">{copy.noBank}<br />{copy.noAi}</p><p className="mt-6 leading-7 text-slate-300">{copy.safetyBoundary}</p><p className="mt-6 text-sm leading-6 text-slate-500">{copy.localNotice}</p><Link href={localizeHref("/privacy#money-profile", locale)} className="mt-6 inline-flex min-h-11 items-center font-bold text-[#35d0e5]">{copy.privacyLink} →</Link></aside></section>
     <p className="py-8 text-sm leading-6 text-slate-500">{copy.contentLanguageNotice}</p>
   </div></article>;

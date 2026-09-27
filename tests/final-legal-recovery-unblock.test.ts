@@ -49,7 +49,7 @@ test("H-I: Privacy publishes controller, Hessen authority and supported Supabase
 
 test("J-L: legal navigation, indexable localized routes and cookie decision stay coherent", () => {
   const footer = source("components/layout/footer.tsx");
-  const sitemap = source("app/sitemap.ts");
+  const sitemap = `${source("app/sitemap.ts")}\n${source("lib/search-discovery.ts")}`;
   const imprintPage = source("app/impressum/page.tsx");
   const privacyPage = source("app/privacy/page.tsx");
 

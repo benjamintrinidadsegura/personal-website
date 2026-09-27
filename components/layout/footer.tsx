@@ -14,6 +14,7 @@ export function Footer() {
         <div><Link href={href("/#home")} className="text-xl font-black text-white">bts.online</Link><p className="mt-2 text-sm text-slate-500">{copy.footer.owner}</p><nav aria-label={copy.footerNavigation} className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm"><Link href={href("/world")} className="text-slate-300 hover:text-[#35d0e5]">{copy.nav.worldMap}</Link><Link href={href("/#contact")} className="text-slate-300 hover:text-[#35d0e5]">{copy.footer.contact}</Link><Link href={href("/newsletter")} className="text-slate-300 hover:text-[#35d0e5]">Newsletter</Link><Link href={href("/privacy")} className="text-slate-400 hover:text-white">{copy.footer.privacy}</Link><Link href={href("/impressum")} className="text-slate-400 hover:text-white">{copy.footer.imprint}</Link></nav></div>
         <div className="text-left sm:text-right"><p className="font-mono text-xs uppercase tracking-[0.22em] text-[#35d0e5]">{copy.footer.signal}</p><p className="mt-2 text-xs text-slate-600">© {new Date().getFullYear()} · {copy.footer.evolving}</p></div>
       </div>
+      <p className="mx-auto mt-10 max-w-[90rem] text-right font-mono text-[10px] tracking-[0.16em] text-slate-700 sm:mt-12">trust in gods plan</p>
     </footer>
   );
 }

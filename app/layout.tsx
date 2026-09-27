@@ -12,12 +12,14 @@ import { getLocale } from "@/lib/i18n/server";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
 import { localeDetails, locales } from "@/lib/i18n/config";
 import { getGlobalDictionary } from "@/data/i18n/global";
+import { getSiteVerificationMetadata } from "@/lib/search-discovery";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const title = "Benjamin Trinidad Segura | Digital HQ";
   const description = getGlobalDictionary(locale).siteDescription;
+  const verification = getSiteVerificationMetadata();
   return {
     metadataBase: new URL("https://bts.online"),
     applicationName: "bts.online",
@@ -32,6 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
       apple: [{ url: "/icons/bts-apple-touch-icon-180.png", sizes: "180x180", type: "image/png" }],
     },
     ...createLocalizedMetadata({ locale, pathname: "/", title, description }),
+    ...(verification ? { verification } : {}),
   };
 }
 

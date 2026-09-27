@@ -5,62 +5,26 @@ import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
 import { lifeAlignment } from "@/data/life-alignment";
 import { availableLifeAlignmentModules } from "@/data/life-alignment-modules";
 import { projects } from "@/data/projects";
-import { siteConfig } from "@/data/site";
 import { getPublishedWriting } from "@/lib/writing/queries";
 import type { PublicWritingSummary } from "@/types/writing";
 import { getLocalizedPathname } from "@/lib/i18n/routing";
 import { getWritingTranslationSlug } from "@/data/writing-localization";
 import { defaultLocale, locales } from "@/lib/i18n/config";
-
-function getCanonicalProductionUrl(): URL | null {
-  if (process.env.NODE_ENV !== "production" || !process.env.SITE_URL) return null;
-
-  try {
-    const url = new URL(process.env.SITE_URL);
-    if (
-      url.protocol !== "https:" ||
-      url.hostname !== siteConfig.domain ||
-      url.port !== "" ||
-      url.username !== "" ||
-      url.password !== "" ||
-      url.pathname !== "/" ||
-      url.search !== "" ||
-      url.hash !== ""
-    ) {
-      return null;
-    }
-
-    return new URL(url.origin);
-  } catch {
-    return null;
-  }
-}
+import { getCanonicalProductionUrl, publicStaticRoutes } from "@/lib/search-discovery";
 
 export function createSitemap(publishedWriting: PublicWritingSummary[]): MetadataRoute.Sitemap {
   const siteUrl = getCanonicalProductionUrl();
   if (!siteUrl) return [];
 
-  const localizedRoutes = [
-    "/",
-    "/echowall",
-    "/writing",
-    "/newsletter",
-    "/privacy",
-    "/impressum",
-    "/about",
-    "/about/how-my-brain-works",
-    "/about/nerd-corner",
-    "/people",
-    "/world",
-    "/tools/personal-advantage",
-    "/tools/money-profile",
+  const localizedRoutes = [...new Set([
+    ...publicStaticRoutes,
     lifeAlignment.href,
     ...availableLifeAlignmentModules.map(({ href }) => href),
     findYourNextStep.href,
     ...nextStepJourneys.map(({ href }) => href),
     ...projects.map(({ slug }) => `/projects/${slug}`),
     ...publishedSpotlights.map(({ slug }) => `/people/${slug}`),
-  ];
+  ])];
 
   const localizedEntries = localizedRoutes.flatMap((route) => {
     const languages: Record<string, string> = Object.fromEntries(locales.map((locale) => [

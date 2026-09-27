@@ -13,7 +13,7 @@ test("Money Profile is a first-class Tools route with metadata, discovery, sitem
   const discovery = source("../data/discovery-index.ts");
   const curation = source("../data/discovery-curation.ts");
   const header = source("../components/layout/header.tsx");
-  const sitemap = source("../app/sitemap.ts");
+  const sitemap = `${source("../app/sitemap.ts")}\n${source("../lib/search-discovery.ts")}`;
   const privacy = source("../app/privacy/page.tsx");
   assert.match(route, /pathname: "\/tools\/money-profile"/u);
   assert.match(route, /issueFeedbackFormToken/u);

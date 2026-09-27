@@ -65,7 +65,7 @@ test("site, person and content schema use a small stable public entity graph", (
 });
 
 test("crawler, transport and public-error boundaries are explicit", () => {
-  const robots = source("app/robots.ts");
+  const robots = `${source("app/robots.ts")}\n${source("lib/search-discovery.ts")}`;
   const config = source("next.config.ts");
   const errorPage = source("app/error.tsx");
 

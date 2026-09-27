@@ -44,7 +44,7 @@ test("private invite, session and dashboard routes are dynamic, noindex and no-s
   const session = readSource("../app/life-alignment/session/[sessionId]/page.tsx");
   const dashboard = readSource("../app/life-alignment/sessions/page.tsx");
   const config = readSource("../next.config.ts");
-  const robots = readSource("../app/robots.ts");
+  const robots = `${readSource("../app/robots.ts")}\n${readSource("../lib/search-discovery.ts")}`;
   for (const route of [invite, session, dashboard]) {
     assert.match(route, /force-dynamic/u);
     assert.match(route, /index: false, follow: false/u);

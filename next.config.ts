@@ -65,7 +65,15 @@ const nextConfig: NextConfig = {
         { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
       ],
     },
-    ...locales.filter((locale) => locale !== defaultLocale).flatMap((locale) => ["invite", "session", "sessions"].map((kind) => ({
+    {
+      source: "/life-alignment/partner/shared-device/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+        { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+      ],
+    },
+    ...locales.filter((locale) => locale !== defaultLocale).flatMap((locale) => ["invite", "session", "sessions", "partner/shared-device"].map((kind) => ({
       source: `/${locale}/life-alignment/${kind}/:path*`,
       headers: [
         { key: "Cache-Control", value: "private, no-store, max-age=0" },

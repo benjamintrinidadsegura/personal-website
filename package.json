@@ -48,6 +48,7 @@
     "test:sharing-polish": "tsx --test tests/social-post-card.test.ts tests/final-sharing-polish.test.ts tests/human-experience-follow-up-3.test.ts tests/writing-social-share.test.ts tests/quote-universe.test.ts tests/fyns-result-experience.test.tsx tests/public-content-hygiene.test.ts tests/i18n-foundation.test.ts",
     "test:social-post": "tsx --test tests/social-post-card.test.ts",
     "test:sprint6": "tsx --test tests/sprint-6-human-acceptance-fix-1.test.ts tests/sprint-6-human-acceptance-fix-2.test.ts tests/sprint-6-nerd-corner.test.ts tests/social-post-card.test.ts tests/brand-icon-integration.test.ts tests/about-positioning-v1.test.ts tests/navigation-feedback.test.ts tests/public-content-hygiene.test.ts",
+    "test:search-discovery": "tsx --test tests/search-discovery-foundation.test.ts",
     "test:runner": "tsx --test tests/bts-engineering-runner.test.ts",
     "bts:local": "node scripts/bts-engineering/runner.mjs local",
     "bts:preflight": "node scripts/bts-engineering/runner.mjs preflight",

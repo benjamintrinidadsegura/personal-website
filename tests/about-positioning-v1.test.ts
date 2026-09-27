@@ -130,7 +130,7 @@ test("About is discoverable and remains present in the production sitemap model"
   assert.equal(about?.keywords.includes("Recruiting"), true);
   assert.equal(about?.keywords.includes("Talent Acquisition"), true);
   assert.equal(about?.keywords.includes("Product Thinking"), true);
-  assert.match(source("../app/sitemap.ts"), /"\/about"/u);
+  assert.match(`${source("../app/sitemap.ts")}\n${source("../lib/search-discovery.ts")}`, /"\/about"/u);
 });
 
 test("no internal Calendly destination or unverified proof claim leaks into About", () => {

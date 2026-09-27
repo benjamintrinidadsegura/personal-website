@@ -1,31 +1,11 @@
 import type { MetadataRoute } from "next";
 
-import { siteConfig } from "@/data/site";
-import { defaultLocale, locales } from "@/lib/i18n/config";
-
-function getCanonicalProductionUrl(): URL | null {
-  if (process.env.NODE_ENV !== "production" || !process.env.SITE_URL) return null;
-
-  try {
-    const url = new URL(process.env.SITE_URL);
-    if (
-      url.protocol !== "https:" ||
-      url.hostname !== siteConfig.domain ||
-      url.port !== "" ||
-      url.username !== "" ||
-      url.password !== "" ||
-      url.pathname !== "/" ||
-      url.search !== "" ||
-      url.hash !== ""
-    ) {
-      return null;
-    }
-
-    return new URL(url.origin);
-  } catch {
-    return null;
-  }
-}
+import {
+  getCanonicalProductionUrl,
+  getLocalizedPrivateRoutePrefixes,
+  modelTrainingCrawlers,
+  searchRetrievalCrawlers,
+} from "@/lib/search-discovery";
 
 export default function robots(): MetadataRoute.Robots {
   const siteUrl = getCanonicalProductionUrl();
@@ -36,27 +16,14 @@ export default function robots(): MetadataRoute.Robots {
     return { rules: { userAgent: "*", disallow: "/" } };
   }
 
-  const privateRoutes = [
-    "/admin",
-    "/account",
-    "/api",
-    "/newsletter/confirm",
-    "/newsletter/unsubscribe",
-    "/life-alignment/invite",
-    "/life-alignment/session",
-    "/life-alignment/sessions",
-    ...locales.filter((locale) => locale !== defaultLocale).flatMap((locale) => [
-      `/${locale}/account`,
-      `/${locale}/newsletter/confirm`,
-      `/${locale}/newsletter/unsubscribe`,
-      `/${locale}/life-alignment/invite`,
-      `/${locale}/life-alignment/session`,
-      `/${locale}/life-alignment/sessions`,
-    ]),
-  ];
+  const privateRoutes = getLocalizedPrivateRoutePrefixes();
 
   return {
-    rules: { userAgent: "*", allow: "/", disallow: privateRoutes },
+    rules: [
+      { userAgent: [...searchRetrievalCrawlers], allow: "/", disallow: privateRoutes },
+      { userAgent: [...modelTrainingCrawlers], disallow: "/" },
+      { userAgent: "*", allow: "/", disallow: privateRoutes },
+    ],
     sitemap: new URL("/sitemap.xml", siteUrl).toString(),
     host: siteUrl.origin,
   };

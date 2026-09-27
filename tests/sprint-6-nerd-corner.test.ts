@@ -80,7 +80,7 @@ test("Streamory handoff is visible, honest and never invents a public profile UR
   assert.match(page, /localizeHref\("\/projects\/streamory", locale\)/u);
   assert.doesNotMatch(page, /streamory\.(?:com|app|io)|taste-profile|profile\/benjamin/iu);
   assert.match(source("../app/about/page.tsx"), /localizeHref\("\/about\/nerd-corner", locale\)/u);
-  assert.match(source("../app/sitemap.ts"), /"\/about\/nerd-corner"/u);
+  assert.match(`${source("../app/sitemap.ts")}\n${source("../lib/search-discovery.ts")}`, /"\/about\/nerd-corner"/u);
   assert.match(source("../data/discovery-index.ts"), /id: "page-nerd-corner"/u);
 });
 

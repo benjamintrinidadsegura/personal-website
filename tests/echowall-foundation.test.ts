@@ -313,10 +313,15 @@ test("application hardening config sets approved global headers, production HSTS
 });
 
 test("robots metadata route is canonical-production-only and excludes private routes", () => {
-  const robots = readFileSync(
+  const robotsRoute = readFileSync(
     new URL("../app/robots.ts", import.meta.url),
     "utf8",
   );
+  const robotsFoundation = readFileSync(
+    new URL("../lib/search-discovery.ts", import.meta.url),
+    "utf8",
+  );
+  const robots = `${robotsRoute}\n${robotsFoundation}`;
   const lower = robots.toLowerCase();
 
   for (const required of [
@@ -409,6 +414,7 @@ test("robots and sitemap fail closed and expose only canonical production routes
       "/impressum",
       "/about",
       "/about/how-my-brain-works",
+      "/about/nerd-corner",
       "/people",
       "/world",
       "/tools/personal-advantage",

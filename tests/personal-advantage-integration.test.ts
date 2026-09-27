@@ -14,7 +14,7 @@ test("both experiences are discoverable through real product surfaces", () => {
   const about = read("../app/about/page.tsx");
   const discovery = read("../data/discovery-index.ts");
   const curation = read("../data/discovery-curation.ts");
-  const sitemap = read("../app/sitemap.ts");
+  const sitemap = `${read("../app/sitemap.ts")}\n${read("../lib/search-discovery.ts")}`;
   assert.match(header, /What's Your Unfair Advantage\?/);
   assert.match(header, /\/tools\/personal-advantage/);
   assert.match(about, /\/about\/how-my-brain-works/);

@@ -159,7 +159,7 @@ test("Benjamin owner content remains outside the guest model and AI reflection i
 });
 
 test("sitemap and metadata use canonical People routes, with legacy routes redirecting", () => {
-  const sitemap = source("../app/sitemap.ts");
+  const sitemap = `${source("../app/sitemap.ts")}\n${source("../lib/search-discovery.ts")}`;
   const legacyIndex = source("../app/goatrecrutainer/career-spotlight/page.tsx");
   const legacyDetail = source("../app/goatrecrutainer/career-spotlight/[slug]/page.tsx");
   assert.match(sitemap, /"\/people"/u);
