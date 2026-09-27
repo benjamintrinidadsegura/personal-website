@@ -59,6 +59,7 @@ export function Header({ accountState }: { accountState: AccountState }) {
     },
     { id: "partners", label: copy.nav.partners, href: localizedHref("/#contact") },
     { id: "contact", label: copy.nav.contact, href: localizedHref("/#contact") },
+    { id: "nerd-corner", label: copy.nav.nerdCorner, href: localizedHref("/about/nerd-corner") },
     { id: "feedback", label: copy.nav.feedback, href: localizedHref("/#feedback") },
   ];
   const [open, setOpen] = useState(false);

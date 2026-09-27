@@ -31,7 +31,7 @@ export function BrainManualPage({ locale }: { locale: Locale }) {
         <header className="grid min-h-[76svh] items-center gap-12 border-b border-white/15 py-16 lg:grid-cols-[1fr_.62fr]">
           <div>
             <p className="font-mono text-xs font-black uppercase tracking-[.28em] text-[#b8a5ff]">{copy.eyebrow}</p>
-            <h1 className="mt-7 max-w-5xl text-[clamp(3.5rem,8.5vw,8.4rem)] font-black leading-[.86] tracking-[-.066em] text-white">{copy.title} <span className="text-[#35d0e5]">+</span><br />{copy.subtitle}</h1>
+            <h1 className="mt-7 max-w-4xl text-[clamp(2.8rem,5.2vw,5.15rem)] font-black leading-[.93] tracking-[-.052em] text-white">{copy.title} <span className="text-[#35d0e5]">+</span><br />{copy.subtitle}</h1>
           </div>
           <div className="border-l-2 border-[#ff9a3d] pl-7">
             <p className="text-xl font-bold leading-9 text-white">{copy.description}</p>

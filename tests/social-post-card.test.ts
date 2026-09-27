@@ -50,7 +50,7 @@ test("Social Post is an additional style while every accepted Editorial variant 
   assert.match(quoteEditorial, /data-variant="editorial"/u);
 });
 
-test("Writing Thought Social Post supports Story, Portrait and Square with truthful identity, source and reading time", () => {
+test("Writing Thought Social Post supports Story, Portrait and Square with restrained branding and truthful context", () => {
   for (const format of writingShareFormats) {
     const html = renderToStaticMarkup(createElement(WritingSocialPostCard, { cardIndex: 0, cardTotal: 1, copy: writingShareDictionaries.en, format, source: writingSource, text: writingSource.text }));
     assert.match(html, new RegExp(`data-format="${format}"`, "u"));
@@ -58,9 +58,10 @@ test("Writing Thought Social Post supports Story, Portrait and Square with truth
     assert.match(html, /data-style="social-post"/u);
     assert.match(html, /social-post-canvas/u);
     assert.match(html, /<article class="social-post-surface">/u);
-    assert.match(html, /social-post-canvas-footer/u);
     assert.match(html, /Benjamin Trinidad Segura/u);
-    assert.match(html, /@bts\.online/u);
+    assert.match(html, /src="\/icons\/bts-app-icon-192\.png"/u);
+    assert.doesNotMatch(html, /@bts\.online/u);
+    assert.equal((html.match(/bts\.online/gu) ?? []).length, 1);
     assert.match(html, /Writing/u);
     assert.match(html, /From:/u);
     assert.match(html, /A public story about making context visible/u);
@@ -82,7 +83,9 @@ test("Daily Quote Social Post preserves BTS-original and public-domain attributi
     const html = renderToStaticMarkup(createElement(QuoteSocialPostCard, { format, originalLabel: "BTS Original", quote, surfaceLabel: "Daily Quote" }));
     assert.match(html, /data-post-kind="quote"/u);
     assert.match(html, />BTS</u);
-    assert.match(html, /@bts\.online/u);
+    assert.match(html, /src="\/icons\/bts-app-icon-192\.png"/u);
+    assert.doesNotMatch(html, /@bts\.online/u);
+    assert.equal((html.match(/bts\.online/gu) ?? []).length, 1);
     assert.match(html, /Daily Quote/u);
     assert.match(html, /BTS Original/u);
   }
@@ -144,9 +147,9 @@ test("Social Post contains no fake engagement, platform imitation, private data 
 test("Social Post uses a framed post surface with deliberate format-specific proportions", () => {
   const component = source("../components/sharing/social-post-card.tsx");
   const css = source("../app/globals.css");
-  assert.match(component, /social-post-canvas-heading/u);
+  assert.doesNotMatch(component, /social-post-canvas-heading|social-post-canvas-footer/u);
   assert.match(component, /social-post-surface/u);
-  assert.match(component, /social-post-avatar"><span>/u);
+  assert.match(component, /social-post-avatar"><Image/u);
   assert.match(css, /data-format="story"\] \.social-post-surface \{ min-height: 58%; max-height: 74%/u);
   assert.match(css, /data-format="portrait"\] \.social-post-surface \{ min-height: 76%; max-height: 88%/u);
   assert.match(css, /data-format="square"\] \.social-post-surface \{ height: 88%/u);

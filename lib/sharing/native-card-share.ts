@@ -77,6 +77,37 @@ function drawElementBox(context: CanvasRenderingContext2D, element: HTMLElement,
   context.restore();
 }
 
+function drawElementImage(context: CanvasRenderingContext2D, element: HTMLElement, root: HTMLElement, rootBounds: DOMRect) {
+  if (!(element instanceof HTMLImageElement) || !element.complete || element.naturalWidth <= 0 || element.naturalHeight <= 0) return;
+  const style = window.getComputedStyle(element);
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0 || style.display === "none" || style.visibility === "hidden") return;
+  const x = rect.left - rootBounds.left;
+  const y = rect.top - rootBounds.top;
+  const sourceRatio = element.naturalWidth / element.naturalHeight;
+  const targetRatio = rect.width / rect.height;
+  let sourceX = 0;
+  let sourceY = 0;
+  let sourceWidth = element.naturalWidth;
+  let sourceHeight = element.naturalHeight;
+  if (style.objectFit === "cover") {
+    if (sourceRatio > targetRatio) {
+      sourceWidth = element.naturalHeight * targetRatio;
+      sourceX = (element.naturalWidth - sourceWidth) / 2;
+    } else {
+      sourceHeight = element.naturalWidth / targetRatio;
+      sourceY = (element.naturalHeight - sourceHeight) / 2;
+    }
+  }
+  context.save();
+  context.globalAlpha = elementOpacity(element, root);
+  context.beginPath();
+  context.rect(x, y, rect.width, rect.height);
+  context.clip();
+  context.drawImage(element, sourceX, sourceY, sourceWidth, sourceHeight, x, y, rect.width, rect.height);
+  context.restore();
+}
+
 type CanvasTextLine = { text: string; left: number; top: number };
 
 function visualTextLines(node: Text, rootBounds: DOMRect): CanvasTextLine[] {
@@ -131,6 +162,7 @@ function paintShareCard(context: CanvasRenderingContext2D, element: HTMLElement,
   drawCardBackground(context, element, bounds.width, bounds.height);
   for (const child of [element, ...element.querySelectorAll<HTMLElement>("*")]) {
     if (child !== element) drawElementBox(context, child, element, bounds);
+    drawElementImage(context, child, element, bounds);
     drawElementText(context, child, element, bounds);
   }
   context.restore();
@@ -167,11 +199,25 @@ function mountExportCard(element: HTMLElement, size: { width: number; height: nu
   return { card, dispose: () => host.remove() };
 }
 
+async function waitForShareCardImages(card: HTMLElement): Promise<void> {
+  const images = [...card.querySelectorAll<HTMLImageElement>("img")];
+  await Promise.all(images.map(async (image) => {
+    if (image.complete && image.naturalWidth > 0) return;
+    if (typeof image.decode === "function") await image.decode();
+    else await new Promise<void>((resolve, reject) => {
+      image.addEventListener("load", () => resolve(), { once: true });
+      image.addEventListener("error", () => reject(new Error("A share card image could not be loaded.")), { once: true });
+    });
+    if (image.naturalWidth <= 0) throw new Error("A share card image could not be decoded.");
+  }));
+}
+
 export async function renderShareCardFile(element: HTMLElement, format: WritingShareFormat, fileName: string): Promise<File> {
   if (document.fonts) await withDeadline(document.fonts.ready, 8_000, "The share card fonts timed out.");
   const size = shareCardPixelSize[format];
   const exportCard = mountExportCard(element, size);
   try {
+    await withDeadline(waitForShareCardImages(exportCard.card), 8_000, "The share card images timed out.");
     await withDeadline(new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve())), 3_000, "The share card layout timed out.");
     const bounds = exportCard.card.getBoundingClientRect();
     const canvas = document.createElement("canvas");

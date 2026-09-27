@@ -10,13 +10,11 @@ export function WritingSocialPostCard({ cardIndex, cardTotal, copy, format, sour
   return (
     <SocialPostCard
       articleTitle={source.kind === "article" ? source.articleTitle : undefined}
-      avatarLabel="BT"
       domain={source.domain}
       format={format}
-      handle={`@${source.domain}`}
       identityName={source.authorName}
       kind={source.kind === "article" ? "article" : "thought"}
-      metadata={[copy.sourceLabel, readingTime].filter((item): item is string => Boolean(item))}
+      metadata={[readingTime].filter((item): item is string => Boolean(item))}
       progression={progression}
       referenceLabel={source.kind === "article" ? undefined : copy.fromArticle}
       referenceTitle={source.kind === "article" ? undefined : source.articleTitle}

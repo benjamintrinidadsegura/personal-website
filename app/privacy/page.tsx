@@ -42,6 +42,16 @@ const resultFeedbackPrivacyCopy: Record<Locale, string> = {
   ru: "Необязательный отзыв хранит только продукт, оценку соответствия, необязательную категорию пользы, язык и ограниченный комментарий. Ответы, полный результат, детали стресса и финансовые данные не прикрепляются; текущий результат не меняется.",
 };
 
+const nerdCornerPrivacyCopy: Record<Locale, { title: string; body: string }> = {
+  de: { title: "Nerd Corner / kuratierter Geschmack", body: "Nerd Corner ist öffentlich sichtbarer, redaktionell ausgewählter persönlicher Inhalt. Die aktuelle Umsetzung lädt keine Cover oder Profildaten von Medienanbietern, bindet kein Spotify ein und führt kein zusätzliches Tracking ein. Der Streamory-Hinweis führt nur zur internen Projektseite; ein öffentliches Taste Profile ist noch nicht verlinkt." },
+  en: { title: "Nerd Corner / curated taste", body: "Nerd Corner is publicly visible, editorially selected personal content. The current implementation does not load covers or profile data from media providers, embed Spotify or add tracking. The Streamory handoff links only to the internal project page; no public Taste Profile is linked yet." },
+  es: { title: "Nerd Corner / gustos seleccionados", body: "Nerd Corner es contenido personal público y seleccionado editorialmente. La implementación actual no carga portadas ni datos de proveedores multimedia, no integra Spotify ni añade seguimiento. La referencia a Streamory solo lleva a la página interna del proyecto; todavía no se enlaza ningún perfil público." },
+  tr: { title: "Nerd Corner / seçilmiş zevkler", body: "Nerd Corner herkese açık, editoryal olarak seçilmiş kişisel içeriktir. Mevcut uygulama medya sağlayıcılarından kapak veya profil verisi yüklemez, Spotify yerleştirmez ve yeni takip eklemez. Streamory yönlendirmesi yalnızca dahili proje sayfasına gider; henüz herkese açık bir profil bağlantısı yoktur." },
+  pl: { title: "Nerd Corner / wybrane gusta", body: "Nerd Corner to publicznie widoczna, redakcyjnie wybrana treść osobista. Obecna wersja nie pobiera okładek ani danych profilu od dostawców mediów, nie osadza Spotify i nie dodaje śledzenia. Odnośnik Streamory prowadzi tylko do wewnętrznej strony projektu; publiczny profil nie jest jeszcze podlinkowany." },
+  el: { title: "Nerd Corner / επιλεγμένες προτιμήσεις", body: "Το Nerd Corner είναι δημόσιο, επιλεγμένο προσωπικό περιεχόμενο. Η τρέχουσα υλοποίηση δεν φορτώνει εξώφυλλα ή δεδομένα προφίλ από παρόχους μέσων, δεν ενσωματώνει Spotify και δεν προσθέτει παρακολούθηση. Η αναφορά στο Streamory οδηγεί μόνο στην εσωτερική σελίδα του έργου· δεν υπάρχει ακόμη σύνδεσμος δημόσιου προφίλ." },
+  ru: { title: "Nerd Corner / избранные вкусы", body: "Nerd Corner — публичный личный контент, отобранный редакционно. Текущая реализация не загружает обложки или данные профиля у медиапровайдеров, не встраивает Spotify и не добавляет отслеживание. Переход Streamory ведёт только на внутреннюю страницу проекта; публичный профиль пока не подключён." },
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const copy = getPrivacyDictionary(locale);
@@ -89,6 +99,11 @@ export default async function PrivacyPage() {
         </header>
 
         <PrivacySections sections={sections.slice(0, 3)} />
+
+        <section id="nerd-corner" aria-labelledby="nerd-corner-privacy-title" className="scroll-mt-28 border-b border-white/15 py-14">
+          <h2 id="nerd-corner-privacy-title" className="text-3xl font-black text-white">{nerdCornerPrivacyCopy[locale].title}</h2>
+          <p className="mt-5 leading-7 text-slate-300">{nerdCornerPrivacyCopy[locale].body}</p>
+        </section>
 
         <section id="life-alignment" aria-labelledby="life-alignment-privacy-title" className="scroll-mt-28 border-b border-white/15 py-14">
           <h2 id="life-alignment-privacy-title" className="text-3xl font-black text-white">Life Alignment</h2>

@@ -751,22 +751,16 @@ html[data-navigation-settling="true"] .navigation-feedback::before {
     linear-gradient(155deg, #102936 0%, #071720 52%, #030c13 100%);
 }
 .social-post-card::before { inset: 4.5cqw; border: 1px solid rgba(255,255,255,.08); background: none; }
-.social-post-canvas { position: relative; z-index: 1; display: grid; height: 100%; min-height: 0; grid-template-rows: auto minmax(0,1fr) auto; padding: clamp(1rem, 7cqw, 2.9rem); }
-.social-post-canvas-heading,
-.social-post-canvas-footer { display: flex; align-items: center; gap: 3cqw; color: #a5b8c5; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: clamp(.5rem, 2.35cqw, .72rem); font-style: normal; font-weight: 900; letter-spacing: .17em; text-transform: uppercase; }
-.social-post-canvas-heading i,
-.social-post-canvas-footer i { height: 1px; flex: 1; background: linear-gradient(90deg, rgba(53,208,229,.7), rgba(53,208,229,0)); }
-.social-post-canvas-footer { flex-direction: row-reverse; color: #69e0ef; }
-.social-post-canvas-footer i { background: linear-gradient(90deg, rgba(53,208,229,0), rgba(53,208,229,.7)); }
+.social-post-canvas { position: relative; z-index: 1; display: grid; height: 100%; min-height: 0; grid-template-rows: minmax(0,1fr); padding: clamp(1rem, 7cqw, 2.9rem); }
 .social-post-surface { position: relative; display: grid; width: 100%; min-height: 0; align-self: center; grid-template-rows: auto minmax(0,1fr) auto; overflow: hidden; border: 1px solid rgba(255,255,255,.19); border-top-color: rgba(105,224,239,.5); background: linear-gradient(180deg, rgba(255,255,255,.045), transparent 24%), linear-gradient(150deg, rgba(9,29,41,.98), rgba(4,15,23,.98)); box-shadow: 0 2.5cqw 9cqw rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.045); padding: clamp(1.1rem, 6.4cqw, 2.65rem); }
 .social-post-surface::after { position: absolute; top: 0; right: 0; width: 16cqw; height: 1.1cqw; background: #35d0e5; content: ""; }
 .social-post-identity { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 3.5cqw; }
-.social-post-avatar { display: grid; width: clamp(2.25rem, 11cqw, 4.25rem); aspect-ratio: 1; place-items: center; border: 1px solid rgba(53,208,229,.58); background: linear-gradient(145deg, rgba(53,208,229,.14), rgba(184,165,255,.08)); color: #87e8f3; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: clamp(.57rem, 2.9cqw, .88rem); font-weight: 950; letter-spacing: .06em; }
-.social-post-avatar > span { display: grid; width: 72%; aspect-ratio: 1; place-items: center; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; }
+.social-post-avatar { display: block; width: clamp(2.75rem, 13.5cqw, 5.1rem); aspect-ratio: 1; flex: none; }
+.social-post-avatar img { display: block; width: 100%; height: 100%; border-radius: 999px; object-fit: cover; }
 .social-post-identity-copy { min-width: 0; }
 .social-post-name { overflow: hidden; color: white; font-size: clamp(.72rem, 3.9cqw, 1.25rem); font-weight: 900; line-height: 1.12; text-overflow: ellipsis; white-space: nowrap; }
-.social-post-handle { display: flex; min-width: 0; align-items: center; gap: .28em; margin-top: .28rem; overflow: hidden; color: #93a6b8; font-size: clamp(.55rem, 2.7cqw, .82rem); font-weight: 700; line-height: 1.25; white-space: nowrap; }
-.social-post-handle span:last-child { overflow: hidden; color: #69e0ef; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-weight: 900; letter-spacing: .08em; text-overflow: ellipsis; text-transform: uppercase; }
+.social-post-source { display: flex; min-width: 0; align-items: center; gap: .28em; margin-top: .28rem; overflow: hidden; color: #93a6b8; font-size: clamp(.55rem, 2.7cqw, .82rem); font-weight: 700; line-height: 1.25; white-space: nowrap; }
+.social-post-source span:last-child { overflow: hidden; color: #69e0ef; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-weight: 900; letter-spacing: .08em; text-overflow: ellipsis; text-transform: uppercase; }
 .social-post-progress { color: #7f94a7; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: clamp(.5rem, 2.45cqw, .75rem); font-weight: 850; letter-spacing: .08em; }
 .social-post-body { display: flex; min-height: 0; max-width: 28ch; flex-direction: column; justify-content: center; overflow: hidden; padding-block: 7cqw 5cqw; }
 .social-post-text { display: -webkit-box; overflow: hidden; overflow-wrap: anywhere; color: #f7fbff; font-size: clamp(1.45rem, 8.5cqw, 3.55rem); font-weight: 820; letter-spacing: -.045em; line-height: 1.04; text-wrap: pretty; white-space: pre-line; -webkit-box-orient: vertical; -webkit-line-clamp: 12; }
@@ -797,6 +791,17 @@ html[data-navigation-settling="true"] .navigation-feedback::before {
 .social-post-card[data-format="square"] .social-post-article-title { -webkit-line-clamp: 2; }
 .social-post-card[data-format="square"] .social-post-article-teaser { margin-top: 3.5cqw; -webkit-line-clamp: 3; }
 .social-post-card[data-format="square"] .social-post-reference { margin-top: 4cqw; }
+.social-post-card[data-post-kind="quote"] .social-post-body { max-width: none; overflow: visible; padding-block: var(--social-post-quote-body-spacing); }
+.social-post-card[data-post-kind="quote"] .social-post-text { display: block; overflow: visible; font-size: var(--social-post-quote-size); letter-spacing: -.035em; line-height: var(--social-post-quote-line-height); -webkit-line-clamp: unset; }
+.social-post-card[data-post-kind="quote"] .social-post-attribution { margin-top: var(--social-post-quote-attribution-gap); }
+.social-post-card[data-post-kind="quote"][data-format="portrait"] .social-post-surface { height: 88%; max-height: none; }
+.social-post-card[data-post-kind="quote"][data-format="square"] .social-post-surface { height: 90%; max-height: none; }
+.social-post-card[data-post-kind="quote"][data-text-fit="long"][data-format="story"] .social-post-surface,
+.social-post-card[data-post-kind="quote"][data-text-fit="extended"][data-format="story"] .social-post-surface { height: 88%; max-height: none; }
+.social-post-card[data-post-kind="quote"][data-text-fit="long"][data-format="portrait"] .social-post-surface { height: 90%; max-height: none; }
+.social-post-card[data-post-kind="quote"][data-text-fit="long"][data-format="square"] .social-post-surface { height: 92%; max-height: none; }
+.social-post-card[data-post-kind="quote"][data-text-fit="extended"][data-format="portrait"] .social-post-surface,
+.social-post-card[data-post-kind="quote"][data-text-fit="extended"][data-format="square"] .social-post-surface { height: 94%; }
 
 .fyns-character-share-card {
   background:

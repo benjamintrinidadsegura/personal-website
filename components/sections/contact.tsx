@@ -16,10 +16,21 @@ const contactCategoriesByLocale: Record<Locale, readonly string[]> = {
   ru: ["Рекрутинг и RaaS", "Интервью и контент", "Сотрудничество", "Идеи и проекты"],
 };
 
+const emailContactByLocale: Record<Locale, { eyebrow: string; title: string; description: string; action: string }> = {
+  de: { eyebrow: "Direkter Kontakt", title: "Lieber per E-Mail?", description: "Der öffentliche Kontaktkanal für Projekte, Interviews, Kooperationen und Ideen.", action: "E-Mail schreiben" },
+  en: { eyebrow: "Direct contact", title: "Prefer email?", description: "The public contact channel for projects, interviews, collaborations and ideas.", action: "Write an email" },
+  es: { eyebrow: "Contacto directo", title: "¿Prefieres el correo?", description: "El canal público para proyectos, entrevistas, colaboraciones e ideas.", action: "Escribir un correo" },
+  tr: { eyebrow: "Doğrudan iletişim", title: "E-posta mı tercih edersin?", description: "Projeler, röportajlar, iş birlikleri ve fikirler için herkese açık iletişim kanalı.", action: "E-posta yaz" },
+  pl: { eyebrow: "Kontakt bezpośredni", title: "Wolisz e-mail?", description: "Publiczny kanał kontaktu w sprawie projektów, wywiadów, współpracy i pomysłów.", action: "Napisz e-mail" },
+  el: { eyebrow: "Άμεση επικοινωνία", title: "Προτιμάς email;", description: "Το δημόσιο κανάλι για έργα, συνεντεύξεις, συνεργασίες και ιδέες.", action: "Στείλε email" },
+  ru: { eyebrow: "Прямой контакт", title: "Удобнее по электронной почте?", description: "Публичный канал для проектов, интервью, сотрудничества и идей.", action: "Написать письмо" },
+};
+
 export async function Contact() {
   const locale = await getLocale();
   const copy = getHomeCopy(locale).contact;
   const contactCategories = contactCategoriesByLocale[locale];
+  const emailCopy = emailContactByLocale[locale];
   return (
     <section id="contact" aria-labelledby="contact-title" className="contact-signal border-t border-white/10 px-5 py-24 sm:px-8 sm:py-32">
       <Reveal className="mx-auto max-w-[90rem]">
@@ -29,7 +40,15 @@ export async function Contact() {
         </div>
         <div className="mt-8 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
           <section aria-labelledby="social-title" className="rounded-[1.75rem] border border-white/10 bg-[#071824]/75 p-6 sm:p-8"><p className="font-mono text-xs uppercase tracking-[0.22em] text-[#35d0e5]">{copy.socialEyebrow}</p><h3 id="social-title" className="mt-4 text-2xl font-black text-white">{copy.socialTitle}</h3><p className="mt-3 max-w-2xl leading-7 text-slate-400">{copy.socialDescription}</p><ul className="mt-7 grid gap-3 sm:grid-cols-2">{siteConfig.socialLinks.map((social) => <li key={social.label}><a href={social.url} target="_blank" rel="noopener noreferrer" aria-label={`${social.label} – ${social.context} (${copy.externalLabel})`} className="group flex min-h-16 items-center justify-between gap-4 rounded-2xl border border-white/15 px-5 py-3 transition hover:border-[#35d0e5]/55 hover:bg-white/[0.035]"><span><strong className="block text-white">{social.label}</strong><span className="mt-1 block text-xs text-slate-500">{social.context}</span></span><span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[#35d0e5]">{copy.external}</span></a></li>)}</ul></section>
-          <section aria-labelledby="booking-title" className="rounded-[1.75rem] border border-[#ff9a3d]/25 bg-[#ff9a3d]/[0.045] p-6 sm:p-8"><p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">{copy.bookingEyebrow}</p><h3 id="booking-title" className="mt-4 text-2xl font-black text-white">{copy.bookingTitle}</h3><p className="mt-3 leading-7 text-slate-400">{copy.bookingDescription}</p>{siteConfig.booking.url ? <a href={siteConfig.booking.url} target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex min-h-12 items-center rounded-full bg-[#ff9a3d] px-6 py-3 font-black text-[#041018] transition hover:-translate-y-0.5">{copy.bookingAction} · {copy.external}</a> : <div role="status" className="mt-7 border-l-2 border-[#ff9a3d] pl-4"><p className="font-black text-white">{copy.bookingAction}</p><p className="mt-1 text-sm leading-6 text-slate-400">{copy.bookingUnavailable}</p></div>}</section>
+          <div className="grid gap-5">
+            <section aria-labelledby="email-contact-title" className="rounded-[1.75rem] border border-[#35d0e5]/25 bg-[#35d0e5]/[0.045] p-6 sm:p-8">
+              <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#35d0e5]">{emailCopy.eyebrow}</p>
+              <h3 id="email-contact-title" className="mt-4 text-2xl font-black text-white">{emailCopy.title}</h3>
+              <p className="mt-3 leading-7 text-slate-400">{emailCopy.description}</p>
+              <a href={`mailto:${siteConfig.email}`} className="mt-7 inline-flex min-h-12 max-w-full flex-col items-start justify-center break-all rounded-2xl border border-[#35d0e5]/40 px-5 py-3 font-black text-white transition hover:border-[#35d0e5] focus-visible:outline-[#35d0e5]"><span>{emailCopy.action}</span><span className="mt-1 text-sm text-[#35d0e5]">{siteConfig.email}</span></a>
+            </section>
+            <section aria-labelledby="booking-title" className="rounded-[1.75rem] border border-[#ff9a3d]/25 bg-[#ff9a3d]/[0.045] p-6 sm:p-8"><p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">{copy.bookingEyebrow}</p><h3 id="booking-title" className="mt-4 text-2xl font-black text-white">{copy.bookingTitle}</h3><p className="mt-3 leading-7 text-slate-400">{copy.bookingDescription}</p>{siteConfig.booking.url ? <a href={siteConfig.booking.url} target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex min-h-12 items-center rounded-full bg-[#ff9a3d] px-6 py-3 font-black text-[#041018] transition hover:-translate-y-0.5">{copy.bookingAction} · {copy.external}</a> : <div role="status" className="mt-7 border-l-2 border-[#ff9a3d] pl-4"><p className="font-black text-white">{copy.bookingAction}</p><p className="mt-1 text-sm leading-6 text-slate-400">{copy.bookingUnavailable}</p></div>}</section>
+          </div>
         </div>
       </Reveal>
     </section>

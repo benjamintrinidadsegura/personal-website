@@ -49,6 +49,7 @@ export function createSitemap(publishedWriting: PublicWritingSummary[]): Metadat
     "/impressum",
     "/about",
     "/about/how-my-brain-works",
+    "/about/nerd-corner",
     "/people",
     "/world",
     "/tools/personal-advantage",

@@ -2,6 +2,7 @@ import { getLocalizedProjects } from "@/data/i18n/projects";
 import { getLocalizedPublishedSpotlights } from "@/data/i18n/people";
 import { getHqPulseCopy } from "@/data/i18n/hq-pulse";
 import { getWorldMapDictionary } from "@/data/i18n/world-map";
+import { getNerdCornerCopy } from "@/data/i18n/nerd-corner";
 import { guidedDiscoveryPrompts } from "@/data/discovery-curation";
 import { projects } from "@/data/projects";
 import type { Locale } from "@/lib/i18n/config";
@@ -251,6 +252,10 @@ export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: 
   const localizedProjectCopy = projectCopyById(locale);
   return items.map((item) => {
     let localized: DiscoveryItem = { ...item, ...(staticCopyByLocale[locale][item.id] ?? localizedProjectCopy.get(item.id)) };
+    if (item.id === "page-nerd-corner") {
+      const nerdCopy = getNerdCornerCopy(locale);
+      localized = { ...localized, description: nerdCopy.description, category: nerdCopy.eyebrow, tags: ["Nerd Corner", nerdCopy.music, nerdCopy.books], keywords: [nerdCopy.currentlyInto, nerdCopy.favorites, nerdCopy.currentlyReading, nerdCopy.currentlyPlaying, "Streamory"] };
+    }
     if (item.id === "page-world-map") {
       const mapCopy = getWorldMapDictionary(locale);
       const terms: Record<Locale, { tags: string[]; keywords: string[] }> = {

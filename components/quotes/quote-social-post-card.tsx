@@ -1,26 +1,26 @@
 import { SocialPostCard } from "@/components/sharing/social-post-card";
 import { siteConfig } from "@/data/site";
+import { quoteSocialPostTextFit } from "@/lib/sharing/quote-social-post-fit";
 import type { SelectedQuote } from "@/types/quote";
 import type { WritingShareFormat } from "@/types/writing";
 
 export function QuoteSocialPostCard({ format, originalLabel, quote, surfaceLabel }: { format: WritingShareFormat; originalLabel: string; quote: SelectedQuote; surfaceLabel: string }) {
-  const scale = quote.text.length > 170 ? "long" : quote.text.length > 105 ? "medium" : "short";
+  const textFit = quoteSocialPostTextFit(quote.text, format);
   const attribution = quote.origin === "bts-original" ? originalLabel : quote.attribution;
 
   return (
     <SocialPostCard
       attribution={attribution}
-      avatarLabel="BTS"
       domain={siteConfig.domain}
       format={format}
-      handle={`@${siteConfig.domain}`}
       identityName="BTS"
       kind="quote"
-      metadata={[surfaceLabel]}
+      metadata={[]}
       referenceTitle={quote.source}
-      scale={scale}
+      scale={textFit.scale}
       source={surfaceLabel}
       text={`“${quote.text}”`}
+      textFit={textFit}
     />
   );
 }

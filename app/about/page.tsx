@@ -63,6 +63,16 @@ const brainManualEntryCopy: Record<Locale, { eyebrow: string; title: string; bod
     cta: "Открыть Brain Manual",
   },
 };
+
+const nerdCornerEntryCopy: Record<Locale, { eyebrow: string; title: string; body: string; cta: string }> = {
+  de: { eyebrow: "Nerd Corner / Curated Taste", title: "Was ich gerade schaue, höre, lese und spiele.", body: "Eine bewusst kleine, persönliche Auswahl aus Serien, Filmen, Musik, Büchern und Games — ohne Ratings, Rankings oder erfundene Bedeutungen.", cta: "Nerd Corner öffnen" },
+  en: { eyebrow: "Nerd Corner / Curated Taste", title: "What I’m watching, listening to, reading and playing right now.", body: "A deliberately small personal selection of series, films, music, books and games—without ratings, rankings or invented meaning.", cta: "Open Nerd Corner" },
+  es: { eyebrow: "Nerd Corner / Gustos seleccionados", title: "Lo que veo, escucho, leo y juego ahora.", body: "Una selección personal deliberadamente pequeña de series, películas, música, libros y juegos, sin puntuaciones, rankings ni significados inventados.", cta: "Abrir Nerd Corner" },
+  tr: { eyebrow: "Nerd Corner / Seçilmiş zevkler", title: "Şu anda izlenen, dinlenen, okunan ve oynananlar.", body: "Dizi, film, müzik, kitap ve oyunlardan bilinçli olarak küçük tutulmuş kişisel bir seçki; puan, sıralama veya uydurma anlamlar yok.", cta: "Nerd Corner'ı aç" },
+  pl: { eyebrow: "Nerd Corner / Wybrane gusta", title: "To, co teraz oglądam, słucham, czytam i w co gram.", body: "Celowo niewielki osobisty wybór seriali, filmów, muzyki, książek i gier — bez ocen, rankingów i dopisanych znaczeń.", cta: "Otwórz Nerd Corner" },
+  el: { eyebrow: "Nerd Corner / Επιλεγμένες προτιμήσεις", title: "Όσα βλέπω, ακούω, διαβάζω και παίζω τώρα.", body: "Μια σκόπιμα μικρή προσωπική επιλογή από σειρές, ταινίες, μουσική, βιβλία και παιχνίδια — χωρίς βαθμολογίες, κατατάξεις ή επινοημένα νοήματα.", cta: "Άνοιγμα Nerd Corner" },
+  ru: { eyebrow: "Nerd Corner / Избранные вкусы", title: "Что я сейчас смотрю, слушаю, читаю и во что играю.", body: "Намеренно небольшая личная подборка сериалов, фильмов, музыки, книг и игр — без оценок, рейтингов и придуманных смыслов.", cta: "Открыть Nerd Corner" },
+};
 import { getLocale } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -105,7 +115,7 @@ export default async function AboutPage() {
         "@type": "ProfilePage", "@id": `${canonical}#profile`, url: canonical,
         name: copy.title, description: copy.description, inLanguage: locale,
         mainEntity: { "@id": personEntityId },
-        relatedLink: [goatProject?.externalUrl, ratecomProject?.externalUrl, ...["/people", "/writing", "/find-your-next-step", "/life-alignment", "/about/how-my-brain-works", "/tools/personal-advantage"].map((path) => `https://bts.online${getLocalizedPathname(path, locale)}`)].filter(Boolean),
+        relatedLink: [goatProject?.externalUrl, ratecomProject?.externalUrl, ...["/people", "/writing", "/find-your-next-step", "/life-alignment", "/about/how-my-brain-works", "/about/nerd-corner", "/tools/personal-advantage"].map((path) => `https://bts.online${getLocalizedPathname(path, locale)}`)].filter(Boolean),
       },
       {
         "@type": "Person", "@id": personEntityId, name: positioning.name, url: "https://bts.online/about",
@@ -216,6 +226,25 @@ export default async function AboutPage() {
                   {brainManualEntryCopy[locale].cta} →
                 </Link>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="nerd-corner-entry-title" className="border-b border-white/15 py-20 sm:py-28">
+          <div className="grid min-w-0 grid-cols-1 overflow-hidden rounded-[2rem] border border-[#c8bbff]/25 bg-[#071824]/85 lg:grid-cols-[0.72fr_1.28fr]">
+            <div className="relative min-h-72 overflow-hidden p-8 sm:p-12">
+              <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(184,165,255,0.22),transparent_18rem),radial-gradient(circle_at_78%_80%,rgba(53,208,229,0.16),transparent_20rem)]" />
+              <div className="relative flex h-full flex-col justify-between">
+                <p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#c8bbff]">{nerdCornerEntryCopy[locale].eyebrow}</p>
+                <div aria-hidden="true" className="font-mono text-[clamp(5rem,13vw,10rem)] font-black leading-none tracking-[-0.1em] text-white/[0.11]">BTS</div>
+              </div>
+            </div>
+            <div className="border-t border-white/10 p-8 sm:p-12 lg:border-l lg:border-t-0 lg:p-16">
+              <h2 id="nerd-corner-entry-title" className="text-4xl font-black leading-[0.96] tracking-[-0.045em] text-white sm:text-6xl">{nerdCornerEntryCopy[locale].title}</h2>
+              <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-300">{nerdCornerEntryCopy[locale].body}</p>
+              <Link href={localizeHref("/about/nerd-corner", locale)} className="mt-9 inline-flex min-h-12 items-center rounded-full bg-[#c8bbff] px-6 py-3 font-black text-[#06111a] transition hover:-translate-y-0.5 hover:bg-white">
+                {nerdCornerEntryCopy[locale].cta} →
+              </Link>
             </div>
           </div>
         </section>
