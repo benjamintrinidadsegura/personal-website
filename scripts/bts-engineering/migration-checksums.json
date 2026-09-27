@@ -20,6 +20,10 @@
     "20260920000000_private_feedback.sql": "a0acddd039851e9151b150457ff4df98b0e2ba7dc9e3b4103d3f8c6aa0f68e3b",
     "20260921000000_private_feedback_contact.sql": "36ebc9c2615dfafb17704c55bc8454e7687ec3c3dc3b2907ba88006e62c26748",
     "20260922000000_life_alignment_expansion_rounds.sql": "5ecf2d37d479e741d3cecf70f52174f6c7c6eb4dd4eee7566b30a4b05b59c55e",
-    "20260924000000_contextual_result_feedback.sql": "c50c46b5d8cec6c207bd5ebffc93910b472422b4f50443ae34b047ad33c494da"
+    "20260924000000_contextual_result_feedback.sql": "c50c46b5d8cec6c207bd5ebffc93910b472422b4f50443ae34b047ad33c494da",
+    "20260927000000_writing_completion.sql": "55e8ea1dc5dcbf1419cdc076669514b89c5432245a8e5fae47a33690a2195806",
+    "20260927010000_writing_delete_account_events.sql": "71d87b228b6efc1895aea22879efb5762a0f5bfec500adcc6f984c53c6c120d6",
+    "20260927020000_writing_newsletter_preparation.sql": "0aa7d03158e98817b4f6f3bfbd5da994c461292309c87f7b739b3c8b0ec9a8c3",
+    "20260927030000_writing_translation_generation.sql": "3e321a9e67754ead948c547fdf82fb5164975d2f1bbf93d08d6adb61ec1f339d"
   }
 }
