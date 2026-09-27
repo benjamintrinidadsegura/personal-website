@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "192kb",
     },
   },
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "media.themoviedb.org", pathname: "/t/p/w300_and_h450_face/**", search: "" },
+      { protocol: "https", hostname: "images.igdb.com", pathname: "/igdb/image/upload/t_cover_big/**", search: "" },
+    ],
+  },
   headers: async () => [
     {
       source: "/:path*",

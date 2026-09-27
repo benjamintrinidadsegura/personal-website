@@ -74,10 +74,11 @@ test("Nerd Corner hero is controlled and every locale now means currently watchi
   assert.doesNotMatch(copy, /currentlyIntoDescription: "[^"]*(?:zurückkehre|returning|radar|wracam|επιστρέφω|возвращаюсь)/iu);
 });
 
-test("repository artwork fallback remains intact and no external artwork is fabricated", () => {
+test("verified local-preview artwork preserves the accepted fallback", () => {
   const page = source("../app/about/nerd-corner/page.tsx");
-  const data = source("../data/nerd-corner.ts");
-  assert.match(page, /data-artwork=\{item\.artwork \? "repository" : "fallback"\}/u);
+  assert.match(page, /getResolvedTasteArtwork\(item\)/u);
+  assert.doesNotMatch(page, /process\.env\.NODE_ENV/u);
+  assert.match(page, /data-artwork=\{artwork \? "resolved" : "fallback"\}/u);
   assert.match(page, /fallbackLabel=\{copy\.artworkFallback\}/u);
-  assert.doesNotMatch([page, data].join("\n"), /https?:\/\//u);
+  assert.match(page, /<ResolvedArtworkImage/u);
 });

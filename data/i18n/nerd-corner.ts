@@ -32,6 +32,8 @@ export type NerdCornerCopy = {
   streamoryCta: string;
   streamoryStatus: string;
   streamoryProject: string;
+  mediaCreditsTitle: string;
+  igdbCredit: string;
 };
 
 export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
@@ -51,6 +53,7 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     streamoryEyebrow: "Die vollständige Welt / Streamory", streamoryTitle: "Mein vollständiges Taste Profile auf Streamory entdecken.",
     streamoryDescription: "Nerd Corner bleibt die kuratierte Auswahl im Digital HQ. Das öffentliche, teilbare Taste Profile ist eine geplante Streamory-Funktion und hat noch keine verifizierte öffentliche URL.",
     streamoryCta: "Vollständiges Taste Profile öffnen", streamoryStatus: "Öffentliches Profil folgt", streamoryProject: "Streamory als Projekt ansehen",
+    mediaCreditsTitle: "Medienquellen", igdbCredit: "Spiele-Metadaten und -Artworks stammen von IGDB.",
   },
   en: {
     title: "Nerd Corner — Curated Taste | bts.online",
@@ -68,6 +71,7 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     streamoryEyebrow: "The complete world / Streamory", streamoryTitle: "Explore my full taste profile on Streamory.",
     streamoryDescription: "Nerd Corner remains the curated selection inside the Digital HQ. The public, shareable Taste Profile is a planned Streamory capability and does not yet have a verified public URL.",
     streamoryCta: "Open full taste profile", streamoryStatus: "Public profile coming later", streamoryProject: "View the Streamory project",
+    mediaCreditsTitle: "Media credits", igdbCredit: "Game metadata and artwork are sourced from IGDB.",
   },
   es: {
     title: "Nerd Corner — Gustos seleccionados | bts.online",
@@ -85,6 +89,7 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     streamoryEyebrow: "El mundo completo / Streamory", streamoryTitle: "Explora mi perfil completo de gustos en Streamory.",
     streamoryDescription: "Nerd Corner sigue siendo la selección del Digital HQ. El perfil público y compartible es una función prevista de Streamory y todavía no tiene una URL pública verificada.",
     streamoryCta: "Abrir perfil completo", streamoryStatus: "Perfil público próximamente", streamoryProject: "Ver el proyecto Streamory",
+    mediaCreditsTitle: "Créditos multimedia", igdbCredit: "Los metadatos y las imágenes de los juegos proceden de IGDB.",
   },
   tr: {
     title: "Nerd Corner — Seçilmiş zevkler | bts.online",
@@ -102,6 +107,7 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     streamoryEyebrow: "Eksiksiz dünya / Streamory", streamoryTitle: "Streamory'deki eksiksiz zevk profilimi keşfet.",
     streamoryDescription: "Nerd Corner, Digital HQ içindeki seçki olarak kalır. Herkese açık ve paylaşılabilir Taste Profile planlanan bir Streamory özelliğidir; henüz doğrulanmış bir URL'si yoktur.",
     streamoryCta: "Tam zevk profilini aç", streamoryStatus: "Herkese açık profil daha sonra", streamoryProject: "Streamory projesini gör",
+    mediaCreditsTitle: "Medya kaynakları", igdbCredit: "Oyun meta verileri ve görselleri IGDB kaynaklıdır.",
   },
   pl: {
     title: "Nerd Corner — Wybrane gusta | bts.online",
@@ -119,6 +125,7 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     streamoryEyebrow: "Pełny świat / Streamory", streamoryTitle: "Odkryj mój pełny profil gustu w Streamory.",
     streamoryDescription: "Nerd Corner pozostaje wybraną częścią Digital HQ. Publiczny, udostępnialny Taste Profile jest planowaną funkcją Streamory i nie ma jeszcze zweryfikowanego adresu.",
     streamoryCta: "Otwórz pełny profil gustu", streamoryStatus: "Profil publiczny pojawi się później", streamoryProject: "Zobacz projekt Streamory",
+    mediaCreditsTitle: "Źródła multimediów", igdbCredit: "Metadane i grafiki gier pochodzą z IGDB.",
   },
   el: {
     title: "Nerd Corner — Επιλεγμένες προτιμήσεις | bts.online",
@@ -136,6 +143,7 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     streamoryEyebrow: "Ο πλήρης κόσμος / Streamory", streamoryTitle: "Εξερεύνησε το πλήρες προφίλ προτιμήσεών μου στο Streamory.",
     streamoryDescription: "Το Nerd Corner παραμένει η επιλεγμένη εικόνα στο Digital HQ. Το δημόσιο, κοινοποιήσιμο Taste Profile είναι σχεδιαζόμενη δυνατότητα του Streamory και δεν έχει ακόμη επαληθευμένο URL.",
     streamoryCta: "Άνοιγμα πλήρους προφίλ", streamoryStatus: "Το δημόσιο προφίλ έρχεται αργότερα", streamoryProject: "Δες το έργο Streamory",
+    mediaCreditsTitle: "Πηγές πολυμέσων", igdbCredit: "Τα μεταδεδομένα και τα γραφικά παιχνιδιών προέρχονται από το IGDB.",
   },
   ru: {
     title: "Nerd Corner — Избранные вкусы | bts.online",
@@ -153,6 +161,7 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     streamoryEyebrow: "Полный мир / Streamory", streamoryTitle: "Откройте мой полный профиль вкусов в Streamory.",
     streamoryDescription: "Nerd Corner остаётся избранной частью Digital HQ. Публичный профиль Taste Profile с возможностью поделиться — запланированная функция Streamory, и проверенного публичного URL у неё пока нет.",
     streamoryCta: "Открыть полный профиль вкусов", streamoryStatus: "Публичный профиль появится позже", streamoryProject: "Посмотреть проект Streamory",
+    mediaCreditsTitle: "Источники медиа", igdbCredit: "Метаданные и изображения игр предоставлены IGDB.",
   },
 };
 

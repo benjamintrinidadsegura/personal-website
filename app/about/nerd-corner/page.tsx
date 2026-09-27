@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
+import { ResolvedArtworkImage } from "@/components/nerd-corner/resolved-artwork-image";
 import { getNerdCornerCopy } from "@/data/i18n/nerd-corner";
 import { getGlobalDictionary } from "@/data/i18n/global";
 import {
@@ -14,6 +15,7 @@ import {
   favoriteBooks,
   favoriteMovies,
   favoriteSeries,
+  getResolvedTasteArtwork,
   type TasteItem,
 } from "@/data/nerd-corner";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
@@ -30,28 +32,42 @@ function monogram(title: string) {
   return title.split(/\s+/u).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase();
 }
 
+const tmdbRequiredNotice = "This product uses the TMDB API but is not endorsed or certified by TMDB.";
+
 function EditorialCover({ item, fallbackLabel, accent = "cyan" }: { item: TasteItem; fallbackLabel: string; accent?: "cyan" | "orange" | "violet" }) {
   const accentClass = accent === "orange" ? "text-[#ffb36b]" : accent === "violet" ? "text-[#c8bbff]" : "text-[#78e6f2]";
+  const artwork = getResolvedTasteArtwork(item);
+  const fallback = (
+    <div className="absolute inset-0 flex flex-col justify-between bg-[radial-gradient(circle_at_75%_15%,rgba(53,208,229,0.17),transparent_35%),linear-gradient(145deg,rgba(255,255,255,0.035),transparent_55%)] p-5">
+      <span aria-hidden="true" className={`font-mono text-5xl font-black tracking-[-0.09em] ${accentClass}`}>{monogram(item.title)}</span>
+      <span className="max-w-[18ch] font-mono text-[9px] font-bold uppercase leading-4 tracking-[0.13em] text-slate-500">{fallbackLabel}</span>
+    </div>
+  );
   return (
-    <div className="relative aspect-[4/5] overflow-hidden border border-white/12 bg-[#06141e]" data-artwork={item.artwork ? "repository" : "fallback"}>
-      {item.artwork ? (
-        <Image src={item.artwork.src} alt={item.artwork.alt} fill sizes="(max-width: 640px) 70vw, 22vw" className="object-cover" />
-      ) : (
-        <div className="absolute inset-0 flex flex-col justify-between bg-[radial-gradient(circle_at_75%_15%,rgba(53,208,229,0.17),transparent_35%),linear-gradient(145deg,rgba(255,255,255,0.035),transparent_55%)] p-5">
-          <span aria-hidden="true" className={`font-mono text-5xl font-black tracking-[-0.09em] ${accentClass}`}>{monogram(item.title)}</span>
-          <span className="max-w-[18ch] font-mono text-[9px] font-bold uppercase leading-4 tracking-[0.13em] text-slate-500">{fallbackLabel}</span>
-        </div>
-      )}
+    <div className="relative aspect-[4/5] overflow-hidden border border-white/12 bg-[#06141e]" data-artwork={artwork ? "resolved" : "fallback"}>
+      {artwork ? (
+        <ResolvedArtworkImage src={artwork.src} alt={artwork.alt} sizes="(max-width: 640px) 70vw, 22vw" className="bg-[#06141e] object-contain">{fallback}</ResolvedArtworkImage>
+      ) : fallback}
     </div>
   );
 }
 
-function ArtworkMark({ item }: { item: TasteItem }) {
+const artworkMarkSizes = {
+  default: { className: "size-12", sizes: "48px" },
+  watching: { className: "h-20 w-14 sm:h-24 sm:w-16", sizes: "(min-width: 640px) 64px, 56px" },
+  favoriteSeries: { className: "h-20 w-[3.25rem] sm:w-14", sizes: "(min-width: 640px) 56px, 52px" },
+  game: { className: "h-24 w-16 sm:h-28 sm:w-[4.75rem]", sizes: "(min-width: 640px) 76px, 64px" },
+} as const;
+
+function ArtworkMark({ item, variant = "default" }: { item: TasteItem; variant?: keyof typeof artworkMarkSizes }) {
+  const artwork = getResolvedTasteArtwork(item);
+  const fallback = <span aria-hidden="true">{monogram(item.title)}</span>;
+  const size = artworkMarkSizes[variant];
   return (
-    <span className="relative grid size-12 shrink-0 place-items-center overflow-hidden border border-white/15 bg-[#06141e] font-mono text-xs font-black text-[#78e6f2]" data-artwork={item.artwork ? "repository" : "fallback"}>
-      {item.artwork
-        ? <Image src={item.artwork.src} alt={item.artwork.alt} fill sizes="48px" className="object-cover" />
-        : <span aria-hidden="true">{monogram(item.title)}</span>}
+    <span className={`relative grid shrink-0 place-items-center overflow-hidden border border-white/15 bg-[#06141e] font-mono text-xs font-black text-[#78e6f2] ${size.className}`} data-artwork={artwork ? "resolved" : "fallback"}>
+      {artwork
+        ? <ResolvedArtworkImage src={artwork.src} alt={artwork.alt} sizes={size.sizes} className="bg-[#06141e] object-contain">{fallback}</ResolvedArtworkImage>
+        : fallback}
     </span>
   );
 }
@@ -101,7 +117,7 @@ export default async function NerdCornerPage() {
               {currentlyIntoSeries.map((item, index) => (
                 <li key={item.id} className="group min-h-56 border-b border-r border-white/10 p-6 transition-colors hover:bg-white/[0.025] sm:p-8">
                   <div className="flex items-start justify-between gap-4"><span className="font-mono text-xs text-slate-600">{String(index + 1).padStart(2, "0")}</span><FormatLabel item={item} label={copy.formats.series} /></div>
-                  <div className="mt-9 flex items-end gap-4"><ArtworkMark item={item} /><h3 className="max-w-[12ch] text-2xl font-black leading-[1.02] tracking-[-0.035em] text-white sm:text-3xl">{item.title}</h3></div>
+                  <div className="mt-9 flex items-end gap-4"><ArtworkMark item={item} variant="watching" /><h3 className="max-w-[12ch] text-2xl font-black leading-[1.02] tracking-[-0.035em] text-white sm:text-3xl">{item.title}</h3></div>
                 </li>
               ))}
             </ol>
@@ -130,7 +146,7 @@ export default async function NerdCornerPage() {
                 {favoriteSeries.map((item, index) => (
                   <li key={item.id} className="grid grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-4 border-b border-white/10 py-5 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto]">
                     <span className="font-mono text-xs text-slate-600">{String(index + 1).padStart(2, "0")}</span>
-                    <ArtworkMark item={item} />
+                    <ArtworkMark item={item} variant="favoriteSeries" />
                     <span className="text-xl font-black text-white sm:text-2xl">{item.title}</span>
                     <span className="col-span-3 sm:col-span-1"><FormatLabel item={item} label={item.format === "anime" ? copy.formats.series : copy.formats[item.format]} /></span>
                   </li>
@@ -173,7 +189,8 @@ export default async function NerdCornerPage() {
               {currentlyPlaying.map((game, index) => (
                 <li key={game.id} className={`relative min-h-64 overflow-hidden border border-white/10 p-7 ${index % 3 === 1 ? "bg-[#35d0e5]/[0.045] sm:translate-y-8" : "bg-[#071824]/60"}`}>
                   <span aria-hidden="true" className="absolute -right-3 -top-8 font-mono text-[8rem] font-black tracking-[-0.1em] text-white/[0.035]">0{index + 1}</span>
-                  <div className="relative flex items-center justify-between gap-4"><FormatLabel item={game} label={copy.formats.game} /><ArtworkMark item={game} /></div>
+                  <div className="relative"><FormatLabel item={game} label={copy.formats.game} /></div>
+                  <div className="absolute right-7 top-7"><ArtworkMark item={game} variant="game" /></div>
                   <h3 className="relative mt-28 max-w-[13ch] text-3xl font-black leading-[0.98] tracking-[-0.04em] text-white">{game.title}</h3>
                 </li>
               ))}
@@ -225,6 +242,23 @@ export default async function NerdCornerPage() {
             </div>
           </div>
         </section>
+
+        <aside aria-labelledby="media-credits-title" className="border-t border-white/10 py-10 text-sm text-slate-500">
+          <h2 id="media-credits-title" className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{copy.mediaCreditsTitle}</h2>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <section aria-label="TMDB credit">
+              <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer" className="inline-flex flex-col items-start gap-2 font-bold text-slate-300 underline decoration-white/20 underline-offset-4 hover:text-white">
+                <span aria-hidden="true" className="relative block aspect-[273.42/35.52] w-32 sm:w-36"><Image src="/brand/providers/tmdb-alt-short-blue.svg" alt="" fill sizes="(min-width: 640px) 144px, 128px" className="object-contain" unoptimized /></span>
+                <span>TMDB / The Movie Database <span aria-hidden="true">↗</span></span>
+              </a>
+              <p lang="en" className="mt-2 max-w-xl leading-6">{tmdbRequiredNotice}</p>
+            </section>
+            <section aria-label="IGDB credit">
+              <a href="https://www.igdb.com" target="_blank" rel="noopener noreferrer" className="font-bold text-slate-300 underline decoration-white/20 underline-offset-4 hover:text-white">IGDB <span aria-hidden="true">↗</span></a>
+              <p className="mt-2 max-w-xl leading-6">{copy.igdbCredit}</p>
+            </section>
+          </div>
+        </aside>
       </div>
     </article>
   );

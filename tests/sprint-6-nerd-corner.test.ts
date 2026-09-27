@@ -19,6 +19,7 @@ import {
   favoriteBooks,
   favoriteMovies,
   favoriteSeries,
+  getResolvedTasteArtwork,
   type TasteItem,
 } from "../data/nerd-corner";
 import { siteConfig } from "../data/site";
@@ -49,9 +50,49 @@ test("Sprint 6 taste entries contain no invented ratings, reviews or personal co
   for (const item of allTasteItems) {
     assert.deepEqual(Object.keys(item).every((key) => ["id", "title", "creator", "format", "artwork"].includes(key)), true, item.id);
     for (const prohibited of ["rating", "score", "review", "meaning", "commentary", "rank", "completed", "date"]) assert.equal(prohibited in item, false, `${item.id}: ${prohibited}`);
-    assert.equal(item.artwork, undefined, `${item.id}: external artwork must remain deferred`);
   }
   assert.deepEqual(favoriteSeries.filter(({ format }) => format === "anime").map(({ title }) => title), ["Black Clover", "My Hero Academia", "Fairy Tail", "Solo Leveling"]);
+});
+
+test("Nerd Corner targets retain exact provider categories and unresolved books", () => {
+  const tmdbItems = [...currentlyIntoSeries, ...favoriteMovies, ...favoriteSeries];
+  const googleBooksItems = [...favoriteBooks, currentlyReading];
+  const igdbItems = [...currentlyPlaying];
+
+  assert.equal(tmdbItems.length, 19);
+  assert.equal(googleBooksItems.length, 4);
+  assert.equal(igdbItems.length, 4);
+
+  for (const item of tmdbItems) {
+    assert.equal(item.artwork?.provider, "tmdb", item.id);
+    assert.equal(item.artwork?.mediaType, item.format === "saga" ? "collection" : item.format === "movie" ? "movie" : "tv", item.id);
+  }
+  for (const item of googleBooksItems) {
+    assert.equal(item.artwork?.provider, "google-books", item.id);
+    assert.equal(item.artwork?.mediaType, undefined, item.id);
+  }
+  for (const item of igdbItems) {
+    assert.equal(item.artwork?.provider, "igdb", item.id);
+    assert.equal(item.artwork?.mediaType, undefined, item.id);
+  }
+  for (const item of [...tmdbItems, ...igdbItems]) {
+    assert.ok(item.artwork?.canonicalId, `${item.id}: canonical provider ID`);
+    assert.ok(getResolvedTasteArtwork(item), `${item.id}: verified artwork`);
+  }
+  for (const item of googleBooksItems) {
+    assert.equal(item.artwork?.canonicalId, undefined, `${item.id}: canonical provider ID remains unresolved`);
+    assert.equal(item.artwork?.src, undefined, `${item.id}: artwork reference remains unresolved`);
+    assert.equal(item.artwork?.alt, undefined, `${item.id}: artwork alternative text remains unresolved`);
+    assert.equal(item.artwork?.attribution, undefined, `${item.id}: attribution remains unresolved`);
+    assert.equal(getResolvedTasteArtwork(item), undefined, `${item.id}: unresolved metadata must use the fallback`);
+  }
+});
+
+test("Nerd Corner music remains intentionally typographic", () => {
+  for (const item of [...favoriteArtists, ...currentlyIntoArtists, ...currentlyIntoSongs]) {
+    assert.equal(item.artwork, undefined, item.id);
+    assert.equal(getResolvedTasteArtwork(item), undefined, item.id);
+  }
 });
 
 test("Nerd Corner has complete seven-locale UI and deterministic repository-only artwork fallbacks", () => {
@@ -65,12 +106,14 @@ test("Nerd Corner has complete seven-locale UI and deterministic repository-only
     assert.match(copy.streamoryStatus, /./u, locale);
   }
   const page = source("../app/about/nerd-corner/page.tsx");
-  assert.match(page, /data-artwork=\{item\.artwork \? "repository" : "fallback"\}/u);
+  assert.match(page, /getResolvedTasteArtwork\(item\)/u);
+  assert.doesNotMatch(page, /process\.env\.NODE_ENV/u);
+  assert.match(page, /data-artwork=\{artwork \? "resolved" : "fallback"\}/u);
   assert.match(page, /<h1/u);
   assert.match(page, /aria-labelledby="currently-into-title"/u);
   assert.match(page, /sm:grid-cols-2/u);
-  assert.doesNotMatch(page, /https?:\/\//u);
-  assert.doesNotMatch([page, source("../data/nerd-corner.ts")].join("\n"), /spotify|open\.spotify|tmdb|imdb/iu);
+  assert.deepEqual(page.match(/https?:\/\/[^"\s]+/gu), ["https://www.themoviedb.org", "https://www.igdb.com"]);
+  assert.doesNotMatch([page, source("../data/nerd-corner.ts")].join("\n"), /spotify|open\.spotify|imdb/iu);
 });
 
 test("Streamory handoff is visible, honest and never invents a public profile URL", () => {
@@ -98,8 +141,10 @@ test("public contact is canonical while service and test email identities remain
 test("privacy disclosure describes only the implemented public content and internal handoff", () => {
   const privacy = source("../app/privacy/page.tsx");
   assert.match(privacy, /Nerd Corner is publicly visible, editorially selected personal content/u);
-  assert.match(privacy, /does not load covers or profile data from media providers/u);
-  assert.match(privacy, /does not.*embed Spotify.*add tracking/u);
+  assert.match(privacy, /media\.themoviedb\.org \(TMDB\)/u);
+  assert.match(privacy, /images\.igdb\.com \(IGDB\)/u);
+  assert.match(privacy, /IP address and request headers/u);
+  assert.match(privacy, /does not set additional cookies, add provider tracking or make runtime provider API calls/u);
   assert.match(privacy, /links only to the internal project page/u);
   assert.doesNotMatch(privacy, /Spotify (?:receives|collects)|Streamory (?:receives|collects)/u);
 });
