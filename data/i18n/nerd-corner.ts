@@ -18,6 +18,10 @@ export type NerdCornerCopy = {
   currentlyReadingDescription: string;
   currentlyPlaying: string;
   currentlyPlayingDescription: string;
+  lobbifyEyebrow: string;
+  lobbifyTitle: string;
+  lobbifyDescription: string;
+  lobbifyPrinciple: string;
   music: string;
   currentlyIntoArtists: string;
   favoriteArtists: string;
@@ -47,6 +51,9 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     favorites: "Favoriten", favoriteMovies: "Filme", favoriteSeries: "Serien",
     currentlyReading: "Lese ich gerade", currentlyReadingDescription: "Der aktuelle Platz im Bücherregal.",
     currentlyPlaying: "Spiele ich gerade", currentlyPlayingDescription: "Games, die aktuell Raum bekommen.",
+    lobbifyEyebrow: "Gaming, weitergedacht / Lobbify", lobbifyTitle: "Mehr Gaming auf Lobbify",
+    lobbifyDescription: "Was spiele ich — und mit wem passt es gerade? Lobbify verbindet Game Discovery mit Human Discovery.",
+    lobbifyPrinciple: "Das richtige Spiel. Die richtigen Menschen. Der richtige Moment.",
     music: "Musik", currentlyIntoArtists: "Gerade im Ohr", favoriteArtists: "Lieblingsartists", songs: "Songs in Rotation",
     books: "Bücher", favoriteBooks: "Favoriten im Regal", artworkFallback: "Editoriale Darstellung · kein offizielles Artwork geladen",
     formats: { series: "Serie", movie: "Film", saga: "Saga", anime: "Anime", artist: "Artist", song: "Song", book: "Buch", game: "Game" },
@@ -65,6 +72,9 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     favorites: "Favourites", favoriteMovies: "Movies", favoriteSeries: "Series",
     currentlyReading: "Currently reading", currentlyReadingDescription: "The current place on the bookshelf.",
     currentlyPlaying: "Currently playing", currentlyPlayingDescription: "Games getting time right now.",
+    lobbifyEyebrow: "Gaming, continued / Lobbify", lobbifyTitle: "More gaming on Lobbify",
+    lobbifyDescription: "What should I play—and who should I play with? Lobbify connects game discovery with human discovery.",
+    lobbifyPrinciple: "Right game. Right people. Right moment.",
     music: "Music", currentlyIntoArtists: "Currently in rotation", favoriteArtists: "Favourite artists", songs: "Songs in rotation",
     books: "Books", favoriteBooks: "Shelf favourites", artworkFallback: "Editorial fallback · no official artwork loaded",
     formats: { series: "Series", movie: "Movie", saga: "Saga", anime: "Anime", artist: "Artist", song: "Song", book: "Book", game: "Game" },
@@ -83,6 +93,9 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     favorites: "Favoritos", favoriteMovies: "Películas", favoriteSeries: "Series",
     currentlyReading: "Leyendo ahora", currentlyReadingDescription: "El lugar actual en la estantería.",
     currentlyPlaying: "Jugando ahora", currentlyPlayingDescription: "Juegos a los que dedico tiempo ahora.",
+    lobbifyEyebrow: "Gaming, más allá / Lobbify", lobbifyTitle: "Más gaming en Lobbify",
+    lobbifyDescription: "¿A qué puedo jugar y con quién puedo compartir la partida ahora? Lobbify conecta el descubrimiento de juegos con el descubrimiento de personas.",
+    lobbifyPrinciple: "El juego adecuado. Las personas adecuadas. El momento adecuado.",
     music: "Música", currentlyIntoArtists: "Ahora en rotación", favoriteArtists: "Artistas favoritos", songs: "Canciones en rotación",
     books: "Libros", favoriteBooks: "Favoritos de la estantería", artworkFallback: "Composición editorial · sin arte oficial cargado",
     formats: { series: "Serie", movie: "Película", saga: "Saga", anime: "Anime", artist: "Artista", song: "Canción", book: "Libro", game: "Juego" },
@@ -101,6 +114,9 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     favorites: "Favoriler", favoriteMovies: "Filmler", favoriteSeries: "Diziler",
     currentlyReading: "Şu anda okuyorum", currentlyReadingDescription: "Kitaplıktaki güncel yer.",
     currentlyPlaying: "Şu anda oynuyorum", currentlyPlayingDescription: "Şu anda zaman ayırdığım oyunlar.",
+    lobbifyEyebrow: "Oyunun devamı / Lobbify", lobbifyTitle: "Lobbify'da daha fazla oyun",
+    lobbifyDescription: "Ne oynayabilirim — ve şu an kiminle oynayabilirim? Lobbify, oyun keşfini insan keşfiyle buluşturur.",
+    lobbifyPrinciple: "Doğru oyun. Doğru insanlar. Doğru an.",
     music: "Müzik", currentlyIntoArtists: "Şu anda rotasyonda", favoriteArtists: "Favori sanatçılar", songs: "Rotasyondaki şarkılar",
     books: "Kitaplar", favoriteBooks: "Kitaplık favorileri", artworkFallback: "Editoryal görünüm · resmî görsel yüklenmedi",
     formats: { series: "Dizi", movie: "Film", saga: "Seri", anime: "Anime", artist: "Sanatçı", song: "Şarkı", book: "Kitap", game: "Oyun" },
@@ -119,6 +135,9 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     favorites: "Ulubione", favoriteMovies: "Filmy", favoriteSeries: "Seriale",
     currentlyReading: "Teraz czytam", currentlyReadingDescription: "Aktualne miejsce na półce.",
     currentlyPlaying: "Teraz gram", currentlyPlayingDescription: "Gry, którym poświęcam teraz czas.",
+    lobbifyEyebrow: "Gaming, ciąg dalszy / Lobbify", lobbifyTitle: "Więcej grania w Lobbify",
+    lobbifyDescription: "W co mogę zagrać — i z kim mogę zagrać właśnie teraz? Lobbify łączy odkrywanie gier z odkrywaniem ludzi.",
+    lobbifyPrinciple: "Właściwa gra. Właściwi ludzie. Właściwy moment.",
     music: "Muzyka", currentlyIntoArtists: "Teraz w rotacji", favoriteArtists: "Ulubieni artyści", songs: "Utwory w rotacji",
     books: "Książki", favoriteBooks: "Ulubione z półki", artworkFallback: "Kompozycja redakcyjna · bez oficjalnej grafiki",
     formats: { series: "Serial", movie: "Film", saga: "Saga", anime: "Anime", artist: "Artysta", song: "Utwór", book: "Książka", game: "Gra" },
@@ -137,6 +156,9 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     favorites: "Αγαπημένα", favoriteMovies: "Ταινίες", favoriteSeries: "Σειρές",
     currentlyReading: "Διαβάζω τώρα", currentlyReadingDescription: "Η τρέχουσα θέση στο ράφι.",
     currentlyPlaying: "Παίζω τώρα", currentlyPlayingDescription: "Παιχνίδια που παίρνουν χρόνο αυτή την περίοδο.",
+    lobbifyEyebrow: "Το gaming συνεχίζεται / Lobbify", lobbifyTitle: "Περισσότερο gaming στο Lobbify",
+    lobbifyDescription: "Τι μπορώ να παίξω — και με ποιους μπορώ να παίξω τώρα; Το Lobbify συνδέει την ανακάλυψη παιχνιδιών με την ανακάλυψη ανθρώπων.",
+    lobbifyPrinciple: "Το σωστό παιχνίδι. Οι σωστοί άνθρωποι. Η σωστή στιγμή.",
     music: "Μουσική", currentlyIntoArtists: "Τώρα σε επανάληψη", favoriteArtists: "Αγαπημένοι καλλιτέχνες", songs: "Τραγούδια σε επανάληψη",
     books: "Βιβλία", favoriteBooks: "Αγαπημένα του ραφιού", artworkFallback: "Εκδοτική σύνθεση · χωρίς επίσημο artwork",
     formats: { series: "Σειρά", movie: "Ταινία", saga: "Saga", anime: "Anime", artist: "Καλλιτέχνης", song: "Τραγούδι", book: "Βιβλίο", game: "Παιχνίδι" },
@@ -155,6 +177,9 @@ export const nerdCornerDictionaries: Record<Locale, NerdCornerCopy> = {
     favorites: "Любимое", favoriteMovies: "Фильмы", favoriteSeries: "Сериалы",
     currentlyReading: "Сейчас читаю", currentlyReadingDescription: "Текущее место на книжной полке.",
     currentlyPlaying: "Сейчас играю", currentlyPlayingDescription: "Игры, которым сейчас достаётся время.",
+    lobbifyEyebrow: "Продолжение игры / Lobbify", lobbifyTitle: "Больше игр в Lobbify",
+    lobbifyDescription: "Во что мне сыграть — и с кем сыграть прямо сейчас? Lobbify соединяет поиск игр с поиском людей.",
+    lobbifyPrinciple: "Подходящая игра. Подходящие люди. Подходящий момент.",
     music: "Музыка", currentlyIntoArtists: "Сейчас в ротации", favoriteArtists: "Любимые исполнители", songs: "Треки в ротации",
     books: "Книги", favoriteBooks: "Любимое на полке", artworkFallback: "Редакционная композиция · без официальной обложки",
     formats: { series: "Сериал", movie: "Фильм", saga: "Сага", anime: "Аниме", artist: "Исполнитель", song: "Трек", book: "Книга", game: "Игра" },

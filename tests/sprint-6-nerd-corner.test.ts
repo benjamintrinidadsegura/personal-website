@@ -22,6 +22,7 @@ import {
   getResolvedTasteArtwork,
   type TasteItem,
 } from "../data/nerd-corner";
+import { projects } from "../data/projects";
 import { siteConfig } from "../data/site";
 import { locales } from "../lib/i18n/config";
 import type { SelectedQuote } from "../types/quote";
@@ -103,6 +104,10 @@ test("Nerd Corner has complete seven-locale UI and deterministic repository-only
     assert.deepEqual(Object.keys(copy).sort(), fields, locale);
     assert.deepEqual(Object.keys(copy.formats).sort(), ["anime", "artist", "book", "game", "movie", "saga", "series", "song"], locale);
     assert.ok(copy.heroDescription.length > 45, locale);
+    assert.match(copy.lobbifyEyebrow, /Lobbify/u, locale);
+    assert.match(copy.lobbifyTitle, /Lobbify/u, locale);
+    assert.match(copy.lobbifyDescription, /Lobbify/u, locale);
+    assert.match(copy.lobbifyPrinciple, /\S/u, locale);
     assert.match(copy.streamoryStatus, /./u, locale);
   }
   const page = source("../app/about/nerd-corner/page.tsx");
@@ -114,6 +119,20 @@ test("Nerd Corner has complete seven-locale UI and deterministic repository-only
   assert.match(page, /sm:grid-cols-2/u);
   assert.deepEqual(page.match(/https?:\/\/[^"\s]+/gu), ["https://www.themoviedb.org", "https://www.igdb.com"]);
   assert.doesNotMatch([page, source("../data/nerd-corner.ts")].join("\n"), /spotify|open\.spotify|imdb/iu);
+});
+
+test("Lobbify handoff belongs to Gaming and withholds a link while no canonical project route exists", () => {
+  const page = source("../app/about/nerd-corner/page.tsx");
+  const gamingStart = page.indexOf('aria-labelledby="playing-title"');
+  const handoff = page.indexOf('aria-labelledby="lobbify-title"');
+  const gamingEnd = page.indexOf('aria-labelledby="music-title"');
+
+  assert.ok(gamingStart >= 0 && handoff > gamingStart && gamingEnd > handoff);
+  assert.equal(projects.some(({ slug }) => slug === "lobbify"), false);
+  assert.doesNotMatch(page, /localizeHref\("\/projects\/lobbify"|href=["'{][^\n}]*lobbify/iu);
+  assert.doesNotMatch(page, /lobbify\.(?:com|app|io)|(?:profile|users?)\/[^\s"']*lobbify/iu);
+  assert.match(page, /<aside aria-labelledby="lobbify-title"/u);
+  assert.match(page, /<h3 id="lobbify-title"/u);
 });
 
 test("Streamory handoff is visible, honest and never invents a public profile URL", () => {

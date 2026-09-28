@@ -1,10 +1,11 @@
-import type { WritingContentType, WritingDocumentBlock, WritingDocumentV1 } from "@/types/writing";
+import type { WritingContentType, WritingDocumentBlock, WritingDocumentV1, WritingLanguage } from "@/types/writing";
 
 export type WritingSnapshotContent = {
   title: string;
   deck: string;
   excerpt: string;
   contentType: WritingContentType;
+  sourceLocale?: WritingLanguage;
   topics: string[];
   document: WritingDocumentV1;
 };
@@ -24,6 +25,7 @@ export function writingSnapshotFingerprint(snapshot: WritingSnapshotContent): st
     deck: snapshot.deck,
     excerpt: snapshot.excerpt,
     contentType: snapshot.contentType,
+    sourceLocale: snapshot.sourceLocale ?? "de",
     topics: snapshot.topics,
     document: { version: snapshot.document.version, blocks: snapshot.document.blocks.map(semanticBlock) },
   });

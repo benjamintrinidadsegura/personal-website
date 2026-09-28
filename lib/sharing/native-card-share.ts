@@ -8,10 +8,72 @@ export const shareCardPixelSize: Record<WritingShareFormat, { width: number; hei
 
 type ShareNavigator = Pick<Navigator, "canShare" | "share">;
 
-export function supportsNativeFileShare(target: Partial<ShareNavigator>, file: File): boolean {
+export type NativeShareFailureKind = "cancelled" | "unsupported" | "unexpected";
+
+export type NativeMultiFileShareDiagnostic = {
+  canShareFiles: boolean | null;
+  canShareFilesWithUrl: boolean | null;
+  canSharePresent: boolean;
+  errorMessage: string | null;
+  errorName: string | null;
+  failureStage: "before_navigator_share" | "inside_navigator_share" | null;
+  fileCount: number;
+  mimeTypes: string[];
+  navigatorShareInvoked: boolean;
+  navigatorSharePresent: boolean;
+  totalBytes: number;
+  urlInclusionChangesSupport: boolean | null;
+};
+
+const rejectedMultiFileShareTargets = new WeakSet<object>();
+
+class NativeFileShareUnsupportedError extends Error {
+  override name = "NativeFileShareUnsupportedError";
+}
+
+export function classifyNativeShareFailure(error: unknown): NativeShareFailureKind {
+  if (!error || typeof error !== "object" || !("name" in error)) return "unexpected";
+  const name = String(error.name);
+  if (name === "AbortError") return "cancelled";
+  if ([
+    "NativeFileShareUnsupportedError",
+    "NotAllowedError",
+    "SecurityError",
+    "TypeError",
+    "DataError",
+    "NotSupportedError",
+    "InvalidStateError",
+  ].includes(name)) return "unsupported";
+  return "unexpected";
+}
+
+export function hasKnownNativeMultiFileShareFailure(target: Partial<ShareNavigator>): boolean {
+  return rejectedMultiFileShareTargets.has(target);
+}
+
+function rememberNativeMultiFileShareFailure(target: Partial<ShareNavigator>) {
+  rejectedMultiFileShareTargets.add(target);
+}
+
+function nativeShareErrorMetadata(error: unknown): Pick<NativeMultiFileShareDiagnostic, "errorName" | "errorMessage"> {
+  if (!error || typeof error !== "object") return { errorName: null, errorMessage: null };
+  return {
+    errorName: "name" in error ? String(error.name) : null,
+    errorMessage: "message" in error ? String(error.message) : null,
+  };
+}
+
+function reportNativeMultiFileShareDiagnostic(diagnostic: NativeMultiFileShareDiagnostic) {
+  if (process.env.NODE_ENV !== "development") return;
+  console.info("[writing-carousel] native multi-file share diagnostic", diagnostic);
+}
+
+export function supportsNativeFileShare(target: Partial<ShareNavigator>, file: File | readonly File[]): boolean {
   if (typeof target.share !== "function" || typeof target.canShare !== "function") return false;
+  const files = Array.isArray(file) ? [...file] : [file];
+  if (files.length > 1 && hasKnownNativeMultiFileShareFailure(target)) return false;
   try {
-    return target.canShare({ files: [file] });
+    return target.canShare({ files });
   } catch {
     return false;
   }
@@ -253,7 +315,62 @@ export async function copyShareCardFile(file: File): Promise<void> {
 }
 
 export async function shareCardFile(file: File, input: { title: string; text: string; url?: string | null }): Promise<void> {
-  if (!supportsNativeFileShare(navigator, file)) throw new Error("Native file sharing unavailable");
+  if (!supportsNativeFileShare(navigator, file)) throw new NativeFileShareUnsupportedError("Native file sharing unavailable");
   const text = [input.text, input.url].filter(Boolean).join("\n");
   await navigator.share({ files: [file], title: input.title, text });
+}
+
+export async function shareCardFiles(files: readonly File[], input: { url?: string | null }): Promise<void> {
+  const target: Partial<ShareNavigator> = navigator;
+  const filesOnly: ShareData = { files: [...files] };
+  const diagnostic: NativeMultiFileShareDiagnostic = {
+    canShareFiles: null,
+    canShareFilesWithUrl: null,
+    canSharePresent: typeof target.canShare === "function",
+    errorMessage: null,
+    errorName: null,
+    failureStage: null,
+    fileCount: files.length,
+    mimeTypes: [...new Set(files.map(({ type }) => type || "unknown"))],
+    navigatorShareInvoked: false,
+    navigatorSharePresent: typeof target.share === "function",
+    totalBytes: files.reduce((total, { size }) => total + size, 0),
+    urlInclusionChangesSupport: null,
+  };
+  let payload = filesOnly;
+
+  try {
+    if (files.length === 0 || typeof target.share !== "function" || typeof target.canShare !== "function" || (files.length > 1 && hasKnownNativeMultiFileShareFailure(target))) {
+      throw new NativeFileShareUnsupportedError("Native multi-file sharing unavailable");
+    }
+
+    try {
+      diagnostic.canShareFiles = target.canShare(filesOnly);
+    } catch (error) {
+      throw error;
+    }
+    if (!diagnostic.canShareFiles) throw new NativeFileShareUnsupportedError("Native multi-file file sharing unavailable");
+
+    if (input.url) {
+      const withUrl: ShareData = { files: [...files], url: input.url };
+      try {
+        diagnostic.canShareFilesWithUrl = target.canShare(withUrl);
+      } catch {
+        diagnostic.canShareFilesWithUrl = false;
+      }
+      diagnostic.urlInclusionChangesSupport = diagnostic.canShareFiles !== diagnostic.canShareFilesWithUrl;
+      if (diagnostic.canShareFilesWithUrl) payload = withUrl;
+    }
+
+    diagnostic.navigatorShareInvoked = true;
+    await target.share(payload);
+  } catch (error) {
+    const classification = classifyNativeShareFailure(error);
+    diagnostic.failureStage = diagnostic.navigatorShareInvoked ? "inside_navigator_share" : "before_navigator_share";
+    Object.assign(diagnostic, nativeShareErrorMetadata(error));
+    if (classification === "unsupported" && files.length > 1) rememberNativeMultiFileShareFailure(target);
+    throw error;
+  } finally {
+    reportNativeMultiFileShareDiagnostic(diagnostic);
+  }
 }

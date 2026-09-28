@@ -20,7 +20,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function WritingPage() {
-  const [articles, locale] = await Promise.all([getPublishedWriting(), getLocale()]);
+  const locale = await getLocale();
+  const articles = await getPublishedWriting(locale);
   const copy = getWritingDictionary(locale).page;
   const shareCopy = getWritingShareDictionary(locale);
   const globalCopy = getGlobalDictionary(locale);

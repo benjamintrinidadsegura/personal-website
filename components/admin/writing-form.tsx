@@ -4,21 +4,26 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { publishWritingAction, saveWritingAction } from "@/app/admin/writing/actions";
+import { useLocale } from "@/components/i18n/locale-context";
 import { WritingDocument } from "@/components/writing/writing-document";
+import { writingNewsletterCopy } from "@/data/i18n/writing-newsletter";
 import { getWritingShareDictionary } from "@/data/i18n/writing-share";
 import { siteConfig } from "@/data/site";
-import { getWritingLocalization } from "@/data/writing-localization";
+import { getLocalizedPathname } from "@/lib/i18n/routing";
 import { legacyBodyToWritingDocument } from "@/lib/writing/document";
 import { isWritingSnapshotDirty, writingNavigationLeavesDocument, writingSnapshotFingerprint } from "@/lib/writing/dirty-state";
+import { writingNewsletterStatusQuery } from "@/lib/newsletter/preparation";
 import { deriveWritingTeaser } from "@/lib/writing/teaser";
 import { parseWritingInput } from "@/lib/writing/validation";
 import {
   suggestedWritingTopics,
+  writingLanguages,
   type AdminWritingArticle,
   type WritingActionState,
   type WritingContentType,
   type WritingDocumentV1,
   type WritingField,
+  type WritingLanguage,
   type WritingShareContext,
 } from "@/types/writing";
 
@@ -33,6 +38,7 @@ type Snapshot = {
   deck: string;
   excerpt: string;
   contentType: WritingContentType;
+  sourceLocale: WritingLanguage;
   topics: string[];
   document: WritingDocumentV1;
 };
@@ -54,9 +60,10 @@ const writingFieldLabels: Record<WritingField, string> = {
   excerpt: "Excerpt / teaser",
   bodyJson: "Document",
   contentType: "Content type",
+  sourceLocale: "Source language",
   topics: "Topics",
 };
-const publicationSettingsFields: WritingField[] = ["contentType", "topics", "excerpt"];
+const publicationSettingsFields: WritingField[] = ["contentType", "topics", "excerpt", "sourceLocale"];
 
 function toFormData(articleId: string, updatedAt: string, snapshot: Snapshot): FormData {
   const data = new FormData();
@@ -66,22 +73,27 @@ function toFormData(articleId: string, updatedAt: string, snapshot: Snapshot): F
   data.set("deck", snapshot.deck);
   data.set("excerpt", snapshot.excerpt);
   data.set("contentType", snapshot.contentType);
+  data.set("sourceLocale", snapshot.sourceLocale);
   data.set("bodyJson", JSON.stringify(snapshot.document));
   snapshot.topics.forEach((topic) => data.append("topics", topic));
   return data;
 }
 
 export function WritingForm({ article }: { article: AdminWritingArticle }) {
+  const locale = useLocale();
+  const newsletterCopy = writingNewsletterCopy[locale];
   const initialDocument = useMemo(() => article.bodyJson ?? legacyBodyToWritingDocument(article.body), [article.body, article.bodyJson]);
-  const [snapshot, setSnapshot] = useState<Snapshot>({ title: article.title, deck: article.deck, excerpt: article.excerpt, contentType: article.contentType, topics: article.topics, document: initialDocument });
-  const [persistedFingerprint, setPersistedFingerprint] = useState(() => writingSnapshotFingerprint({ title: article.title, deck: article.deck, excerpt: article.excerpt, contentType: article.contentType, topics: article.topics, document: initialDocument }));
+  const [snapshot, setSnapshot] = useState<Snapshot>({ title: article.title, deck: article.deck, excerpt: article.excerpt, contentType: article.contentType, sourceLocale: article.sourceLocale, topics: article.topics, document: initialDocument });
+  const [persistedFingerprint, setPersistedFingerprint] = useState(() => writingSnapshotFingerprint({ title: article.title, deck: article.deck, excerpt: article.excerpt, contentType: article.contentType, sourceLocale: article.sourceLocale, topics: article.topics, document: initialDocument }));
   const [phase, setPhase] = useState<SavePhase>("saved");
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [feedback, setFeedback] = useState<WritingActionState>(null);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [prepareNewsletter, setPrepareNewsletter] = useState(false);
   const [lastAction, setLastAction] = useState<"save" | "publish" | null>(null);
   const expectedUpdatedAtRef = useRef(article.updatedAt);
+  const sourceRevisionRef = useRef(article.sourceRevision);
   const snapshotRef = useRef(snapshot);
   const currentFingerprintRef = useRef(writingSnapshotFingerprint(snapshot));
   const persistedFingerprintRef = useRef(persistedFingerprint);
@@ -128,6 +140,7 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
     setFeedback(result);
     if (result?.ok && result.updatedAt) {
       expectedUpdatedAtRef.current = result.updatedAt;
+      if (result.sourceRevision) sourceRevisionRef.current = result.sourceRevision;
       savedGenerationRef.current = Math.max(savedGenerationRef.current, generation);
       persistedFingerprintRef.current = savingFingerprint;
       setPersistedFingerprint(savingFingerprint);
@@ -220,6 +233,7 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
     const publishingFingerprint = writingSnapshotFingerprint(publishingSnapshot);
     const publishingGeneration = generationRef.current;
     const formData = toFormData(article.id, expectedUpdatedAtRef.current, publishingSnapshot);
+    if (prepareNewsletter) formData.set("prepareNewsletter", "on");
     const localValidation = parseWritingInput(formData, "publish");
     if (!localValidation.success) {
       setFeedback({ ok: false, code: "validation", message: "Complete the publication details before publishing.", fieldErrors: localValidation.fieldErrors });
@@ -230,10 +244,19 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
     setFeedback(result);
     if (result?.ok && result.updatedAt) {
       expectedUpdatedAtRef.current = result.updatedAt;
+      if (result.sourceRevision) sourceRevisionRef.current = result.sourceRevision;
       savedGenerationRef.current = Math.max(savedGenerationRef.current, publishingGeneration);
       persistedFingerprintRef.current = publishingFingerprint;
       setPersistedFingerprint(publishingFingerprint);
-      setPhase(!isWritingSnapshotDirty(currentFingerprintRef.current, publishingFingerprint) ? "saved" : "dirty");
+      const newerChangesRemain = isWritingSnapshotDirty(currentFingerprintRef.current, publishingFingerprint);
+      setPhase(newerChangesRemain ? "dirty" : "saved");
+      if (result.slug && !newerChangesRemain) {
+        confirmedNavigationRef.current = true;
+        const query = writingNewsletterStatusQuery(result.newsletterPreparation);
+        const pathname = getLocalizedPathname(`/writing/${result.slug}`, publishingSnapshot.sourceLocale);
+        window.location.assign(`${pathname}${query ? `?${query}` : ""}`);
+        return;
+      }
     } else if (result?.code !== "validation") setPhase(result?.code === "conflict" ? "conflict" : "failed");
     setPublishing(false);
   };
@@ -248,7 +271,7 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
   const validationErrors = useMemo(() => feedback && !feedback.ok && feedback.code === "validation"
     ? Object.entries(feedback.fieldErrors ?? {}) as Array<[WritingField, string]>
     : [], [feedback]);
-  const hasSettingsErrors = validationErrors.some(([field]) => field === "contentType" || field === "topics" || field === "excerpt");
+  const hasSettingsErrors = validationErrors.some(([field]) => field === "contentType" || field === "topics" || field === "excerpt" || field === "sourceLocale");
   useEffect(() => {
     if (lastAction !== "publish" || validationErrors.length === 0) return;
     if (hasSettingsErrors) settingsRef.current?.setAttribute("open", "");
@@ -260,6 +283,7 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
       bodyJson: '.writing-editor [contenteditable="true"]',
       contentType: "#writing-content-type",
       topics: "[data-writing-topics] input",
+      sourceLocale: "#writing-source-locale",
     };
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>(selectorByField[firstField])?.focus());
   }, [hasSettingsErrors, lastAction, validationErrors]);
@@ -268,7 +292,7 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
   const statusLabel = publishBlocked ? "Publish blocked" : article.status === "published" && isDirty ? "Unpublished changes" : phase === "saving" ? "Saving..." : phase === "waiting" || phase === "dirty" ? "Unsaved changes" : phase === "failed" ? "Save failed" : phase === "conflict" ? "Conflict" : "Saved";
   const settingsSummary = settingsRequirementCount > 0
     ? `${settingsRequirementCount} ${settingsRequirementCount === 1 ? "detail" : "details"} required before publishing`
-    : [snapshot.contentType === "essay" ? "Essay" : "Note", ...snapshot.topics, "Publish ready"].join(" · ");
+    : [snapshot.contentType === "essay" ? "Essay" : "Note", snapshot.sourceLocale.toUpperCase(), ...snapshot.topics, "Publish ready"].join(" · ");
   const previewShareContext: WritingShareContext = {
     articleId: article.id,
     articleSlug: article.slug,
@@ -276,7 +300,7 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
     authorName: siteConfig.name,
     canonicalUrl: null,
     domain: siteConfig.domain,
-    language: article.slug ? getWritingLocalization(article.slug).language : "de",
+    language: snapshot.sourceLocale,
   };
 
   return (
@@ -326,12 +350,21 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-lg text-white outline-none focus-visible:ring-2 focus-visible:ring-[#35d0e5]/60 [&::-webkit-details-marker]:hidden"><span className="whitespace-nowrap font-black">Article settings</span><span className={`min-w-0 truncate text-sm ${settingsRequirementCount > 0 ? "font-bold text-[#ffbf82]" : "text-slate-500"}`}>{settingsSummary}</span><svg aria-hidden="true" viewBox="0 0 20 20" className="ml-auto size-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m5 7.5 5 5 5-5"/></svg></summary>
             <div className="mt-5 grid gap-6 border-t border-white/[0.07] pt-5 sm:grid-cols-2">
               <div><label htmlFor="writing-content-type" className="font-bold text-white">Content Type</label><p className="mt-1 text-xs text-slate-500">Required to publish.</p><select id="writing-content-type" value={snapshot.contentType} onChange={(event) => markChanged((current) => ({ ...current, contentType: event.target.value as WritingContentType }))} className={fieldClass} aria-invalid={!!fieldError("contentType")}><option value="essay">Essay</option><option value="note">Note</option></select></div>
+              <div><label htmlFor="writing-source-locale" className="font-bold text-white">Source language</label><p className="mt-1 text-xs text-slate-500">The language of the original article. Locked after first publication.</p><select id="writing-source-locale" value={snapshot.sourceLocale} disabled={article.status === "published"} onChange={(event) => markChanged((current) => ({ ...current, sourceLocale: event.target.value as WritingLanguage }))} className={fieldClass} aria-invalid={!!fieldError("sourceLocale")}>{writingLanguages.map((language) => <option key={language} value={language}>{language.toUpperCase()}</option>)}</select>{fieldError("sourceLocale") ? <p className="mt-2 text-sm text-[#ffb16a]">{fieldError("sourceLocale")}</p> : null}</div>
               <fieldset data-writing-topics><legend className="font-bold text-white">Topics</legend><p className="mt-1 text-xs text-slate-500">Choose at least one before publishing.</p><div className="mt-3 flex flex-wrap gap-3">{suggestedWritingTopics.map((topic) => <label key={topic} className="flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-4 text-sm text-slate-200"><input type="checkbox" checked={snapshot.topics.includes(topic)} onChange={(event) => markChanged((current) => ({ ...current, topics: event.target.checked ? [...current.topics, topic] : current.topics.filter((value) => value !== topic) }))} className="h-4 w-4 accent-[#35d0e5]" />{topic}</label>)}</div>{fieldError("topics") ? <p className="mt-2 text-sm text-[#ffb16a]">{fieldError("topics")}</p> : null}</fieldset>
               <div className="sm:col-span-2"><label htmlFor="writing-excerpt" className="font-bold text-white">Excerpt / Teaser</label><p className="mt-1 text-xs text-slate-500">Required to publish · 10–320 characters · shown on Writing previews and article share cards.</p>{teaserSuggestion && teaserSuggestion !== snapshot.excerpt ? <div data-teaser-suggestion className="mt-4 rounded-xl border border-[#35d0e5]/25 bg-[#35d0e5]/[0.045] p-4"><p className="font-mono text-[10px] font-black uppercase tracking-[0.14em] text-[#8eeaf5]">Suggested from your article</p><p className="mt-2 text-sm leading-6 text-slate-300">{teaserSuggestion}</p><button type="button" onClick={() => markChanged((current) => ({ ...current, excerpt: teaserSuggestion }))} className="mt-3 min-h-11 rounded-full border border-[#35d0e5]/45 px-4 text-sm font-black text-white hover:border-[#35d0e5]">Use this teaser</button></div> : null}<textarea id="writing-excerpt" value={snapshot.excerpt} placeholder="A concise reason to open the full story" onChange={(event) => markChanged((current) => ({ ...current, excerpt: event.target.value }))} maxLength={320} rows={4} className={fieldClass} aria-invalid={!!fieldError("excerpt")} />{fieldError("excerpt") ? <p className="mt-2 text-sm text-[#ffb16a]">{fieldError("excerpt")}</p> : null}</div>
             </div>
           </details>
         </div>
       )}
+
+      <section data-final-publish-control className="mx-auto mt-8 flex max-w-4xl flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:flex-row sm:items-center sm:justify-between">
+        <label data-newsletter-preparation className="flex min-h-11 items-start gap-3 text-sm text-slate-200">
+          <input type="checkbox" checked={prepareNewsletter} disabled={publishing} onChange={(event) => setPrepareNewsletter(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[#35d0e5]" />
+          <span><span className="font-black text-white">{newsletterCopy.prepare}</span><span className="mt-1 block max-w-xl text-xs leading-5 text-slate-500">{newsletterCopy.prepareHint}</span></span>
+        </label>
+        <button type="button" onClick={() => void submitPublished()} disabled={publishing || !!editorError} aria-label={article.status === "published" ? "Update published article" : "Publish article"} className="min-h-11 shrink-0 rounded-full bg-[#35d0e5] px-5 text-sm font-black text-[#041018] transition hover:bg-[#64dcea] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-50">{publishing ? "Publishing..." : article.status === "published" ? "Update Published" : "Publish"}</button>
+      </section>
     </div>
   );
 }

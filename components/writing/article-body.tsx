@@ -10,7 +10,7 @@ export function ArticleBody({ body, shareContext, shareCopy }: { body: string; s
       {paragraphs.map((paragraph, index) => (
         <div key={`${index}-${paragraph.slice(0, 24)}`} className={`writing-thought group/thought relative ${index === 0 ? "writing-opening-thought" : ""}`}>
           <p className="whitespace-pre-line">{paragraph}</p>
-          {shareContext && shareCopy && paragraph.length >= 32 ? <ShareThoughtTrigger copy={shareCopy} source={{ ...shareContext, text: paragraph }} /> : null}
+          {shareContext && shareCopy && paragraph.length >= 32 ? <ShareThoughtTrigger copy={shareCopy} source={{ ...shareContext, blocks: [{ kind: "paragraph", text: paragraph }], text: paragraph }} /> : null}
         </div>
       ))}
     </div>

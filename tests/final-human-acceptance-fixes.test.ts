@@ -43,12 +43,12 @@ test("Discovery keeps the same curated major Tools order while retaining grouped
   assert.ok(toolIds.indexOf("tool-life-alignment-self") < toolIds.indexOf("tool-find-your-next-step"));
 });
 
-test("Social Post composition uses canvas, framed post surface and deliberate monogram without platform chrome", () => {
+test("Social Post composition uses canvas, framed post surface and the approved BTS app icon without platform chrome", () => {
   const component = source("../components/sharing/social-post-card.tsx");
   const css = source("../app/globals.css");
   assert.match(component, /social-post-canvas/u);
   assert.match(component, /<article className="social-post-surface">/u);
-  assert.match(component, /social-post-avatar"><span>/u);
+  assert.match(component, /social-post-avatar"><Image[^>]+src="\/icons\/bts-app-icon-192\.png"/u);
   assert.match(css, /social-post-surface/u);
   assert.match(css, /border-top-color/u);
   assert.match(css, /data-format="story"/u);

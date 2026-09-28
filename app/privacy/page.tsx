@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { getGlobalDictionary } from "@/data/i18n/global";
-import { getPrivacyDictionary, lifeAlignmentHistoryPrivacyCopy, lifeAlignmentLocalPrivacyCopy, relationshipAlignmentPrivacyCopy } from "@/data/i18n/privacy";
+import { getPrivacyDictionary, lifeAlignmentHistoryPrivacyCopy, lifeAlignmentLocalPrivacyCopy, relationshipAlignmentPrivacyCopy, writingTranslationPrivacyCopy } from "@/data/i18n/privacy";
 import { privacyReleaseCopy, type PrivacyReleaseCopy } from "@/data/i18n/privacy-release";
 import { legalOperator } from "@/data/legal";
 import { siteConfig } from "@/data/site";
@@ -99,6 +99,11 @@ export default async function PrivacyPage() {
         </header>
 
         <PrivacySections sections={sections.slice(0, 3)} />
+
+        <section id="writing-translations" aria-labelledby="writing-translations-privacy-title" className="scroll-mt-28 border-b border-white/15 py-14">
+          <h2 id="writing-translations-privacy-title" className="text-3xl font-black text-white">{writingTranslationPrivacyCopy[locale].title}</h2>
+          <p className="mt-5 leading-7 text-slate-300">{writingTranslationPrivacyCopy[locale].body}</p>
+        </section>
 
         <section id="nerd-corner" aria-labelledby="nerd-corner-privacy-title" className="scroll-mt-28 border-b border-white/15 py-14">
           <h2 id="nerd-corner-privacy-title" className="text-3xl font-black text-white">{nerdCornerPrivacyCopy[locale].title}</h2>

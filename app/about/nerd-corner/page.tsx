@@ -196,6 +196,16 @@ export default async function NerdCornerPage() {
               ))}
             </ol>
           </div>
+          <aside aria-labelledby="lobbify-title" className="ml-auto mt-12 max-w-4xl border-l border-[#35d0e5]/35 py-1 pl-6 sm:pl-8">
+            <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-[#35d0e5]">{copy.lobbifyEyebrow}</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-[0.72fr_1.28fr] sm:gap-8">
+              <h3 id="lobbify-title" className="text-2xl font-black leading-tight tracking-[-0.03em] text-white sm:text-3xl">{copy.lobbifyTitle}</h3>
+              <div>
+                <p className="leading-7 text-slate-300">{copy.lobbifyDescription}</p>
+                <p className="mt-3 font-mono text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{copy.lobbifyPrinciple}</p>
+              </div>
+            </div>
+          </aside>
         </section>
 
         <section aria-labelledby="music-title" className="border-b border-white/15 py-20 sm:py-28">

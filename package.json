@@ -30,6 +30,7 @@
     "test:account": "tsx --test tests/account-entry.test.ts",
     "test:writing": "tsx --test tests/writing-foundation.test.ts",
     "test:writing-share": "tsx --test tests/writing-social-share.test.ts",
+    "test:writing-completion": "tsx --test tests/writing-completion.test.ts",
     "test:quotes": "tsx --test tests/quote-universe.test.ts",
     "test:fyns-actions": "tsx --test tests/fyns-actions.test.ts",
     "test:comments": "tsx --test tests/writing-comments-foundation.test.ts",

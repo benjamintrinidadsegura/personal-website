@@ -84,11 +84,12 @@ test("FOLLOW-UP 2 Writing has distinct article and author-curated thought share 
   const editor = source("../components/admin/writing-editor.tsx");
   const dictionaries = source("../data/i18n/writing-share.ts");
   assert.match(article, /kind: "article"/u);
-  assert.match(article, /text: article\.excerpt/u);
+  assert.match(article, /text: articleShareBlocks\.map\(\(\{ text \}\) => text\)\.join/u);
   assert.match(article, /ShareArticleTrigger[\s\S]*articleTrigger/u);
   assert.match(card, /data-content=\{source\.kind/u);
   assert.match(card, /writing-share-card-article-title/u);
-  assert.match(card, /writing-share-card-article-teaser/u);
+  assert.match(card, /writing-share-card-article-content/u);
+  assert.match(card, /writing-share-card-article-body/u);
   assert.match(documentRenderer, /kind: "thought"/u);
   assert.match(editor, /Share-ready via \/ · Key Thought · Pull Quote · Shareable/u);
   assert.equal((dictionaries.match(/articleTrigger:/gu) ?? []).length, 8);

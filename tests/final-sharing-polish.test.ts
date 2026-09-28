@@ -73,15 +73,17 @@ test("FINAL SHARING native PNG remains capability-gated for mobile and desktop w
 
 test("FINAL SHARING one shared destination row serves Writing, Quote, FYNS without false Instagram/TikTok buttons", () => {
   const actions = source("../components/sharing/share-file-actions.tsx");
-  for (const path of ["../components/writing/share/share-composer.tsx", "../components/quotes/quote-share-dialog.tsx", "../components/find-your-next-step/character-share-dialog.tsx"]) {
-    assert.match(source(path), /ShareFileActions/u, path);
-  }
+  assert.match(source("../components/writing/share/share-composer.tsx"), /WritingCarouselFileActions/u);
+  for (const path of ["../components/quotes/quote-share-dialog.tsx", "../components/find-your-next-step/character-share-dialog.tsx"]) assert.match(source(path), /ShareFileActions/u, path);
+  const carouselActions = source("../components/writing/share/carousel-file-actions.tsx");
   assert.match(actions, /data-share-destination="whatsapp"/u);
   assert.match(actions, /data-share-destination="linkedin"/u);
   assert.match(actions, /destinationsCopy\.moreApps/u);
   assert.doesNotMatch(actions, /data-share-destination="(?:instagram|tiktok)"/iu);
   assert.match(actions, /rel="noopener noreferrer"/u);
   assert.match(actions, /referrerPolicy="no-referrer"/u);
+  assert.match(carouselActions, /data-share-destination="whatsapp"/u);
+  assert.match(carouselActions, /data-share-destination="linkedin"/u);
   assert.match(source("../components/quotes/quote-share-dialog.tsx"), /canonicalBtsShareUrl\(safeSharePath\)/u);
   assert.match(source("../components/find-your-next-step/character-share-dialog.tsx"), /canonicalBtsShareUrl\(safeSharePath\)/u);
   assert.doesNotMatch(source("../components/find-your-next-step/character-share-dialog.tsx"), /supportingNames\.join\(/u);

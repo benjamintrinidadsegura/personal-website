@@ -40,15 +40,14 @@ test("FOLLOW-UP native sharing language is complete in all seven locales", () =>
 test("FOLLOW-UP Writing, Quote and FYNS share real generated files while preserving existing escape hatches", () => {
   const action = source("../components/sharing/share-file-actions.tsx");
   const native = source("../lib/sharing/native-card-share.ts");
-  for (const path of [
-    "../components/writing/share/share-composer.tsx",
-    "../components/quotes/quote-share-dialog.tsx",
-    "../components/find-your-next-step/character-share-dialog.tsx",
-  ]) {
+  for (const path of ["../components/quotes/quote-share-dialog.tsx", "../components/find-your-next-step/character-share-dialog.tsx"]) {
     const surface = source(path);
     assert.match(surface, /ShareFileActions/u, path);
     assert.match(surface, /screenshotMode/u, path);
   }
+  const writingSurface = source("../components/writing/share/share-composer.tsx");
+  assert.match(writingSurface, /WritingCarouselFileActions/u);
+  assert.match(writingSurface, /screenshotMode/u);
   assert.match(action, /supportsNativeFileShare/u);
   assert.match(action, /downloadShareCardFile/u);
   assert.match(action, /copyShareCardFile/u);

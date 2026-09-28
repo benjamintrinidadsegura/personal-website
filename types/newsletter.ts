@@ -39,6 +39,23 @@ export type NewsletterLifecycleActionState = NewsletterLifecycleResult | null;
 export const newsletterEditionStates = ["draft", "sending", "sent", "failed"] as const;
 export type NewsletterEditionState = (typeof newsletterEditionStates)[number];
 
+export const writingNewsletterPreparationStatuses = [
+  "created",
+  "reused_draft",
+  "existing_sending",
+  "existing_sent",
+  "existing_failed",
+  "failed",
+] as const;
+export type WritingNewsletterPreparationStatus = (typeof writingNewsletterPreparationStatuses)[number];
+
+export type WritingNewsletterPreparation = {
+  status: WritingNewsletterPreparationStatus;
+  editionId?: string;
+  editionState?: NewsletterEditionState;
+  articleSlug?: string;
+};
+
 export type NewsletterEdition = {
   id: string;
   writingArticleId: string;

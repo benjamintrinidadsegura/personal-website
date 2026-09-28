@@ -1,11 +1,14 @@
 import { parseWritingDocumentJson } from "@/lib/writing/document";
 import {
   writingContentTypes,
+  writingLanguages,
   type WritingField,
   type WritingInput,
 } from "@/types/writing";
 
-const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
+// Typography from every supported Writing locale is valid. Only invisible
+// control and directional override characters are rejected.
+const UNSAFE_TEXT_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u;
 const MAX_TOPICS = 8;
 
 export type WritingValidationResult =
@@ -26,16 +29,17 @@ export function parseWritingInput(formData: FormData, mode: "draft" | "publish" 
   const excerpt = normalized(formData.get("excerpt"));
   const bodyJsonValue = formData.get("bodyJson");
   const contentTypeValue = normalized(formData.get("contentType"));
+  const sourceLocaleValue = normalized(formData.get("sourceLocale")) || "de";
   const topics = [...new Set(formData.getAll("topics").map((value) => normalized(value)).filter(Boolean))];
   const fieldErrors: Partial<Record<WritingField, string>> = {};
 
-  if ((mode === "publish" && characterLength(title) < 3) || characterLength(title) > 160 || CONTROL_CHARACTERS.test(title)) {
+  if ((mode === "publish" && characterLength(title) < 3) || characterLength(title) > 160 || UNSAFE_TEXT_CHARACTERS.test(title)) {
     fieldErrors.title = mode === "publish" ? "Title must contain 3 to 160 valid characters." : "Title must contain at most 160 valid characters.";
   }
-  if (characterLength(deck) > 240 || CONTROL_CHARACTERS.test(deck)) {
+  if (characterLength(deck) > 240 || UNSAFE_TEXT_CHARACTERS.test(deck)) {
     fieldErrors.deck = "Deck must contain at most 240 valid characters.";
   }
-  if ((mode === "publish" && characterLength(excerpt) < 10) || characterLength(excerpt) > 320 || CONTROL_CHARACTERS.test(excerpt)) {
+  if ((mode === "publish" && characterLength(excerpt) < 10) || characterLength(excerpt) > 320 || UNSAFE_TEXT_CHARACTERS.test(excerpt)) {
     fieldErrors.excerpt = mode === "publish" ? "Teaser must contain 10 to 320 valid characters." : "Teaser must contain at most 320 valid characters.";
   }
   const document = typeof bodyJsonValue === "string" ? parseWritingDocumentJson(bodyJsonValue) : { success: false as const, message: "The document is invalid." };
@@ -44,12 +48,14 @@ export function parseWritingInput(formData: FormData, mode: "draft" | "publish" 
   }
   const contentType = writingContentTypes.find((candidate) => candidate === contentTypeValue);
   if (!contentType) fieldErrors.contentType = "Choose a valid content type.";
-  if ((mode === "publish" && topics.length < 1) || topics.length > MAX_TOPICS || topics.some((topic) => characterLength(topic) > 40 || CONTROL_CHARACTERS.test(topic))) {
+  const sourceLocale = writingLanguages.find((candidate) => candidate === sourceLocaleValue);
+  if (!sourceLocale) fieldErrors.sourceLocale = "Choose a supported source language.";
+  if ((mode === "publish" && topics.length < 1) || topics.length > MAX_TOPICS || topics.some((topic) => characterLength(topic) > 40 || UNSAFE_TEXT_CHARACTERS.test(topic))) {
     fieldErrors.topics = mode === "publish"
       ? "Choose at least one topic before publishing. You can select up to 8."
       : "Choose no more than 8 valid topics of at most 40 characters each.";
   }
 
-  if (Object.keys(fieldErrors).length > 0 || !contentType || !document.success) return { success: false, fieldErrors };
-  return { success: true, data: { title, deck, excerpt, body: document.plainText, bodyJson: document.data, contentType, topics } };
+  if (Object.keys(fieldErrors).length > 0 || !contentType || !sourceLocale || !document.success) return { success: false, fieldErrors };
+  return { success: true, data: { title, deck, excerpt, body: document.plainText, bodyJson: document.data, contentType, sourceLocale, topics } };
 }

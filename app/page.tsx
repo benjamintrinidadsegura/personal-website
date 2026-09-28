@@ -10,11 +10,13 @@ import { HomeQuote } from "@/components/quotes/home-quote";
 import { Interviews } from "@/components/sections/interviews";
 import { Writing } from "@/components/sections/writing";
 import { getPublishedWritingResult } from "@/lib/writing/queries";
+import { getLocale } from "@/lib/i18n/server";
 
 export const revalidate = 300;
 
 export default async function Home() {
-  const publishedWritingResult = await getPublishedWritingResult();
+  const locale = await getLocale();
+  const publishedWritingResult = await getPublishedWritingResult(locale);
   const publishedWriting = publishedWritingResult.data;
   return (
     <ContextCanvas>

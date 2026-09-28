@@ -36,6 +36,10 @@ function thoughtSource(context: WritingShareContext, block: WritingDocumentBlock
   return {
     ...context,
     blockId: block.id,
+    blocks: [{
+      kind: block.type === "heading" ? "heading" : block.type === "bulletListItem" || block.type === "numberedListItem" ? "listItem" : block.type === "quote" || block.type === "pullQuote" ? "quote" : "paragraph",
+      text,
+    }],
     canonicalUrl: context.canonicalUrl && anchor ? `${context.canonicalUrl}#${anchor}` : context.canonicalUrl,
     kind: "thought",
     text,

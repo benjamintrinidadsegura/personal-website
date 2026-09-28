@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ShareComposerHeading } from "@/components/sharing/share-composer-heading";
-import { ShareFileActions } from "@/components/sharing/share-file-actions";
 import { ShareStyleSelector } from "@/components/sharing/share-style-selector";
+import { WritingCarouselFileActions } from "@/components/writing/share/carousel-file-actions";
 import { ShareCard } from "@/components/writing/share/share-card";
 import { WritingSocialPostCard } from "@/components/writing/share/social-post-card";
 import type { WritingShareDictionary } from "@/data/i18n/writing-share";
-import { segmentWritingThought } from "@/lib/writing/share-segmentation";
+import { MAX_WRITING_SHARE_CARDS, segmentWritingThought, type WritingThoughtSegment } from "@/lib/writing/share-segmentation";
 import {
   writingShareFormats,
   writingShareVariants,
@@ -20,13 +20,9 @@ import type { ShareCardStyle } from "@/types/sharing";
 
 type Feedback = "copied" | "clipboardFailed" | null;
 
-function progressLabel(copy: WritingShareDictionary, current: number, total: number): string {
-  return copy.cardProgress.replace("{current}", String(current)).replace("{total}", String(total));
-}
-
 export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDictionary; onClose: () => void; source: WritingShareSource }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const deckRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   const [format, setFormat] = useState<WritingShareFormat>("story");
   const [style, setStyle] = useState<ShareCardStyle>("editorial");
@@ -37,7 +33,11 @@ export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDic
   const [screenshotMode, setScreenshotMode] = useState(false);
   const [screenshotControlsVisible, setScreenshotControlsVisible] = useState(true);
   const composition = style === "socialPost" ? "socialPost" : variant;
-  const segmentation = useMemo(() => segmentWritingThought(source.text, format, composition, source.language), [composition, format, source.language, source.text]);
+  const segmentation = useMemo(() => segmentWritingThought(source.text, format, composition, source.language, {
+    articleTitle: source.articleTitle,
+    blocks: source.blocks,
+    kind: source.kind ?? "thought",
+  }), [composition, format, source.articleTitle, source.blocks, source.kind, source.language, source.text]);
   const selectionLabel = source.kind === "article" ? copy.selectedArticle : copy.selectedThought;
   const segments = segmentation.status === "ready" ? segmentation.segments : [];
   const safeCardIndex = Math.min(cardIndex, Math.max(segments.length - 1, 0));
@@ -89,26 +89,30 @@ export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDic
     }
   };
 
-  const card = selected ? style === "socialPost" ? (
+  const renderCard = (segment: WritingThoughtSegment, index: number) => style === "socialPost" ? (
     <WritingSocialPostCard
-      cardIndex={safeCardIndex}
+      cardIndex={index}
       cardTotal={segments.length}
       copy={copy}
       format={format}
+      blocks={segment.blocks}
       source={source}
-      text={selected.text}
+      text={segment.text}
     />
   ) : (
     <ShareCard
-      cardIndex={safeCardIndex}
+      cardIndex={index}
       cardTotal={segments.length}
       format={format}
+      blocks={segment.blocks}
       source={source}
       sourceLabel={copy.sourceLabel}
-      text={selected.text}
+      text={segment.text}
       variant={variant}
     />
-  ) : null;
+  );
+  const card = selected ? renderCard(selected, safeCardIndex) : null;
+  const fileNameBase = `bts-writing-${source.kind ?? "thought"}-${source.articleSlug ?? "preview"}${style === "socialPost" ? "-social-post" : ""}-${format}`;
 
   return (
     <dialog
@@ -132,8 +136,20 @@ export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDic
           <ShareComposerHeading closeLabel={copy.close} headingId="writing-share-title" onClose={requestClose} product={copy.sourceLabel} title={copy.dialogTitle} />
 
           <div className="writing-share-composer-grid">
-            <section className="writing-share-preview" aria-label={selectionLabel}>
-              {card ? <div ref={cardRef} className="bts-share-capture-root">{card}</div> : <p role="alert" className="max-w-md border-l-2 border-[#ff9a3d] pl-5 text-base leading-7 text-[#ffd2ad]">{copy.tooLong}</p>}
+            <section
+              className="writing-share-preview"
+              aria-label={selectionLabel}
+              aria-roledescription={segments.length > 1 ? copy.carousel : undefined}
+              tabIndex={segments.length > 1 ? 0 : undefined}
+              onKeyDown={(event) => {
+                if (segments.length <= 1 || event.altKey || event.ctrlKey || event.metaKey) return;
+                if (event.key === "ArrowLeft") { event.preventDefault(); setCardIndex((current) => Math.max(0, current - 1)); }
+                if (event.key === "ArrowRight") { event.preventDefault(); setCardIndex((current) => Math.min(segments.length - 1, current + 1)); }
+                if (event.key === "Home") { event.preventDefault(); setCardIndex(0); }
+                if (event.key === "End") { event.preventDefault(); setCardIndex(segments.length - 1); }
+              }}
+            >
+              {card ? <div className="bts-share-capture-root">{card}</div> : <p role="alert" className="max-w-md border-l-2 border-[#ff9a3d] pl-5 text-base leading-7 text-[#ffd2ad]">{copy.tooLong.replace("{max}", String(segmentation.status === "tooLong" ? segmentation.maxSlides : MAX_WRITING_SHARE_CARDS))}</p>}
               <p className="sr-only">{source.text}</p>
             </section>
 
@@ -166,26 +182,30 @@ export function ShareComposer({ copy, onClose, source }: { copy: WritingShareDic
               </fieldset> : null}
 
               {segments.length > 1 ? (
-                <div className="flex items-center justify-between gap-3" aria-live="polite">
-                  <button type="button" className="writing-share-secondary" onClick={() => setCardIndex((current) => Math.max(0, current - 1))} disabled={safeCardIndex === 0}>{copy.previous}</button>
-                  <span className="font-mono text-xs text-slate-400">{progressLabel(copy, safeCardIndex + 1, segments.length)}</span>
-                  <button type="button" className="writing-share-secondary" onClick={() => setCardIndex((current) => Math.min(segments.length - 1, current + 1))} disabled={safeCardIndex === segments.length - 1}>{copy.next}</button>
+                <div className="writing-carousel-navigation" role="group" aria-label={copy.carousel}>
+                  <span className="writing-carousel-label">{copy.carousel} · {segments.length}</span>
+                  <button type="button" aria-label={copy.previous} className="writing-share-secondary" onClick={() => setCardIndex((current) => Math.max(0, current - 1))} disabled={safeCardIndex === 0}>{copy.previous}</button>
+                  <span role="status" aria-atomic="true" className="font-mono text-xs text-slate-400">{copy.slideProgress.replace("{current}", String(safeCardIndex + 1)).replace("{total}", String(segments.length))}</span>
+                  <button type="button" aria-label={copy.next} className="writing-share-secondary" onClick={() => setCardIndex((current) => Math.min(segments.length - 1, current + 1))} disabled={safeCardIndex === segments.length - 1}>{copy.next}</button>
                 </div>
               ) : null}
 
               {feedback ? <p role="status" className="text-sm text-[#9debf4]">{copy[feedback]}</p> : null}
               {feedback === "clipboardFailed" ? <textarea aria-label={copy.manualCopy} readOnly onFocus={(event) => event.currentTarget.select()} value={clipboardFallback} rows={3} className="w-full rounded-lg border border-white/15 bg-[#04111b] p-3 text-sm text-white" /> : null}
 
-              {card ? <ShareFileActions key={`${style}:${format}:${variant}:${safeCardIndex}:${selected?.text ?? ""}`} cardRef={cardRef} fileName={`bts-writing-${source.articleSlug ?? "preview"}${style === "socialPost" ? "-social-post" : ""}-${format}`} format={format} renderKey={`${style}:${format}:${variant}:${safeCardIndex}:${selected?.text ?? ""}`} text={selected?.text ?? source.text} title={source.articleTitle} url={source.canonicalUrl} /> : null}
+              {card ? <WritingCarouselFileActions key={`${style}:${format}:${variant}:${segmentation.canonicalText}`} copy={copy} currentIndex={safeCardIndex} deckRef={deckRef} fileNameBase={fileNameBase} format={format} source={source} total={segments.length} /> : null}
 
               <div className="writing-share-actions">
-                <button type="button" onClick={() => void copyContent([selected?.text ?? source.text, source.canonicalUrl].filter(Boolean).join("\n"))} className="writing-share-secondary">{copy.copyText}</button>
+                {source.kind !== "article" ? <button type="button" onClick={() => void copyContent([source.text, source.canonicalUrl].filter(Boolean).join("\n"))} className="writing-share-secondary">{copy.copyText}</button> : null}
                 {source.canonicalUrl ? <button type="button" onClick={() => void copyContent(source.canonicalUrl!)} className="writing-share-secondary">{copy.copyLink}</button> : null}
                 {card ? <button type="button" onClick={() => { setScreenshotControlsVisible(true); setScreenshotMode(true); }} className="writing-share-primary">{copy.screenshotMode}</button> : null}
               </div>
               {card ? <p className="text-xs leading-5 text-slate-500">{copy.screenshotHint}</p> : null}
             </aside>
           </div>
+          {segments.length ? <div ref={deckRef} className="writing-carousel-export-deck" aria-hidden="true">
+            {segments.map((segment, index) => <div key={`${index}:${segment.text}`} data-writing-carousel-slide={index}>{renderCard(segment, index)}</div>)}
+          </div> : null}
         </div>
       )}
     </dialog>

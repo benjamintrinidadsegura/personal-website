@@ -1,3 +1,5 @@
+import type { WritingNewsletterPreparation } from "@/types/newsletter";
+
 export const writingContentTypes = ["essay", "note"] as const;
 export type WritingContentType = (typeof writingContentTypes)[number];
 
@@ -45,7 +47,7 @@ export type WritingDocumentV1 = {
   blocks: WritingDocumentBlock[];
 };
 
-export type WritingField = "title" | "deck" | "excerpt" | "bodyJson" | "contentType" | "topics";
+export type WritingField = "title" | "deck" | "excerpt" | "bodyJson" | "contentType" | "topics" | "sourceLocale";
 
 export interface WritingInput {
   title: string;
@@ -54,6 +56,7 @@ export interface WritingInput {
   body: string;
   bodyJson: WritingDocumentV1;
   contentType: WritingContentType;
+  sourceLocale: WritingLanguage;
   topics: string[];
 }
 
@@ -62,6 +65,7 @@ export interface AdminWritingArticle extends Omit<WritingInput, "bodyJson"> {
   bodyJson: WritingDocumentV1 | null;
   slug: string | null;
   status: WritingStatus;
+  sourceRevision: number;
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;
@@ -78,6 +82,9 @@ export interface PublicWritingSummary {
   publishedAt: string;
   readingMinutes: number;
   language: WritingLanguage;
+  sourceLanguage: WritingLanguage;
+  availableLanguages: WritingLanguage[];
+  translationStatus: "source" | "translated" | "fallback";
 }
 
 export interface PublicWritingArticle extends PublicWritingSummary {
@@ -92,6 +99,68 @@ export const writingShareVariants = ["editorial", "marginNote", "statement"] as 
 export type WritingShareVariant = (typeof writingShareVariants)[number];
 export type WritingShareComposition = WritingShareVariant | "socialPost";
 
+export const writingShareBlockKinds = ["heading", "paragraph", "listItem", "quote"] as const;
+export type WritingShareBlockKind = (typeof writingShareBlockKinds)[number];
+
+export type WritingShareBlock = {
+  kind: WritingShareBlockKind;
+  text: string;
+};
+
+export type WritingCarouselBlock = WritingShareBlock & {
+  separatorBefore: "" | " " | "\n\n";
+};
+
+export const writingTranslationStatuses = ["source", "pending", "translated", "stale", "failed"] as const;
+export type WritingTranslationStatus = (typeof writingTranslationStatuses)[number];
+
+export type WritingTranslationSummary = {
+  locale: WritingLanguage;
+  status: WritingTranslationStatus;
+  sourceRevision: number;
+  generatedAt: string | null;
+  manuallyEdited: boolean;
+  updatedAt: string;
+};
+
+export type WritingTranslationPayload = {
+  title: string;
+  deck: string;
+  excerpt: string;
+  bodyJson: WritingDocumentV1;
+};
+
+export type WritingTranslationRequest = {
+  articleId: string;
+  sourceLocale: WritingLanguage;
+  targetLocale: WritingLanguage;
+  sourceRevision: number;
+  content: WritingTranslationPayload;
+  protectedTerms: readonly ["BTS.ONLINE", "bts.online"];
+};
+
+export interface WritingTranslationProvider {
+  readonly id: string;
+  translate(request: WritingTranslationRequest, signal: AbortSignal): Promise<WritingTranslationPayload>;
+}
+
+export const writingTranslationFailureCodes = [
+  "configuration_missing",
+  "authentication_provider",
+  "rate_limit",
+  "timeout_network",
+  "invalid_structured_response",
+  "content_too_large",
+  "persistence_conflict",
+] as const;
+export type WritingTranslationFailureCode = (typeof writingTranslationFailureCodes)[number];
+
+export type WritingTranslationGenerationResult = {
+  locale: WritingLanguage;
+  status: "translated" | "skipped" | "failed";
+  failureCode?: WritingTranslationFailureCode;
+};
+
 export type WritingShareSource = {
   articleId: string;
   articleSlug: string | null;
@@ -103,6 +172,7 @@ export type WritingShareSource = {
   kind?: "article" | "thought";
   language: WritingLanguage;
   readingMinutes?: number;
+  blocks?: WritingShareBlock[];
   text: string;
 };
 
@@ -114,5 +184,7 @@ export type WritingActionState = {
   code?: "validation" | "conflict" | "error";
   updatedAt?: string;
   slug?: string;
+  sourceRevision?: number;
+  newsletterPreparation?: WritingNewsletterPreparation;
   fieldErrors?: Partial<Record<WritingField, string>>;
 } | null;

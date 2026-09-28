@@ -78,6 +78,19 @@ test("Writing Article Social Post uses the public title and short authored tease
   assert.doesNotMatch(html, /From:/u);
 });
 
+test("Writing carousel continuation slides keep identity and content without repeating the giant article title", () => {
+  const article = { ...writingSource, kind: "article" as const, text: "Full article content continues across several intentional slides." };
+  const social = renderToStaticMarkup(createElement(WritingSocialPostCard, { cardIndex: 1, cardTotal: 3, copy: writingShareDictionaries.en, format: "square", source: article, text: "Continuation content stays readable." }));
+  const editorial = renderToStaticMarkup(createElement(ShareCard, { cardIndex: 1, cardTotal: 3, format: "square", source: article, sourceLabel: "Writing", text: "Continuation content stays readable.", variant: "editorial" }));
+  for (const html of [social, editorial]) {
+    assert.match(html, /02 \/ 03/u);
+    assert.match(html, /Continuation content stays readable/u);
+    assert.doesNotMatch(html, /A public story about making context visible/u);
+    assert.match(html, /bts\.online/u);
+  }
+  assert.match(editorial, /writing-share-card-article-body/u);
+});
+
 test("Daily Quote Social Post preserves BTS-original and public-domain attribution truthfully", () => {
   for (const format of writingShareFormats) {
     const html = renderToStaticMarkup(createElement(QuoteSocialPostCard, { format, originalLabel: "BTS Original", quote, surfaceLabel: "Daily Quote" }));
@@ -134,8 +147,8 @@ test("Social Post contains no fake engagement, platform imitation, private data 
   }
   const writingComposer = source("../components/writing/share/share-composer.tsx");
   const quoteDialog = source("../components/quotes/quote-share-dialog.tsx");
-  for (const composer of [writingComposer, quoteDialog]) {
-    assert.match(composer, /ShareFileActions/u);
+  for (const [composer, actions] of [[writingComposer, /WritingCarouselFileActions/u], [quoteDialog, /ShareFileActions/u]] as const) {
+    assert.match(composer, actions);
     assert.match(composer, /screenshotMode/u);
     assert.doesNotMatch(composer, /fetch\(/u);
   }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ArticleBody } from "@/components/writing/article-body";
+import { WritingNewsletterStatus } from "@/components/admin/writing-newsletter-status";
 import { NewsletterCta } from "@/components/newsletter/newsletter-cta";
 import { Discussion } from "@/components/writing/comments/discussion";
 import { WritingDocument } from "@/components/writing/writing-document";
@@ -10,50 +11,56 @@ import { ShareFormatSignal } from "@/components/writing/share/share-format-signa
 import { ShareArticleTrigger } from "@/components/writing/share/share-thought-trigger";
 import { getWritingDictionary, localizeWritingTopic, writingTaxonomies } from "@/data/i18n/writing";
 import { getWritingShareDictionary } from "@/data/i18n/writing-share";
-import { getWritingTranslationSlug } from "@/data/writing-localization";
 import { siteConfig } from "@/data/site";
+import { verifyAdminAuthorization } from "@/lib/admin/authorization";
 import { getWritingDiscussionPageData } from "@/lib/comments/queries";
-import { localeDetails, locales } from "@/lib/i18n/config";
+import { localeDetails } from "@/lib/i18n/config";
 import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
+import { isNewsletterEditionId, parseWritingNewsletterPreparationStatus } from "@/lib/newsletter/preparation";
 import { getLocale } from "@/lib/i18n/server";
 import { getPublishedWritingBySlug } from "@/lib/writing/queries";
+import { legacyWritingBodyToShareBlocks, writingDocumentToShareBlocks } from "@/lib/writing/document";
 import type { WritingShareContext, WritingShareSource } from "@/types/writing";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const [article, locale] = await Promise.all([getPublishedWritingBySlug((await params).slug), getLocale()]);
+  const locale = await getLocale();
+  const article = await getPublishedWritingBySlug((await params).slug, locale);
   if (!article) return {};
-  const sourceLocale = article.language;
-  const canonical = getLocalizedPathname(`/writing/${article.slug}`, sourceLocale);
+  const canonicalLocale = article.translationStatus === "fallback" ? article.sourceLanguage : article.language;
+  const canonical = getLocalizedPathname(`/writing/${article.slug}`, canonicalLocale);
   const title = `${article.title} | Writing`;
   const languages: Record<string, string> = {
-    [sourceLocale]: canonical,
-    "x-default": canonical,
+    "x-default": getLocalizedPathname(`/writing/${article.slug}`, article.sourceLanguage),
   };
-  for (const targetLocale of locales) {
-    const translationSlug = getWritingTranslationSlug(article.slug, targetLocale);
-    if (translationSlug) languages[targetLocale] = getLocalizedPathname(`/writing/${translationSlug}`, targetLocale);
-  }
+  for (const targetLocale of article.availableLanguages) languages[targetLocale] = getLocalizedPathname(`/writing/${article.slug}`, targetLocale);
   return {
     title,
     description: article.excerpt,
     alternates: { canonical, languages },
-    openGraph: { type: "article", locale: localeDetails[sourceLocale].openGraphLocale, url: canonical, siteName: "bts.online", title, description: article.excerpt, publishedTime: article.publishedAt, authors: [siteConfig.name], images: [{ url: "/og.png", width: 1732, height: 909, alt: "Benjamin Trinidad Segura — Digital HQ" }] },
+    openGraph: { type: "article", locale: localeDetails[article.language].openGraphLocale, url: canonical, siteName: "bts.online", title, description: article.excerpt, publishedTime: article.publishedAt, authors: [siteConfig.name], images: [{ url: "/og.png", width: 1732, height: 909, alt: "Benjamin Trinidad Segura — Digital HQ" }] },
     twitter: { card: "summary_large_image", title, description: article.excerpt, images: ["/og.png"] },
     other: { "content-language": article.language, "ui-language": locale },
   };
 }
 
-export default async function WritingArticlePage({ params }: { params: Promise<{ slug: string }> }) {
-  const [article, locale] = await Promise.all([getPublishedWritingBySlug((await params).slug), getLocale()]);
+export default async function WritingArticlePage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ newsletter?: string | string[]; newsletterEdition?: string | string[] }> }) {
+  const locale = await getLocale();
+  const article = await getPublishedWritingBySlug((await params).slug, locale);
   if (!article) notFound();
-  const { discussion, participation } = await getWritingDiscussionPageData(article.id);
+  const query = await searchParams;
+  const newsletterStatus = parseWritingNewsletterPreparationStatus(Array.isArray(query.newsletter) ? null : query.newsletter);
+  const newsletterEditionCandidate = Array.isArray(query.newsletterEdition) ? null : query.newsletterEdition;
+  const newsletterEditionId = isNewsletterEditionId(newsletterEditionCandidate) ? newsletterEditionCandidate : undefined;
+  const [{ discussion, participation }, newsletterAdmin] = await Promise.all([
+    getWritingDiscussionPageData(article.id),
+    newsletterStatus ? verifyAdminAuthorization(true) : null,
+  ]);
   const copy = getWritingDictionary(locale).article;
   const shareCopy = getWritingShareDictionary(locale);
   const dateFormatter = new Intl.DateTimeFormat(localeDetails[locale].htmlLang, { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
   const sourceDiffers = article.language !== locale;
-  const translationSlug = getWritingTranslationSlug(article.slug, locale);
   const taxonomy = writingTaxonomies[locale];
   const canonicalUrl = new URL(getLocalizedPathname(`/writing/${article.slug}`, article.language), `https://${siteConfig.domain}`).toString();
   const shareContext: WritingShareContext = {
@@ -66,10 +73,12 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
     language: article.language,
     readingMinutes: article.readingMinutes,
   };
+  const articleShareBlocks = article.bodyJson ? writingDocumentToShareBlocks(article.bodyJson) : legacyWritingBodyToShareBlocks(article.body);
   const articleShareSource: WritingShareSource = {
     ...shareContext,
+    blocks: articleShareBlocks,
     kind: "article",
-    text: article.excerpt,
+    text: articleShareBlocks.map(({ text }) => text).join("\n\n"),
   };
   const structuredData = {
     "@context": "https://schema.org",
@@ -105,7 +114,8 @@ export default async function WritingArticlePage({ params }: { params: Promise<{
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[58rem] bg-[radial-gradient(circle_at_72%_15%,rgba(53,208,229,0.16),transparent_30rem),radial-gradient(circle_at_18%_42%,rgba(255,122,0,0.07),transparent_22rem)]" />
       <div className="relative mx-auto max-w-[90rem]">
         <nav aria-label={copy.breadcrumb} className="font-mono text-xs text-slate-400"><ol className="flex flex-wrap items-center gap-2"><li><Link href={localizeHref("/", locale)} className="inline-flex min-h-11 items-center hover:text-white">Digital HQ</Link></li><li aria-hidden="true">/</li><li><Link href={localizeHref("/writing", locale)} className="inline-flex min-h-11 items-center hover:text-white">Writing</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="max-w-full truncate text-[#35d0e5]" lang={sourceDiffers ? article.language : undefined}>{article.title}</li></ol></nav>
-        {sourceDiffers ? <aside role="note" className="mt-8 border-l-2 border-[#ff9a3d] bg-[#ff9a3d]/[0.035] p-5 text-sm leading-6 text-slate-300"><p>{copy.sourceNotice}</p>{translationSlug ? <Link href={localizeHref(`/writing/${translationSlug}`, locale)} className="mt-3 inline-flex font-black text-[#35d0e5]">{copy.availableIn} {localeDetails[locale].languageName} →</Link> : null}</aside> : null}
+        {newsletterAdmin && newsletterStatus ? <WritingNewsletterStatus articleId={article.id} articleSlug={article.slug} editionId={newsletterEditionId} locale={locale} status={newsletterStatus} /> : null}
+        {sourceDiffers ? <aside role="note" className="mt-8 border-l-2 border-[#ff9a3d] bg-[#ff9a3d]/[0.035] p-5 text-sm leading-6 text-slate-300"><p>{copy.sourceNotice}</p></aside> : null}
         <div lang={sourceDiffers ? article.language : undefined}>
           <header className="writing-article-hero border-b border-white/15 py-16 sm:py-24">
             <div lang={localeDetails[locale].htmlLang} className="flex flex-wrap gap-3 font-mono text-[0.7rem] font-black uppercase tracking-[0.2em] text-[#35d0e5]"><span>{taxonomy.contentTypes[article.contentType]}</span><span aria-hidden="true">&middot;</span><span>{article.language.toUpperCase()}</span><span aria-hidden="true">&middot;</span><span>{article.topics.map((topic) => localizeWritingTopic(topic, locale)).join(" / ")}</span></div>

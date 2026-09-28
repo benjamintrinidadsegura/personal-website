@@ -8,7 +8,6 @@ import { projects } from "@/data/projects";
 import { getPublishedWriting } from "@/lib/writing/queries";
 import type { PublicWritingSummary } from "@/types/writing";
 import { getLocalizedPathname } from "@/lib/i18n/routing";
-import { getWritingTranslationSlug } from "@/data/writing-localization";
 import { defaultLocale, locales } from "@/lib/i18n/config";
 import { getCanonicalProductionUrl, publicStaticRoutes } from "@/lib/search-discovery";
 
@@ -35,16 +34,14 @@ export function createSitemap(publishedWriting: PublicWritingSummary[]): Metadat
     return locales.map((locale) => ({ url: languages[locale], alternates: { languages } }));
   });
 
-  const writingEntries = publishedWriting.map((article) => {
+  const writingEntries = publishedWriting.flatMap((article) => {
     const pathname = `/writing/${article.slug}`;
-    const canonicalPath = getLocalizedPathname(pathname, article.language);
-    const canonicalUrl = new URL(canonicalPath, siteUrl).toString();
-    const languages: Record<string, string> = { [article.language]: canonicalUrl, "x-default": canonicalUrl };
-    for (const targetLocale of locales) {
-      const translationSlug = getWritingTranslationSlug(article.slug, targetLocale);
-      if (translationSlug) languages[targetLocale] = new URL(getLocalizedPathname(`/writing/${translationSlug}`, targetLocale), siteUrl).toString();
-    }
-    return { url: canonicalUrl, alternates: { languages } };
+    const languages: Record<string, string> = Object.fromEntries(article.availableLanguages.map((locale) => [
+      locale,
+      new URL(getLocalizedPathname(pathname, locale), siteUrl).toString(),
+    ]));
+    languages["x-default"] = languages[article.sourceLanguage];
+    return article.availableLanguages.map((locale) => ({ url: languages[locale], alternates: { languages } }));
   });
 
   return [...localizedEntries, ...writingEntries];

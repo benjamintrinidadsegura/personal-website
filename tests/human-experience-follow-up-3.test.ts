@@ -71,6 +71,7 @@ test("FOLLOW-UP 3 Article and short curated Thought triggers share both formats 
   const article = source("../app/writing/[slug]/page.tsx");
   const document = source("../components/writing/writing-document.tsx");
   const composer = source("../components/writing/share/share-composer.tsx");
+  const carouselActions = source("../components/writing/share/carousel-file-actions.tsx");
   const card = source("../components/writing/share/share-card.tsx");
   assert.match(article, /ShareArticleTrigger/u);
   assert.match(article, /kind: "article"/u);
@@ -80,7 +81,8 @@ test("FOLLOW-UP 3 Article and short curated Thought triggers share both formats 
   assert.match(document, /block\.type === "shareable"/u);
   assert.match(composer, /writingShareFormats\.map/u);
   assert.match(card, /data-content=\{source\.kind/u);
-  assert.match(composer, /url=\{source\.canonicalUrl\}/u);
+  assert.match(composer, /source=\{source\}/u);
+  assert.match(carouselActions, /url: source\.canonicalUrl/u);
   assert.match(composer, /Screenshot-Modus|screenshotMode/u);
   assert.doesNotMatch(composer, /history\.back\(/u);
 });

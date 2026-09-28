@@ -245,8 +245,8 @@ test("server actions validate structured input and isolate draft/public invalida
   assert.equal(actions.includes("verifyAdminAuthorization(true)"), true);
   assert.equal(actions.includes("isAllowedRequestOrigin"), true);
   assert.equal(actions.includes("p_body_json: input.bodyJson"), true);
-  assert.equal(actions.includes('rpc("save_writing_draft_v2"'), true);
-  assert.equal(actions.includes('rpc("publish_writing_article_v2"'), true);
+  assert.equal(actions.includes('rpc("save_writing_draft_v3"'), true);
+  assert.equal(actions.includes('rpc("publish_writing_article_v3"'), true);
   assert.equal(actions.includes('mode === "save" && result.status !== "draft"'), true);
   assert.equal(actions.includes('mode === "publish" && result.status !== "published"'), true);
   const studioStart = actions.indexOf("function invalidateWritingStudio");

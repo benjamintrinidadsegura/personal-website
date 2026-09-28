@@ -8,6 +8,7 @@ import { verifyAdminAuthorization } from "@/lib/admin/authorization";
 import { newsletterDeliveryConfiguration, newsletterLifecycleConfiguration } from "@/lib/newsletter/config";
 import { processNewsletterDeliveryBatch, type ClaimedNewsletterDelivery } from "@/lib/newsletter/delivery";
 import { validNewsletterVersion, validateNewsletterEditionInput } from "@/lib/newsletter/edition-validation";
+import { canonicalNewsletterSiteOrigin } from "@/lib/newsletter/preparation";
 import { createBrevoNewsletterSender } from "@/lib/newsletter/provider";
 import { createNewsletterEmailHash } from "@/lib/newsletter/security";
 import { isAllowedRequestOrigin } from "@/lib/security/submission";
@@ -22,16 +23,6 @@ async function authorizeNewsletterMutation() {
   return verifyAdminAuthorization(true);
 }
 
-function canonicalSiteOrigin(): string | null {
-  try {
-    const url = new URL(process.env.SITE_URL ?? "");
-    if (url.protocol !== "https:" && url.hostname !== "localhost") return null;
-    return url.origin;
-  } catch {
-    return null;
-  }
-}
-
 export async function createNewsletterEditionAction(
   _state: NewsletterEditionActionState,
   formData: FormData,
@@ -40,7 +31,7 @@ export async function createNewsletterEditionAction(
   if (!authorization) return { ok: false, code: "error", message: "Action not allowed." };
   const validation = validateNewsletterEditionInput(formData);
   if (!validation.success) return { ok: false, code: "validation", message: "Review the edition details.", fieldErrors: validation.fieldErrors };
-  const siteOrigin = canonicalSiteOrigin();
+  const siteOrigin = canonicalNewsletterSiteOrigin(process.env.SITE_URL);
   if (!siteOrigin) return { ok: false, code: "configuration", message: "Newsletter configuration is unavailable." };
   const { data, error } = await authorization.supabase.rpc("create_newsletter_edition", {
     p_writing_article_id: validation.data.writingArticleId,

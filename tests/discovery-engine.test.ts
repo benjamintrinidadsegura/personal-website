@@ -33,6 +33,7 @@ const knownStaticRoutes = new Set([
   "/people",
   "/about",
   "/about/how-my-brain-works",
+  "/about/nerd-corner",
   "/world",
   "/people/evgeny-vinokurov",
   "/people/kiki-radicke",

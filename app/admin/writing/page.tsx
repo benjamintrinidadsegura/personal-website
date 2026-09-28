@@ -52,7 +52,7 @@ function DiscussionOverview({ summary }: { summary: WritingDiscussionModerationS
   );
 }
 
-export default async function AdminWritingPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function AdminWritingPage({ searchParams }: { searchParams: Promise<{ deleted?: string; deleteError?: string; error?: string }> }) {
   const { supabase } = await requireAdminPage(true);
   const summariesPromise = listWritingDiscussionModerationSummaries(100).catch(() => ({ status: "unavailable" as const, data: null }));
   const { data, error } = await supabase.rpc("list_writing_articles", { p_limit: 100 });
@@ -63,7 +63,8 @@ export default async function AdminWritingPage({ searchParams }: { searchParams:
   const articles = !error && Array.isArray(data)
     ? data.map((row) => mapAdminWritingArticle(row)).filter((article) => article !== null)
     : [];
-  const creationFailed = (await searchParams).error === "create";
+  const feedback = await searchParams;
+  const creationFailed = feedback.error === "create";
 
   return (
     <div className="min-h-svh px-5 py-16 sm:px-8">
@@ -80,6 +81,8 @@ export default async function AdminWritingPage({ searchParams }: { searchParams:
         </header>
 
         {creationFailed ? <p role="alert" className="mt-8 border-l-2 border-[#ff9a3d] p-5 text-[#ffcfaa]">Der Entwurf konnte nicht erstellt werden.</p> : null}
+        {feedback.deleted === "1" ? <p role="status" className="mt-8 border-l-2 border-emerald-300 p-5 text-emerald-100">Writing article deleted.</p> : null}
+        {feedback.deleteError ? <p role="alert" className="mt-8 border-l-2 border-[#ff9a3d] p-5 text-[#ffcfaa]">Deletion failed ({feedback.deleteError}). No article was removed.</p> : null}
         {error ? (
           <p role="alert" className="mt-8 border-l-2 border-[#ff9a3d] p-5 text-slate-200">Writing ist vorübergehend nicht verfügbar.</p>
         ) : articles.length === 0 ? (

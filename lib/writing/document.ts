@@ -2,6 +2,7 @@ import type {
   WritingDocumentBlock,
   WritingDocumentV1,
   WritingInlineContent,
+  WritingShareBlock,
   WritingText,
   WritingTextStyles,
 } from "@/types/writing";
@@ -130,6 +131,34 @@ export function writingBlockToPlainText(block: WritingDocumentBlock): string {
 
 export function writingDocumentToPlainText(document: WritingDocumentV1): string {
   return document.blocks.flatMap(blockText).map((text) => text.trim()).filter(Boolean).join("\n\n");
+}
+
+function shareBlockKind(block: WritingDocumentBlock): WritingShareBlock["kind"] {
+  if (block.type === "heading") return "heading";
+  if (block.type === "bulletListItem" || block.type === "numberedListItem") return "listItem";
+  if (block.type === "quote" || block.type === "pullQuote") return "quote";
+  return "paragraph";
+}
+
+function shareBlocks(block: WritingDocumentBlock): WritingShareBlock[] {
+  const ownText = block.type === "divider" ? "" : writingInlineToPlainText(block.content).trim();
+  return [
+    ...(ownText ? [{ kind: shareBlockKind(block), text: ownText }] : []),
+    ...(block.children ?? []).flatMap(shareBlocks),
+  ];
+}
+
+/** Serialisable, presentation-free Writing content for safe client-side sharing. */
+export function writingDocumentToShareBlocks(document: WritingDocumentV1): WritingShareBlock[] {
+  return document.blocks.flatMap(shareBlocks);
+}
+
+export function legacyWritingBodyToShareBlocks(body: string): WritingShareBlock[] {
+  return body
+    .split(/\n{2,}/u)
+    .map((text) => text.trim())
+    .filter(Boolean)
+    .map((text) => ({ kind: "paragraph", text }));
 }
 
 export function validateWritingDocument(value: unknown): WritingDocumentValidationResult {

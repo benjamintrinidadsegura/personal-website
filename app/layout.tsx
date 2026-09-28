@@ -41,10 +41,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export const viewport: Viewport = { themeColor: "#04111b" };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [publishedWriting, accountState, locale] = await Promise.all([
-    getPublishedWriting(),
+  const locale = await getLocale();
+  const [publishedWriting, accountState] = await Promise.all([
+    getPublishedWriting(locale),
     getAccountState(),
-    getLocale(),
   ]);
   const hasPublishedWriting = publishedWriting.length > 0;
   const staticDiscoveryItems = discoveryIndex.filter((item) => (
