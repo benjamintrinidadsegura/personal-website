@@ -42,7 +42,7 @@ test("German keeps established paths while every other V1 locale is consistently
     assert.equal(getLanguageSwitchTarget("/ru/life-alignment/partner", locale), `/${locale}/life-alignment/partner`);
   }
   assert.equal(localizeHref("https://www.goatrec.com", "en"), "https://www.goatrec.com");
-  assert.equal(localizeHref("mailto:hello@bts.online", "en"), "mailto:hello@bts.online");
+  assert.equal(localizeHref("mailto:hello@btshq.online", "en"), "mailto:hello@btshq.online");
 });
 
 test("language selection uses a document navigation so locale server state cannot remain stale", () => {

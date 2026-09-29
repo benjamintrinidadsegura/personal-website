@@ -8,6 +8,7 @@ import { siteConfig } from "@/data/site";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
 import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
 import type { Locale } from "@/lib/i18n/config";
+import { absoluteSiteUrl, requireSiteUrl } from "@/lib/site-url";
 
 const aboutUtilityCopy: Record<Locale, { breadcrumb: string; external: string; bookingBoundary: string }> = {
   de: { breadcrumb: "Brotkrümelnavigation", external: "Extern", bookingBoundary: "Booking bleibt geschlossen, solange keine verifizierte öffentliche Termin-URL vorliegt." },
@@ -104,10 +105,11 @@ export default async function AboutPage() {
   const utilityCopy = aboutUtilityCopy[locale];
   const goatProject = projectEvidence.find(({ name }) => name === "GOATRECRUTAINER");
   const ratecomProject = projectEvidence.find(({ name }) => name === "RateCom");
+  const siteUrl = requireSiteUrl();
   const canonicalPath = getLocalizedPathname("/about", locale);
-  const canonical = `https://bts.online${canonicalPath}`;
-  const personEntityId = "https://bts.online/about#benjamin";
-  const brandEntityId = "https://bts.online/#goatrecrutainer";
+  const canonical = absoluteSiteUrl(canonicalPath, siteUrl);
+  const personEntityId = absoluteSiteUrl("/about#benjamin", siteUrl);
+  const brandEntityId = absoluteSiteUrl("/#goatrecrutainer", siteUrl);
   const profileJsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -115,10 +117,10 @@ export default async function AboutPage() {
         "@type": "ProfilePage", "@id": `${canonical}#profile`, url: canonical,
         name: copy.title, description: copy.description, inLanguage: locale,
         mainEntity: { "@id": personEntityId },
-        relatedLink: [goatProject?.externalUrl, ratecomProject?.externalUrl, ...["/people", "/writing", "/find-your-next-step", "/life-alignment", "/about/how-my-brain-works", "/about/nerd-corner", "/tools/personal-advantage"].map((path) => `https://bts.online${getLocalizedPathname(path, locale)}`)].filter(Boolean),
+        relatedLink: [goatProject?.externalUrl, ratecomProject?.externalUrl, ...["/people", "/writing", "/find-your-next-step", "/life-alignment", "/about/how-my-brain-works", "/about/nerd-corner", "/tools/personal-advantage"].map((path) => absoluteSiteUrl(getLocalizedPathname(path, locale), siteUrl))].filter(Boolean),
       },
       {
-        "@type": "Person", "@id": personEntityId, name: positioning.name, url: "https://bts.online/about",
+        "@type": "Person", "@id": personEntityId, name: positioning.name, url: absoluteSiteUrl("/about", siteUrl),
         description: positioning.explanation, sameAs: personProfiles.map(({ url }) => url),
         knowsAbout: [...positioning.fields], subjectOf: ownerStories.map((story) => ({
           "@type": "VideoObject", name: story.video.title, url: story.video.url,
@@ -129,7 +131,7 @@ export default async function AboutPage() {
       {
         "@type": "BreadcrumbList", "@id": `${canonical}#breadcrumb`,
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Digital HQ", item: "https://bts.online/" },
+          { "@type": "ListItem", position: 1, name: "Digital HQ", item: absoluteSiteUrl("/", siteUrl) },
           { "@type": "ListItem", position: 2, name: copy.breadcrumb, item: canonical },
         ],
       },

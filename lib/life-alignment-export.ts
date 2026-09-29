@@ -18,7 +18,7 @@ export function buildLifeAlignmentResultText(result: LifeAlignmentResult, locale
     const insights = result.insights.map((insight) => `- ${insight.title}\n  ${insight.explanation}\n  ${lifeUiValue(locale, "In everyday life", "Im Alltag")}: ${insight.everydayInterpretation}`);
     const paths = result.actionPaths.map((path) => `- ${path.title}\n  ${lifeUiValue(locale, "Why", "Warum")}: ${path.why}\n  ${lifeUiValue(locale, "First step", "Erster Schritt")}: ${path.firstStep}\n  ${lifeUiValue(locale, "Example", "Beispiel")}: ${path.example}\n  ${lifeUiValue(locale, "Learning opportunity", "Lernmöglichkeit")}: ${path.learning}\n  Trade-off: ${path.tradeoff}\n  ${lifeUiValue(locale, "Reversible", "Umkehrbar")}: ${path.reversible ? (lifeUiValue(locale, "yes", "ja")) : (lifeUiValue(locale, "not fully", "nicht vollständig"))}.`);
     return withinLimit([
-        `Life Alignment · bts.online\n${result.title}`,
+        `Life Alignment · btshq.online\n${result.title}`,
         [lifeUiValue(locale, "Snapshot:", "Momentaufnahme:"), ...result.summary].join("\n"),
         ["Alignment Landscape:", ...landscape].join("\n"),
         [lifeUiValue(locale, "Relationships across areas:", "Bereichsübergreifende Zusammenhänge:"), ...insights].join("\n"),
@@ -34,7 +34,7 @@ export function buildLifeAlignmentResultText(result: LifeAlignmentResult, locale
 }
 export function buildLifeAlignmentClipboardSummary(result: LifeAlignmentResult, locale: Locale = "de"): string {
     return withinLimit([
-        `Life Alignment · bts.online\n${result.title}`,
+        `Life Alignment · btshq.online\n${result.title}`,
         result.summary.slice(0, 3).join(" "),
         `${lifeUiValue(locale, "Focus", "Fokus")}: ${result.focus.title}. ${result.tradeoffLabel}`,
         `${lifeUiValue(locale, "Possible experiment", "Möglicher Versuch")}: ${result.experiment.title}. ${result.experiment.action}`,

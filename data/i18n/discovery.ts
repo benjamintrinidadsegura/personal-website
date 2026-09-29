@@ -96,7 +96,7 @@ const englishStaticCopy: Record<string, Partial<DiscoveryItem>> = {
   "tool-find-your-next-step-problem": { description: "Put a difficult situation into context and identify possible next steps.", category: "Reflection Journey", tags: ["problem", "options", "support"], keywords: ["I have a problem", "what can I do"] },
   "tool-find-your-next-step-idea": { description: "Structure an idea and turn it into a first realistic plan.", category: "Idea Journey", tags: ["idea", "concept", "project"], keywords: ["develop an idea", "start a project"] },
   "tool-echowall": { description: "A moderated community wall for thoughts, feedback, reactions and messages.", category: "Community Tool", tags: ["Community", "Feedback", "Signals"], keywords: ["Echo", "message", "wall"] },
-  "page-home": { description: "Benjamin Trinidad Segura’s central digital home.", category: "Page", tags: ["Home", "bts.online"], keywords: ["homepage", "overview"] },
+  "page-home": { description: "Benjamin Trinidad Segura’s central digital home.", category: "Page", tags: ["Home", "btshq.online"], keywords: ["homepage", "overview"] },
   "page-projects": { description: "All projects and ideas in the growing ecosystem.", category: "Page", tags: ["Projects", "Portfolio"], keywords: ["Building", "projects"] },
   "page-writing": { description: "Field Notes about work, identity, courage and development.", category: "Page", tags: ["Insights", "articles"], keywords: ["writing", "essays", "magazine"] },
   "page-quote": { title: "Quote of the Day", description: "A curated daily thought with more quotes and BTS share cards.", category: "Page", tags: ["Insights", "Quote", "Share Cards"], keywords: ["quote of the day", "thought", "another quote", "share"] },

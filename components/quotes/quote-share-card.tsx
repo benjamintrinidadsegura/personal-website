@@ -18,7 +18,7 @@ export function QuoteShareCard({ format, quote, originalLabel, surfaceLabel }: {
             <p className="writing-share-card-author">{quote.attribution}</p>
             {quote.source ? <p className="writing-share-card-title">{quote.source}</p> : null}
           </div>
-          <p className="writing-share-card-domain">bts.online</p>
+          <p className="writing-share-card-domain">btshq.online</p>
         </footer>
       </div>
     </div>

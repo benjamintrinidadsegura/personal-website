@@ -90,7 +90,7 @@ function requireProject(slug: string) {
 
 const goatrec = requireProject("goatrecrutainer");
 const ratecom = requireProject("ratecom");
-const digitalHq = requireProject("bts-online");
+const digitalHq = requireProject("btshq-online");
 
 export const aboutProjectEvidence: readonly ProjectEvidence[] = [
   {

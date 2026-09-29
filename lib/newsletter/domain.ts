@@ -1,4 +1,4 @@
-export const NEWSLETTER_CONSENT_VERSION = "newsletter-consent-v1";
+export const NEWSLETTER_CONSENT_VERSION = "newsletter-consent-v2";
 export const NEWSLETTER_PRIVACY_VERSION = "newsletter-privacy-v1";
 
 export const newsletterPromise = {
@@ -12,12 +12,12 @@ export const newsletterPromise = {
 } as const satisfies Record<Locale, string>;
 
 export const newsletterConsentCopy = {
-  de: `Ich willige ein, den bts.online Newsletter per E-Mail zu erhalten: ${newsletterPromise.de} Ich kann mich jederzeit abmelden.`,
-  en: `I consent to receive the bts.online newsletter by email: ${newsletterPromise.en} I can unsubscribe at any time.`,
-  es: `Doy mi consentimiento para recibir por correo el newsletter de bts.online: ${newsletterPromise.es} Puedo darme de baja en cualquier momento.`,
-  tr: `bts.online bültenini e-posta yoluyla almayı kabul ediyorum: ${newsletterPromise.tr} İstediğim zaman abonelikten çıkabilirim.`,
-  pl: `Wyrażam zgodę na otrzymywanie newslettera bts.online e-mailem: ${newsletterPromise.pl} W każdej chwili mogę zrezygnować.`,
-  el: `Συναινώ να λαμβάνω το newsletter του bts.online μέσω email: ${newsletterPromise.el} Μπορώ να διαγραφώ οποιαδήποτε στιγμή.`,
-  ru: `Я соглашаюсь получать рассылку bts.online по электронной почте: ${newsletterPromise.ru} Я могу отписаться в любой момент.`,
+  de: `Ich willige ein, den btshq.online Newsletter per E-Mail zu erhalten: ${newsletterPromise.de} Ich kann mich jederzeit abmelden.`,
+  en: `I consent to receive the btshq.online newsletter by email: ${newsletterPromise.en} I can unsubscribe at any time.`,
+  es: `Doy mi consentimiento para recibir por correo el newsletter de btshq.online: ${newsletterPromise.es} Puedo darme de baja en cualquier momento.`,
+  tr: `btshq.online bültenini e-posta yoluyla almayı kabul ediyorum: ${newsletterPromise.tr} İstediğim zaman abonelikten çıkabilirim.`,
+  pl: `Wyrażam zgodę na otrzymywanie newslettera btshq.online e-mailem: ${newsletterPromise.pl} W każdej chwili mogę zrezygnować.`,
+  el: `Συναινώ να λαμβάνω το newsletter του btshq.online μέσω email: ${newsletterPromise.el} Μπορώ να διαγραφώ οποιαδήποτε στιγμή.`,
+  ru: `Я соглашаюсь получать рассылку btshq.online по электронной почте: ${newsletterPromise.ru} Я могу отписаться в любой момент.`,
 } as const satisfies Record<Locale, string>;
 import type { Locale } from "@/lib/i18n/config";

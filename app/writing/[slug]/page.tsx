@@ -18,6 +18,7 @@ import { localeDetails } from "@/lib/i18n/config";
 import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
 import { isNewsletterEditionId, parseWritingNewsletterPreparationStatus } from "@/lib/newsletter/preparation";
 import { getLocale } from "@/lib/i18n/server";
+import { absoluteSiteUrl, requireSiteUrl } from "@/lib/site-url";
 import { getPublishedWritingBySlug } from "@/lib/writing/queries";
 import { legacyWritingBodyToShareBlocks, writingDocumentToShareBlocks } from "@/lib/writing/document";
 import type { WritingShareContext, WritingShareSource } from "@/types/writing";
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title,
     description: article.excerpt,
     alternates: { canonical, languages },
-    openGraph: { type: "article", locale: localeDetails[article.language].openGraphLocale, url: canonical, siteName: "bts.online", title, description: article.excerpt, publishedTime: article.publishedAt, authors: [siteConfig.name], images: [{ url: "/og.png", width: 1732, height: 909, alt: "Benjamin Trinidad Segura — Digital HQ" }] },
+    openGraph: { type: "article", locale: localeDetails[article.language].openGraphLocale, url: canonical, siteName: "btshq.online", title, description: article.excerpt, publishedTime: article.publishedAt, authors: [siteConfig.name], images: [{ url: "/og.png", width: 1732, height: 909, alt: "Benjamin Trinidad Segura — Digital HQ" }] },
     twitter: { card: "summary_large_image", title, description: article.excerpt, images: ["/og.png"] },
     other: { "content-language": article.language, "ui-language": locale },
   };
@@ -62,7 +63,8 @@ export default async function WritingArticlePage({ params, searchParams }: { par
   const dateFormatter = new Intl.DateTimeFormat(localeDetails[locale].htmlLang, { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" });
   const sourceDiffers = article.language !== locale;
   const taxonomy = writingTaxonomies[locale];
-  const canonicalUrl = new URL(getLocalizedPathname(`/writing/${article.slug}`, article.language), `https://${siteConfig.domain}`).toString();
+  const siteUrl = requireSiteUrl();
+  const canonicalUrl = absoluteSiteUrl(getLocalizedPathname(`/writing/${article.slug}`, article.language), siteUrl);
   const shareContext: WritingShareContext = {
     articleId: article.id,
     articleSlug: article.slug,
@@ -91,8 +93,8 @@ export default async function WritingArticlePage({ params, searchParams }: { par
         description: article.excerpt,
         datePublished: article.publishedAt,
         inLanguage: article.language,
-        author: { "@id": "https://bts.online/about#benjamin" },
-        isPartOf: { "@id": "https://bts.online/#website" },
+        author: { "@id": absoluteSiteUrl("/about#benjamin", siteUrl) },
+        isPartOf: { "@id": absoluteSiteUrl("/#website", siteUrl) },
         articleSection: article.contentType,
         keywords: article.topics,
       },
@@ -100,8 +102,8 @@ export default async function WritingArticlePage({ params, searchParams }: { par
         "@type": "BreadcrumbList",
         "@id": `${canonicalUrl}#breadcrumb`,
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Digital HQ", item: "https://bts.online/" },
-          { "@type": "ListItem", position: 2, name: "Writing", item: `https://bts.online${getLocalizedPathname("/writing", article.language)}` },
+          { "@type": "ListItem", position: 1, name: "Digital HQ", item: absoluteSiteUrl("/", siteUrl) },
+          { "@type": "ListItem", position: 2, name: "Writing", item: absoluteSiteUrl(getLocalizedPathname("/writing", article.language), siteUrl) },
           { "@type": "ListItem", position: 3, name: article.title, item: canonicalUrl },
         ],
       },

@@ -18,7 +18,7 @@ export function ShareComposerHeading({
       <div>
         <p className="bts-share-identity">
           <ShareIcon />
-          <span>BTS.ONLINE / {product}</span>
+          <span>BTSHQ.ONLINE / {product}</span>
         </p>
         <h2 id={headingId} className="mt-2 text-2xl font-black text-white sm:text-3xl">{title}</h2>
       </div>

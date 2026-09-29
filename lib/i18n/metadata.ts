@@ -29,7 +29,7 @@ export function createLocalizedMetadata({
 }): Metadata {
   const canonical = getLocalizedPathname(pathname, locale);
   const images = image
-    ? [{ url: "/og.png", width: 1732, height: 909, alt: "Benjamin Trinidad Segura — bts.online Digital HQ" }]
+    ? [{ url: "/og.png", width: 1732, height: 909, alt: "Benjamin Trinidad Segura — btshq.online Digital HQ" }]
     : [];
   const includedLocales = Array.isArray(alternates) ? alternates : locales;
 
@@ -45,7 +45,7 @@ export function createLocalizedMetadata({
       locale: localeDetails[locale].openGraphLocale,
       alternateLocale: locales.filter((candidate) => candidate !== locale).map((candidate) => localeDetails[candidate].openGraphLocale),
       url: canonical,
-      siteName: "bts.online",
+      siteName: "btshq.online",
       title,
       description,
       images,

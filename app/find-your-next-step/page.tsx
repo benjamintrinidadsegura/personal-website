@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const metadata = createLocalizedMetadata({
     locale,
     pathname: content.href,
-    title: "Find Your Next Step | bts.online",
+    title: "Find Your Next Step | btshq.online",
     description: content.introduction,
   });
   return {

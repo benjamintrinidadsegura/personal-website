@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { requireAdminPage } from "@/lib/admin/authorization";
 
-export const metadata = { title: "BTS Studio | bts.online", robots: { index: false, follow: false } };
+export const metadata = { title: "BTS Studio | btshq.online", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 const areas = [

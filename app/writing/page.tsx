@@ -16,7 +16,7 @@ import type { WritingLanguage } from "@/types/writing";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const copy = getWritingDictionary(locale).page;
-  return createLocalizedMetadata({ locale, pathname: "/writing", title: "Writing | bts.online", description: copy.description });
+  return createLocalizedMetadata({ locale, pathname: "/writing", title: "Writing | btshq.online", description: copy.description });
 }
 
 export default async function WritingPage() {

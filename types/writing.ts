@@ -136,7 +136,7 @@ export type WritingTranslationRequest = {
   targetLocale: WritingLanguage;
   sourceRevision: number;
   content: WritingTranslationPayload;
-  protectedTerms: readonly ["BTS.ONLINE", "bts.online"];
+  protectedTerms: readonly ["BTSHQ.ONLINE", "btshq.online"];
 };
 
 export interface WritingTranslationProvider {

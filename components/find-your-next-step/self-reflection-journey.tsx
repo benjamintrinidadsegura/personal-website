@@ -231,7 +231,7 @@ export function SelfPrintDocument({
       data-fyns-print-representation={representation}
     >
       <header className="fyns-print-header">
-        <p className="fyns-print-brand">bts.online / FYNS / Self</p>
+        <p className="fyns-print-brand">btshq.online / FYNS / Self</p>
         <h1>{result.title}</h1>
         <section className="fyns-print-summary" aria-labelledby="self-print-summary-title">
           <h2 id="self-print-summary-title">{ui.summary}</h2>

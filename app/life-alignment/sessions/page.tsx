@@ -11,7 +11,7 @@ import { localizeHref } from "@/lib/i18n/routing";
 import { getLocale } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Private Alignment sessions | bts.online", robots: { index: false, follow: false } };
+export const metadata = { title: "Private Alignment sessions | btshq.online", robots: { index: false, follow: false } };
 
 const copy: Record<Locale, { title: string; intro: string; empty: string; unavailable: string; open: string; invite: string; counterpart: string; result: string; back: string }> = {
   de: { title: "Deine privaten Sessions", intro: "Nur grobe Statusangaben – keine Antworten der anderen Person.", empty: "Noch keine Invite Session.", unavailable: "Sessions sind gerade nicht verfügbar.", open: "Session öffnen", invite: "Einladung", counterpart: "Andere Person", result: "Gemeinsames Ergebnis", back: "Zurück zu Life Alignment" },

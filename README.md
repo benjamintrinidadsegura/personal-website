@@ -1,4 +1,4 @@
-# bts.online
+# btshq.online
 
 Persönliche Website und Digital HQ von Benjamin Trinidad Segura.
 

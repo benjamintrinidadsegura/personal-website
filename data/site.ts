@@ -1,8 +1,10 @@
 import type { SocialLink } from "@/types/content";
 
+export const PUBLIC_CANONICAL_SOURCE_URL = "https://btshq.online" as const;
+
 export const siteConfig = {
   name: "Benjamin Trinidad Segura",
-  domain: "bts.online",
+  domain: "btshq.online",
   email: "goatrecrutainer@gmail.com",
   socialLinks: [
     { label: "TikTok", url: "https://www.tiktok.com/@goatrecrutainer", context: "GOATRECRUTAINER" },

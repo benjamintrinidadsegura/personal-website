@@ -1,10 +1,10 @@
 # Search + AI discovery foundation
 
-This is the operational baseline for making BTS.ONLINE understandable to people, search engines and legitimate answer-retrieval systems without turning the product into an SEO content operation.
+This is the operational baseline for making BTSHQ.ONLINE understandable to people, search engines and legitimate answer-retrieval systems without turning the product into an SEO content operation.
 
 ## Search + AI discovery principles
 
-- Problem first, useful answer second, relevant BTS.ONLINE experience third.
+- Problem first, useful answer second, relevant BTSHQ.ONLINE experience third.
 - One canonical destination for one user intent cluster. Do not create a page for every phrasing of a question.
 - Important explanatory copy must be present in the initial HTML. Interaction may require JavaScript; understanding the page must not.
 - Write for a person deciding whether a reflection or tool is useful. Do not stuff keywords, generate doorway pages or publish synthetic expertise.
@@ -16,7 +16,7 @@ Public and indexable surfaces are the intentional editorial pages, published Wri
 
 Private or non-indexable surfaces include Admin, Account, internal APIs, newsletter confirmation and unsubscribe flows, Life Alignment invitations, sessions and session lists, and the partner shared-device flow. These routes are absent from the sitemap. Robots exclusions reinforce the boundary; route metadata and response headers protect sensitive interactive flows. Robots is never treated as access control.
 
-The canonical host is accepted only when production runs with `SITE_URL=https://bts.online`. Preview, development, malformed and alternate hosts fail closed: robots disallows crawling and the sitemap is empty.
+The canonical host comes from one clean origin in `SITE_URL`. Production accepts any correctly configured HTTPS origin so a domain change does not require a code rewrite. Vercel Preview, development and malformed configurations fail closed for indexing: robots disallows crawling, page metadata is `noindex`, and the sitemap is empty. Preview builds should set `SITE_URL` to their own HTTPS preview origin so rendered technical URLs never impersonate a future Production domain.
 
 ## Canonical intent clusters
 
@@ -84,8 +84,8 @@ Raw referrers, search queries, URLs, answers, result labels, financial patterns 
 No provider, DNS, deployment or production state was changed in this sprint. After Technical Acceptance and an authorized deployment:
 
 1. Re-check current official crawler documentation for Googlebot, Bingbot, OAI-SearchBot, ChatGPT-User and GPTBot. Confirm that the intended distinction between indexing/retrieval and training is still accurate.
-2. Set the canonical production `SITE_URL` to `https://bts.online`. Fetch `/robots.txt` and `/sitemap.xml` from the deployed origin and confirm a 200 response, exact host URLs, private exclusions, locale alternates and no preview URLs.
-3. Register or verify the HTTPS domain property in Google Search Console. Put the real provider-issued token in `GOOGLE_SITE_VERIFICATION`, redeploy, confirm the rendered verification tag, then submit `https://bts.online/sitemap.xml`.
+2. Set the canonical production `SITE_URL` to the final purchased HTTPS origin. Fetch `/robots.txt` and `/sitemap.xml` from that deployed origin and confirm a 200 response, exact host URLs, private exclusions, locale alternates and no preview URLs.
+3. Register or verify the final HTTPS domain property in Google Search Console. Put the real provider-issued token in `GOOGLE_SITE_VERIFICATION`, redeploy, confirm the rendered verification tag, then submit the sitemap URL emitted by the deployed `/robots.txt`.
 4. Register or verify the site in Bing Webmaster Tools. Put the real provider-issued token in `BING_SITE_VERIFICATION`, redeploy, confirm the `msvalidate.01` tag, then submit the same sitemap.
 5. Do not commit provider tokens. Empty or malformed variables emit no verification metadata.
 6. Inspect representative DE, EN, ES, TR, PL, EL and RU URLs for self-canonical, reciprocal hreflang and the German `x-default`. Confirm the `/de` alias redirects to the unprefixed German canonical.

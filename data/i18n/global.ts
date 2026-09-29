@@ -4,7 +4,7 @@ const de = {
   siteDescription: "Persönliche Website von Benjamin Trinidad Segura über Recruiting, Projekte, Geschichten, Karriere und Communities.",
   skipLink: "Zum Inhalt springen",
   breadcrumbNavigation: "Navigationspfad",
-  homeLabel: "bts.online – Startseite",
+  homeLabel: "btshq.online – Startseite",
   mainNavigation: "Hauptnavigation",
   mobileNavigation: "Mobile Navigation",
   hqNavigation: "Durch das HQ navigieren",
@@ -49,7 +49,7 @@ const en: GlobalDictionary = {
   siteDescription: "Benjamin Trinidad Segura’s personal website for recruiting, projects, stories, careers and communities.",
   skipLink: "Skip to content",
   breadcrumbNavigation: "Breadcrumb",
-  homeLabel: "bts.online – Home",
+  homeLabel: "btshq.online – Home",
   mainNavigation: "Main navigation",
   mobileNavigation: "Mobile navigation",
   hqNavigation: "Navigate the HQ",
@@ -82,7 +82,7 @@ const en: GlobalDictionary = {
 
 const es: GlobalDictionary = {
   siteDescription: "La web personal de Benjamin Trinidad Segura sobre selección de talento, proyectos, historias, carreras y comunidades.",
-  skipLink: "Saltar al contenido", breadcrumbNavigation: "Ruta de navegación", homeLabel: "bts.online – Inicio",
+  skipLink: "Saltar al contenido", breadcrumbNavigation: "Ruta de navegación", homeLabel: "btshq.online – Inicio",
   mainNavigation: "Navegación principal", mobileNavigation: "Navegación móvil", hqNavigation: "Recorre el HQ", menuOpen: "Abrir menú", menuClose: "Cerrar menú",
   languageNavigation: "Elegir idioma", switchTo: "Cambiar idioma a", accountMenuOpen: "Abrir menú de cuenta", footerNavigation: "Navegación del pie",
   nav: { home: "Inicio", about: "Sobre mí", projects: "Proyectos", allProjects: "Todos los proyectos", insights: "Perspectivas", pulse: "Pulse", quote: "Cita del día", writing: "Writing", people: "Personas / Entrevistas", worldMap: "Mapa mundial", tools: "Herramientas", partners: "Colaboraciones", contact: "Contacto", nerdCorner: "Rincón Nerd", feedback: "Opiniones" },
@@ -92,7 +92,7 @@ const es: GlobalDictionary = {
 
 const tr: GlobalDictionary = {
   siteDescription: "Benjamin Trinidad Segura’nın işe alım, projeler, hikâyeler, kariyerler ve topluluklar üzerine kişisel web sitesi.",
-  skipLink: "İçeriğe geç", breadcrumbNavigation: "Gezinti yolu", homeLabel: "bts.online – Ana sayfa",
+  skipLink: "İçeriğe geç", breadcrumbNavigation: "Gezinti yolu", homeLabel: "btshq.online – Ana sayfa",
   mainNavigation: "Ana gezinme", mobileNavigation: "Mobil gezinme", hqNavigation: "HQ içinde gezin", menuOpen: "Menüyü aç", menuClose: "Menüyü kapat",
   languageNavigation: "Dil seç", switchTo: "Dili şuna değiştir", accountMenuOpen: "Hesap menüsünü aç", footerNavigation: "Alt bilgi gezinmesi",
   nav: { home: "Ana sayfa", about: "Hakkımda", projects: "Projeler", allProjects: "Tüm projeler", insights: "İçgörüler", pulse: "Pulse", quote: "Günün Sözü", writing: "Yazılar", people: "İnsanlar / Röportajlar", worldMap: "Dünya Haritası", tools: "Araçlar", partners: "İş ortakları", contact: "İletişim", nerdCorner: "Nerd Köşesi", feedback: "Geri bildirim" },
@@ -102,7 +102,7 @@ const tr: GlobalDictionary = {
 
 const pl: GlobalDictionary = {
   siteDescription: "Osobista strona Benjamina Trinidada Segury o rekrutacji, projektach, historiach, karierze i społecznościach.",
-  skipLink: "Przejdź do treści", breadcrumbNavigation: "Okruszki nawigacyjne", homeLabel: "bts.online – Strona główna",
+  skipLink: "Przejdź do treści", breadcrumbNavigation: "Okruszki nawigacyjne", homeLabel: "btshq.online – Strona główna",
   mainNavigation: "Główna nawigacja", mobileNavigation: "Nawigacja mobilna", hqNavigation: "Poruszaj się po HQ", menuOpen: "Otwórz menu", menuClose: "Zamknij menu",
   languageNavigation: "Wybierz język", switchTo: "Zmień język na", accountMenuOpen: "Otwórz menu konta", footerNavigation: "Nawigacja w stopce",
   nav: { home: "Strona główna", about: "O mnie", projects: "Projekty", allProjects: "Wszystkie projekty", insights: "Perspektywy", pulse: "Pulse", quote: "Cytat dnia", writing: "Teksty", people: "Ludzie / Wywiady", worldMap: "Mapa świata", tools: "Narzędzia", partners: "Partnerzy", contact: "Kontakt", nerdCorner: "Kącik Nerda", feedback: "Opinia" },
@@ -112,7 +112,7 @@ const pl: GlobalDictionary = {
 
 const el: GlobalDictionary = {
   siteDescription: "Η προσωπική ιστοσελίδα του Benjamin Trinidad Segura για την προσέλκυση ταλέντων, τα έργα, τις ιστορίες, τη σταδιοδρομία και τις κοινότητες.",
-  skipLink: "Μετάβαση στο περιεχόμενο", breadcrumbNavigation: "Διαδρομή πλοήγησης", homeLabel: "bts.online – Αρχική",
+  skipLink: "Μετάβαση στο περιεχόμενο", breadcrumbNavigation: "Διαδρομή πλοήγησης", homeLabel: "btshq.online – Αρχική",
   mainNavigation: "Κύρια πλοήγηση", mobileNavigation: "Πλοήγηση για κινητά", hqNavigation: "Πλοήγηση στο HQ", menuOpen: "Άνοιγμα μενού", menuClose: "Κλείσιμο μενού",
   languageNavigation: "Επιλογή γλώσσας", switchTo: "Αλλαγή γλώσσας σε", accountMenuOpen: "Άνοιγμα μενού λογαριασμού", footerNavigation: "Πλοήγηση υποσέλιδου",
   nav: { home: "Αρχική", about: "Σχετικά", projects: "Έργα", allProjects: "Όλα τα έργα", insights: "Οπτικές", pulse: "Pulse", quote: "Απόφθεγμα της ημέρας", writing: "Κείμενα", people: "Άνθρωποι / Συνεντεύξεις", worldMap: "Παγκόσμιος χάρτης", tools: "Εργαλεία", partners: "Συνεργασίες", contact: "Επικοινωνία", nerdCorner: "Nerd Corner", feedback: "Σχόλιο" },
@@ -122,7 +122,7 @@ const el: GlobalDictionary = {
 
 const ru: GlobalDictionary = {
   siteDescription: "Личный сайт Benjamin Trinidad Segura о рекрутинге, проектах, историях, карьере и сообществах.",
-  skipLink: "Перейти к содержанию", breadcrumbNavigation: "Навигационная цепочка", homeLabel: "bts.online – Главная",
+  skipLink: "Перейти к содержанию", breadcrumbNavigation: "Навигационная цепочка", homeLabel: "btshq.online – Главная",
   mainNavigation: "Основная навигация", mobileNavigation: "Мобильная навигация", hqNavigation: "Навигация по HQ", menuOpen: "Открыть меню", menuClose: "Закрыть меню",
   languageNavigation: "Выбрать язык", switchTo: "Сменить язык на", accountMenuOpen: "Открыть меню аккаунта", footerNavigation: "Навигация в подвале",
   nav: { home: "Главная", about: "Обо мне", projects: "Проекты", allProjects: "Все проекты", insights: "Перспективы", pulse: "Pulse", quote: "Цитата дня", writing: "Тексты", people: "Люди / Интервью", worldMap: "Карта мира", tools: "Инструменты", partners: "Партнёры", contact: "Контакты", nerdCorner: "Nerd Corner", feedback: "Отзыв" },

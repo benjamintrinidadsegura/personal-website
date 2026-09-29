@@ -33,21 +33,21 @@ function claimed(overrides: Partial<ClaimedNewsletterDelivery> = {}): ClaimedNew
     introduction: "A short hello.",
     articleTitle: "The careful article",
     articleExcerpt: "A useful and sufficiently long article summary.",
-    canonicalUrl: "https://bts.online/writing/the-careful-article",
+    canonicalUrl: "https://btshq.online/writing/the-careful-article",
     ...overrides,
   };
 }
 
 const providerConfiguration: NewsletterRuntimeConfiguration = {
-  siteUrl: "https://bts.online",
+  siteUrl: "https://btshq.online",
   formTokenSecret: "form-secret",
   hashSecret: "hash-secret",
   provider: "brevo",
   providerApiKey: "provider-secret",
-  fromEmail: "newsletter@bts.online",
-  replyToEmail: "hello@bts.online",
+  fromEmail: "newsletter@btshq.online",
+  replyToEmail: "hello@btshq.online",
   controllerAddress: "Verified controller address",
-  consentVersion: "newsletter-consent-v1",
+  consentVersion: "newsletter-consent-v2",
 };
 
 test("edition input accepts only a published Writing identifier and bounded plain text", () => {
@@ -66,9 +66,9 @@ test("edition input accepts only a published Writing identifier and bounded plai
 
 test("delivery configuration fails closed when authenticated webhook ingestion is absent", () => {
   const environment: NodeJS.ProcessEnv = {
-    NODE_ENV: "test", SITE_URL: "https://bts.online", NEWSLETTER_PUBLIC_ENABLED: "true", NEWSLETTER_LEGAL_READY: "true",
+    NODE_ENV: "test", SITE_URL: "https://btshq.online", NEWSLETTER_PUBLIC_ENABLED: "true", NEWSLETTER_LEGAL_READY: "true",
     NEWSLETTER_CONTROLLER_ADDRESS: "Verified controller address", NEWSLETTER_PROVIDER: "brevo",
-    NEWSLETTER_FROM_EMAIL: "newsletter@bts.online", NEWSLETTER_REPLY_TO_EMAIL: "hello@bts.online",
+    NEWSLETTER_FROM_EMAIL: "newsletter@btshq.online", NEWSLETTER_REPLY_TO_EMAIL: "hello@btshq.online",
     NEWSLETTER_FORM_TOKEN_SECRET: "form-secret", NEWSLETTER_HASH_SECRET: "hash-secret",
     BREVO_API_KEY: "provider-secret", BREVO_TRACKING_DISABLED: "true",
   };
@@ -83,9 +83,9 @@ test("fixed email template escapes content and always includes easy unsubscribe 
     introduction: `Hello <img src=x onerror=alert(1)>\nFriend`,
     articleTitle: "Article <title>",
     articleExcerpt: "Summary & context",
-    canonicalUrl: "https://bts.online/writing/article?a=1&b=2",
-    unsubscribeUrl: "https://bts.online/newsletter/unsubscribe?token=a&b=c",
-    privacyUrl: "https://bts.online/privacy",
+    canonicalUrl: "https://btshq.online/writing/article?a=1&b=2",
+    unsubscribeUrl: "https://btshq.online/newsletter/unsubscribe?token=a&b=c",
+    privacyUrl: "https://btshq.online/privacy",
     controllerAddress: "Controller <address>",
   });
   assert.equal(content.htmlContent.includes("<script>"), false);
@@ -109,7 +109,7 @@ test("Brevo delivery adapter is bounded, dependency-free and distinguishes accep
     captured = init ?? null;
     return Response.json({ messageId: "provider-message-1" }, { status: 201 });
   }) as typeof fetch);
-  assert.deepEqual(await accepted({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://bts.online/newsletter/unsubscribe?token=safe", privacyUrl: "https://bts.online/privacy", controllerAddress: "Verified controller address" }), { status: "accepted", messageReference: "provider-message-1" });
+  assert.deepEqual(await accepted({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://btshq.online/newsletter/unsubscribe?token=safe", privacyUrl: "https://btshq.online/privacy", controllerAddress: "Verified controller address" }), { status: "accepted", messageReference: "provider-message-1" });
   const request = captured as RequestInit | null;
   const body = JSON.parse(String(request?.body)) as Record<string, unknown>;
   assert.equal(JSON.stringify(body).includes(DELIVERY_ID), true);
@@ -117,15 +117,15 @@ test("Brevo delivery adapter is bounded, dependency-free and distinguishes accep
   assert.ok(request?.signal);
 
   const rejected = createBrevoNewsletterSender(providerConfiguration, (async () => new Response(null, { status: 400 })) as typeof fetch);
-  assert.deepEqual(await rejected({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://bts.online/u", privacyUrl: "https://bts.online/privacy", controllerAddress: "Controller" }), { status: "rejected", code: "provider_http_400" });
+  assert.deepEqual(await rejected({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://btshq.online/u", privacyUrl: "https://btshq.online/privacy", controllerAddress: "Controller" }), { status: "rejected", code: "provider_http_400" });
   const uncertain = createBrevoNewsletterSender(providerConfiguration, (async () => new Response(null, { status: 500 })) as typeof fetch);
-  assert.deepEqual((await uncertain({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://bts.online/u", privacyUrl: "https://bts.online/privacy", controllerAddress: "Controller" })).status, "ambiguous");
+  assert.deepEqual((await uncertain({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://btshq.online/u", privacyUrl: "https://btshq.online/privacy", controllerAddress: "Controller" })).status, "ambiguous");
   const malformedSuccess = createBrevoNewsletterSender(providerConfiguration, (async () => Response.json({}, { status: 201 })) as typeof fetch);
-  assert.deepEqual((await malformedSuccess({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://bts.online/u", privacyUrl: "https://bts.online/privacy", controllerAddress: "Controller" })).status, "ambiguous");
+  assert.deepEqual((await malformedSuccess({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://btshq.online/u", privacyUrl: "https://btshq.online/privacy", controllerAddress: "Controller" })).status, "ambiguous");
 
   let aborted = false;
   const timeout = createBrevoNewsletterSender(providerConfiguration, ((_url: URL | RequestInfo, init?: RequestInit) => new Promise<Response>((_resolve, reject) => init?.signal?.addEventListener("abort", () => { aborted = true; reject(new DOMException("Aborted", "AbortError")); }, { once: true }))) as typeof fetch, 10);
-  assert.deepEqual((await timeout({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://bts.online/u", privacyUrl: "https://bts.online/privacy", controllerAddress: "Controller" })).status, "ambiguous");
+  assert.deepEqual((await timeout({ ...claimed(), to: "reader@example.com", unsubscribeUrl: "https://btshq.online/u", privacyUrl: "https://btshq.online/privacy", controllerAddress: "Controller" })).status, "ambiguous");
   assert.equal(aborted, true);
 });
 

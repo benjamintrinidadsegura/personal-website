@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-09-19
-**Scope:** BTS.ONLINE Life Alignment
+**Scope:** BTSHQ.ONLINE Life Alignment
 
 ## Context
 

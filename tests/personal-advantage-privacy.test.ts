@@ -12,6 +12,8 @@ import {
 import { canonicalBtsShareUrl } from "../lib/sharing/destinations";
 import type { PersistedAdvantageState } from "../types/personal-advantage";
 
+const TEST_SITE_URL = "https://btshq.online";
+
 const state: PersistedAdvantageState = {
   schemaVersion: 1,
   phase: "questions",
@@ -59,9 +61,9 @@ test("analytics is payload-free and the share destination cannot carry result da
   assert.match(analyticsSource, /detail: \{ name \}/);
   assert.doesNotMatch(analyticsSource, /answer(?:s)?\s*:/i);
 
-  assert.equal(canonicalBtsShareUrl("/tools/personal-advantage"), "https://bts.online/tools/personal-advantage");
-  assert.equal(canonicalBtsShareUrl("/tools/personal-advantage?result=secret"), null);
-  assert.equal(canonicalBtsShareUrl("/tools/personal-advantage#private"), null);
+  assert.equal(canonicalBtsShareUrl("/tools/personal-advantage", TEST_SITE_URL), "https://btshq.online/tools/personal-advantage");
+  assert.equal(canonicalBtsShareUrl("/tools/personal-advantage?result=secret", TEST_SITE_URL), null);
+  assert.equal(canonicalBtsShareUrl("/tools/personal-advantage#private", TEST_SITE_URL), null);
 });
 
 test("the client journey has no runtime AI, remote answer submission, or hidden URL serialization", () => {
@@ -74,5 +76,5 @@ test("the client journey has no runtime AI, remote answer submission, or hidden 
   assert.doesNotMatch(share, /map\.answers|freeText|probeAnswers|calibration/);
   assert.match(share, /safeSections/);
   assert.match(share, /ShareFileActions/);
-  assert.match(share, /canonicalBtsShareUrl\("\/tools\/personal-advantage"\)/);
+  assert.match(share, /canonicalBtsShareUrl\("\/tools\/personal-advantage", canonicalSiteUrl\)/);
 });

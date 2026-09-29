@@ -8,7 +8,7 @@ import { getLocale } from "@/lib/i18n/server";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const copy = getPeopleCopy(locale);
-  return createLocalizedMetadata({ locale, pathname: "/people", title: "People / Spotlight | bts.online", description: copy.description });
+  return createLocalizedMetadata({ locale, pathname: "/people", title: "People / Spotlight | btshq.online", description: copy.description });
 }
 
 export default async function PeoplePage() {

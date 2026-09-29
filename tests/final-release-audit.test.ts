@@ -51,16 +51,16 @@ test("site, person and content schema use a small stable public entity graph", (
   const writing = source("app/writing/[slug]/page.tsx");
 
   assert.match(layout, /"@type": "WebSite"/u);
-  assert.match(layout, /https:\/\/bts\.online\/#website/u);
-  assert.match(layout, /https:\/\/bts\.online\/about#benjamin/u);
-  assert.match(about, /const personEntityId = "https:\/\/bts\.online\/about#benjamin"/u);
+  assert.match(layout, /"@id": absoluteSiteUrl\("\/#website", siteUrl\)/u);
+  assert.match(layout, /publisher: \{ "@id": absoluteSiteUrl\("\/about#benjamin", siteUrl\) \}/u);
+  assert.match(about, /const personEntityId = absoluteSiteUrl\("\/about#benjamin", siteUrl\)/u);
   assert.match(about, /"@type": "BreadcrumbList"/u);
   assert.match(people, /"@type": "ProfilePage"/u);
   assert.match(people, /"@type": "Person"/u);
   assert.match(people, /"@type": "VideoObject"/u);
   assert.match(people, /"@type": "BreadcrumbList"/u);
   assert.match(writing, /"@type": "Article"/u);
-  assert.match(writing, /author: \{ "@id": "https:\/\/bts\.online\/about#benjamin" \}/u);
+  assert.match(writing, /author: \{ "@id": absoluteSiteUrl\("\/about#benjamin", siteUrl\) \}/u);
   assert.match(writing, /"@type": "BreadcrumbList"/u);
 });
 

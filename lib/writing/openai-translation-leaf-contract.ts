@@ -26,7 +26,7 @@ export const writingTranslationInstructions = [
   "Translate each keyed unit independently and return its exact id. Never merge, split, omit, duplicate, or redistribute text across unit ids.",
   "Context is read-only translation context: do not translate it separately and do not include it in the response.",
   "Do not summarize, shorten, expand, explain, add marketing language, invent examples, or change factual meaning.",
-  "Preserve URLs, BTS.ONLINE, bts.online, and canonical product names unchanged.",
+  "Preserve URLs, BTSHQ.ONLINE, btshq.online, and canonical product names unchanged.",
   "Return only the strict structured translation requested by the response schema.",
 ].join(" ");
 

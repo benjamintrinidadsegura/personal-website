@@ -106,7 +106,7 @@ export const projects: Project[] = [
     ],
   },
   {
-    slug: "bts-online", name: "bts.online", monogram: "BTS", featured: true,
+    slug: "btshq-online", name: "btshq.online", monogram: "BTS", featured: true,
     pitch: "Kein Portfolio. Ein lebendes Digital HQ.",
     description: "Das zentrale Zuhause für Projekte, Texte, Gespräche und die Arbeit von Benjamin Trinidad Segura.",
     status: "Digital HQ", category: "Personal Ecosystem", accent: "#35d0e5", pattern: "signal",

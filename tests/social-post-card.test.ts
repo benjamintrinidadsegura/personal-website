@@ -21,8 +21,8 @@ const writingSource: WritingShareSource = {
   articleSlug: "a-public-story",
   articleTitle: "A public story about making context visible",
   authorName: "Benjamin Trinidad Segura",
-  canonicalUrl: "https://bts.online/writing/a-public-story",
-  domain: "bts.online",
+  canonicalUrl: "https://btshq.online/writing/a-public-story",
+  domain: "btshq.online",
   kind: "thought",
   language: "en",
   readingMinutes: 5,
@@ -31,7 +31,7 @@ const writingSource: WritingShareSource = {
 const quote: SelectedQuote = {
   id: "btsq-social-post-test",
   text: "The next honest step is more useful than a perfect distant plan.",
-  attribution: "bts.online",
+  attribution: "btshq.online",
   origin: "bts-original",
   themes: ["clarity"],
   semanticFamily: "next-step",
@@ -60,8 +60,8 @@ test("Writing Thought Social Post supports Story, Portrait and Square with restr
     assert.match(html, /<article class="social-post-surface">/u);
     assert.match(html, /Benjamin Trinidad Segura/u);
     assert.match(html, /src="\/icons\/bts-app-icon-192\.png"/u);
-    assert.doesNotMatch(html, /@bts\.online/u);
-    assert.equal((html.match(/bts\.online/gu) ?? []).length, 1);
+    assert.doesNotMatch(html, /@btshq\.online/u);
+    assert.equal((html.match(/btshq\.online/gu) ?? []).length, 1);
     assert.match(html, /Writing/u);
     assert.match(html, /From:/u);
     assert.match(html, /A public story about making context visible/u);
@@ -86,7 +86,7 @@ test("Writing carousel continuation slides keep identity and content without rep
     assert.match(html, /02 \/ 03/u);
     assert.match(html, /Continuation content stays readable/u);
     assert.doesNotMatch(html, /A public story about making context visible/u);
-    assert.match(html, /bts\.online/u);
+    assert.match(html, /btshq\.online/u);
   }
   assert.match(editorial, /writing-share-card-article-body/u);
 });
@@ -97,8 +97,8 @@ test("Daily Quote Social Post preserves BTS-original and public-domain attributi
     assert.match(html, /data-post-kind="quote"/u);
     assert.match(html, />BTS</u);
     assert.match(html, /src="\/icons\/bts-app-icon-192\.png"/u);
-    assert.doesNotMatch(html, /@bts\.online/u);
-    assert.equal((html.match(/bts\.online/gu) ?? []).length, 1);
+    assert.doesNotMatch(html, /@btshq\.online/u);
+    assert.equal((html.match(/btshq\.online/gu) ?? []).length, 1);
     assert.match(html, /Daily Quote/u);
     assert.match(html, /BTS Original/u);
   }

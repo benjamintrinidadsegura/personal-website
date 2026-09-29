@@ -32,7 +32,7 @@ test("English project presentation preserves canonical slugs and verified destin
   assert.deepEqual(english.map(({ slug }) => slug), german.map(({ slug }) => slug));
   assert.deepEqual(english.map(({ externalUrl }) => externalUrl), german.map(({ externalUrl }) => externalUrl));
   assert.equal(english.length, 6);
-  assert.notEqual(english.find(({ slug }) => slug === "bts-online")?.description, german.find(({ slug }) => slug === "bts-online")?.description);
+  assert.notEqual(english.find(({ slug }) => slug === "btshq-online")?.description, german.find(({ slug }) => slug === "btshq-online")?.description);
 });
 
 test("social presence uses the four approved profiles with accessible external links", () => {
@@ -48,7 +48,20 @@ test("social presence uses the four approved profiles with accessible external l
   assert.equal(contact.includes("copy.externalLabel"), true);
   assert.equal(getHomeCopy("de").contact.externalLabel, "externe Website, öffnet in neuem Tab");
   assert.equal(contact.includes('rel="noopener noreferrer"'), true);
-  assert.equal(contact.includes("mailto:"), false);
+  assert.equal(siteConfig.email, "goatrecrutainer@gmail.com");
+  assert.equal(contact.includes('<a href={`mailto:${siteConfig.email}`}'), true);
+  assert.equal(contact.match(/mailto:/gu)?.length, 1);
+  assert.equal(contact.includes("min-h-12"), true);
+  assert.equal(contact.includes("focus-visible:outline-[#35d0e5]"), true);
+  assert.equal(contact.includes("{emailCopy.eyebrow}"), true);
+  assert.equal(contact.includes("{emailCopy.title}"), true);
+  assert.equal(contact.includes("{emailCopy.description}"), true);
+  assert.equal(contact.includes("{emailCopy.action}"), true);
+  for (const localizedEyebrow of ["Direkter Kontakt", "Direct contact", "Contacto directo", "Doğrudan iletişim", "Kontakt bezpośredni", "Άμεση επικοινωνία", "Прямой контакт"]) {
+    assert.equal(contact.includes(localizedEyebrow), true);
+  }
+  assert.deepEqual(contact.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/gu) ?? [], []);
+  assert.deepEqual(source("../data/site.ts").match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/gu) ?? [], [siteConfig.email]);
 });
 
 test("booking stays non-interactive until a public destination is verified", () => {

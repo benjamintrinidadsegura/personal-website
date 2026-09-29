@@ -25,6 +25,8 @@
     "20260927010000_writing_delete_account_events.sql": "71d87b228b6efc1895aea22879efb5762a0f5bfec500adcc6f984c53c6c120d6",
     "20260927020000_writing_newsletter_preparation.sql": "0aa7d03158e98817b4f6f3bfbd5da994c461292309c87f7b739b3c8b0ec9a8c3",
     "20260927030000_writing_translation_generation.sql": "3e321a9e67754ead948c547fdf82fb5164975d2f1bbf93d08d6adb61ec1f339d",
-    "20260927040000_writing_translation_generation_claim_repair.sql": "fff32774e5e03ee7a3e46be80054f8a2d712cb2d188d8ad87cc8e6606a778278"
+    "20260927040000_writing_translation_generation_claim_repair.sql": "fff32774e5e03ee7a3e46be80054f8a2d712cb2d188d8ad87cc8e6606a778278",
+    "20260929000000_harden_service_role_table_privileges.sql": "108bae73b8dfdc42d6a26fcb569b4be7d70857ff5a37497576dcb53e94fc18bb",
+    "20260930000000_btshq_online_brand_rename.sql": "6291bdf09b75ff2d6b9241627b9744bfa2c883b25073fc6c239970b23f4d9b41"
   }
 }

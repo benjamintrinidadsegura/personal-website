@@ -7,12 +7,7 @@ import {
   processNewsletterSubscription,
   processNewsletterUnsubscribe,
 } from "../app/newsletter/actions";
-import {
-  NEWSLETTER_FROM_EMAIL,
-  NEWSLETTER_REPLY_TO_EMAIL,
-  newsletterLifecycleConfiguration,
-  newsletterRuntimeConfiguration,
-} from "../lib/newsletter/config";
+import { newsletterLifecycleConfiguration, newsletterRuntimeConfiguration } from "../lib/newsletter/config";
 import { NEWSLETTER_CONSENT_VERSION, newsletterConsentCopy, newsletterPromise } from "../lib/newsletter/domain";
 import {
   createBrevoConfirmationSender,
@@ -37,6 +32,8 @@ const HASH_SECRET = "newsletter-hash-secret-used-only-in-tests";
 const SUBSCRIBER_ID = "96ee55b8-bb8c-4ee5-8b35-a22733ce31ee";
 const NONCE = "4d6e3f70-a0e4-48bb-9174-5a5f88f2cb9c";
 const CONFIRMATION_TOKEN = "A".repeat(43);
+const NEWSLETTER_FROM_EMAIL = "newsletter@sender.example";
+const NEWSLETTER_REPLY_TO_EMAIL = "reply@sender.example";
 
 function validRaw(overrides: Partial<RawNewsletterSubscription> = {}): RawNewsletterSubscription {
   return {
@@ -126,7 +123,7 @@ test("newsletter tokens are purpose-bound and network identifiers are privacy-re
 test("runtime configuration fails closed until provider, tracking, sender, and legal gates are complete", () => {
   const environment: NodeJS.ProcessEnv = {
     NODE_ENV: "test",
-    SITE_URL: "https://bts.online",
+    SITE_URL: "https://btshq.online",
     NEWSLETTER_PUBLIC_ENABLED: "true",
     NEWSLETTER_LEGAL_READY: "true",
     NEWSLETTER_CONTROLLER_ADDRESS: "Verified controller address",
@@ -150,9 +147,10 @@ test("runtime configuration fails closed until provider, tracking, sender, and l
     delete incomplete[key];
     assert.equal(newsletterRuntimeConfiguration(incomplete), null, key);
   }
-  assert.equal(newsletterRuntimeConfiguration({ ...environment, NEWSLETTER_FROM_EMAIL: "other@example.com" }), null);
-  assert.deepEqual(newsletterLifecycleConfiguration({ NODE_ENV: "test", SITE_URL: "https://bts.online", NEWSLETTER_HASH_SECRET: HASH_SECRET }), {
-    siteUrl: "https://bts.online",
+  assert.equal(newsletterRuntimeConfiguration({ ...environment, NEWSLETTER_FROM_EMAIL: "other@example.com" })?.fromEmail, "other@example.com");
+  assert.equal(newsletterRuntimeConfiguration({ ...environment, NEWSLETTER_FROM_EMAIL: "invalid" }), null);
+  assert.deepEqual(newsletterLifecycleConfiguration({ NODE_ENV: "test", SITE_URL: "https://btshq.online", NEWSLETTER_HASH_SECRET: HASH_SECRET }), {
+    siteUrl: "https://btshq.online",
     hashSecret: HASH_SECRET,
   });
 });
@@ -245,7 +243,7 @@ test("Brevo adapter is bounded, dependency-free, and creates inert confirmation 
   assert.equal(NEWSLETTER_PROVIDER_TIMEOUT_MS, 5_000);
   const content = createConfirmationEmailContent({
     to: "reader@example.com",
-    confirmationUrl: "https://bts.online/newsletter/confirm?token=<unsafe>&next=\"x\"",
+    confirmationUrl: "https://btshq.online/newsletter/confirm?token=<unsafe>&next=\"x\"",
     expiresAt: new Date(NOW + 86_400_000).toISOString(),
   });
   assert.equal(content.htmlContent.includes("<unsafe>"), false);
@@ -254,7 +252,7 @@ test("Brevo adapter is bounded, dependency-free, and creates inert confirmation 
   assert.equal(content.textContent.includes("reader@example.com"), false);
   const germanContent = createConfirmationEmailContent({
     to: "reader@example.com",
-    confirmationUrl: "https://bts.online/newsletter/confirm?token=safe",
+    confirmationUrl: "https://btshq.online/newsletter/confirm?token=safe",
     expiresAt: new Date(NOW + 86_400_000).toISOString(),
     locale: "de",
   });
@@ -265,7 +263,7 @@ test("Brevo adapter is bounded, dependency-free, and creates inert confirmation 
   for (const locale of locales) {
     const localized = createConfirmationEmailContent({
       to: "reader@example.com",
-      confirmationUrl: `https://bts.online/${locale}/newsletter/confirm?token=safe`,
+      confirmationUrl: `https://btshq.online/${locale}/newsletter/confirm?token=safe`,
       expiresAt: new Date(NOW + 86_400_000).toISOString(),
       locale,
     });
@@ -278,7 +276,7 @@ test("Brevo adapter is bounded, dependency-free, and creates inert confirmation 
   let captured: RequestInit | null = null;
   const configuration = newsletterRuntimeConfiguration({
     NODE_ENV: "test",
-    SITE_URL: "https://bts.online",
+    SITE_URL: "https://btshq.online",
     NEWSLETTER_PUBLIC_ENABLED: "true",
     NEWSLETTER_LEGAL_READY: "true",
     NEWSLETTER_CONTROLLER_ADDRESS: "Verified controller address",
@@ -295,10 +293,10 @@ test("Brevo adapter is bounded, dependency-free, and creates inert confirmation 
     captured = init ?? null;
     return new Response("{}", { status: 201 });
   }) as typeof fetch);
-  assert.equal(await sender({ to: "reader@example.com", confirmationUrl: "https://bts.online/newsletter/confirm?token=safe", expiresAt: new Date(NOW + 86_400_000).toISOString() }), true);
+  assert.equal(await sender({ to: "reader@example.com", confirmationUrl: "https://btshq.online/newsletter/confirm?token=safe", expiresAt: new Date(NOW + 86_400_000).toISOString() }), true);
   const capturedRequest = captured as RequestInit | null;
   const body = JSON.parse(String(capturedRequest?.body)) as Record<string, unknown>;
-  assert.deepEqual(body.sender, { name: "bts.online", email: NEWSLETTER_FROM_EMAIL });
+  assert.deepEqual(body.sender, { name: "btshq.online", email: NEWSLETTER_FROM_EMAIL });
   assert.deepEqual(body.replyTo, { name: "Benjamin Trinidad Segura", email: NEWSLETTER_REPLY_TO_EMAIL });
   assert.equal("trackingPixel" in body, false);
   assert.ok(capturedRequest?.signal);
@@ -310,7 +308,7 @@ test("Brevo adapter is bounded, dependency-free, and creates inert confirmation 
       reject(new DOMException("Aborted", "AbortError"));
     }, { once: true });
   })) as typeof fetch, 10);
-  assert.equal(await stalled({ to: "reader@example.com", confirmationUrl: "https://bts.online/newsletter/confirm?token=safe", expiresAt: new Date(NOW + 86_400_000).toISOString() }), false);
+  assert.equal(await stalled({ to: "reader@example.com", confirmationUrl: "https://btshq.online/newsletter/confirm?token=safe", expiresAt: new Date(NOW + 86_400_000).toISOString() }), false);
   assert.equal(observedAbort, true);
 });
 

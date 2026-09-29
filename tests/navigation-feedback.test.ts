@@ -11,8 +11,8 @@ import {
 } from "../components/navigation/navigation-feedback";
 
 const ordinaryIntent: NavigationFeedbackIntent = {
-  currentHref: "https://bts.online/about",
-  targetHref: "https://bts.online/projects/goatrecrutainer",
+  currentHref: "https://btshq.online/about",
+  targetHref: "https://btshq.online/projects/goatrecrutainer",
   button: 0,
   defaultPrevented: false,
   modified: false,
@@ -22,7 +22,7 @@ const ordinaryIntent: NavigationFeedbackIntent = {
 
 test("ordinary internal route navigation receives immediate feedback", () => {
   assert.equal(shouldStartNavigationFeedback(ordinaryIntent), true);
-  assert.equal(shouldStartNavigationFeedback({ ...ordinaryIntent, targetHref: "https://bts.online/about?view=compact" }), true);
+  assert.equal(shouldStartNavigationFeedback({ ...ordinaryIntent, targetHref: "https://btshq.online/about?view=compact" }), true);
 });
 
 test("native browser and non-route navigation semantics remain untouched", () => {
@@ -32,11 +32,11 @@ test("native browser and non-route navigation semantics remain untouched", () =>
   assert.equal(shouldStartNavigationFeedback({ ...ordinaryIntent, download: true }), false);
   assert.equal(shouldStartNavigationFeedback({ ...ordinaryIntent, defaultPrevented: true }), false);
   assert.equal(shouldStartNavigationFeedback({ ...ordinaryIntent, targetHref: "https://example.com/about" }), false);
-  assert.equal(shouldStartNavigationFeedback({ ...ordinaryIntent, targetHref: "https://bts.online/about#evidence" }), false);
+  assert.equal(shouldStartNavigationFeedback({ ...ordinaryIntent, targetHref: "https://btshq.online/about#evidence" }), false);
 });
 
 test("section navigation keeps semantic hashes while reserving interception for same-document targets", () => {
-  const samePage = { ...ordinaryIntent, currentHref: "https://bts.online/", targetHref: "https://bts.online/#feedback" };
+  const samePage = { ...ordinaryIntent, currentHref: "https://btshq.online/", targetHref: "https://btshq.online/#feedback" };
   assert.deepEqual(getSectionNavigationPlan(samePage.currentHref, samePage.targetHref), {
     id: "feedback",
     sameDocument: true,
@@ -45,14 +45,14 @@ test("section navigation keeps semantic hashes while reserving interception for 
   assert.equal(shouldHandleSectionNavigation({ ...samePage, modified: true }), false);
   assert.equal(shouldHandleSectionNavigation({ ...samePage, target: "_blank" }), false);
 
-  const crossRoute = { ...samePage, currentHref: "https://bts.online/about" };
+  const crossRoute = { ...samePage, currentHref: "https://btshq.online/about" };
   assert.deepEqual(getSectionNavigationPlan(crossRoute.currentHref, crossRoute.targetHref), {
     id: "feedback",
     sameDocument: false,
   });
   assert.equal(shouldHandleSectionNavigation(crossRoute), false);
   assert.equal(shouldStartNavigationFeedback(crossRoute), true);
-  assert.equal(getSectionNavigationPlan("https://bts.online/", "https://example.com/#feedback"), null);
+  assert.equal(getSectionNavigationPlan("https://btshq.online/", "https://example.com/#feedback"), null);
 });
 
 test("long and reduced-motion section jumps are immediate while nearby jumps may stay brief", () => {

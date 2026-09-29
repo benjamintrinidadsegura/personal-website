@@ -153,8 +153,9 @@ test("public contact is canonical while service and test email identities remain
   assert.match(publicContact, /mailto:\$\{(?:siteConfig|legalOperator)\.email\}/u);
   assert.match(source("../components/sections/contact.tsx"), /\{siteConfig\.email\}/u);
   const newsletter = source("../lib/newsletter/config.ts");
-  assert.match(newsletter, /newsletter@bts\.online/u);
-  assert.match(newsletter, /hello@bts\.online/u);
+  assert.match(newsletter, /configuredEmail\(environment\.NEWSLETTER_FROM_EMAIL\)/u);
+  assert.match(newsletter, /configuredEmail\(environment\.NEWSLETTER_REPLY_TO_EMAIL\)/u);
+  assert.doesNotMatch(newsletter, /@btshq\.online/u);
 });
 
 test("privacy disclosure describes only the implemented public content and internal handoff", () => {
@@ -171,18 +172,18 @@ test("privacy disclosure describes only the implemented public content and inter
 test("Writing and Daily Quote Social Post exports keep the approved BTS icon without redundant handle branding", () => {
   const writing: WritingShareSource = {
     articleId: "article", articleSlug: "article", articleTitle: "A truthful article title", authorName: "Benjamin Trinidad Segura",
-    canonicalUrl: "https://bts.online/writing/article", domain: "bts.online", kind: "thought", language: "en", readingMinutes: 4,
+    canonicalUrl: "https://btshq.online/writing/article", domain: "btshq.online", kind: "thought", language: "en", readingMinutes: 4,
     text: "A bounded authored thought.",
   };
-  const quote: SelectedQuote = { id: "btsq-sprint-6", text: "A truthful daily quote.", attribution: "bts.online", origin: "bts-original", themes: ["clarity"], semanticFamily: "clarity", shareEligible: true, fallbackLevel: "specific", eligibleCount: 1 };
+  const quote: SelectedQuote = { id: "btsq-sprint-6", text: "A truthful daily quote.", attribution: "btshq.online", origin: "bts-original", themes: ["clarity"], semanticFamily: "clarity", shareEligible: true, fallbackLevel: "specific", eligibleCount: 1 };
   for (const format of writingShareFormats) {
     const writingHtml = renderToStaticMarkup(createElement(WritingSocialPostCard, { cardIndex: 0, cardTotal: 1, copy: writingShareDictionaries.en, format, source: writing, text: writing.text }));
     const quoteHtml = renderToStaticMarkup(createElement(QuoteSocialPostCard, { format, originalLabel: "BTS Original", quote, surfaceLabel: "Daily Quote" }));
     for (const html of [writingHtml, quoteHtml]) {
       assert.match(html, /data-style="social-post"/u);
       assert.match(html, /src="\/icons\/bts-app-icon-192\.png"/u);
-      assert.doesNotMatch(html, /@bts\.online/u);
-      assert.equal((html.match(/bts\.online/gu) ?? []).length, 1);
+      assert.doesNotMatch(html, /@btshq\.online/u);
+      assert.equal((html.match(/btshq\.online/gu) ?? []).length, 1);
       assert.doesNotMatch(html, /like count|follower|verified|repost|view count/iu);
     }
   }

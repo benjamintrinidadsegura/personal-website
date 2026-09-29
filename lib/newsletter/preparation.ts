@@ -3,6 +3,7 @@ import {
   type WritingNewsletterPreparation,
   type WritingNewsletterPreparationStatus,
 } from "@/types/newsletter";
+import { parseSiteUrl } from "@/lib/site-url-validation";
 
 type RpcResult = { data: unknown; error: { message?: string } | null };
 
@@ -18,13 +19,7 @@ export function parseWritingNewsletterPreparationStatus(value: unknown): Writing
 }
 
 export function canonicalNewsletterSiteOrigin(value: string | undefined): string | null {
-  try {
-    const url = new URL(value ?? "");
-    if (url.protocol !== "https:" && !(url.protocol === "http:" && url.hostname === "localhost")) return null;
-    return url.origin;
-  } catch {
-    return null;
-  }
+  return parseSiteUrl(value)?.origin ?? null;
 }
 
 export function writingNewsletterStatusQuery(preparation: WritingNewsletterPreparation | undefined): string {

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { siteConfig } from "@/data/site";
 import { defaultLocale, localeDetails, locales, type Locale } from "@/lib/i18n/config";
 import { getLocalizedPathname } from "@/lib/i18n/routing";
+import { absoluteSiteUrl, getSiteUrl, isCanonicalIndexingEnvironment, requireSiteUrl } from "@/lib/site-url";
 
 export const publicStaticRoutes = [
   "/",
@@ -42,24 +42,7 @@ export const searchRetrievalCrawlers = [
 export const modelTrainingCrawlers = ["GPTBot"] as const;
 
 export function getCanonicalProductionUrl(): URL | null {
-  if (process.env.NODE_ENV !== "production" || !process.env.SITE_URL) return null;
-
-  try {
-    const url = new URL(process.env.SITE_URL);
-    if (
-      url.protocol !== "https:"
-      || url.hostname !== siteConfig.domain
-      || url.port !== ""
-      || url.username !== ""
-      || url.password !== ""
-      || url.pathname !== "/"
-      || url.search !== ""
-      || url.hash !== ""
-    ) return null;
-    return new URL(url.origin);
-  } catch {
-    return null;
-  }
+  return isCanonicalIndexingEnvironment() ? getSiteUrl() : null;
 }
 
 export function getLocalizedPrivateRoutePrefixes(): string[] {
@@ -94,14 +77,16 @@ export function createToolStructuredData({
   locale,
   name,
   pathname,
+  siteUrl = requireSiteUrl(),
 }: {
   applicationCategory: string;
   description: string;
   locale: Locale;
   name: string;
   pathname: string;
+  siteUrl?: URL;
 }) {
-  const canonical = new URL(getLocalizedPathname(pathname, locale), `https://${siteConfig.domain}`).toString();
+  const canonical = absoluteSiteUrl(getLocalizedPathname(pathname, locale), siteUrl);
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -112,7 +97,7 @@ export function createToolStructuredData({
         name,
         description,
         inLanguage: localeDetails[locale].htmlLang,
-        isPartOf: { "@id": `https://${siteConfig.domain}/#website` },
+        isPartOf: { "@id": absoluteSiteUrl("/#website", siteUrl) },
         mainEntity: { "@id": `${canonical}#tool` },
       },
       {
@@ -130,7 +115,7 @@ export function createToolStructuredData({
         "@type": "BreadcrumbList",
         "@id": `${canonical}#breadcrumb`,
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Digital HQ", item: `https://${siteConfig.domain}/` },
+          { "@type": "ListItem", position: 1, name: "Digital HQ", item: absoluteSiteUrl("/", siteUrl) },
           { "@type": "ListItem", position: 2, name, item: canonical },
         ],
       },

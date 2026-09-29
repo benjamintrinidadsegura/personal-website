@@ -1,7 +1,5 @@
 import { NEWSLETTER_CONSENT_VERSION } from "@/lib/newsletter/domain";
-
-export const NEWSLETTER_FROM_EMAIL = "newsletter@bts.online";
-export const NEWSLETTER_REPLY_TO_EMAIL = "hello@bts.online";
+import { parseSiteUrl } from "@/lib/site-url-validation";
 
 export type NewsletterRuntimeConfiguration = {
   siteUrl: string;
@@ -9,8 +7,8 @@ export type NewsletterRuntimeConfiguration = {
   hashSecret: string;
   provider: "brevo";
   providerApiKey: string;
-  fromEmail: typeof NEWSLETTER_FROM_EMAIL;
-  replyToEmail: typeof NEWSLETTER_REPLY_TO_EMAIL;
+  fromEmail: string;
+  replyToEmail: string;
   controllerAddress: string;
   consentVersion: typeof NEWSLETTER_CONSENT_VERSION;
 };
@@ -27,14 +25,17 @@ export type NewsletterWebhookConfiguration = {
 export type NewsletterDeliveryConfiguration = NewsletterRuntimeConfiguration & NewsletterWebhookConfiguration;
 
 function canonicalSiteUrl(value: string): string | null {
-  try {
-    const url = new URL(value);
-    return url.username || url.password || url.search || url.hash
-      ? null
-      : url.origin;
-  } catch {
-    return null;
-  }
+  return parseSiteUrl(value)?.origin ?? null;
+}
+
+function configuredEmail(value: string | undefined): string | null {
+  const email = value?.trim().toLowerCase();
+  return email
+    && email.length <= 254
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email)
+    && !/[\p{Cc}\p{Cf}]/u.test(email)
+    ? email
+    : null;
 }
 
 export function newsletterRuntimeConfiguration(
@@ -42,13 +43,15 @@ export function newsletterRuntimeConfiguration(
 ): NewsletterRuntimeConfiguration | null {
   const siteUrl = environment.SITE_URL ? canonicalSiteUrl(environment.SITE_URL) : null;
   const controllerAddress = environment.NEWSLETTER_CONTROLLER_ADDRESS?.trim();
+  const fromEmail = configuredEmail(environment.NEWSLETTER_FROM_EMAIL);
+  const replyToEmail = configuredEmail(environment.NEWSLETTER_REPLY_TO_EMAIL);
   if (
     environment.NEWSLETTER_PUBLIC_ENABLED !== "true"
     || environment.NEWSLETTER_LEGAL_READY !== "true"
     || environment.NEWSLETTER_PROVIDER !== "brevo"
     || environment.BREVO_TRACKING_DISABLED !== "true"
-    || environment.NEWSLETTER_FROM_EMAIL !== NEWSLETTER_FROM_EMAIL
-    || environment.NEWSLETTER_REPLY_TO_EMAIL !== NEWSLETTER_REPLY_TO_EMAIL
+    || !fromEmail
+    || !replyToEmail
     || !siteUrl
     || !environment.NEWSLETTER_FORM_TOKEN_SECRET
     || !environment.NEWSLETTER_HASH_SECRET
@@ -63,8 +66,8 @@ export function newsletterRuntimeConfiguration(
     hashSecret: environment.NEWSLETTER_HASH_SECRET,
     provider: "brevo",
     providerApiKey: environment.BREVO_API_KEY,
-    fromEmail: NEWSLETTER_FROM_EMAIL,
-    replyToEmail: NEWSLETTER_REPLY_TO_EMAIL,
+    fromEmail,
+    replyToEmail,
     controllerAddress,
     consentVersion: NEWSLETTER_CONSENT_VERSION,
   };

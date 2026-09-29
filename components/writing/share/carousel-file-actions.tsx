@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, type RefObject } from "react";
 
 import { useLocale } from "@/components/i18n/locale-context";
+import { useCanonicalSiteUrl } from "@/components/site/canonical-site-url-context";
 import type { WritingShareDictionary } from "@/data/i18n/writing-share";
 import { getShareDestinationsDictionary } from "@/data/i18n/share-destinations";
 import { getShareFileDictionary } from "@/data/i18n/share-file";
@@ -70,6 +71,7 @@ export function WritingCarouselFileActions({
   total: number;
 }) {
   const locale = useLocale();
+  const canonicalSiteUrl = useCanonicalSiteUrl();
   const fileCopy = getShareFileDictionary(locale);
   const destinationsCopy = getShareDestinationsDictionary(locale);
   const cacheRef = useRef(new Map<number, File>());
@@ -80,7 +82,7 @@ export function WritingCarouselFileActions({
   const canShareCurrent = typeof navigator !== "undefined" && placeholders[currentIndex] ? supportsNativeFileShare(navigator, placeholders[currentIndex]) : false;
   const hasNativeShareApi = typeof navigator !== "undefined" && typeof navigator.share === "function" && typeof navigator.canShare === "function";
   const [carouselShareCapability, setCarouselShareCapability] = useState<CarouselShareCapability>(total > 1 && hasNativeShareApi && !hasKnownNativeMultiFileShareFailure(navigator) ? "unchecked" : "unsupported");
-  const webDestinations = webShareDestinations({ text: source.kind === "article" ? "" : source.text, url: source.canonicalUrl });
+  const webDestinations = webShareDestinations({ text: source.kind === "article" ? "" : source.text, url: source.canonicalUrl }, canonicalSiteUrl);
 
   const renderSlide = async (index: number): Promise<File> => {
     const cached = cacheRef.current.get(index);

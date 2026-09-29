@@ -4,6 +4,7 @@ import { DiscoveryProvider } from "@/components/discovery/discovery-context";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { NavigationFeedback } from "@/components/navigation/navigation-feedback";
+import { CanonicalSiteUrlProvider } from "@/components/site/canonical-site-url-context";
 import { createHqPulseDiscoveryItems, createPublishedWritingDiscoveryItems, discoveryIndex } from "@/data/discovery-index";
 import { createHqPulseItems } from "@/data/hq-pulse";
 import { getAccountState } from "@/lib/account/state";
@@ -13,6 +14,7 @@ import { createLocalizedMetadata } from "@/lib/i18n/metadata";
 import { localeDetails, locales } from "@/lib/i18n/config";
 import { getGlobalDictionary } from "@/data/i18n/global";
 import { getSiteVerificationMetadata } from "@/lib/search-discovery";
+import { absoluteSiteUrl, isCanonicalIndexingEnvironment, requireSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,9 +22,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = "Benjamin Trinidad Segura | Digital HQ";
   const description = getGlobalDictionary(locale).siteDescription;
   const verification = getSiteVerificationMetadata();
+  const siteUrl = requireSiteUrl();
   return {
-    metadataBase: new URL("https://bts.online"),
-    applicationName: "bts.online",
+    metadataBase: siteUrl,
+    applicationName: "btshq.online",
     manifest: "/manifest.webmanifest",
     icons: {
       icon: [
@@ -35,6 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     ...createLocalizedMetadata({ locale, pathname: "/", title, description }),
     ...(verification ? { verification } : {}),
+    ...(!isCanonicalIndexingEnvironment() ? { robots: { index: false, follow: false, noarchive: true } } : {}),
   };
 }
 
@@ -42,6 +46,7 @@ export const viewport: Viewport = { themeColor: "#04111b" };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = await getLocale();
+  const siteUrl = requireSiteUrl();
   const [publishedWriting, accountState] = await Promise.all([
     getPublishedWriting(locale),
     getAccountState(),
@@ -59,27 +64,29 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const websiteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": "https://bts.online/#website",
-    url: "https://bts.online/",
-    name: "bts.online Digital HQ",
+    "@id": absoluteSiteUrl("/#website", siteUrl),
+    url: absoluteSiteUrl("/", siteUrl),
+    name: "btshq.online Digital HQ",
     description: getGlobalDictionary(locale).siteDescription,
     inLanguage: locales.map((candidate) => localeDetails[candidate].htmlLang),
-    publisher: { "@id": "https://bts.online/about#benjamin" },
+    publisher: { "@id": absoluteSiteUrl("/about#benjamin", siteUrl) },
   };
   return (
     <html lang={localeDetails[locale].htmlLang} data-scroll-behavior="adaptive">
       <body className="min-h-full">
         <NavigationFeedback />
         <LocaleProvider locale={locale}>
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</gu, "\\u003c") }} />
-          <a className="skip-link" href="#main-content">
-            {getGlobalDictionary(locale).skipLink}
-          </a>
-          <DiscoveryProvider items={discoveryItems}>
-            <Header accountState={accountState} />
-            <main id="main-content">{children}</main>
-          </DiscoveryProvider>
-          <Footer />
+          <CanonicalSiteUrlProvider canonicalSiteUrl={siteUrl.origin}>
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</gu, "\\u003c") }} />
+            <a className="skip-link" href="#main-content">
+              {getGlobalDictionary(locale).skipLink}
+            </a>
+            <DiscoveryProvider items={discoveryItems}>
+              <Header accountState={accountState} />
+              <main id="main-content">{children}</main>
+            </DiscoveryProvider>
+            <Footer />
+          </CanonicalSiteUrlProvider>
         </LocaleProvider>
       </body>
     </html>

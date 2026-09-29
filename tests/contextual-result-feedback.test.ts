@@ -8,8 +8,8 @@ import { createFeedbackFormToken } from "../lib/feedback/security";
 import { validateFeedbackSubmission } from "../lib/feedback/validation";
 
 const NOW = Date.UTC(2026, 8, 24, 12, 0, 0);
-const secrets = { hashSecret: "h".repeat(32), formTokenSecret: "f".repeat(32), siteUrl: "https://bts.online" };
-const request = { origin: "https://bts.online", host: "bts.online", networkIdentifier: "203.0.113.42" };
+const secrets = { hashSecret: "h".repeat(32), formTokenSecret: "f".repeat(32), siteUrl: "https://btshq.online" };
+const request = { origin: "https://btshq.online", host: "btshq.online", networkIdentifier: "203.0.113.42" };
 
 function source(relative: string): string {
   return readFileSync(new URL(relative, import.meta.url), "utf8");

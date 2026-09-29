@@ -13,7 +13,7 @@ import { createToolStructuredData } from "@/lib/search-discovery";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const copy = getMoneyProfileUiCopy(locale);
-  return createLocalizedMetadata({ locale, pathname: "/tools/money-profile", title: `${copy.publicTitle} | bts.online`, description: copy.metadataDescription });
+  return createLocalizedMetadata({ locale, pathname: "/tools/money-profile", title: `${copy.publicTitle} | btshq.online`, description: copy.metadataDescription });
 }
 
 export default async function MoneyProfileRoute() {

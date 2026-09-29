@@ -52,7 +52,7 @@ export function createConfirmationEmailContent(input: ConfirmationEmail) {
     "",
     `${copy.expiresPrefix} ${expires} (Europe/Berlin). ${copy.ignore}`,
   ].join("\n");
-  const htmlContent = `<!doctype html><html lang="${localeDetails[locale].htmlLang}"><body style="margin:0;background:#041018;color:#e8f3f8;font-family:Arial,sans-serif"><main style="max-width:620px;margin:0 auto;padding:48px 24px"><p style="color:#35d0e5;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase">bts.online · Newsletter</p><h1 style="font-size:32px;line-height:1.1">${escapeHtml(copy.heading)}</h1><p style="font-size:17px;line-height:1.7;color:#c4d3dc">${escapeHtml(copy.body)}</p><p style="margin:32px 0"><a href="${safeUrl}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#35d0e5;color:#041018;font-weight:800;text-decoration:none">${escapeHtml(copy.action)}</a></p><p style="font-size:13px;line-height:1.6;color:#8295a3">${escapeHtml(copy.expiresPrefix)} ${escapeHtml(expires)} (Europe/Berlin). ${escapeHtml(copy.ignore)}</p></main></body></html>`;
+  const htmlContent = `<!doctype html><html lang="${localeDetails[locale].htmlLang}"><body style="margin:0;background:#041018;color:#e8f3f8;font-family:Arial,sans-serif"><main style="max-width:620px;margin:0 auto;padding:48px 24px"><p style="color:#35d0e5;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase">btshq.online · Newsletter</p><h1 style="font-size:32px;line-height:1.1">${escapeHtml(copy.heading)}</h1><p style="font-size:17px;line-height:1.7;color:#c4d3dc">${escapeHtml(copy.body)}</p><p style="margin:32px 0"><a href="${safeUrl}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#35d0e5;color:#041018;font-weight:800;text-decoration:none">${escapeHtml(copy.action)}</a></p><p style="font-size:13px;line-height:1.6;color:#8295a3">${escapeHtml(copy.expiresPrefix)} ${escapeHtml(expires)} (Europe/Berlin). ${escapeHtml(copy.ignore)}</p></main></body></html>`;
   return { subject, textContent, htmlContent };
 }
 
@@ -74,7 +74,7 @@ export function createBrevoConfirmationSender(
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          sender: { name: "bts.online", email: configuration.fromEmail },
+          sender: { name: "btshq.online", email: configuration.fromEmail },
           replyTo: { name: "Benjamin Trinidad Segura", email: configuration.replyToEmail },
           to: [{ email: email.to }],
           subject: content.subject,
@@ -112,8 +112,8 @@ export function createBrevoNewsletterSender(
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          sender: { name: "bts.online", email: configuration.fromEmail },
-          replyTo: { name: "bts.online", email: configuration.replyToEmail },
+          sender: { name: "btshq.online", email: configuration.fromEmail },
+          replyTo: { name: "btshq.online", email: configuration.replyToEmail },
           to: [{ email: email.to }],
           subject: content.subject,
           textContent: content.textContent,

@@ -44,7 +44,7 @@ test("display names normalize Unicode and whitespace while preserving human text
 });
 
 test("official structural display names are reserved but ordinary duplicates are allowed", () => {
-  for (const value of ["guest", "AUTHOR", "Admin", "administrator", "moderator", "staff", "support", "bts.online", "BTS Studio"]) {
+  for (const value of ["guest", "AUTHOR", "Admin", "administrator", "moderator", "staff", "support", "btshq.online", "BTS Studio"]) {
     assert.equal(validateAccountDisplayName(value).success, false, value);
   }
   assert.equal(validateAccountDisplayName("Ada").success, true);

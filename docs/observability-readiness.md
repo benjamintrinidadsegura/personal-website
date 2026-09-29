@@ -1,6 +1,6 @@
 # Observability readiness
 
-BTS.ONLINE keeps its monitoring foundation provider-neutral and privacy-safe. It does not ship analytics, tracking, or a third-party monitoring SDK.
+BTSHQ.ONLINE keeps its monitoring foundation provider-neutral and privacy-safe. It does not ship analytics, tracking, or a third-party monitoring SDK.
 
 ## Implemented foundation
 

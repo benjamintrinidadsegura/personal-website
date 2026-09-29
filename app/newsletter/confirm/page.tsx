@@ -10,7 +10,7 @@ import { getLocale } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  return { title: `${getNewsletterDictionary(locale).confirm.action} | bts.online`, robots: { index: false, follow: false } };
+  return { title: `${getNewsletterDictionary(locale).confirm.action} | btshq.online`, robots: { index: false, follow: false } };
 }
 export const dynamic = "force-dynamic";
 

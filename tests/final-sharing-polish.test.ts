@@ -8,49 +8,50 @@ import { canonicalBtsShareUrl, webShareDestinations } from "../lib/sharing/desti
 import { supportsNativeFileShare } from "../lib/sharing/native-card-share";
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+const TEST_SITE_URL = "https://btshq.online";
 
 test("FINAL SHARING public BTS source URLs are canonical, locale-aware, anchored only for Writing, and query-free", () => {
   for (const [input, expected] of [
-    ["/", "https://bts.online/"],
-    ["/de/writing/story", "https://bts.online/writing/story"],
-    ["/en/writing/story", "https://bts.online/en/writing/story"],
-    ["https://bts.online/writing/story#writing-thought-1234", "https://bts.online/writing/story#writing-thought-1234"],
-    ["/writing/story#writing-thought-block_1", "https://bts.online/writing/story#writing-thought-block_1"],
-    ["/find-your-next-step/self", "https://bts.online/find-your-next-step/self"],
-    ["/life-alignment/partner", "https://bts.online/life-alignment/partner"],
-  ] as const) assert.equal(canonicalBtsShareUrl(input), expected, input);
-  for (const rejected of [null, "", "//evil.example/writing/story", "https://bts.online.evil.example/writing/story", "http://bts.online/writing/story", "/admin/writing/id", "/api/private", "/account", "/invite/token", "/writing/story?session=secret", "/writing/story?utm_source=share", "/writing/%2e%2e/admin", "/writing/story#token", "/find-your-next-step/self#private", "/writing/../../admin"]) {
-    assert.equal(canonicalBtsShareUrl(rejected), null, String(rejected));
+    ["/", "https://btshq.online/"],
+    ["/de/writing/story", "https://btshq.online/writing/story"],
+    ["/en/writing/story", "https://btshq.online/en/writing/story"],
+    ["https://btshq.online/writing/story#writing-thought-1234", "https://btshq.online/writing/story#writing-thought-1234"],
+    ["/writing/story#writing-thought-block_1", "https://btshq.online/writing/story#writing-thought-block_1"],
+    ["/find-your-next-step/self", "https://btshq.online/find-your-next-step/self"],
+    ["/life-alignment/partner", "https://btshq.online/life-alignment/partner"],
+  ] as const) assert.equal(canonicalBtsShareUrl(input, TEST_SITE_URL), expected, input);
+  for (const rejected of [null, "", "//evil.example/writing/story", "https://btshq.online.evil.example/writing/story", "http://btshq.online/writing/story", "/admin/writing/id", "/api/private", "/account", "/invite/token", "/writing/story?session=secret", "/writing/story?utm_source=share", "/writing/%2e%2e/admin", "/writing/story#token", "/find-your-next-step/self#private", "/writing/../../admin"]) {
+    assert.equal(canonicalBtsShareUrl(rejected, TEST_SITE_URL), null, String(rejected));
   }
 });
 
 test("FINAL SHARING WhatsApp sends concise public context and canonical URL, never a PNG claim or tracking", () => {
-  const destinations = webShareDestinations({ text: " An authored thought. ", url: "https://bts.online/en/writing/story#writing-thought-1234" });
+  const destinations = webShareDestinations({ text: " An authored thought. ", url: "https://btshq.online/en/writing/story#writing-thought-1234" }, TEST_SITE_URL);
   assert.ok(destinations);
   const whatsapp = new URL(destinations.whatsapp);
   assert.equal(whatsapp.origin, "https://wa.me");
   assert.equal(whatsapp.pathname, "/");
   assert.deepEqual([...whatsapp.searchParams.keys()], ["text"]);
-  assert.equal(whatsapp.searchParams.get("text"), "An authored thought.\nhttps://bts.online/en/writing/story#writing-thought-1234");
+  assert.equal(whatsapp.searchParams.get("text"), "An authored thought.\nhttps://btshq.online/en/writing/story#writing-thought-1234");
   assert.equal(destinations.whatsapp.includes("files"), false);
-  const long = webShareDestinations({ text: "A".repeat(500), url: "/writing/story" });
+  const long = webShareDestinations({ text: "A".repeat(500), url: "/writing/story" }, TEST_SITE_URL);
   assert.ok(long);
   const message = new URL(long.whatsapp).searchParams.get("text") ?? "";
   assert.equal(message.startsWith(`${"A".repeat(217)}…\n`), true);
-  assert.equal(message.endsWith("https://bts.online/writing/story"), true);
+  assert.equal(message.endsWith("https://btshq.online/writing/story"), true);
 });
 
 test("FINAL SHARING LinkedIn receives only canonical source URL, not PNG or prefilled result data", () => {
-  const destinations = webShareDestinations({ text: "Private-looking test should not enter LinkedIn URL", url: "/find-your-next-step/self" });
+  const destinations = webShareDestinations({ text: "Private-looking test should not enter LinkedIn URL", url: "/find-your-next-step/self" }, TEST_SITE_URL);
   assert.ok(destinations);
   const linkedin = new URL(destinations.linkedin);
   assert.equal(linkedin.origin, "https://www.linkedin.com");
   assert.equal(linkedin.pathname, "/sharing/share-offsite/");
   assert.deepEqual([...linkedin.searchParams.keys()], ["url"]);
-  assert.equal(linkedin.searchParams.get("url"), "https://bts.online/find-your-next-step/self");
+  assert.equal(linkedin.searchParams.get("url"), "https://btshq.online/find-your-next-step/self");
   assert.equal(linkedin.href.includes("Private-looking"), false);
-  assert.equal(webShareDestinations({ text: "Draft", url: null }), null);
-  assert.equal(webShareDestinations({ text: "Secret", url: "/admin/writing/id" }), null);
+  assert.equal(webShareDestinations({ text: "Draft", url: null }, TEST_SITE_URL), null);
+  assert.equal(webShareDestinations({ text: "Secret", url: "/admin/writing/id" }, TEST_SITE_URL), null);
 });
 
 test("FINAL SHARING native PNG remains capability-gated for mobile and desktop while web links remain available", () => {
@@ -60,11 +61,11 @@ test("FINAL SHARING native PNG remains capability-gated for mobile and desktop w
   assert.equal(supportsNativeFileShare(mobile, file), true);
   assert.equal(supportsNativeFileShare(desktop, file), false);
   assert.equal(supportsNativeFileShare({}, file), false);
-  assert.ok(webShareDestinations({ text: "Article", url: "/writing/story" }));
+  assert.ok(webShareDestinations({ text: "Article", url: "/writing/story" }, TEST_SITE_URL));
   const actions = source("../components/sharing/share-file-actions.tsx");
   const primitive = source("../lib/sharing/native-card-share.ts");
   assert.match(actions, /supportsNativeFileShare\(navigator, file\)/u);
-  assert.match(actions, /webShareDestinations\(\{ text, url \}\)/u);
+  assert.match(actions, /webShareDestinations\(\{ text, url \}, canonicalSiteUrl\)/u);
   assert.match(actions, /canShareFile \? <button/u);
   assert.match(primitive, /navigator\.share\(\{ files: \[file\]/u);
   assert.match(actions, /downloadShareCardFile/u);
@@ -84,8 +85,8 @@ test("FINAL SHARING one shared destination row serves Writing, Quote, FYNS witho
   assert.match(actions, /referrerPolicy="no-referrer"/u);
   assert.match(carouselActions, /data-share-destination="whatsapp"/u);
   assert.match(carouselActions, /data-share-destination="linkedin"/u);
-  assert.match(source("../components/quotes/quote-share-dialog.tsx"), /canonicalBtsShareUrl\(safeSharePath\)/u);
-  assert.match(source("../components/find-your-next-step/character-share-dialog.tsx"), /canonicalBtsShareUrl\(safeSharePath\)/u);
+  assert.match(source("../components/quotes/quote-share-dialog.tsx"), /canonicalBtsShareUrl\(safeSharePath, canonicalSiteUrl\)/u);
+  assert.match(source("../components/find-your-next-step/character-share-dialog.tsx"), /canonicalBtsShareUrl\(safeSharePath, canonicalSiteUrl\)/u);
   assert.doesNotMatch(source("../components/find-your-next-step/character-share-dialog.tsx"), /supportingNames\.join\(/u);
 });
 

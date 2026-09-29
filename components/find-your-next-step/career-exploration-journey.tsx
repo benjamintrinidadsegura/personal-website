@@ -308,7 +308,7 @@ function CareerPrintDocument({ result }: { result: CareerResult }) {
   return (
     <article className="fyns-print-document hidden" data-fyns-print-document="career">
       <header className="fyns-print-header">
-        <p className="fyns-print-brand">bts.online / FYNS / Career</p>
+        <p className="fyns-print-brand">btshq.online / FYNS / Career</p>
         <h1>{result.title}</h1>
         <section className="fyns-print-summary" aria-labelledby="career-print-summary-title">
           <h2 id="career-print-summary-title">{ui.summary}</h2>

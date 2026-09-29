@@ -37,7 +37,7 @@ test("Quote Social Post keeps two clear brand placements across all supported fo
   assert.match(quote, /source=\{surfaceLabel\}/u);
   assert.match(quote, /metadata=\{\[\]\}/u);
   assert.match(quote, /domain=\{siteConfig\.domain\}/u);
-  assert.doesNotMatch([shared, quote].join("\n"), /@bts\.online|BTS\.ONLINE/u);
+  assert.doesNotMatch([shared, quote].join("\n"), /@btshq\.online|BTSHQ\.ONLINE/u);
   assert.match(formats, /writingShareFormats = \["story", "portrait", "square"\] as const/u);
 });
 
@@ -47,7 +47,7 @@ test("Writing Social Post removes only equivalent redundant branding", () => {
   assert.match(writing, /source=\{copy\.sourceLabel\}/u);
   assert.match(writing, /metadata=\{\[readingTime\]\.filter/u);
   assert.match(writing, /domain=\{source\.domain\}/u);
-  assert.doesNotMatch(writing, /@bts\.online|handle=|metadata=\{\[copy\.sourceLabel/u);
+  assert.doesNotMatch(writing, /@btshq\.online|handle=|metadata=\{\[copy\.sourceLabel/u);
 });
 
 test("Brain Manual keeps its wording and patterns while materially reducing the hero scale", () => {

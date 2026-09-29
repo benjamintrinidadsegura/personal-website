@@ -37,8 +37,8 @@ test("About establishes the canonical Benjamin identity and evidence-backed posi
 
 test("About metadata is canonical and supplies complete social preview metadata", () => {
   const page = source("../app/about/page.tsx");
-  assert.equal(getAboutPageCopy("de").title, "Benjamin Trinidad Segura — Über mich & Arbeit | bts.online");
-  assert.equal(getAboutPageCopy("en").title, "Benjamin Trinidad Segura — About & Work | bts.online");
+  assert.equal(getAboutPageCopy("de").title, "Benjamin Trinidad Segura — Über mich & Arbeit | btshq.online");
+  assert.equal(getAboutPageCopy("en").title, "Benjamin Trinidad Segura — About & Work | btshq.online");
   assert.match(page, /createLocalizedMetadata\(\{ locale, pathname: "\/about"/u);
   assert.match(page, /const locale = await getLocale\(\)/u);
   assert.match(page, /type: "profile"/u);
@@ -65,7 +65,7 @@ test("project evidence resolves from canonical public project and tool destinati
   assert.deepEqual(aboutProjectEvidence.map(({ name }) => name), [
     "GOATRECRUTAINER",
     "RateCom",
-    "bts.online",
+    "btshq.online",
     "Find Your Next Step",
     "Life Alignment",
   ]);

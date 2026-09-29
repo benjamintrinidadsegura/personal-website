@@ -128,7 +128,7 @@ export interface WritingEntry {
   title: string;
   excerpt: string;
   category: string;
-  state: "Coming to bts.online";
+  state: "Coming to btshq.online";
 }
 
 export interface InterviewFormat {

@@ -181,14 +181,14 @@ test("sitemap pairs all seven People routes with complete locale alternates", as
 
   try {
     Object.defineProperty(process.env, "NODE_ENV", { value: "production", configurable: true, enumerable: true, writable: true });
-    process.env.SITE_URL = "https://bts.online";
+    process.env.SITE_URL = "https://btshq.online";
     const { createSitemap } = await import("../app/sitemap");
     const peopleRoutes = ["/people", ...expectedGuests.map((slug) => `/people/${slug}`)];
     const entries = createSitemap([]);
 
     for (const route of peopleRoutes) {
-      const deUrl = `https://bts.online${route}`;
-      const localeUrls = Object.fromEntries(locales.map((locale) => [locale, `https://bts.online${getLocalizedPathname(route, locale)}`]));
+      const deUrl = `https://btshq.online${route}`;
+      const localeUrls = Object.fromEntries(locales.map((locale) => [locale, `https://btshq.online${getLocalizedPathname(route, locale)}`]));
       for (const url of Object.values(localeUrls)) {
         const entry = entries.find((candidate) => candidate.url === url);
         assert.ok(entry, url);

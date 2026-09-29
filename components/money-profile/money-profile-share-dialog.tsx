@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MoneyProfileShareCard, type MoneyShareSection } from "@/components/money-profile/money-profile-share-card";
 import { ShareComposerHeading } from "@/components/sharing/share-composer-heading";
 import { ShareFileActions } from "@/components/sharing/share-file-actions";
+import { useCanonicalSiteUrl } from "@/components/site/canonical-site-url-context";
 import type { MoneyProfileUiCopy } from "@/data/money-profile-locales";
 import { emitMoneyProfileEvent } from "@/lib/money-profile-analytics";
 import { canonicalBtsShareUrl } from "@/lib/sharing/destinations";
@@ -15,6 +16,7 @@ const shareSections: readonly MoneyShareSection[] = ["profile", "meaning", "stre
 
 export function MoneyProfileShareDialog({ copy, result, onClose }: { copy: MoneyProfileUiCopy; result: MoneyProfileResult; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const canonicalSiteUrl = useCanonicalSiteUrl();
   const cardRef = useRef<HTMLDivElement>(null);
   const [format, setFormat] = useState<WritingShareFormat>("story");
   const [selected, setSelected] = useState<Set<MoneyShareSection>>(() => new Set(["profile"]));
@@ -31,7 +33,7 @@ export function MoneyProfileShareDialog({ copy, result, onClose }: { copy: Money
     return () => { window.clearTimeout(timeout); window.removeEventListener("keydown", exit, true); };
   }, [screenshotMode]);
 
-  const shareUrl = canonicalBtsShareUrl("/tools/money-profile");
+  const shareUrl = canonicalBtsShareUrl("/tools/money-profile", canonicalSiteUrl);
   const label = result.secondaryProfile && result.primaryProfile ? `${result.primaryProfile.label} × ${result.secondaryProfile.label}` : result.primaryProfile?.label ?? result.baseline.headline;
   const shareText = useMemo(() => {
     const lines = [copy.onePager, label];

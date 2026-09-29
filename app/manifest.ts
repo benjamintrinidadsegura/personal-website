@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "bts.online Digital HQ",
+    name: "btshq.online Digital HQ",
     short_name: "BTS",
     description: "The Digital HQ of Benjamin Trinidad Segura.",
     start_url: "/",

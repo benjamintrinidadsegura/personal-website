@@ -249,7 +249,7 @@ function ResultPrintDocument({ result }: { result: IdeaResult }) {
   return (
     <article className="fyns-print-document hidden" data-fyns-print-document="idea" style={printStyle}>
       <header className="fyns-print-header">
-        <p className="fyns-print-brand">bts.online / FYNS / Idea</p>
+        <p className="fyns-print-brand">btshq.online / FYNS / Idea</p>
         <h1>{result.title}</h1>
         <p className="fyns-print-description">{result.description}</p>
       </header>

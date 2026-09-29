@@ -10,7 +10,7 @@ const RESERVED_DISPLAY_NAMES = new Set([
   "moderator",
   "staff",
   "support",
-  "bts.online",
+  "btshq.online",
   "bts studio",
 ]);
 

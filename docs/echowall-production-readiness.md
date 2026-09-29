@@ -2,7 +2,7 @@
 
 Stand: 22. August 2026
 Status: verbindliches Betriebshandbuch für den aktuellen EchoWall-Umfang  
-Geltung: bts.online, EchoWall und die zugehörige Adminmoderation
+Geltung: btshq.online, EchoWall und die zugehörige Adminmoderation
 
 > Rechtlicher Hinweis: Jede in diesem Dokument genannte Datenschutz- oder
 > Aufbewahrungsfrist ist ein **Produktvorschlag – nicht juristisch geprüft**.

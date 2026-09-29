@@ -223,7 +223,7 @@ const toolItems: DiscoveryItem[] = [
 ];
 
 const pageItems: DiscoveryItem[] = [
-  { id: "page-home", group: "Pages", title: "Digital HQ", description: "Das zentrale Zuhause von Benjamin Trinidad Segura.", category: "Page", tags: ["Home", "bts.online"], keywords: ["Startseite", "Übersicht"], status: "Live", href: "/#home" },
+  { id: "page-home", group: "Pages", title: "Digital HQ", description: "Das zentrale Zuhause von Benjamin Trinidad Segura.", category: "Page", tags: ["Home", "btshq.online"], keywords: ["Startseite", "Übersicht"], status: "Live", href: "/#home" },
   { id: "page-projects", group: "Pages", title: "Currently Building", description: "Alle Projekte und Ideen des wachsenden Ökosystems.", category: "Page", tags: ["Projects", "Portfolio"], keywords: ["Building", "Projekte"], status: "Live", href: "/#building" },
   { id: "page-writing", group: "Pages", title: "Writing", description: "Field Notes über Arbeit, Identität, Mut und Entwicklung.", category: "Page", tags: ["Insights", "Artikel"], keywords: ["Texte", "Magazin"], status: "Live", href: "/writing" },
   { id: "page-quote", group: "Pages", title: "Zitat des Tages", description: "Ein kuratierter täglicher Gedanke mit weiteren Zitaten und BTS Share Cards.", category: "Page", tags: ["Einblicke", "Zitat", "Share Cards"], keywords: ["Zitat des Tages", "Gedanke", "Weiteres Zitat", "Teilen"], status: "Live", href: "/#quote" },

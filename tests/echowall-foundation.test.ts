@@ -321,14 +321,16 @@ test("robots metadata route is canonical-production-only and excludes private ro
     new URL("../lib/search-discovery.ts", import.meta.url),
     "utf8",
   );
-  const robots = `${robotsRoute}\n${robotsFoundation}`;
+  const siteUrlFoundation = readFileSync(new URL("../lib/site-url.ts", import.meta.url), "utf8");
+  const siteUrlValidation = readFileSync(new URL("../lib/site-url-validation.ts", import.meta.url), "utf8");
+  const robots = `${robotsRoute}\n${robotsFoundation}\n${siteUrlFoundation}\n${siteUrlValidation}`;
   const lower = robots.toLowerCase();
 
   for (const required of [
-    'process.env.node_env !== "production"',
-    "process.env.site_url",
-    'url.protocol !== "https:"',
-    "url.hostname !== siteconfig.domain",
+    'environment.node_env === "production"',
+    "environment.site_url",
+    'siteurl?.protocol === "https:"',
+    'environment.vercel_env === "production"',
     '"/admin"',
     '"/account"',
     '"/api"',
@@ -340,8 +342,8 @@ test("robots metadata route is canonical-production-only and excludes private ro
     assert.equal(lower.includes(required), true, required);
   }
 
-  assert.equal(lower.includes("localhost"), false);
-  assert.equal(lower.includes("vercel.app"), false);
+  assert.equal(lower.includes('local_hosts = new set(["localhost"'), true);
+  assert.equal(lower.includes("https://btshq.online"), false);
   assert.equal(lower.includes("netlify.app"), false);
   assert.equal(robots.includes("SUPABASE_SECRET_KEY"), false);
 });
@@ -349,6 +351,7 @@ test("robots metadata route is canonical-production-only and excludes private ro
 test("robots and sitemap fail closed and expose only canonical production routes", async () => {
   const previousSiteUrl = process.env.SITE_URL;
   const previousNodeEnv = process.env.NODE_ENV;
+  const previousVercelEnv = process.env.VERCEL_ENV;
 
   try {
     Object.defineProperty(process.env, "NODE_ENV", {
@@ -368,11 +371,15 @@ test("robots and sitemap fail closed and expose only canonical production routes
         createSitemap([]).length === 0;
     };
 
-    for (const siteUrl of [undefined, "not-a-url", "https://preview.invalid"]) {
+    for (const siteUrl of [undefined, "not-a-url"]) {
       if (siteUrl === undefined) delete process.env.SITE_URL;
       else process.env.SITE_URL = siteUrl;
       assert.equal(await isBlocked(), true, siteUrl ?? "missing SITE_URL");
     }
+
+    process.env.SITE_URL = "https://branch-project.vercel.app";
+    process.env.VERCEL_ENV = "preview";
+    assert.equal(await isBlocked(), true, "Vercel Preview");
 
     Object.defineProperty(process.env, "NODE_ENV", {
       value: "development",
@@ -380,7 +387,7 @@ test("robots and sitemap fail closed and expose only canonical production routes
       enumerable: true,
       writable: true,
     });
-    process.env.SITE_URL = "https://bts.online";
+    process.env.SITE_URL = "https://canonical.example";
     assert.equal(await isBlocked(), true, "development");
 
     Object.defineProperty(process.env, "NODE_ENV", {
@@ -389,7 +396,8 @@ test("robots and sitemap fail closed and expose only canonical production routes
       enumerable: true,
       writable: true,
     });
-    process.env.SITE_URL = "https://bts.online";
+    process.env.SITE_URL = "https://canonical.example";
+    process.env.VERCEL_ENV = "production";
     const productionRobots = createRobots();
     const productionRules = Array.isArray(productionRobots.rules)
       ? productionRobots.rules
@@ -402,6 +410,7 @@ test("robots and sitemap fail closed and expose only canonical production routes
     }), true);
     assert.equal(typeof productionRobots.host, "string");
     assert.equal(typeof productionRobots.sitemap, "string");
+    assert.equal(productionRobots.host, "https://canonical.example");
 
     const entries = createSitemap([]).map(({ url }) => new URL(url).pathname);
 
@@ -438,7 +447,7 @@ test("robots and sitemap fail closed and expose only canonical production routes
       "/projects/hobbyswap",
       "/projects/streamory",
       "/projects/byc",
-      "/projects/bts-online",
+      "/projects/btshq-online",
       "/people/evgeny-vinokurov",
       "/people/kiki-radicke",
       "/people/johanna-geisler",
@@ -460,6 +469,8 @@ test("robots and sitemap fail closed and expose only canonical production routes
       enumerable: true,
       writable: true,
     });
+    if (previousVercelEnv === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = previousVercelEnv;
   }
 
   const source = readFileSync(

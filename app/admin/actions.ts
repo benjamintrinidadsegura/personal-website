@@ -28,7 +28,7 @@ export async function enrollMfaAction(): Promise<MfaActionState> {
   const supabase = await createSupabaseAuthServerClient();
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
-    friendlyName: "bts.online BTS Studio",
+    friendlyName: "btshq.online BTS Studio",
   });
   if (error || !data.totp?.qr_code) return { message: "MFA konnte nicht vorbereitet werden." };
   return { message: "Authenticator einrichten.", factorId: data.id, qrCode: data.totp.qr_code };

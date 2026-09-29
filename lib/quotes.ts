@@ -101,7 +101,7 @@ export function selectQuote(context: QuoteSelectionContext, records: readonly Qu
   return {
     id: selected.id,
     text: variant.text,
-    attribution: selected.origin === "bts-original" ? "bts.online" : variant.attribution ?? "",
+    attribution: selected.origin === "bts-original" ? "btshq.online" : variant.attribution ?? "",
     source: variant.source,
     origin: selected.origin,
     themes: selected.themes,

@@ -108,7 +108,7 @@ begin
   values (v_draft, v_admin, 'Rollback-only draft', 'A draft excerpt that must remain ineligible.', 'A draft body that must never produce a newsletter edition.', 'essay', array['Ideas'], 'draft');
 
   begin
-    perform public.create_newsletter_edition(v_draft, 'Draft must fail', '', '', 'https://bts.online');
+    perform public.create_newsletter_edition(v_draft, 'Draft must fail', '', '', 'https://btshq.online');
     raise exception 'VERIFY_DRAFT_ACCEPTED';
   exception when raise_exception then
     if sqlerrm = 'VERIFY_DRAFT_ACCEPTED' or pg_catalog.strpos(sqlerrm, 'NEWSLETTER_WRITING_NOT_PUBLISHED') = 0 then raise; end if;
@@ -150,7 +150,7 @@ begin
 
   v_edition_sent := public.create_newsletter_edition(
     v_article, 'Rollback-only edition', 'No remote images or tracking.',
-    'A short plain-text introduction.', 'https://bts.online'
+    'A short plain-text introduction.', 'https://btshq.online'
   );
   update public.writing_articles set
     title = 'Later Writing title', excerpt = 'Later Writing excerpt that must not alter the edition.',
@@ -191,7 +191,7 @@ begin
     'sent', 'duplicate-message', null
   ) then raise exception 'VERIFY_COMPLETED_DELIVERY_REOPENED'; end if;
 
-  v_edition_failed := public.create_newsletter_edition(v_article, 'Rollback-only failure edition', '', '', 'https://bts.online');
+  v_edition_failed := public.create_newsletter_edition(v_article, 'Rollback-only failure edition', '', '', 'https://btshq.online');
   perform public.begin_newsletter_send(v_edition_failed, 1);
   select * into v_lookup from public.lookup_newsletter_subscriber(pg_catalog.md5(v_email_4) || pg_catalog.md5('bts-' || v_email_4));
   if not found or v_lookup.email <> v_email_4 or v_lookup.status <> 'confirmed' then raise exception 'VERIFY_EXACT_LOOKUP_FAILED'; end if;

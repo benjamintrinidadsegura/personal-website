@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PersonalAdvantageShareCard, type AdvantageShareSection } from "@/components/personal-advantage/personal-advantage-share-card";
 import { ShareComposerHeading } from "@/components/sharing/share-composer-heading";
 import { ShareFileActions } from "@/components/sharing/share-file-actions";
+import { useCanonicalSiteUrl } from "@/components/site/canonical-site-url-context";
 import type { PersonalAdvantageUiCopy } from "@/data/personal-advantage-locales";
 import { emitPersonalAdvantageEvent } from "@/lib/personal-advantage-analytics";
 import { canonicalBtsShareUrl } from "@/lib/sharing/destinations";
@@ -15,6 +16,7 @@ const shareSections: readonly AdvantageShareSection[] = ["advantage", "stack", "
 
 export function PersonalAdvantageShareDialog({ copy, map, onClose }: { copy: PersonalAdvantageUiCopy; map: PersonalAdvantageMap; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const canonicalSiteUrl = useCanonicalSiteUrl();
   const cardRef = useRef<HTMLDivElement>(null);
   const [format, setFormat] = useState<WritingShareFormat>("story");
   const [selected, setSelected] = useState<Set<AdvantageShareSection>>(() => new Set(["advantage"]));
@@ -32,7 +34,7 @@ export function PersonalAdvantageShareDialog({ copy, map, onClose }: { copy: Per
   }, [screenshotMode]);
 
   const safeSections = useMemo(() => new Set([...selected].filter((section) => section !== "hidden" || map.hiddenAdvantages.length > 0)), [map.hiddenAdvantages.length, selected]);
-  const shareUrl = canonicalBtsShareUrl("/tools/personal-advantage");
+  const shareUrl = canonicalBtsShareUrl("/tools/personal-advantage", canonicalSiteUrl);
   const shareText = useMemo(() => {
     const lines = [copy.myAdvantage, map.coreAdvantage.label, map.coreAdvantage.signalIds.map((id) => map.stack.find(({ signalId }) => signalId === id)?.label ?? id).join(" × ")];
     if (safeSections.has("stack")) lines.push(`${copy.myStack}: ${map.stack.slice(0, 5).map(({ label }) => label).join(" · ")}`);

@@ -56,7 +56,9 @@
     "bts:verify": "node scripts/bts-engineering/runner.mjs verify",
     "bts:smoke-dev": "node scripts/bts-engineering/runner.mjs smoke-dev",
     "bts:post": "node scripts/bts-engineering/runner.mjs post",
-    "bts:checkpoint": "node scripts/bts-engineering/runner.mjs checkpoint"
+    "bts:checkpoint": "node scripts/bts-engineering/runner.mjs checkpoint",
+    "bts:production-migrations": "node scripts/bts-engineering/production-migrations.mjs",
+    "bts:production-writing-rename": "node scripts/bts-engineering/production-writing-brand-rename.mjs"
   },
   "dependencies": {
     "@blocknote/ariakit": "0.52.1",

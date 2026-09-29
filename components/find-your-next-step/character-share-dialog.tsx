@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { FynsCharacterShareCard } from "@/components/find-your-next-step/character-share-card";
 import { ShareComposerHeading } from "@/components/sharing/share-composer-heading";
 import { ShareFileActions } from "@/components/sharing/share-file-actions";
+import { useCanonicalSiteUrl } from "@/components/site/canonical-site-url-context";
 import { canonicalBtsShareUrl } from "@/lib/sharing/destinations";
 import type { FynsCharacterPresentation } from "@/data/find-your-next-step-characters";
 import type { FynsCharacterShareDictionary } from "@/data/i18n/fyns-character-share";
@@ -14,6 +15,7 @@ type Feedback = "copied" | "copyFailed" | null;
 
 export function FynsCharacterShareDialog({ character, copy, onClose, safeSharePath, supportingNames }: { character: FynsCharacterPresentation; copy: FynsCharacterShareDictionary; onClose: () => void; safeSharePath: string; supportingNames: readonly string[] }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const canonicalSiteUrl = useCanonicalSiteUrl();
   const cardRef = useRef<HTMLDivElement>(null);
   const [format, setFormat] = useState<WritingShareFormat>("story");
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -31,7 +33,7 @@ export function FynsCharacterShareDialog({ character, copy, onClose, safeSharePa
     return () => { window.clearTimeout(timeout); window.removeEventListener("keydown", exit, true); };
   }, [screenshotMode]);
 
-  const shareUrl = canonicalBtsShareUrl(safeSharePath);
+  const shareUrl = canonicalBtsShareUrl(safeSharePath, canonicalSiteUrl);
   const shareText = `${copy.character}: ${character.name}\n${character.identityStatement}`;
   const copyResult = async () => {
     try { await navigator.clipboard.writeText([shareText, shareUrl].filter(Boolean).join("\n")); setFeedback("copied"); }

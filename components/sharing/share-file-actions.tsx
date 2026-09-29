@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import { useEffect, useState } from "react";
 
 import { useLocale } from "@/components/i18n/locale-context";
+import { useCanonicalSiteUrl } from "@/components/site/canonical-site-url-context";
 import { getShareFileDictionary } from "@/data/i18n/share-file";
 import { getShareDestinationsDictionary } from "@/data/i18n/share-destinations";
 import { webShareDestinations } from "@/lib/sharing/destinations";
@@ -36,6 +37,7 @@ export function ShareFileActions({
   url?: string | null;
 }) {
   const locale = useLocale();
+  const canonicalSiteUrl = useCanonicalSiteUrl();
   const copy = getShareFileDictionary(locale);
   const destinationsCopy = getShareDestinationsDictionary(locale);
   const [file, setFile] = useState<File | null>(null);
@@ -43,7 +45,7 @@ export function ShareFileActions({
   const [feedback, setFeedback] = useState<Feedback>(null);
   const canCopyImage = typeof ClipboardItem !== "undefined" && typeof navigator.clipboard?.write === "function";
   const canShareFile = file ? supportsNativeFileShare(navigator, file) : false;
-  const webDestinations = webShareDestinations({ text, url });
+  const webDestinations = webShareDestinations({ text, url }, canonicalSiteUrl);
 
   useEffect(() => {
     let cancelled = false;

@@ -9,7 +9,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { getRelationshipInviteLanding } from "@/lib/life-alignment-relationship-server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Private Life Alignment invitation | bts.online", robots: { index: false, follow: false } };
+export const metadata = { title: "Private Life Alignment invitation | btshq.online", robots: { index: false, follow: false } };
 
 export default async function RelationshipInvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;

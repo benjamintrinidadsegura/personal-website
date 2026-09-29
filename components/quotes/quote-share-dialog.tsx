@@ -6,6 +6,7 @@ import { QuoteShareCard } from "@/components/quotes/quote-share-card";
 import { QuoteSocialPostCard } from "@/components/quotes/quote-social-post-card";
 import { ShareComposerHeading } from "@/components/sharing/share-composer-heading";
 import { ShareFileActions } from "@/components/sharing/share-file-actions";
+import { useCanonicalSiteUrl } from "@/components/site/canonical-site-url-context";
 import { ShareStyleSelector } from "@/components/sharing/share-style-selector";
 import { canonicalBtsShareUrl } from "@/lib/sharing/destinations";
 import type { QuoteDictionary } from "@/data/i18n/quotes";
@@ -17,6 +18,7 @@ type Feedback = "copied" | "copyFailed" | null;
 
 export function QuoteShareDialog({ copy, onClose, quote, safeSharePath, socialPostEnabled = false, surfaceLabel }: { copy: QuoteDictionary; onClose: () => void; quote: SelectedQuote; safeSharePath: string; socialPostEnabled?: boolean; surfaceLabel: string }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const canonicalSiteUrl = useCanonicalSiteUrl();
   const cardRef = useRef<HTMLDivElement>(null);
   const [format, setFormat] = useState<WritingShareFormat>("story");
   const [style, setStyle] = useState<ShareCardStyle>("editorial");
@@ -35,7 +37,7 @@ export function QuoteShareDialog({ copy, onClose, quote, safeSharePath, socialPo
     return () => { window.clearTimeout(timeout); window.removeEventListener("keydown", exit, true); };
   }, [screenshotMode]);
 
-  const shareUrl = canonicalBtsShareUrl(safeSharePath);
+  const shareUrl = canonicalBtsShareUrl(safeSharePath, canonicalSiteUrl);
   const shareText = `${quote.text}\n\n— ${quote.attribution}`;
   const copyQuote = async () => {
     try { await navigator.clipboard.writeText([shareText, shareUrl].filter(Boolean).join("\n")); setFeedback("copied"); }

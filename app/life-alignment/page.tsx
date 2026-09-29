@@ -5,7 +5,7 @@ import { getLocale } from "@/lib/i18n/server";
 
 export async function generateMetadata() {
   const locale = await getLocale();
-  return createLocalizedMetadata({ locale, pathname: "/life-alignment", title: "Life Alignment | bts.online", description: getLifeAlignmentHubContent(locale).hub.description });
+  return createLocalizedMetadata({ locale, pathname: "/life-alignment", title: "Life Alignment | btshq.online", description: getLifeAlignmentHubContent(locale).hub.description });
 }
 
 export default function LifeAlignmentHubPage() {

@@ -1,4 +1,4 @@
-# BTS.ONLINE V1 Backup and Recovery
+# BTSHQ.ONLINE V1 Backup and Recovery
 
 Status: operational V1 procedure, reviewed 22 August 2026
 Restore Owner: **Benjamin Trinidad Segura**
@@ -113,7 +113,7 @@ copy and never retry an uncertain mutation against Production.
 
 Reassess this model and move to automated encrypted backups and/or a paid plan with
 appropriate provider backup/PITR when user volume or write rate grows materially,
-bts.online becomes commercially critical, recovery targets become shorter than the
+btshq.online becomes commercially critical, recovery targets become shorter than the
 manual cadence, regulated/business/customer-critical data is introduced, or one
 person can no longer operate the procedure reliably.
 

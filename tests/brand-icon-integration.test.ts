@@ -48,7 +48,7 @@ test("large approved icon derivatives have exact native sizes and all referenced
 
 test("manifest exposes only the required 192 and 512 icons without an unsafe maskable claim", () => {
   const value = manifest();
-  assert.equal(value.name, "bts.online Digital HQ");
+  assert.equal(value.name, "btshq.online Digital HQ");
   assert.equal(value.short_name, "BTS");
   assert.equal(value.start_url, "/");
   assert.equal(value.display, "standalone");

@@ -42,7 +42,7 @@ test("FOLLOW-UP 3 save identity keeps newer edits dirty through in-flight, stale
 });
 
 test("FOLLOW-UP 3 clean same-document navigation does not count as leaving", () => {
-  const here = "https://bts.online/admin/writing/id?tab=editor";
+  const here = "https://btshq.online/admin/writing/id?tab=editor";
   assert.equal(writingNavigationLeavesDocument(here, "#document"), false);
   assert.equal(writingNavigationLeavesDocument(here, here), false);
   assert.equal(writingNavigationLeavesDocument(here, "/admin/writing/id?tab=preview"), true);
@@ -115,9 +115,9 @@ test("FOLLOW-UP 3 native file share sends canonical source and propagates reject
       canShare: (candidate: ShareData) => candidate.files?.[0] === file,
       share: async (candidate: ShareData) => { payload = candidate; },
     } });
-    await shareCardFile(file, { title: "Story", text: "Authored thought", url: "https://bts.online/writing/story" });
+    await shareCardFile(file, { title: "Story", text: "Authored thought", url: "https://btshq.online/writing/story" });
     assert.equal(payload?.files?.[0], file);
-    assert.equal(payload?.text, "Authored thought\nhttps://bts.online/writing/story");
+    assert.equal(payload?.text, "Authored thought\nhttps://btshq.online/writing/story");
     Object.defineProperty(globalThis, "navigator", { configurable: true, value: {
       canShare: () => true,
       share: async () => { throw new DOMException("Canceled", "AbortError"); },

@@ -116,8 +116,9 @@ test("status and retry remain admin-only and expose no subscriber data", () => {
 });
 
 test("site-origin validation matches the existing secure draft architecture", () => {
-  assert.equal(canonicalNewsletterSiteOrigin("https://bts.online/path"), "https://bts.online");
-  assert.equal(canonicalNewsletterSiteOrigin("http://localhost:3000/path"), "http://localhost:3000");
-  assert.equal(canonicalNewsletterSiteOrigin("http://bts.online"), null);
+  assert.equal(canonicalNewsletterSiteOrigin("https://btshq.online/path"), null);
+  assert.equal(canonicalNewsletterSiteOrigin("http://localhost:3000"), "http://localhost:3000");
+  assert.equal(canonicalNewsletterSiteOrigin("http://localhost:3000/path"), null);
+  assert.equal(canonicalNewsletterSiteOrigin("http://btshq.online"), null);
   assert.equal(canonicalNewsletterSiteOrigin("ftp://localhost"), null);
 });

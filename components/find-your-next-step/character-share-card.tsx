@@ -27,7 +27,7 @@ export function FynsCharacterShareCard({
     >
       <div className="writing-share-card-safe-area">
         <header className="writing-share-card-header">
-          <span className="writing-share-card-marker">BTS.ONLINE / FYNS</span>
+          <span className="writing-share-card-marker">BTSHQ.ONLINE / FYNS</span>
           <span className="writing-share-card-progress">{characterLabel}</span>
         </header>
         <div className="fyns-character-share-content">
@@ -40,7 +40,7 @@ export function FynsCharacterShareCard({
           <div className="min-w-0">
             {supportingNames.length > 0 ? <><p className="writing-share-card-title">{supportingLabel}</p><p className="writing-share-card-author">{supportingNames.join(" · ")}</p></> : null}
           </div>
-          <p className="writing-share-card-domain">bts.online</p>
+          <p className="writing-share-card-domain">btshq.online</p>
         </footer>
       </div>
     </div>

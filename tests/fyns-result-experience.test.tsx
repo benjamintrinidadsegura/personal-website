@@ -76,7 +76,7 @@ test("Character sharing reuses Story, Portrait and Square without private result
     }));
     assert.match(markup, new RegExp(`data-format="${format}"`));
     assert.match(markup, /Builder/u);
-    assert.match(markup, /bts\.online/u);
+    assert.match(markup, /btshq\.online/u);
   }
   const shareSources = ["character-share-card.tsx", "character-share-dialog.tsx"]
     .map((file) => readFileSync(join(root, "components/find-your-next-step", file), "utf8"))

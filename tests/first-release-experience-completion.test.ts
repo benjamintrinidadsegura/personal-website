@@ -74,7 +74,7 @@ test("Writing, Quote, and FYNS share surfaces use the same identity, icon, and c
   const quoteExperience = source("../components/quotes/quote-experience.tsx");
   const fynsActions = source("../components/find-your-next-step/result-actions.tsx");
   for (const surface of [writing, quote, fyns]) assert.match(surface, /ShareComposerHeading/u);
-  assert.match(heading, /BTS\.ONLINE/u);
+  assert.match(heading, /BTSHQ\.ONLINE/u);
   assert.match(heading, /ShareIcon/u);
   assert.match(quoteExperience, /bts-share-action/u);
   assert.match(fynsActions, /bts-share-action/u);

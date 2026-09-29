@@ -30,8 +30,8 @@ function writingFormData(excerpt: string): FormData {
 
 const sourceRow = {
   id: "11111111-1111-4111-8111-111111111111",
-  slug: "warum-ich-bts-online-gebaut-habe",
-  title: "Warum ich bts.online gebaut habe",
+  slug: "warum-ich-btshq-online-gebaut-habe",
+  title: "Warum ich btshq.online gebaut habe",
   deck: "Quelle",
   excerpt: "Ein verständlicher deutscher Teaser.",
   body: "Ein vollständiger deutscher Artikeltext mit ausreichend vielen Zeichen.",
@@ -45,7 +45,7 @@ const sourceRow = {
   translations: [
     {
       locale: "en",
-      title: "Why I built bts.online",
+      title: "Why I built btshq.online",
       deck: "Source translated",
       excerpt: "A clear and complete English teaser.",
       body: "A complete English article body with enough characters for public rendering.",
@@ -56,7 +56,7 @@ const sourceRow = {
     },
     {
       locale: "es",
-      title: "Por qué construí bts.online",
+      title: "Por qué construí btshq.online",
       deck: "Antigua",
       excerpt: "Una traducción que ya está desactualizada.",
       body: "Una traducción antigua que no debe presentarse como si estuviera actualizada.",
@@ -87,7 +87,7 @@ test("one canonical article identity selects current translations and falls back
   assert.equal(english.slug, sourceRow.slug);
   assert.equal(english.language, "en");
   assert.equal(english.translationStatus, "translated");
-  assert.equal(english.title, "Why I built bts.online");
+  assert.equal(english.title, "Why I built btshq.online");
   assert.deepEqual(english.availableLanguages, ["de", "en"]);
 
   const spanish = mapPublicWritingArticle(sourceRow, "es");
@@ -100,9 +100,9 @@ test("one canonical article identity selects current translations and falls back
 });
 
 test("translation import accepts only bounded structured Writing content", () => {
-  const accepted = parseWritingTranslationImport(JSON.stringify({ title: "Why I built bts.online", deck: "A translated deck", excerpt: "A complete translated teaser.", bodyJson: document }));
+  const accepted = parseWritingTranslationImport(JSON.stringify({ title: "Why I built btshq.online", deck: "A translated deck", excerpt: "A complete translated teaser.", bodyJson: document }));
   assert.equal(accepted.success, true);
-  const htmlShape = parseWritingTranslationImport(JSON.stringify({ title: "Why I built bts.online", deck: "A translated deck", excerpt: "A complete translated teaser.", bodyJson: { version: 1, blocks: [{ type: "html", content: "<p>raw</p>" }] } }));
+  const htmlShape = parseWritingTranslationImport(JSON.stringify({ title: "Why I built btshq.online", deck: "A translated deck", excerpt: "A complete translated teaser.", bodyJson: { version: 1, blocks: [{ type: "html", content: "<p>raw</p>" }] } }));
   assert.equal(htmlShape.success, false);
   const extraField = parseWritingTranslationImport(JSON.stringify({ title: "Why", deck: "", excerpt: "A complete translated teaser.", bodyJson: document, providerSecret: "no" }));
   assert.equal(extraField.success, false);

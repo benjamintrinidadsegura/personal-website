@@ -3,7 +3,7 @@ import { EchoModerationList } from "@/components/admin/echo-moderation-list";
 import { requireAdminPage } from "@/lib/admin/authorization";
 import { moderationFilters, type AdminEcho, type ModerationFilter } from "@/types/echowall";
 
-export const metadata = { title: "EchoWall Moderation | bts.online", robots: { index: false, follow: false } };
+export const metadata = { title: "EchoWall Moderation | btshq.online", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 export default async function EchoWallAdminPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {

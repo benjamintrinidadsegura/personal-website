@@ -37,18 +37,18 @@ const request: WritingTranslationRequest = {
   sourceLocale: "de",
   targetLocale: "en",
   sourceRevision: 2,
-  protectedTerms: ["BTS.ONLINE", "bts.online"],
+  protectedTerms: ["BTSHQ.ONLINE", "btshq.online"],
   content: {
-    title: "Warum ich bts.online gebaut habe",
-    deck: "BTS.ONLINE ist mein digitales Zuhause.",
-    excerpt: "Ein vollständiger Teaser über bts.online.",
+    title: "Warum ich btshq.online gebaut habe",
+    deck: "BTSHQ.ONLINE ist mein digitales Zuhause.",
+    excerpt: "Ein vollständiger Teaser über btshq.online.",
     bodyJson: {
       version: 1,
       blocks: [{
         type: "paragraph",
         content: [
-          { type: "text", text: "BTS.ONLINE ist ein vollständiger Artikel mit einem Link zu " },
-          { type: "link", href: "https://bts.online/writing", content: [{ type: "text", text: "bts.online", styles: { bold: true } }] },
+          { type: "text", text: "BTSHQ.ONLINE ist ein vollständiger Artikel mit einem Link zu " },
+          { type: "link", href: "https://btshq.online/writing", content: [{ type: "text", text: "btshq.online", styles: { bold: true } }] },
           { type: "text", text: "." },
         ],
       }],
@@ -58,12 +58,12 @@ const request: WritingTranslationRequest = {
 
 const validOutput = JSON.stringify({
   targetLocale: "en",
-  title: "Why I built bts.online",
-  deck: "BTS.ONLINE is my digital home.",
-  teaser: "A complete teaser about bts.online.",
+  title: "Why I built btshq.online",
+  deck: "BTSHQ.ONLINE is my digital home.",
+  teaser: "A complete teaser about btshq.online.",
   translations: [
-    { id: "block:~|blocks[0].content[0]", text: "BTS.ONLINE is a complete article with a link to" },
-    { id: "block:~|blocks[0].content[1].content[0]", text: "bts.online" },
+    { id: "block:~|blocks[0].content[0]", text: "BTSHQ.ONLINE is a complete article with a link to" },
+    { id: "block:~|blocks[0].content[1].content[0]", text: "btshq.online" },
     { id: "block:~|blocks[0].content[2]", text: "." },
   ],
 });
@@ -159,11 +159,11 @@ test("missing configuration performs no database work and returns bounded truthf
 test("structured output preserves document shape, URLs and protected BTS terms", () => {
   const translated = parseOpenAIWritingTranslationOutput(validOutput, request);
   assert.ok(translated);
-  assert.equal(translated.title, "Why I built bts.online");
+  assert.equal(translated.title, "Why I built btshq.online");
   const link = translated.bodyJson.blocks[0].type === "divider" ? null : translated.bodyJson.blocks[0].content[1];
   assert.ok(link && link.type === "link");
-  assert.equal(link.href, "https://bts.online/writing");
-  assert.equal(link.content[0].text, "bts.online");
+  assert.equal(link.href, "https://btshq.online/writing");
+  assert.equal(link.content[0].text, "btshq.online");
 });
 
 test("aligned text nodes reject empty redistribution while preserving intentional source empties", () => {
@@ -209,7 +209,7 @@ test("linked text nodes enforce the same source-aware non-empty invariant", () =
     const translatedLink = linkedBlock.content[1];
     assert.equal(translatedLink.type, "link");
     if (translatedLink.type === "link") {
-      assert.equal(translatedLink.href, "https://bts.online/writing");
+      assert.equal(translatedLink.href, "https://btshq.online/writing");
       assert.deepEqual(translatedLink.content[0].styles, { bold: true });
       assert.equal(translatedLink.content[0].text, "Article");
     }
@@ -288,18 +288,18 @@ test("missing, duplicate and unknown ids are rejected and cross-node redistribut
     level: 2,
     content: [
       { type: "text", text: "Was ich mit " },
-      { type: "text", text: "bts.online", styles: { bold: true } },
+      { type: "text", text: "btshq.online", styles: { bold: true } },
       { type: "text", text: " eigentlich bauen wollte" },
     ],
   }];
   const redistributedOutput = JSON.stringify({
     targetLocale: "en",
-    title: "Why I built bts.online",
-    deck: "BTS.ONLINE is my digital home.",
-    teaser: "A complete teaser about bts.online.",
+    title: "Why I built btshq.online",
+    deck: "BTSHQ.ONLINE is my digital home.",
+    teaser: "A complete teaser about btshq.online.",
     translations: [
       { id: "block:intent|blocks[0].content[0]", text: "What I actually wanted to build with" },
-      { id: "block:intent|blocks[0].content[1]", text: "bts.online" },
+      { id: "block:intent|blocks[0].content[1]", text: "btshq.online" },
       { id: "block:intent|blocks[0].content[2]", text: "" },
     ],
   });
@@ -349,7 +349,7 @@ test("targeted repair sends only invalid units and retains all valid first-pass 
   if (firstBlock.type !== "divider") {
     const firstText = firstBlock.content[0];
     assert.equal(firstText.type, "text");
-    if (firstText.type === "text") assert.equal(firstText.text, "BTS.ONLINE is a complete article with a link to ");
+    if (firstText.type === "text") assert.equal(firstText.text, "BTSHQ.ONLINE is a complete article with a link to ");
   }
 });
 

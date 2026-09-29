@@ -3,5 +3,5 @@ import { getRelationshipModule, relationshipText } from "@/data/life-alignment-r
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
 import { getLocale } from "@/lib/i18n/server";
 
-export async function generateMetadata() { const locale = await getLocale(); const definition = getRelationshipModule("team"); return createLocalizedMetadata({ locale, pathname: "/life-alignment/team", title: `${relationshipText(definition.title, locale)} | Life Alignment | bts.online`, description: relationshipText(definition.shortDescription, locale) }); }
+export async function generateMetadata() { const locale = await getLocale(); const definition = getRelationshipModule("team"); return createLocalizedMetadata({ locale, pathname: "/life-alignment/team", title: `${relationshipText(definition.title, locale)} | Life Alignment | btshq.online`, description: relationshipText(definition.shortDescription, locale) }); }
 export default function TeamAlignmentPage() { return <RelationshipModulePage moduleId="team"/>; }

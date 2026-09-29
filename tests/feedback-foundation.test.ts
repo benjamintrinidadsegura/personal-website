@@ -34,11 +34,11 @@ const NOW = Date.UTC(2026, 8, 20, 12, 0, 0);
 const secrets = {
   hashSecret: "feedback-hash-secret-for-tests",
   formTokenSecret: "feedback-form-secret-for-tests",
-  siteUrl: "https://bts.online",
+  siteUrl: "https://btshq.online",
 };
 const request = {
-  origin: "https://bts.online",
-  host: "bts.online",
+  origin: "https://btshq.online",
+  host: "btshq.online",
   networkIdentifier: "203.0.113.42",
 };
 
@@ -90,7 +90,7 @@ test("Feedback validation keeps the form minimal, bounded, multilingual and plai
   assert.equal(validateFeedbackSubmission(raw({ contactMethod: "carrier-pigeon", contactValue: "Hill 4" })).success, false);
   assert.equal(validateFeedbackSubmission(raw({ contactMethod: "other", contactValue: "x".repeat(feedbackContactValueMaximum + 1) })).success, false);
   assert.equal(validateFeedbackSubmission(raw({ contactMethod: "email", contactValue: "safe@example.com\u202E" })).success, false);
-  assert.equal(validateFeedbackSubmission(raw({ sourceContext: "https://bts.online/private?token=secret" })).success, false);
+  assert.equal(validateFeedbackSubmission(raw({ sourceContext: "https://btshq.online/private?token=secret" })).success, false);
   assert.equal(validateFeedbackSubmission(raw({ website: "bot-filled" })).success, false);
   assert.deepEqual(feedbackSourceContexts, [
     "home", "writing", "fyns", "world-map", "life-alignment", "projects", "people", "discovery", "other",

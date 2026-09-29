@@ -13,7 +13,7 @@ import { getLocale } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  return createLocalizedMetadata({ locale, pathname: "/echowall", title: "EchoWall | bts.online", description: getEchoDictionary(locale).page.description });
+  return createLocalizedMetadata({ locale, pathname: "/echowall", title: "EchoWall | btshq.online", description: getEchoDictionary(locale).page.description });
 }
 
 export const dynamic = "force-dynamic";

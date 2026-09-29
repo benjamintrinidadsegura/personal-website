@@ -5,8 +5,8 @@ Newsletter 1A keeps Supabase as the consent and subscriber source of truth. Brev
 ## Human gates before public collection
 
 - Approve and accept the Brevo contract and data-processing terms.
-- Create the Brevo account and verify `newsletter@bts.online`.
-- Configure and verify SPF, DKIM and DMARC for `bts.online`.
+- Create the Brevo account and verify the address configured in `NEWSLETTER_FROM_EMAIL`.
+- Configure and verify SPF, DKIM and DMARC for the final sending domain before enabling public collection.
 - Disable Brevo open, click and link tracking for transactional and future campaign email. Confirm with a delivered-message inspection that no tracking pixel or rewritten tracking URL is present.
 - Supply the authoritative controller postal/contact details through `NEWSLETTER_CONTROLLER_ADDRESS` and review the public privacy copy.
 - Decide and document legally/operationally appropriate retention periods for consent evidence and keyed suppression records. Newsletter 1A deliberately does not invent them.
@@ -25,13 +25,13 @@ Server-only values:
 - `NEWSLETTER_CONTROLLER_ADDRESS`: authoritative controller address, not a placeholder.
 - `NEWSLETTER_WEBHOOK_SECRET`: independent 32+ character HMAC secret for delivery-event ingestion; never reuse the API key or newsletter hash secret.
 
-Operational flags and fixed identities:
+Operational flags and verified sender identities:
 
 - `NEWSLETTER_PUBLIC_ENABLED=true`
 - `NEWSLETTER_LEGAL_READY=true`
 - `NEWSLETTER_PROVIDER=brevo`
-- `NEWSLETTER_FROM_EMAIL=newsletter@bts.online`
-- `NEWSLETTER_REPLY_TO_EMAIL=hello@bts.online`
+- `NEWSLETTER_FROM_EMAIL`: a Brevo-verified sender address on the final sending domain.
+- `NEWSLETTER_REPLY_TO_EMAIL`: the verified public reply address; it may differ from the sender address.
 - `BREVO_TRACKING_DISABLED=true` only after the provider account setting has actually been verified.
 
 ## Data lifecycle

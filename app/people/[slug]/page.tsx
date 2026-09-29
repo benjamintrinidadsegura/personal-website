@@ -8,6 +8,7 @@ import { getPublishedSpotlight, publishedSpotlights } from "@/data/spotlights";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
 import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
 import { getLocale } from "@/lib/i18n/server";
+import { absoluteSiteUrl, requireSiteUrl } from "@/lib/site-url";
 
 interface SpotlightPageProps { params: Promise<{ slug: string }> }
 
@@ -31,8 +32,9 @@ export default async function SpotlightPage({ params }: SpotlightPageProps) {
   if (!spotlight) notFound();
   const copy = getPeopleCopy(locale);
   const related = getLocalizedRelatedSpotlights(spotlight, locale);
-  const canonical = `https://bts.online${getLocalizedPathname(`/people/${spotlight.slug}`, locale)}`;
-  const personEntityId = `https://bts.online/people/${spotlight.slug}#person`;
+  const siteUrl = requireSiteUrl();
+  const canonical = absoluteSiteUrl(getLocalizedPathname(`/people/${spotlight.slug}`, locale), siteUrl);
+  const personEntityId = absoluteSiteUrl(`/people/${spotlight.slug}#person`, siteUrl);
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -56,7 +58,7 @@ export default async function SpotlightPage({ params }: SpotlightPageProps) {
       },
       spotlight.video && {
         "@type": "VideoObject",
-        "@id": `https://bts.online/people/${spotlight.slug}#video`,
+        "@id": absoluteSiteUrl(`/people/${spotlight.slug}#video`, siteUrl),
         name: spotlight.video.title,
         description: sourceSpotlight?.teaser ?? spotlight.teaser,
         uploadDate: spotlight.publishedAt,
@@ -68,8 +70,8 @@ export default async function SpotlightPage({ params }: SpotlightPageProps) {
         "@type": "BreadcrumbList",
         "@id": `${canonical}#breadcrumb`,
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Digital HQ", item: "https://bts.online/" },
-          { "@type": "ListItem", position: 2, name: "People", item: `https://bts.online${getLocalizedPathname("/people", locale)}` },
+          { "@type": "ListItem", position: 1, name: "Digital HQ", item: absoluteSiteUrl("/", siteUrl) },
+          { "@type": "ListItem", position: 2, name: "People", item: absoluteSiteUrl(getLocalizedPathname("/people", locale), siteUrl) },
           { "@type": "ListItem", position: 3, name: spotlight.fullName, item: canonical },
         ],
       },

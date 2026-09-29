@@ -50,7 +50,7 @@ function parseClaim(value: unknown): ClaimedTranslation | null {
       targetLocale: row.target_locale,
       sourceRevision: row.source_revision,
       content: { title: row.title, deck: row.deck, excerpt: row.excerpt, bodyJson: document.data },
-      protectedTerms: ["BTS.ONLINE", "bts.online"],
+      protectedTerms: ["BTSHQ.ONLINE", "btshq.online"],
     },
   };
 }

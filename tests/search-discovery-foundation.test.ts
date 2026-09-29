@@ -25,7 +25,7 @@ async function withProductionEnvironment<T>(callback: () => T | Promise<T>): Pro
   const previousNodeEnv = process.env.NODE_ENV;
   try {
     Object.defineProperty(process.env, "NODE_ENV", { value: "production", configurable: true, enumerable: true, writable: true });
-    process.env.SITE_URL = "https://bts.online";
+    process.env.SITE_URL = "https://btshq.online";
     return await callback();
   } finally {
     if (previousSiteUrl === undefined) delete process.env.SITE_URL;
@@ -88,8 +88,8 @@ test("sitemap contains unique canonical locale routes and excludes private and l
     const urls = entries.map(({ url }) => url);
     assert.equal(new Set(urls).size, urls.length);
     for (const route of publicStaticRoutes) {
-      assert.ok(urls.includes(`https://bts.online${route === "/" ? "/" : route}`), route);
-      assert.ok(urls.includes(`https://bts.online/en${route === "/" ? "" : route}`), `en:${route}`);
+      assert.ok(urls.includes(`https://btshq.online${route === "/" ? "/" : route}`), route);
+      assert.ok(urls.includes(`https://btshq.online/en${route === "/" ? "" : route}`), `en:${route}`);
     }
     for (const prefix of getLocalizedPrivateRoutePrefixes()) {
       assert.equal(urls.some((url) => new URL(url).pathname.startsWith(prefix)), false, prefix);
@@ -106,10 +106,11 @@ test("tool schema is small, localized and contains no authority or rating claims
     locale: "en",
     name: "Personal Advantage Map",
     pathname: "/tools/personal-advantage",
+    siteUrl: new URL("https://btshq.online"),
   });
   const graph = structured["@graph"];
   assert.deepEqual(graph.map((node) => node["@type"]), ["WebPage", "WebApplication", "BreadcrumbList"]);
-  assert.equal(graph[0].url, "https://bts.online/en/tools/personal-advantage");
+  assert.equal(graph[0].url, "https://btshq.online/en/tools/personal-advantage");
   assert.equal(graph[0].inLanguage, "en-GB");
   const serialized = JSON.stringify(structured);
   assert.doesNotMatch(serialized, /AggregateRating|Review|Medical|diagnos/iu);
@@ -141,11 +142,11 @@ test("verification metadata is optional, validated and contains no invented toke
 
 test("referral measurement emits only a broad allowlisted category", () => {
   assert.deepEqual(discoveryReferralCategories, ["direct", "internal", "organic-search", "ai-assistant", "external"]);
-  assert.equal(classifyDiscoveryReferrer("", "https://bts.online"), "direct");
-  assert.equal(classifyDiscoveryReferrer("https://bts.online/about", "https://bts.online"), "internal");
-  assert.equal(classifyDiscoveryReferrer("https://www.google.de/search?q=private", "https://bts.online"), "organic-search");
-  assert.equal(classifyDiscoveryReferrer("https://chatgpt.com/c/example", "https://bts.online"), "ai-assistant");
-  assert.equal(classifyDiscoveryReferrer("https://example.com/path?secret=value", "https://bts.online"), "external");
+  assert.equal(classifyDiscoveryReferrer("", "https://btshq.online"), "direct");
+  assert.equal(classifyDiscoveryReferrer("https://btshq.online/about", "https://btshq.online"), "internal");
+  assert.equal(classifyDiscoveryReferrer("https://www.google.de/search?q=private", "https://btshq.online"), "organic-search");
+  assert.equal(classifyDiscoveryReferrer("https://chatgpt.com/c/example", "https://btshq.online"), "ai-assistant");
+  assert.equal(classifyDiscoveryReferrer("https://example.com/path?secret=value", "https://btshq.online"), "external");
   const analytics = source("lib/search-discovery-analytics.ts");
   assert.match(analytics, /"personal-advantage": "\/tools\/personal-advantage"/u);
   assert.match(analytics, /"money-profile": "\/tools\/money-profile"/u);

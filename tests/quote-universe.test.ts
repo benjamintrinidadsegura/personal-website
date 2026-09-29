@@ -116,7 +116,7 @@ test("share eligibility and BTS-original attribution are explicit and truthful",
     const selected = selectQuote({ locale: "en", surface: "daily", dateKey: "2026-09-21" }, [{ ...quote, dailyEligible: true }]);
     assert.equal(selected.shareEligible, quote.shareEligible);
     assert.equal(selected.origin, "bts-original");
-    assert.equal(selected.attribution, "bts.online");
+    assert.equal(selected.attribution, "btshq.online");
     assert.equal(quote.variants.en.attribution, undefined);
   }
 });

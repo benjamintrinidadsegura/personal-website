@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const copy = getPersonalAdvantageUiCopy(locale);
   const surface = getDiscoverySurface("personal-advantage", locale);
-  return createLocalizedMetadata({ locale, pathname: surface.path, title: `${surface.copy.question} | bts.online`, description: copy.metadataDescription });
+  return createLocalizedMetadata({ locale, pathname: surface.path, title: `${surface.copy.question} | btshq.online`, description: copy.metadataDescription });
 }
 
 export default async function PersonalAdvantageRoute() {

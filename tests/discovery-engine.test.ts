@@ -46,7 +46,7 @@ const knownStaticRoutes = new Set([
   "/projects/hobbyswap",
   "/projects/streamory",
   "/projects/byc",
-  "/projects/bts-online",
+  "/projects/btshq-online",
 ]);
 
 const knownHomeAnchors = new Set(["home", "now", "quote", "pulse", "building", "writing", "interviews", "echowall", "about", "contact"]);

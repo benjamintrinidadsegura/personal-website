@@ -89,7 +89,7 @@ test("segmentation is Unicode-safe across BTS source languages, emoji, compounds
     ["pl", "Zażółć gęślą jaźń — myśl pozostaje cała."],
     ["el", "Η σκέψη παραμένει ακέραιη και καθαρή."],
     ["ru", "Мысль остаётся целой и читаемой."],
-    ["en", "A family 👨‍👩‍👧‍👦 and a link https://bts.online/writing/context stay intact."],
+    ["en", "A family 👨‍👩‍👧‍👦 and a link https://btshq.online/writing/context stay intact."],
   ] as const;
   for (const [locale, value] of values) {
     const result = segmentWritingThought(value.repeat(5), "square", "marginNote", locale);
@@ -190,7 +190,7 @@ test("content is never dropped, duplicated, or reordered", () => {
 test("article cards preserve semantic typography instead of turning body copy into display text", () => {
   const shareSource: WritingShareSource = {
     articleId: "article", articleSlug: "article", articleTitle: "A strong article title", authorName: "Benjamin Trinidad Segura",
-    canonicalUrl: "https://bts.online/writing/article", domain: "bts.online", kind: "article", language: "en", text: "Section heading\n\nA calm paragraph.\n\nA list item.\n\nA quote.",
+    canonicalUrl: "https://btshq.online/writing/article", domain: "btshq.online", kind: "article", language: "en", text: "Section heading\n\nA calm paragraph.\n\nA list item.\n\nA quote.",
   };
   const blocks: WritingCarouselBlock[] = [
     { kind: "heading", separatorBefore: "", text: "Section heading" },
@@ -357,7 +357,7 @@ test("native carousel sharing prefers files-only when adding the canonical URL i
       canShare: (candidate: ShareData) => !("url" in candidate),
       share: async (candidate: ShareData) => { payload = candidate; },
     } });
-    await shareCardFiles(files, { url: "https://bts.online/writing/article" });
+    await shareCardFiles(files, { url: "https://btshq.online/writing/article" });
     assert.deepEqual(payload?.files, files);
     assert.equal(payload?.url, undefined);
     assert.equal(payload?.title, undefined);
@@ -368,9 +368,9 @@ test("native carousel sharing prefers files-only when adding the canonical URL i
       canShare: (candidate: ShareData) => candidate.files?.length === 2 && candidate.files[0] === files[0] && candidate.files[1] === files[1],
       share: async (candidate: ShareData) => { payload = candidate; },
     } });
-    await shareCardFiles(files, { url: "https://bts.online/writing/article" });
+    await shareCardFiles(files, { url: "https://btshq.online/writing/article" });
     assert.deepEqual(payload?.files, files);
-    assert.equal(payload?.url, "https://bts.online/writing/article");
+    assert.equal(payload?.url, "https://btshq.online/writing/article");
     assert.equal(payload?.title, undefined);
     assert.equal(payload?.text, undefined);
     assert.equal(payload && "caption" in payload, false);
@@ -443,7 +443,7 @@ test("DEV native-share diagnostics contain capability metadata and the exact san
       canShare: (candidate: ShareData) => !("url" in candidate),
       share: async () => { throw new DOMException("Permission denied by desktop share target", "SecurityError"); },
     } });
-    await assert.rejects(shareCardFiles(files, { url: "https://bts.online/writing/article" }), { name: "SecurityError" });
+    await assert.rejects(shareCardFiles(files, { url: "https://btshq.online/writing/article" }), { name: "SecurityError" });
     assert.deepEqual(captured, {
       canShareFiles: true,
       canShareFilesWithUrl: false,
