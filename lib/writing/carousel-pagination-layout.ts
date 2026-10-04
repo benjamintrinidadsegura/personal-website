@@ -15,7 +15,7 @@ import type {
 } from "@/types/writing";
 
 export type CarouselSegment = {
-  separatorBefore: "" | " " | "\n\n";
+  separatorBefore: string;
   text: string;
   blocks: WritingCarouselBlock[];
 };
@@ -30,7 +30,7 @@ export type CarouselPaginationResult =
   | { status: "empty"; canonicalText: string; segments: [] }
   | { status: "tooLong"; canonicalText: string; maxSlides: number; requiredSlides: number | null; segments: [] };
 
-type Unit = {
+type Unit = WritingShareBlock & {
   blockIndex: number;
   kind: WritingShareBlockKind;
   separatorBefore: CarouselSegment["separatorBefore"];
@@ -43,9 +43,19 @@ function normalize(value: string): string {
   return value.normalize("NFC").replace(/\r\n?/gu, "\n").split("\n").map((line) => line.trim().replace(/[\t ]+/gu, " ")).join("\n").replace(/\n{3,}/gu, "\n\n").trim();
 }
 
-function sentences(value: string, locale: WritingLanguage): string[] {
-  if (typeof Intl.Segmenter === "function") return [...new Intl.Segmenter(locale, { granularity: "sentence" }).segment(value)].map(({ segment }) => segment.trim()).filter(Boolean);
-  return value.match(/[^.!?。！？]+(?:[.!?。！？]+|$)/gu)?.map((sentence) => sentence.trim()).filter(Boolean) ?? [value];
+function sentences(value: string, locale: WritingLanguage): { text: string; separatorBefore: string }[] {
+  const raw = typeof Intl.Segmenter === "function"
+    ? [...new Intl.Segmenter(locale, { granularity: "sentence" }).segment(value)].map(({ segment, index }) => ({ segment, index }))
+    : [...value.matchAll(/[^.!?。！？]*[.!?。！？]+|[^.!?。！？]+$/gu)].map((match) => ({ segment: match[0], index: match.index }));
+  let end = 0;
+  return raw.flatMap(({ segment, index }) => {
+    const text = segment.trim();
+    if (!text) return [];
+    const start = index + segment.indexOf(text);
+    const separatorBefore = value.slice(end, start);
+    end = start + text.length;
+    return [{ text, separatorBefore }];
+  });
 }
 
 function inferredKind(text: string): WritingShareBlockKind {
@@ -57,7 +67,7 @@ function inferredKind(text: string): WritingShareBlockKind {
 
 function normalizedBlocks(canonicalText: string, blocks?: readonly WritingShareBlock[]): WritingShareBlock[] {
   if (blocks?.length) {
-    const normalized = blocks.map(({ kind, text }) => ({ kind, text: normalize(text) })).filter(({ text }) => Boolean(text));
+    const normalized = blocks.map((block) => ({ ...block, text: normalize(block.text) })).filter(({ text }) => Boolean(text));
     if (normalized.map(({ text }) => text).join("\n\n") === canonicalText) return normalized;
   }
   return canonicalText.split(/\n{2}/u).map((text) => ({ kind: inferredKind(text), text }));
@@ -73,20 +83,21 @@ function internalBlocksFor(units: readonly Unit[]): InternalBlock[] {
     const previous = blocks.at(-1);
     if (previous?.blockIndex === unit.blockIndex) {
       previous.text += `${unit.separatorBefore}${unit.text}`;
+      previous.dividersAfter = unit.dividersAfter;
       continue;
     }
-    blocks.push({ blockIndex: unit.blockIndex, kind: unit.kind, separatorBefore: unit.separatorBefore, text: unit.text });
+    blocks.push({ ...unit });
   }
   return blocks;
 }
 
 function blocksFor(units: readonly Unit[]): WritingCarouselBlock[] {
-  return internalBlocksFor(units).map(({ kind, separatorBefore, text }) => ({ kind, separatorBefore, text }));
+  return internalBlocksFor(units).map(({ blockIndex, ...block }) => { void blockIndex; return block; });
 }
 
 function pageHeight(units: readonly Unit[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): number {
   return internalBlocksFor(units).reduce((height, block, index, blocks) => height
-    + estimatedBlockHeight(block.text, block.kind, format, composition, locale)
+    + estimatedBlockHeight(block.text, block.kind, format, composition, locale, block)
     + (index > 0 ? carouselBlockSpacing(block.kind, blocks[index - 1].kind, composition) : 0), 0);
 }
 
@@ -98,55 +109,62 @@ function pageFits(units: readonly Unit[], format: WritingShareFormat, compositio
   return pageHeight(units, format, composition, locale) <= availableHeight(format, slideIndex, locale, options);
 }
 
-function textFitsEmptyPage(text: string, kind: WritingShareBlockKind, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions): boolean {
-  return estimatedBlockHeight(text, kind, format, composition, locale) <= Math.min(availableHeight(format, 0, locale, options), availableHeight(format, 1, locale, options));
+function textFitsEmptyPage(text: string, block: WritingShareBlock, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions): boolean {
+  return estimatedBlockHeight(text, block.kind, format, composition, locale, block) <= Math.min(availableHeight(format, 0, locale, options), availableHeight(format, 1, locale, options));
 }
 
 function containsOversizedWord(text: string, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): boolean {
   return (text.match(/\S+/gu) ?? []).some((word) => estimatedWordWidth(word, composition, locale) > carouselLayoutByFormat[format].bodyWidth);
 }
 
-function splitByWords(sentence: string, blockIndex: number, kind: WritingShareBlockKind, separatorBefore: Unit["separatorBefore"], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions) {
+function splitByWords(sentence: string, blockIndex: number, block: WritingShareBlock, separatorBefore: Unit["separatorBefore"], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions) {
   const units: Unit[] = [];
   let current = "";
   let separator = separatorBefore;
   let oversizedWord = false;
   const flush = () => {
     if (!current) return;
-    units.push({ blockIndex, kind, separatorBefore: separator, text: current });
+    units.push({ ...block, blockIndex, separatorBefore: separator, text: current });
     current = "";
-    separator = " ";
   };
-  for (const word of sentence.match(/\S+/gu) ?? []) {
+  let end = 0;
+  for (const match of sentence.matchAll(/\S+/gu)) {
+    const word = match[0];
+    const gap = sentence.slice(end, match.index);
+    end = match.index + word.length;
     if (estimatedWordWidth(word, composition, locale) > carouselLayoutByFormat[format].bodyWidth) {
       flush();
       oversizedWord = true;
-      units.push({ blockIndex, kind, separatorBefore: separator, text: word });
-      separator = " ";
+      units.push({ ...block, blockIndex, separatorBefore: units.length ? gap : separator, text: word });
       continue;
     }
-    const candidate = current ? `${current} ${word}` : word;
-    if (textFitsEmptyPage(candidate, kind, format, composition, locale, options)) current = candidate;
-    else { flush(); current = word; }
+    if (!current && units.length) separator = gap;
+    const candidate = current ? `${current}${gap}${word}` : word;
+    if (textFitsEmptyPage(candidate, block, format, composition, locale, options)) current = candidate;
+    else { flush(); separator = gap; current = word; }
   }
   flush();
   return { oversizedWord, units };
 }
 
 function unitsForBlock(block: WritingShareBlock, blockIndex: number, separatorBefore: Unit["separatorBefore"], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions) {
-  if (!containsOversizedWord(block.text, format, composition, locale) && textFitsEmptyPage(block.text, block.kind, format, composition, locale, options)) {
-    return { oversizedWord: false, units: [{ blockIndex, kind: block.kind, separatorBefore, text: block.text }] satisfies Unit[] };
+  if (!containsOversizedWord(block.text, format, composition, locale) && textFitsEmptyPage(block.text, block, format, composition, locale, options)) {
+    return { oversizedWord: false, units: [{ ...block, blockIndex, separatorBefore }] satisfies Unit[] };
   }
   const units: Unit[] = [];
   let oversizedWord = false;
-  sentences(block.text, locale).forEach((sentence, index) => {
-    const separator = index === 0 ? separatorBefore : " ";
-    if (!containsOversizedWord(sentence, format, composition, locale) && textFitsEmptyPage(sentence, block.kind, format, composition, locale, options)) units.push({ blockIndex, kind: block.kind, separatorBefore: separator, text: sentence });
+  sentences(block.text, locale).forEach(({ text: sentence, separatorBefore: gap }, index) => {
+    const separator = index === 0 ? separatorBefore : gap;
+    if (!containsOversizedWord(sentence, format, composition, locale) && textFitsEmptyPage(sentence, block, format, composition, locale, options)) units.push({ ...block, blockIndex, separatorBefore: separator, text: sentence });
     else {
-      const split = splitByWords(sentence, blockIndex, block.kind, separator, format, composition, locale, options);
+      const split = splitByWords(sentence, blockIndex, block, separator, format, composition, locale, options);
       oversizedWord ||= split.oversizedWord;
       units.push(...split.units);
     }
+  });
+  units.forEach((unit, index) => {
+    if (index > 0) { delete unit.dividersBefore; unit.continuation = true; }
+    if (index < units.length - 1) delete unit.dividersAfter;
   });
   return { oversizedWord, units };
 }
@@ -218,7 +236,7 @@ function enforceFinalFit(pages: Page[], format: WritingShareFormat, composition:
 
 export function estimatedCarouselBlocksHeight(blocks: readonly WritingCarouselBlock[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): number {
   return blocks.reduce((height, block, index) => height
-    + estimatedBlockHeight(block.text, block.kind, format, composition, locale)
+    + estimatedBlockHeight(block.text, block.kind, format, composition, locale, block)
     + (index > 0 ? carouselBlockSpacing(block.kind, blocks[index - 1].kind, composition) : 0), 0);
 }
 

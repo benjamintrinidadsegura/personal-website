@@ -15,6 +15,7 @@ import { siteConfig } from "@/data/site";
 import { verifyAdminAuthorization } from "@/lib/admin/authorization";
 import { getWritingDiscussionPageData } from "@/lib/comments/queries";
 import { localeDetails } from "@/lib/i18n/config";
+import { defaultSocialImage } from "@/lib/i18n/metadata";
 import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
 import { isNewsletterEditionId, parseWritingNewsletterPreparationStatus } from "@/lib/newsletter/preparation";
 import { getLocale } from "@/lib/i18n/server";
@@ -40,8 +41,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title,
     description: article.excerpt,
     alternates: { canonical, languages },
-    openGraph: { type: "article", locale: localeDetails[article.language].openGraphLocale, url: canonical, siteName: "btshq.online", title, description: article.excerpt, publishedTime: article.publishedAt, authors: [siteConfig.name], images: [{ url: "/og.png", width: 1732, height: 909, alt: "Benjamin Trinidad Segura — Digital HQ" }] },
-    twitter: { card: "summary_large_image", title, description: article.excerpt, images: ["/og.png"] },
+    openGraph: { type: "article", locale: localeDetails[article.language].openGraphLocale, url: canonical, siteName: "btshq.online", title, description: article.excerpt, publishedTime: article.publishedAt, authors: [siteConfig.name], images: [defaultSocialImage] },
+    twitter: { card: "summary_large_image", title, description: article.excerpt, images: [defaultSocialImage] },
     other: { "content-language": article.language, "ui-language": locale },
   };
 }

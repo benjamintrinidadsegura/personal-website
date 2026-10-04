@@ -129,8 +129,10 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
 
     const generation = generationRef.current;
     const savingSnapshot = snapshotRef.current;
-    const savingFingerprint = writingSnapshotFingerprint(savingSnapshot);
     const formData = toFormData(article.id, expectedUpdatedAtRef.current, savingSnapshot);
+    const draftInput = parseWritingInput(formData, "draft");
+    const savedSnapshot = draftInput.success ? { ...savingSnapshot, topics: draftInput.data.topics } : savingSnapshot;
+    const savingFingerprint = writingSnapshotFingerprint(savedSnapshot);
     setLastAction("save");
     setPhase("saving");
     const request = saveWritingAction(null, formData);
@@ -142,6 +144,15 @@ export function WritingForm({ article }: { article: AdminWritingArticle }) {
       expectedUpdatedAtRef.current = result.updatedAt;
       if (result.sourceRevision) sourceRevisionRef.current = result.sourceRevision;
       savedGenerationRef.current = Math.max(savedGenerationRef.current, generation);
+      // Reconcile only the saved topics. Never replace newer editor content or
+      // a topic selection that changed while this request was in flight.
+      if (JSON.stringify(snapshotRef.current.topics) === JSON.stringify(savingSnapshot.topics)
+        && JSON.stringify(savedSnapshot.topics) !== JSON.stringify(savingSnapshot.topics)) {
+        const next = { ...snapshotRef.current, topics: savedSnapshot.topics };
+        snapshotRef.current = next;
+        currentFingerprintRef.current = writingSnapshotFingerprint(next);
+        setSnapshot(next);
+      }
       persistedFingerprintRef.current = savingFingerprint;
       setPersistedFingerprint(savingFingerprint);
       if (!isWritingSnapshotDirty(currentFingerprintRef.current, savingFingerprint)) setPhase("saved");

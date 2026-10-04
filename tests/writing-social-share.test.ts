@@ -202,9 +202,9 @@ test("article cards preserve semantic typography instead of turning body copy in
   const editorialFirst = renderToStaticMarkup(createElement(ShareCard, { blocks, cardIndex: 0, cardTotal: 2, format: "square", source: shareSource, sourceLabel: "Writing", text: shareSource.text, variant: "editorial" }));
   const social = renderToStaticMarkup(createElement(WritingSocialPostCard, { blocks, cardIndex: 1, cardTotal: 2, copy: writingShareDictionaries.en, format: "square", source: shareSource, text: shareSource.text }));
   for (const html of [editorial, social]) {
-    assert.match(html, /<h2[^>]+article-heading/u);
+    assert.match(html, /<h2[^>]+writing-card-heading/u);
     assert.match(html, /<p[^>]+article-(?:body|paragraph)/u);
-    assert.match(html, /article-(?:list|listItem)/u);
+    assert.match(html, /writing-card-list/u);
     assert.match(html, /<blockquote/u);
   }
   assert.match(editorialFirst, /writing-share-card-article-title[^>]*>A strong article title/u);
@@ -335,7 +335,91 @@ test("grapheme clusters survive pagination and an unsplittable oversized word is
 test("structured Writing extraction preserves safe semantic order", () => {
   const blocks = writingDocumentToShareBlocks(editorialDocument);
   assert.deepEqual(blocks.map(({ kind }) => kind), ["paragraph", "paragraph", "quote", "paragraph"]);
+  assert.deepEqual(blocks.map(({ editorialType }) => editorialType), [undefined, "keyThought", "pullQuote", "shareable"]);
   assert.equal(blocks.map(({ text }) => text).join("\n\n"), writingDocumentToPlainText(editorialDocument));
+});
+
+test("the production multiline paragraph renders without a completeness exception in every format and composition", () => {
+  const input = "Sei präzise.\nSei relevant.\nSei authentisch.\nSei kurz.\nGib genug Kontext.\nAber nicht zu viel.\nErzähl deine Geschichte.\nAber bitte nur die Teile davon, die ich gerade brauche.";
+  for (const format of writingShareFormats) for (const composition of [...writingShareVariants, "socialPost"] as const) {
+    const options = { articleTitle: "Versteh mich richtig", kind: "article" as const, blocks: [{ kind: "paragraph" as const, text: input }] };
+    const result = segmentWritingThought(input, format, composition, "de", options);
+    assert.equal(result.status, "ready", `${format}/${composition}`);
+    if (result.status !== "ready") continue;
+    assert.equal(reconstructWritingThought(result.segments), input);
+    assert.deepEqual(result, segmentWritingThought(input, format, composition, "de", options));
+    result.segments.forEach((segment, cardIndex) => {
+      const shareSource: WritingShareSource = { articleId: "multiline", articleSlug: "versteh-mich-richtig", articleTitle: options.articleTitle, authorName: "Benjamin Trinidad Segura", canonicalUrl: null, domain: "btshq.online", kind: "article", language: "de", blocks: options.blocks, text: input };
+      const props = { blocks: segment.blocks, cardIndex, cardTotal: result.segments.length, format, source: shareSource, text: segment.text };
+      const html = renderToStaticMarkup(composition === "socialPost" ? createElement(WritingSocialPostCard, { ...props, copy: writingShareDictionaries.de }) : createElement(ShareCard, { ...props, sourceLabel: "Writing", variant: composition }));
+      assert.match(html, /data-writing-card="true"/u);
+      assert.equal(writingCarouselSegmentFits(segment.blocks, format, composition, "de", cardIndex, options), true);
+    });
+  }
+});
+
+test("sentence and word splitting retain exact canonical separators in all seven locales", () => {
+  const input = Array.from({ length: 18 }, (_, index) => `${index}: Authored words remain together even when this line must wrap\nwith its own continuation.`).join("\n\n");
+  for (const locale of locales) for (const format of writingShareFormats) for (const composition of ["editorial", "socialPost"] as const) {
+    const result = segmentWritingThought(input, format, composition, locale, { kind: "article", articleTitle: "Authored lines", blocks: [{ kind: "paragraph", text: input }] });
+    assert.equal(result.status, "ready", `${locale}/${format}/${composition}`);
+    if (result.status === "ready") assert.equal(reconstructWritingThought(result.segments), input);
+  }
+});
+
+test("the sentence fallback also retains multiline separators", () => {
+  const descriptor = Object.getOwnPropertyDescriptor(Intl, "Segmenter");
+  try {
+    Object.defineProperty(Intl, "Segmenter", { configurable: true, value: undefined });
+    const input = `… ... ${Array.from({ length: 30 }, (_, index) => `Line ${index} keeps\nits authored break!`).join("\n")}`;
+    const result = segmentWritingThought(input, "square", "editorial", "en");
+    assert.equal(result.status, "ready");
+    if (result.status === "ready") assert.equal(reconstructWritingThought(result.segments), input);
+  } finally {
+    if (descriptor) Object.defineProperty(Intl, "Segmenter", descriptor);
+  }
+});
+
+test("highlight, heading, list, nesting and divider semantics survive extraction and splitting without source mutation", () => {
+  const text = (value: string) => [{ type: "text" as const, text: value }];
+  const document: WritingDocumentV1 = { version: 1, blocks: [
+    { type: "divider" },
+    { type: "heading", level: 2, content: text("A heading") },
+    { type: "keyThought", content: text(sentence("keythought", 120)), children: [{ type: "heading", level: 3, content: text("A nested heading") }] },
+    { type: "divider" },
+    { type: "pullQuote", content: text(sentence("pullquote", 95)) },
+    { type: "shareable", content: text(sentence("shareable", 100)) },
+    { type: "numberedListItem", content: text("First ordered item"), children: [{ type: "bulletListItem", content: text("Nested bullet") }] },
+    { type: "numberedListItem", content: text("Second ordered item") },
+    { type: "paragraph", content: text("An ordinary authored paragraph") },
+    { type: "numberedListItem", content: text("A new ordered list") },
+    { type: "divider" }, { type: "divider" },
+  ] };
+  const before = JSON.stringify(document);
+  const blocks = writingDocumentToShareBlocks(document);
+  assert.deepEqual(blocks.filter((block) => block.listStyle === "ordered").map((block) => block.listNumber), [1, 2, 1]);
+  assert.deepEqual(blocks.filter((block) => block.kind === "heading").map((block) => [block.headingLevel, block.depth]), [[2, 0], [3, 1]]);
+  assert.equal(blocks.find((block) => block.text === "Nested bullet")?.depth, 1);
+  assert.equal(blocks.find((block) => block.text === "An ordinary authored paragraph")?.editorialType, undefined);
+  const input = writingDocumentToPlainText(document);
+  for (const format of writingShareFormats) for (const composition of [...writingShareVariants, "socialPost"] as const) {
+    const options = { blocks, kind: "article" as const, articleTitle: "Authored semantics" };
+    const result = segmentWritingThought(input, format, composition, "en", options);
+    assert.equal(result.status, "ready", `${format}/${composition}`);
+    if (result.status !== "ready") continue;
+    assert.equal(reconstructWritingThought(result.segments), input);
+    const paginated = result.segments.flatMap((segment) => segment.blocks);
+    assert.equal(paginated.flatMap((block) => [...block.dividersBefore ?? [], ...block.dividersAfter ?? []]).length, 4, "dividers appear exactly once");
+    for (const marker of ["keythought", "pullquote", "shareable"] as const) {
+      const fragments = paginated.filter((block) => block.text.toLowerCase().includes(marker));
+      const expected = marker === "keythought" ? "keyThought" : marker === "pullquote" ? "pullQuote" : "shareable";
+      assert.ok(fragments.length > 1, `${format}/${composition}/${marker}: exercises splitting`);
+      assert.ok(fragments.every((block) => block.editorialType === expected));
+    }
+    assert.deepEqual(paginated.filter((block) => block.kind === "heading").map((block) => [block.headingLevel, block.depth]), [[2, 0], [3, 1]]);
+    assert.deepEqual(paginated.filter((block) => block.listStyle === "ordered").map((block) => block.listNumber), [1, 2, 1]);
+  }
+  assert.equal(JSON.stringify(document), before);
 });
 
 test("carousel filenames and native multi-file feature detection are deterministic", () => {
@@ -346,6 +430,23 @@ test("carousel filenames and native multi-file feature detection are determinist
   assert.equal(supportsNativeFileShare({ share: async () => undefined, canShare: (data) => data?.files?.length === 2 }, twoFiles), true);
   assert.equal(supportsNativeFileShare({ share: async () => undefined, canShare: () => false }, twoFiles), false);
   assert.equal(supportsNativeFileShare({ canShare: () => true }, twoFiles), false);
+});
+
+test("split ordered items keep their authored number, nesting and single marker", () => {
+  const block: WritingShareBlock = { kind: "listItem", text: sentence("ordereditem", 140), listStyle: "ordered", listNumber: 123, depth: 2, dividersBefore: [0], dividersAfter: [1] };
+  for (const format of writingShareFormats) for (const composition of ["editorial", "socialPost"] as const) {
+    const options = { blocks: [block], articleTitle: "Authored list", kind: "article" as const };
+    const result = segmentWritingThought(block.text, format, composition, "en", options);
+    assert.equal(result.status, "ready");
+    if (result.status !== "ready") continue;
+    assert.equal(reconstructWritingThought(result.segments), block.text);
+    const fragments = result.segments.flatMap((segment) => segment.blocks);
+    assert.ok(fragments.length > 1);
+    assert.ok(fragments.every((fragment) => fragment.listNumber === 123 && fragment.listStyle === "ordered" && fragment.depth === 2));
+    assert.equal(fragments.filter((fragment) => !fragment.continuation).length, 1);
+    assert.deepEqual(fragments.flatMap((fragment) => fragment.dividersBefore ?? []), [0]);
+    assert.deepEqual(fragments.flatMap((fragment) => fragment.dividersAfter ?? []), [1]);
+  }
 });
 
 test("native carousel sharing prefers files-only when adding the canonical URL is unsupported", async () => {

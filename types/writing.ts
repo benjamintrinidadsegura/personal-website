@@ -105,10 +105,19 @@ export type WritingShareBlockKind = (typeof writingShareBlockKinds)[number];
 export type WritingShareBlock = {
   kind: WritingShareBlockKind;
   text: string;
+  editorialType?: WritingEditorialBlockType;
+  headingLevel?: 2 | 3;
+  listStyle?: "ordered" | "unordered";
+  listNumber?: number;
+  depth?: number;
+  /** Divider depths, attached to text so canonical reconstruction stays text-only. */
+  dividersBefore?: number[];
+  dividersAfter?: number[];
+  continuation?: boolean;
 };
 
 export type WritingCarouselBlock = WritingShareBlock & {
-  separatorBefore: "" | " " | "\n\n";
+  separatorBefore: string;
 };
 
 export const writingTranslationStatuses = ["source", "pending", "translated", "stale", "failed"] as const;

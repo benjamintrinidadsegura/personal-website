@@ -11,7 +11,7 @@ import { privacyDictionaries } from "../data/i18n/privacy";
 import { writingDictionaries, writingTaxonomies } from "../data/i18n/writing";
 import { getWritingLocalization, getWritingTranslationSlug } from "../data/writing-localization";
 import { assertLocale, defaultLocale, isLocale, localeDetails, localeRegistry, locales } from "../lib/i18n/config";
-import { createLocalizedMetadata, getLanguageAlternates } from "../lib/i18n/metadata";
+import { createLocalizedMetadata, defaultSocialImage, getLanguageAlternates } from "../lib/i18n/metadata";
 import {
   getLanguageSwitchTarget,
   getLocalizedPathname,
@@ -95,6 +95,34 @@ test("localized metadata has coherent canonicals and hreflang alternates", () =>
   assert.equal(english.openGraph && "locale" in english.openGraph ? english.openGraph.locale : null, "en_GB");
   assert.deepEqual(getLanguageAlternates("/privacy", ["de"]), { de: "/privacy", "x-default": "/privacy" });
   assert.deepEqual(english.openGraph && "alternateLocale" in english.openGraph ? english.openGraph.alternateLocale : [], ["de_DE", "es_ES", "tr_TR", "pl_PL", "el_GR", "ru_RU"]);
+});
+
+test("social metadata uses one correctly sized neutral image while retaining localized text and URLs", () => {
+  const png = readFileSync(new URL(`../public${defaultSocialImage.url}`, import.meta.url));
+  assert.equal(png.subarray(1, 4).toString(), "PNG");
+  assert.equal(png.readUInt32BE(16), defaultSocialImage.width);
+  assert.equal(png.readUInt32BE(20), defaultSocialImage.height);
+  assert.deepEqual([defaultSocialImage.width, defaultSocialImage.height], [1200, 630]);
+  assert.match(defaultSocialImage.alt, /btshq\.online/u);
+
+  for (const locale of locales) {
+    const title = `Writing ${locale}`;
+    const description = globalDictionaries[locale].siteDescription;
+    const metadata = createLocalizedMetadata({ locale, pathname: "/writing", title, description });
+    assert.equal(metadata.title, title);
+    assert.equal(metadata.description, description);
+    assert.equal(metadata.alternates?.canonical, getLocalizedPathname("/writing", locale));
+    assert.equal(metadata.openGraph?.title, title);
+    assert.equal(metadata.openGraph?.description, description);
+    assert.deepEqual(metadata.openGraph?.images, [defaultSocialImage]);
+    assert.equal(metadata.twitter?.title, title);
+    assert.equal(metadata.twitter?.description, description);
+    assert.deepEqual(metadata.twitter?.images, [defaultSocialImage]);
+  }
+
+  const withoutImage = createLocalizedMetadata({ locale: "en", pathname: "/writing", title: "Writing", description: "Writing", image: false });
+  assert.deepEqual(withoutImage.openGraph?.images, []);
+  assert.deepEqual(withoutImage.twitter?.images, []);
 });
 
 function leafPaths(value: unknown, prefix = ""): string[] {

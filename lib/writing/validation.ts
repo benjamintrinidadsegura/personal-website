@@ -57,5 +57,5 @@ export function parseWritingInput(formData: FormData, mode: "draft" | "publish" 
   }
 
   if (Object.keys(fieldErrors).length > 0 || !contentType || !sourceLocale || !document.success) return { success: false, fieldErrors };
-  return { success: true, data: { title, deck, excerpt, body: document.plainText, bodyJson: document.data, contentType, sourceLocale, topics } };
+  return { success: true, data: { title, deck, excerpt, body: document.plainText, bodyJson: document.data, contentType, sourceLocale, topics: mode === "draft" && topics.length === 0 ? ["Ideas"] : topics } };
 }

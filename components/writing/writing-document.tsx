@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { ShareThoughtTrigger } from "@/components/writing/share/share-thought-trigger";
 import type { WritingShareDictionary } from "@/data/i18n/writing-share";
-import { isSafeWritingLink, writingBlockToPlainText } from "@/lib/writing/document";
+import { isSafeWritingLink, writingBlockToPlainText, writingDocumentToShareBlocks } from "@/lib/writing/document";
 import type {
   WritingDocumentBlock,
   WritingDocumentV1,
@@ -36,10 +36,7 @@ function thoughtSource(context: WritingShareContext, block: WritingDocumentBlock
   return {
     ...context,
     blockId: block.id,
-    blocks: [{
-      kind: block.type === "heading" ? "heading" : block.type === "bulletListItem" || block.type === "numberedListItem" ? "listItem" : block.type === "quote" || block.type === "pullQuote" ? "quote" : "paragraph",
-      text,
-    }],
+    blocks: writingDocumentToShareBlocks({ version: 1, blocks: [block] }),
     canonicalUrl: context.canonicalUrl && anchor ? `${context.canonicalUrl}#${anchor}` : context.canonicalUrl,
     kind: "thought",
     text,

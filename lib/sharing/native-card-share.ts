@@ -101,6 +101,7 @@ function drawCardBackground(context: CanvasRenderingContext2D, element: HTMLElem
   const style = window.getComputedStyle(element);
   context.fillStyle = isVisibleColor(style.backgroundColor) ? style.backgroundColor : "#071826";
   context.fillRect(0, 0, width, height);
+  if (element.dataset.writingCard === "true") return;
   const accent = style.getPropertyValue("--fyns-character-accent").trim() || "#35d0e5";
   const cool = context.createRadialGradient(width * 0.82, height * 0.18, 0, width * 0.82, height * 0.18, width * 0.55);
   cool.addColorStop(0, `${accent}38`);
@@ -164,7 +165,8 @@ function drawElementImage(context: CanvasRenderingContext2D, element: HTMLElemen
   context.save();
   context.globalAlpha = elementOpacity(element, root);
   context.beginPath();
-  context.rect(x, y, rect.width, rect.height);
+  if (root.dataset.writingCard === "true") context.roundRect(x, y, rect.width, rect.height, Math.min(Number.parseFloat(style.borderRadius) || 0, rect.width / 2, rect.height / 2));
+  else context.rect(x, y, rect.width, rect.height);
   context.clip();
   context.drawImage(element, sourceX, sourceY, sourceWidth, sourceHeight, x, y, rect.width, rect.height);
   context.restore();
@@ -199,6 +201,28 @@ function transformedText(value: string, transform: string): string {
   return value;
 }
 
+function clipWritingOverflow(context: CanvasRenderingContext2D, element: HTMLElement, root: HTMLElement, rootBounds: DOMRect) {
+  let current: HTMLElement | null = element;
+  while (current) {
+    const style = window.getComputedStyle(current);
+    if (current === root || [style.overflowX, style.overflowY].some((overflow) => overflow === "hidden" || overflow === "clip")) {
+      const rect = current.getBoundingClientRect();
+      context.beginPath();
+      context.rect(rect.left - rootBounds.left, rect.top - rootBounds.top, rect.width, rect.height);
+      context.clip();
+    }
+    if (current === root) break;
+    current = current.parentElement;
+  }
+}
+
+function writingEllipsis(context: CanvasRenderingContext2D, text: string, width: number): string {
+  if (context.measureText(text).width <= width) return text;
+  const characters = Array.from(text);
+  while (characters.length && context.measureText(`${characters.join("")}…`).width > width) characters.pop();
+  return `${characters.join("")}…`;
+}
+
 function drawElementText(context: CanvasRenderingContext2D, element: HTMLElement, root: HTMLElement, rootBounds: DOMRect) {
   const style = window.getComputedStyle(element);
   if (style.display === "none" || style.visibility === "hidden" || !isVisibleColor(style.color)) return;
@@ -208,12 +232,21 @@ function drawElementText(context: CanvasRenderingContext2D, element: HTMLElement
   context.globalAlpha = elementOpacity(element, root);
   context.fillStyle = style.color;
   context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-  context.textBaseline = "top";
+  const writingCard = root.dataset.writingCard === "true";
+  context.textBaseline = writingCard ? "alphabetic" : "top";
+  if (writingCard) clipWritingOverflow(context, element, root, rootBounds);
   context.direction = style.direction as CanvasDirection;
   const extendedContext = context as CanvasRenderingContext2D & { letterSpacing?: string };
   if ("letterSpacing" in extendedContext) extendedContext.letterSpacing = style.letterSpacing;
   for (const node of textNodes) {
-    for (const line of visualTextLines(node, rootBounds)) context.fillText(transformedText(line.text, style.textTransform), line.left, line.top);
+    for (const line of visualTextLines(node, rootBounds)) {
+      let text = transformedText(line.text, style.textTransform);
+      if (writingCard && style.whiteSpace === "nowrap" && style.textOverflow === "ellipsis" && element.clientWidth > 0 && element.scrollWidth > element.clientWidth + 1) {
+        text = writingEllipsis(context, text, element.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight));
+      }
+      const ascent = writingCard ? context.measureText(text).fontBoundingBoxAscent : 0;
+      context.fillText(text, line.left, line.top + (Number.isFinite(ascent) ? ascent : Number.parseFloat(style.fontSize)));
+    }
   }
   context.restore();
 }
@@ -223,7 +256,7 @@ function paintShareCard(context: CanvasRenderingContext2D, element: HTMLElement,
   context.scale(size.width / bounds.width, size.height / bounds.height);
   drawCardBackground(context, element, bounds.width, bounds.height);
   for (const child of [element, ...element.querySelectorAll<HTMLElement>("*")]) {
-    if (child !== element) drawElementBox(context, child, element, bounds);
+    if (child !== element || element.dataset.writingCard === "true") drawElementBox(context, child, element, bounds);
     drawElementImage(context, child, element, bounds);
     drawElementText(context, child, element, bounds);
   }

@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { PrivacyVideo } from "@/components/spotlight/privacy-video";
 import { getLocalizedPublishedSpotlight, getLocalizedRelatedSpotlights, getPeopleCopy } from "@/data/i18n/people";
 import { getPublishedSpotlight, publishedSpotlights } from "@/data/spotlights";
-import { createLocalizedMetadata } from "@/lib/i18n/metadata";
+import { createLocalizedMetadata, defaultSocialImage } from "@/lib/i18n/metadata";
 import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
 import { getLocale } from "@/lib/i18n/server";
 import { absoluteSiteUrl, requireSiteUrl } from "@/lib/site-url";
@@ -21,7 +21,8 @@ export async function generateMetadata({ params }: SpotlightPageProps): Promise<
   const spotlight = getLocalizedPublishedSpotlight((await params).slug, locale);
   if (!spotlight) return {};
   const metadata = createLocalizedMetadata({ locale, pathname: `/people/${spotlight.slug}`, title: spotlight.seo.title, description: spotlight.seo.description });
-  return { ...metadata, openGraph: { ...metadata.openGraph, type: "article", publishedTime: spotlight.publishedAt, images: [{ url: spotlight.cover?.src ?? "/og.png", alt: spotlight.cover?.alt ?? `${spotlight.fullName} – People / Spotlight` }] }, twitter: { ...metadata.twitter, images: [spotlight.cover?.src ?? "/og.png"] } };
+  const image = spotlight.cover ? { url: spotlight.cover.src, alt: spotlight.cover.alt } : defaultSocialImage;
+  return { ...metadata, openGraph: { ...metadata.openGraph, type: "article", publishedTime: spotlight.publishedAt, images: [image] }, twitter: { ...metadata.twitter, images: [image] } };
 }
 
 export default async function SpotlightPage({ params }: SpotlightPageProps) {

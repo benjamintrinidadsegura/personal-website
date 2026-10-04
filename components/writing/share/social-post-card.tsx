@@ -1,6 +1,6 @@
 import { SocialPostCard } from "@/components/sharing/social-post-card";
 import type { WritingShareDictionary } from "@/data/i18n/writing-share";
-import { availableCarouselBodyHeight } from "@/lib/writing/carousel-layout";
+import { availableCarouselBodyHeight, carouselTitleFontSize } from "@/lib/writing/carousel-layout";
 import { writingShareTextScale } from "@/lib/writing/share-segmentation";
 import type { WritingCarouselBlock, WritingShareFormat, WritingShareSource } from "@/types/writing";
 
@@ -11,9 +11,11 @@ export function WritingSocialPostCard({ blocks, cardIndex, cardTotal, copy, form
 
   return (
     <SocialPostCard
+      writingCard
+      articleTitleFontSize={carouselTitleFontSize(source.articleTitle, source.language)}
       articleTitle={source.kind === "article" && firstSlide ? source.articleTitle : undefined}
-      articleBodyHeight={source.kind === "article" ? availableCarouselBodyHeight(format, cardIndex, source.language, source.articleTitle, true) : undefined}
-      articleBlocks={source.kind === "article" ? blocks?.length ? blocks : [{ kind: "paragraph", separatorBefore: "", text }] : undefined}
+      articleBodyHeight={availableCarouselBodyHeight(format, cardIndex, source.language, source.articleTitle, source.kind === "article")}
+      articleBlocks={blocks?.length ? blocks : [{ kind: "paragraph", separatorBefore: "", text }]}
       domain={source.domain}
       format={format}
       identityName={source.authorName}

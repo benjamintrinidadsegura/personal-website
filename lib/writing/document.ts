@@ -140,17 +140,34 @@ function shareBlockKind(block: WritingDocumentBlock): WritingShareBlock["kind"] 
   return "paragraph";
 }
 
-function shareBlocks(block: WritingDocumentBlock): WritingShareBlock[] {
-  const ownText = block.type === "divider" ? "" : writingInlineToPlainText(block.content).trim();
-  return [
-    ...(ownText ? [{ kind: shareBlockKind(block), text: ownText }] : []),
-    ...(block.children ?? []).flatMap(shareBlocks),
-  ];
-}
-
 /** Serialisable, presentation-free Writing content for safe client-side sharing. */
 export function writingDocumentToShareBlocks(document: WritingDocumentV1): WritingShareBlock[] {
-  return document.blocks.flatMap(shareBlocks);
+  const result: WritingShareBlock[] = [];
+  let dividers: number[] = [];
+  const visit = (blocks: WritingDocumentBlock[], depth: number) => {
+    let listNumber = 0;
+    for (const block of blocks) {
+      listNumber = block.type === "numberedListItem" ? listNumber + 1 : 0;
+      if (block.type === "divider") dividers.push(depth);
+      else {
+        const text = writingInlineToPlainText(block.content).trim();
+        if (text) {
+          result.push({
+            kind: shareBlockKind(block), text, depth,
+            ...(writingEditorialBlockTypes.includes(block.type as typeof writingEditorialBlockTypes[number]) ? { editorialType: block.type as typeof writingEditorialBlockTypes[number] } : {}),
+            ...(block.type === "heading" ? { headingLevel: block.level } : {}),
+            ...(block.type === "numberedListItem" ? { listStyle: "ordered" as const, listNumber } : block.type === "bulletListItem" ? { listStyle: "unordered" as const } : {}),
+            ...(dividers.length ? { dividersBefore: dividers } : {}),
+          });
+          dividers = [];
+        }
+      }
+      if (block.children?.length) visit(block.children, depth + 1);
+    }
+  };
+  visit(document.blocks, 0);
+  if (dividers.length && result.length) result[result.length - 1].dividersAfter = dividers;
+  return result;
 }
 
 export function legacyWritingBodyToShareBlocks(body: string): WritingShareBlock[] {

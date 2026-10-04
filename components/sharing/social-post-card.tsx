@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
 
+import { WritingCardBlocks } from "@/components/writing/share/share-card";
 import type { QuoteSocialPostFit } from "@/lib/sharing/quote-social-post-fit";
 import { carouselExportLength, carouselLayoutByFormat, carouselTypographyByComposition } from "@/lib/writing/carousel-layout";
 import type { WritingCarouselBlock, WritingShareFormat } from "@/types/writing";
@@ -11,6 +12,7 @@ export function SocialPostCard({
   articleTitle,
   articleBodyHeight,
   articleBlocks,
+  articleTitleFontSize,
   attribution,
   domain,
   format,
@@ -25,10 +27,12 @@ export function SocialPostCard({
   text,
   textFit,
   titleScale,
+  writingCard = false,
 }: {
   articleTitle?: string;
   articleBodyHeight?: number;
   articleBlocks?: WritingCarouselBlock[];
+  articleTitleFontSize?: number;
   attribution?: string;
   domain: string;
   format: WritingShareFormat;
@@ -43,6 +47,7 @@ export function SocialPostCard({
   text: string;
   textFit?: QuoteSocialPostFit;
   titleScale?: SocialPostScale;
+  writingCard?: boolean;
 }) {
   const layout = carouselLayoutByFormat[format];
   const typography = carouselTypographyByComposition.socialPost;
@@ -53,6 +58,8 @@ export function SocialPostCard({
     "--social-post-indicator-zone-width": carouselExportLength(layout.indicatorWidth),
     "--social-post-title-zone-max-height": carouselExportLength(layout.titleMaxHeight),
     "--writing-carousel-safe-margin": carouselExportLength(layout.safeMargin),
+    "--writing-carousel-body-width": carouselExportLength(layout.bodyWidth),
+    "--writing-carousel-title-font-size": carouselExportLength(articleTitleFontSize ?? 57),
     "--writing-carousel-title-body-gap": carouselExportLength(layout.titleBodyGap),
     "--writing-carousel-body-font-size": carouselExportLength(typography.bodyFontSize),
     "--writing-carousel-body-line-height": carouselExportLength(typography.bodyLineHeight),
@@ -73,9 +80,10 @@ export function SocialPostCard({
   } as CSSProperties;
 
   return (
-    <div aria-hidden="true" className="writing-share-card social-post-card" data-format={format} data-post-kind={kind} data-scale={scale} data-style="social-post" data-text-fit={textFit?.density} data-title-scale={titleScale} style={fitStyle}>
+    <div aria-hidden="true" className="writing-share-card social-post-card" data-format={format} data-post-kind={kind} data-writing-card={writingCard ? "true" : undefined} data-has-title={writingCard && articleTitle ? "true" : undefined} data-scale={scale} data-style="social-post" data-text-fit={textFit?.density} data-title-scale={titleScale} style={fitStyle}>
       <div className="social-post-canvas">
         <article className="social-post-surface">
+          {writingCard ? <><span aria-hidden="true" className="writing-post-frame" /><span aria-hidden="true" className="writing-post-accent" /></> : null}
           <header className="social-post-identity" data-zone="identity">
             <span className="social-post-avatar"><Image aria-hidden="true" alt="" src="/icons/bts-app-icon-192.png" width={192} height={192} sizes="112px" loading="eager" unoptimized /></span>
             <div className="social-post-identity-copy">
@@ -87,7 +95,7 @@ export function SocialPostCard({
 
           {articleTitle ? <div className="social-post-title-zone" data-zone="title"><p className="social-post-article-title">{articleTitle}</p></div> : null}
           <div className="social-post-body" data-zone="body">
-            {articleBlocks?.length ? <div className="social-post-article-content">{articleBlocks.map((block, index) => {
+            {writingCard && articleBlocks?.length ? <div className="social-post-article-content"><WritingCardBlocks blocks={articleBlocks} /></div> : articleBlocks?.length ? <div className="social-post-article-content">{articleBlocks.map((block, index) => {
               const className = `social-post-article-block social-post-article-${block.kind}`;
               if (block.kind === "heading") return <h2 key={`${index}:${block.text}`} className={className}>{block.text}</h2>;
               if (block.kind === "quote") return <blockquote key={`${index}:${block.text}`} className={className}>{block.text}</blockquote>;

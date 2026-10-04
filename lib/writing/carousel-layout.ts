@@ -1,4 +1,4 @@
-import type { WritingLanguage, WritingShareBlockKind, WritingShareComposition, WritingShareFormat } from "@/types/writing";
+import type { WritingLanguage, WritingShareBlock, WritingShareBlockKind, WritingShareComposition, WritingShareFormat } from "@/types/writing";
 
 /**
  * Export-pixel layout contract shared by pagination and the carousel cards.
@@ -11,7 +11,7 @@ export const carouselLayoutByFormat = {
     safeMargin: 54,
     headerHeight: 84,
     titleMaxHeight: 350,
-    bodyWidth: 870,
+    bodyWidth: 864,
     bodyHeight: 950,
     footerHeight: 108,
     indicatorWidth: 90,
@@ -24,7 +24,7 @@ export const carouselLayoutByFormat = {
     safeMargin: 46,
     headerHeight: 84,
     titleMaxHeight: 300,
-    bodyWidth: 900,
+    bodyWidth: 896,
     bodyHeight: 650,
     footerHeight: 108,
     indicatorWidth: 90,
@@ -90,8 +90,18 @@ export function carouselExportLength(pixels: number): string {
   return `${pixels / 10.8}cqw`;
 }
 
+export function carouselListMarkerWidth(block: WritingShareBlock): number {
+  return block.listStyle === "ordered" ? Math.max(36, String(block.listNumber ?? 1).length * 22 + 12) : 36;
+}
+
+const graphemeSegmenters = new Map<WritingLanguage, Intl.Segmenter>();
+
 function graphemes(value: string, locale: WritingLanguage): string[] {
-  if (typeof Intl.Segmenter === "function") return [...new Intl.Segmenter(locale, { granularity: "grapheme" }).segment(value)].map(({ segment }) => segment);
+  if (typeof Intl.Segmenter === "function") {
+    let segmenter = graphemeSegmenters.get(locale);
+    if (!segmenter) { segmenter = new Intl.Segmenter(locale, { granularity: "grapheme" }); graphemeSegmenters.set(locale, segmenter); }
+    return [...segmenter.segment(value)].map(({ segment }) => segment);
+  }
   return Array.from(value);
 }
 
@@ -106,21 +116,30 @@ function glyphWidth(glyph: string, fontSize: number): number {
 }
 
 export function estimatedLineCount(value: string, width: number, fontSize: number, locale: WritingLanguage): number {
-  let lines = 1;
-  let current = 0;
-  for (const glyph of graphemes(value, locale)) {
-    if (glyph === "\n") { lines += 1; current = 0; continue; }
-    const glyphPixels = glyphWidth(glyph, fontSize);
-    if (current > 0 && current + glyphPixels > width) { lines += 1; current = glyphPixels; }
-    else current += glyphPixels;
-  }
-  return lines;
+  const widths = new Map<string, number>();
+  return value.split("\n").reduce((total, line) => {
+    let lines = 1;
+    let current = 0;
+    for (const word of line.match(/\S+/gu) ?? []) {
+      let pixels = widths.get(word);
+      if (pixels === undefined) { pixels = graphemes(word, locale).reduce((sum, glyph) => sum + glyphWidth(glyph, fontSize), 0); widths.set(word, pixels); }
+      const gap = current ? glyphWidth(" ", fontSize) : 0;
+      if (current && current + gap + pixels > width) { lines += 1; current = 0; }
+      // Match normal word wrapping, with anywhere wrapping for a single long token.
+      lines += Math.max(0, Math.ceil(pixels / width) - 1);
+      current = current + (current ? gap : 0) + (pixels > width ? pixels % width : pixels);
+    }
+    return total + lines;
+  }, 0);
+}
+
+export function carouselTitleFontSize(title: string, locale: WritingLanguage): number {
+  return graphemes(title, locale).length > 55 ? 46 : 57;
 }
 
 export function estimatedTitleHeight(title: string, format: WritingShareFormat, locale: WritingLanguage): number {
   const layout = carouselLayoutByFormat[format];
-  const length = graphemes(title, locale).length;
-  const fontSize = length > 55 ? 46 : 57;
+  const fontSize = carouselTitleFontSize(title, locale);
   const lineHeight = fontSize * 1.04;
   return Math.min(layout.titleMaxHeight, estimatedLineCount(title, layout.bodyWidth, fontSize, locale) * lineHeight);
 }
@@ -133,14 +152,16 @@ export function availableCarouselBodyHeight(format: WritingShareFormat, slideInd
   return Math.max(safeBodyHeight * 0.38, safeBodyHeight - estimatedTitleHeight(articleTitle ?? "", format, locale) - layout.titleBodyGap);
 }
 
-export function estimatedBlockHeight(text: string, kind: WritingShareBlockKind, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): number {
+export function estimatedBlockHeight(text: string, kind: WritingShareBlockKind, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, block?: WritingShareBlock): number {
   const layout = carouselLayoutByFormat[format];
   const typography = carouselTypographyByComposition[composition];
   const heading = kind === "heading";
-  const fontSize = heading ? typography.headingFontSize : typography.bodyFontSize;
+  const fontSize = heading ? block?.headingLevel === 3 ? typography.bodyFontSize : typography.headingFontSize : typography.bodyFontSize;
   const lineHeight = heading ? typography.headingLineHeight : typography.bodyLineHeight;
-  const width = kind === "quote" ? layout.bodyWidth * 0.88 : kind === "listItem" ? layout.bodyWidth * 0.92 : layout.bodyWidth;
-  return estimatedLineCount(text, width, fontSize, locale) * lineHeight;
+  const inset = (block?.depth ?? 0) * 28 + (block?.editorialType ? 52 : kind === "quote" ? 32 : kind === "listItem" ? carouselListMarkerWidth(block ?? { kind, text }) + 12 : 0);
+  const width = layout.bodyWidth - inset;
+  const dividers = (block?.dividersBefore?.length ?? 0) + (block?.dividersAfter?.length ?? 0);
+  return estimatedLineCount(text, width, fontSize, locale) * lineHeight + (block?.editorialType ? 48 : 0) + dividers * 42;
 }
 
 export function carouselBlockSpacing(kind: WritingShareBlockKind, previousKind: WritingShareBlockKind, composition: WritingShareComposition): number {

@@ -1,8 +1,27 @@
 import type { CSSProperties } from "react";
 
-import { availableCarouselBodyHeight, carouselExportLength, carouselLayoutByFormat, carouselTypographyByComposition } from "@/lib/writing/carousel-layout";
+import { availableCarouselBodyHeight, carouselExportLength, carouselLayoutByFormat, carouselListMarkerWidth, carouselTitleFontSize, carouselTypographyByComposition } from "@/lib/writing/carousel-layout";
 import { writingShareTextScale } from "@/lib/writing/share-segmentation";
 import type { WritingCarouselBlock, WritingShareFormat, WritingShareSource, WritingShareVariant } from "@/types/writing";
+
+/** Shared only by the two Writing compositions; decorations are real DOM for PNG capture. */
+export function WritingCardBlocks({ blocks }: { blocks: WritingCarouselBlock[] }) {
+  return <div className="writing-card-blocks">{blocks.map((block, index) => {
+    const Heading = block.headingLevel === 3 ? "h3" : "h2";
+    const content = block.kind === "heading"
+      ? <Heading className="writing-card-heading" data-heading-level={block.headingLevel ?? 2}>{block.text}</Heading>
+      : block.kind === "quote"
+        ? <blockquote className="writing-card-quote" data-editorial-type={block.editorialType}>{block.text}</blockquote>
+        : block.kind === "listItem"
+          ? <p className="writing-card-list" data-list-style={block.listStyle ?? "unordered"} style={{ "--writing-card-list-marker-width": carouselExportLength(carouselListMarkerWidth(block)) } as CSSProperties}><span aria-hidden="true">{block.continuation ? "" : block.listStyle === "ordered" ? `${block.listNumber ?? 1}.` : "•"}</span><span>{block.text}</span></p>
+          : <p className="writing-share-card-article-body" data-editorial-type={block.editorialType}>{block.text}</p>;
+    return <div key={index} className="writing-card-block" data-block-kind={block.kind} data-depth={block.depth ?? 0} data-highlight={block.editorialType} style={{ marginLeft: carouselExportLength((block.depth ?? 0) * 28) }}>
+      {block.dividersBefore?.map((depth, divider) => <hr key={`before-${divider}`} className="writing-card-divider" style={{ marginLeft: carouselExportLength((depth - (block.depth ?? 0)) * 28) }} />)}
+      {content}
+      {block.dividersAfter?.map((depth, divider) => <hr key={`after-${divider}`} className="writing-card-divider" style={{ marginLeft: carouselExportLength((depth - (block.depth ?? 0)) * 28) }} />)}
+    </div>;
+  })}</div>;
+}
 
 export function ShareCard({
   blocks,
@@ -31,6 +50,8 @@ export function ShareCard({
   const typography = carouselTypographyByComposition[variant];
   const fitStyle = {
     "--writing-carousel-safe-margin": carouselExportLength(layout.safeMargin),
+    "--writing-carousel-body-width": carouselExportLength(layout.bodyWidth),
+    "--writing-carousel-title-font-size": carouselExportLength(carouselTitleFontSize(source.articleTitle, source.language)),
     "--writing-carousel-header-height": carouselExportLength(layout.headerHeight),
     "--writing-carousel-body-zone-height": carouselExportLength(availableCarouselBodyHeight(format, cardIndex, source.language, source.articleTitle, source.kind === "article")),
     "--writing-carousel-footer-height": carouselExportLength(layout.footerHeight),
@@ -52,6 +73,7 @@ export function ShareCard({
       aria-hidden="true"
       className="writing-share-card"
       data-format={format}
+      data-writing-card="true"
       data-content={source.kind ?? "thought"}
       data-continuation={firstSlide ? undefined : "true"}
       data-scale={scale}
@@ -70,21 +92,9 @@ export function ShareCard({
             <>
               <p className="writing-share-card-article-kicker">A BTS WRITING</p>
               <p className="writing-share-card-article-title" data-zone="title">{source.articleTitle}</p>
-              <div className="writing-share-card-article-content" data-zone="body">{articleBlocks.map((block, index) => block.kind === "heading"
-                ? <h2 key={`${index}:${block.text}`} className="writing-share-card-article-heading">{block.text}</h2>
-                : block.kind === "quote"
-                  ? <blockquote key={`${index}:${block.text}`} className="writing-share-card-article-quote">{block.text}</blockquote>
-                  : block.kind === "listItem"
-                    ? <p key={`${index}:${block.text}`} className="writing-share-card-article-list"><span aria-hidden="true">•</span>{block.text}</p>
-                    : <p key={`${index}:${block.text}`} className="writing-share-card-article-body">{block.text}</p>)}</div>
             </>
-          ) : source.kind === "article" ? <div className="writing-share-card-article-content" data-zone="body">{articleBlocks.map((block, index) => block.kind === "heading"
-            ? <h2 key={`${index}:${block.text}`} className="writing-share-card-article-heading">{block.text}</h2>
-            : block.kind === "quote"
-              ? <blockquote key={`${index}:${block.text}`} className="writing-share-card-article-quote">{block.text}</blockquote>
-              : block.kind === "listItem"
-                ? <p key={`${index}:${block.text}`} className="writing-share-card-article-list"><span aria-hidden="true">•</span>{block.text}</p>
-                : <p key={`${index}:${block.text}`} className="writing-share-card-article-body">{block.text}</p>)}</div> : <p className="writing-share-card-thought">{text}</p>}
+          ) : null}
+          <div className="writing-share-card-article-content" data-zone="body"><WritingCardBlocks blocks={articleBlocks} /></div>
         </div>
         <footer className="writing-share-card-footer" data-zone="footer">
           <div className="min-w-0">

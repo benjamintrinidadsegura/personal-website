@@ -14,6 +14,7 @@ import { locales } from "../lib/i18n/config";
 import { shareCardStyles } from "../types/sharing";
 import type { SelectedQuote } from "../types/quote";
 import { writingShareFormats, writingShareVariants, type WritingShareSource } from "../types/writing";
+import { writingDocumentToShareBlocks } from "../lib/writing/document";
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const writingSource: WritingShareSource = {
@@ -167,4 +168,31 @@ test("Social Post uses a framed post surface with deliberate format-specific pro
   assert.match(css, /data-format="portrait"\] \.social-post-surface \{ min-height: 76%; max-height: 88%/u);
   assert.match(css, /data-format="square"\] \.social-post-surface \{ height: 88%/u);
   assert.doesNotMatch(component, /social-post-safe-area/u);
+});
+
+test("Writing compositions render authored treatments and bounded counters without affecting Quote opt-in", () => {
+  const content = (text: string) => [{ type: "text" as const, text }];
+  const blocks = writingDocumentToShareBlocks({ version: 1, blocks: [
+    { type: "heading", level: 3, content: content("Authored heading") },
+    { type: "keyThought", content: content("An intentional key thought") },
+    { type: "pullQuote", content: content("An intentional pull quote") },
+    { type: "shareable", content: content("An intentional shareable") },
+    { type: "numberedListItem", content: content("An ordered item"), children: [{ type: "bulletListItem", content: content("A nested bullet") }] },
+    { type: "divider" },
+  ] }).map((block, index) => ({ ...block, separatorBefore: index ? "\n\n" : "" }));
+  for (const kind of ["article", "thought"] as const) for (const format of writingShareFormats) {
+    const article = { ...writingSource, kind, blocks, text: blocks.map((block) => block.text).join("\n\n") };
+    const props = { blocks, cardIndex: 0, cardTotal: 50, format, source: article, text: article.text };
+    for (const html of [renderToStaticMarkup(createElement(ShareCard, { ...props, variant: "editorial", sourceLabel: "Writing" })), renderToStaticMarkup(createElement(WritingSocialPostCard, { ...props, copy: writingShareDictionaries.en }))]) {
+      assert.match(html, /<h3[^>]+data-heading-level="3"/u);
+      for (const type of ["keyThought", "pullQuote", "shareable"]) assert.match(html, new RegExp(`data-editorial-type="${type}"`, "u"));
+      assert.match(html, /data-list-style="ordered"[^>]*><span[^>]*>1\./u);
+      assert.match(html, /data-depth="1"/u);
+      assert.match(html, /<hr[^>]+writing-card-divider/u);
+      assert.match(html, /01 \/ 50/u);
+      assert.match(html, /data-writing-card="true"/u);
+    }
+    const quoteHTML = renderToStaticMarkup(createElement(QuoteSocialPostCard, { format, originalLabel: "BTS Original", quote, surfaceLabel: "Daily Quote" }));
+    assert.doesNotMatch(quoteHTML, /data-writing-card|writing-card-blocks|writing-post-accent/u);
+  }
 });

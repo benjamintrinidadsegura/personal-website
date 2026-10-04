@@ -89,6 +89,26 @@ test("Writing draft accepts ordinary editor input before publication metadata is
   });
 });
 
+test("empty draft topics use the database's Ideas default without weakening publish validation", () => {
+  const data = validFormData();
+  data.delete("topics");
+  data.append("topics", " ");
+  const draft = parseWritingInput(data, "draft");
+  assert.ok(draft.success);
+  assert.deepEqual(draft.data.topics, ["Ideas"]);
+
+  const publish = parseWritingInput(data, "publish");
+  assert.equal(publish.success, false);
+  if (!publish.success) assert.deepEqual(Object.keys(publish.fieldErrors), ["topics"]);
+
+  data.set("topics", "Work");
+  const selected = parseWritingInput(data, "draft");
+  assert.ok(selected.success);
+  assert.deepEqual(selected.data.topics, ["Work"]);
+  data.set("topics", "Ideas");
+  assert.equal(parseWritingInput(data, "publish").success, true);
+});
+
 test("WritingDocumentV1 rejects malformed, unexpected, oversized, deeply nested, and overlong content", () => {
   assert.equal(validateWritingDocument(null).success, false);
   assert.equal(validateWritingDocument({ version: 2, blocks: [] }).success, false);

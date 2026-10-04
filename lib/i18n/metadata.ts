@@ -3,6 +3,13 @@ import type { Metadata } from "next";
 import { defaultLocale, localeDetails, locales, type Locale } from "@/lib/i18n/config";
 import { getLocalizedPathname } from "@/lib/i18n/routing";
 
+export const defaultSocialImage = {
+  url: "/og-btshq-v2.png",
+  width: 1200,
+  height: 630,
+  alt: "btshq.online — Benjamin Trinidad Segura",
+};
+
 export function getLanguageAlternates(pathname: string, includedLocales: readonly Locale[] = locales) {
   const languages: Record<string, string> = {};
   for (const locale of includedLocales) languages[locale] = getLocalizedPathname(pathname, locale);
@@ -29,7 +36,7 @@ export function createLocalizedMetadata({
 }): Metadata {
   const canonical = getLocalizedPathname(pathname, locale);
   const images = image
-    ? [{ url: "/og.png", width: 1732, height: 909, alt: "Benjamin Trinidad Segura — btshq.online Digital HQ" }]
+    ? [defaultSocialImage]
     : [];
   const includedLocales = Array.isArray(alternates) ? alternates : locales;
 
@@ -54,7 +61,7 @@ export function createLocalizedMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: image ? ["/og.png"] : [],
+      images: image ? [defaultSocialImage] : [],
     },
   };
 }
