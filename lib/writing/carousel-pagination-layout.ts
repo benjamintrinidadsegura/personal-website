@@ -139,7 +139,7 @@ function textFitsEmptyPage(text: string, block: WritingShareBlock, format: Writi
 }
 
 function containsOversizedWord(text: string, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): boolean {
-  return (text.match(/\S+/gu) ?? []).some((word) => estimatedWordWidth(word, composition, locale) > carouselLayoutByFormat[format].bodyWidth);
+  return (text.match(/\S+/gu) ?? []).some((word) => estimatedWordWidth(word, composition, locale, format) > carouselLayoutByFormat[format].bodyWidth);
 }
 
 function splitByWords(sentence: string, blockIndex: number, block: WritingShareBlock, separatorBefore: Unit["separatorBefore"], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions) {
@@ -157,7 +157,7 @@ function splitByWords(sentence: string, blockIndex: number, block: WritingShareB
     const word = match[0];
     const gap = sentence.slice(end, match.index);
     end = match.index + word.length;
-    if (estimatedWordWidth(word, composition, locale) > carouselLayoutByFormat[format].bodyWidth) {
+    if (estimatedWordWidth(word, composition, locale, format) > carouselLayoutByFormat[format].bodyWidth) {
       flush();
       oversizedWord = true;
       units.push({ ...block, blockIndex, separatorBefore: units.length ? gap : separator, text: word });

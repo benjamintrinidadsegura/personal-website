@@ -127,6 +127,36 @@ function drawElementBox(context: CanvasRenderingContext2D, element: HTMLElement,
   const y = rect.top - rootBounds.top;
   context.save();
   context.globalAlpha = elementOpacity(element, root);
+  // Only the locked Writing Story uses rounded translucent boxes and CSS bubbles.
+  // Read its DOM geometry/colors so export matches preview without changing any
+  // other share-card painter or baking decoration into an image.
+  if (root.dataset.writingCard === "true" && root.dataset.style === "social-post" && root.dataset.format === "story") {
+    clipWritingOverflow(context, element, root, rootBounds);
+    const radius = style.borderRadius.endsWith("%") ? Math.min(rect.width, rect.height) / 2 : Number.parseFloat(style.borderRadius) || 0;
+    context.beginPath();
+    context.roundRect(x, y, rect.width, rect.height, radius);
+    context.clip();
+    if (element.hasAttribute("data-story-bubble")) {
+      const bubble = context.createRadialGradient(x + rect.width / 2, y + rect.height / 2, 0, x + rect.width / 2, y + rect.height / 2, rect.width / 2);
+      bubble.addColorStop(0, style.getPropertyValue("--writing-bubble-inner").trim());
+      bubble.addColorStop(1, style.getPropertyValue("--writing-bubble-outer").trim());
+      context.fillStyle = bubble;
+      context.fillRect(x, y, rect.width, rect.height);
+    } else if (isVisibleColor(style.backgroundColor)) {
+      context.fillStyle = style.backgroundColor;
+      context.fillRect(x, y, rect.width, rect.height);
+    }
+    for (const side of ["top", "right", "bottom", "left"] as const) {
+      const width = Number.parseFloat(style.getPropertyValue(`border-${side}-width`));
+      const color = style.getPropertyValue(`border-${side}-color`);
+      if (width <= 0 || !isVisibleColor(color)) continue;
+      context.fillStyle = color;
+      if (side === "left" || side === "right") context.fillRect(side === "left" ? x : x + rect.width - width, y, width, rect.height);
+      else context.fillRect(x, side === "top" ? y : y + rect.height - width, rect.width, width);
+    }
+    context.restore();
+    return;
+  }
   if (isVisibleColor(style.backgroundColor)) {
     context.fillStyle = style.backgroundColor;
     context.fillRect(x, y, rect.width, rect.height);

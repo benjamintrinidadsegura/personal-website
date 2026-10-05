@@ -7,7 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { WritingSocialPostCard } from "../components/writing/share/social-post-card";
 import { ShareCard } from "../components/writing/share/share-card";
 import { writingShareDictionaries } from "../data/i18n/writing-share";
-import { availableCarouselBodyHeight, carouselExportLength, carouselLayoutByFormat, estimatedBlockLineCount, writingSocialPostLayout, writingSocialPostReadabilityByFormat, writingStoryBalance } from "../lib/writing/carousel-layout";
+import { availableCarouselBodyHeight, carouselExportLength, carouselLayoutByFormat, estimatedBlockLineCount, writingSocialPostLayout, writingSocialPostReadabilityByFormat, writingSocialStory, writingStoryBalance } from "../lib/writing/carousel-layout";
 import { estimatedCarouselBlocksHeight, writingCarouselSegmentFits } from "../lib/writing/carousel-pagination";
 import { writingDocumentToShareBlocks } from "../lib/writing/document";
 import { normalizeWritingThought, reconstructWritingThought, segmentWritingThought } from "../lib/writing/share-segmentation";
@@ -30,14 +30,14 @@ test("Social Post regions partition the actual card and continuation cards recla
     const first = writingSocialPostLayout(format, 0, "de", source.articleTitle, true);
     const continuation = writingSocialPostLayout(format, 1, "de", source.articleTitle, true);
     assert.equal(continuation.titleHeight, 0);
-    assert.equal(continuation.contentOffset, format === "story" ? 160 : 0);
-    assert.equal(continuation.bodyTop, layout.safeMargin * 2 + layout.headerHeight + continuation.gap + continuation.contentOffset);
+    assert.equal(continuation.contentOffset, format === "story" ? writingSocialStory.contentOffset : 0);
+    assert.equal(continuation.bodyTop, continuation.identityTop + (format === "story" ? writingSocialStory.headerHeight : layout.headerHeight) + continuation.gap + continuation.contentOffset);
     assert.ok(Math.abs(first.bodyTop - continuation.bodyTop - first.titleHeight - first.gap) < 0.001);
     for (const region of [first, continuation]) {
       assert.equal(region.bodyTop + region.contentHeight + region.gap, region.footerTop);
-      assert.equal(region.footerTop + layout.footerHeight + region.inset, layout.height);
+      assert.equal(region.footerTop + (format === "story" ? writingSocialStory.footerHeight + writingSocialStory.bottom : layout.footerHeight + region.inset), layout.height);
       assert.equal(region.bodyHeight, region.contentHeight);
-      assert.equal(region.gap, 24);
+      assert.equal(region.gap, format === "story" ? writingSocialStory.gap : 24);
     }
     assert.equal(writingSocialPostLayout(format, 0, "de", "", true).titleHeight, 0);
     const thought = writingSocialPostLayout(format, 0, "de", source.articleTitle, false);
@@ -89,8 +89,8 @@ test("the actual production article respects format reading budgets without losi
       assert.ok(html.includes(`--writing-social-title-height:${carouselExportLength(region.titleHeight)}`));
       assert.ok(html.includes(`--writing-carousel-title-body-gap:${carouselExportLength(region.gap)}`));
     });
-    if (format !== "square") assert.deepEqual(result.segments.flatMap((segment) => segment.blocks).map((block) => block.text), blocks.map((block) => block.text), "real authored paragraphs remain whole");
-    else assert.equal(result.segments.length, 12);
+    if (format === "portrait") assert.deepEqual(result.segments.flatMap((segment) => segment.blocks).map((block) => block.text), blocks.map((block) => block.text), "real authored Feed paragraphs remain whole");
+    if (format === "square") assert.equal(result.segments.length, 12);
   }
 });
 
@@ -133,22 +133,23 @@ test("a title which consumes the whole Social Post content region refuses safely
 });
 
 test("Story has a modestly higher reading budget while Feed and Square retain their accepted profiles", () => {
-  assert.deepEqual(writingSocialPostReadabilityByFormat.story, { maxBodyHeight: 1150, blockGap: 38, highlightGap: 56, maxWords: 100, maxBlocks: 8, paragraphMaxLines: 6, highlightBodyMaxLines: 6, preferredHighlightBodyBlocks: 1 });
+  assert.deepEqual(writingSocialPostReadabilityByFormat.story, { maxBodyHeight: 1150, blockGap: 64, highlightGap: 64, maxWords: 100, maxBlocks: 8, paragraphMaxLines: 6, highlightBodyMaxLines: 6, preferredHighlightBodyBlocks: 1 });
   assert.deepEqual(writingSocialPostReadabilityByFormat.portrait, { maxBodyHeight: 800, blockGap: 30, highlightGap: 44, maxWords: 80, maxBlocks: 7, paragraphMaxLines: 7, highlightBodyMaxLines: 5, preferredHighlightBodyBlocks: 1 });
   assert.equal(writingSocialPostReadabilityByFormat.square, null);
   for (const format of ["story", "portrait"] as const) {
     const physical = writingSocialPostLayout(format, 1, "de", source.articleTitle, true);
     const reading = physical.readability;
     assert.ok(reading);
-    assert.ok(physical.bodyHeight > reading.maxBodyHeight);
-    assert.equal(physical.bodyBottom + 24, physical.footerTop);
+    if (format === "portrait") assert.ok(physical.bodyHeight > reading.maxBodyHeight);
+    else assert.equal(physical.bodyHeight, 1140);
+    assert.equal(physical.bodyBottom + physical.gap, physical.footerTop);
     const html = renderToStaticMarkup(createElement(WritingSocialPostCard, { blocks: blocks.slice(0, 1).map((block) => ({ ...block, separatorBefore: "" })), cardIndex: 1, cardTotal: 2, copy: writingShareDictionaries.de, format, source, text: blocks[0].text }));
     assert.ok(html.includes(`--writing-carousel-block-gap:${carouselExportLength(reading.blockGap)}`));
     assert.ok(html.includes(`--writing-social-highlight-gap:${carouselExportLength(reading.highlightGap)}`));
   }
 });
 
-test("Story lowers both text regions without moving headers/footers or centering individual blocks", () => {
+test("locked Social Story leaves the accepted Editorial balance and every other format intact", () => {
   assert.deepEqual(writingStoryBalance, { contentOffset: 160, highlightMaxOffset: 240, editorialArticleBodyHeight: 950, editorialTitlePreludeHeight: 42 });
   const selected = blocks.slice(0, 1).map((block) => ({ ...block, separatorBefore: "" }));
   for (const cardIndex of [0, 1]) {
@@ -157,11 +158,11 @@ test("Story lowers both text regions without moving headers/footers or centering
     const social = renderToStaticMarkup(createElement(WritingSocialPostCard, { ...props, copy: writingShareDictionaries.de }));
     assert.ok(editorial.includes(`--writing-carousel-content-start-gap:${carouselExportLength(48 + 160)}`));
     assert.ok(editorial.includes(`--writing-carousel-body-zone-height:${carouselExportLength(availableCarouselBodyHeight("story", cardIndex, "de", source.articleTitle, true, "editorial"))}`));
-    assert.ok(social.includes(`--writing-social-header-region-height:${carouselExportLength(84 + 160)}`));
+    assert.ok(social.includes(`--writing-social-header-region-height:${carouselExportLength(writingSocialStory.headerHeight + writingSocialStory.contentOffset)}`));
     const region = writingSocialPostLayout("story", cardIndex, "de", source.articleTitle, true);
-    assert.equal(region.identityTop, 108);
-    assert.equal(region.footerTop, 1704);
-    assert.equal(region.bodyBottom, 1680);
+    assert.equal(region.identityTop, 176);
+    assert.equal(region.footerTop, 1608);
+    assert.equal(region.bodyBottom, 1568);
   }
   assert.equal(availableCarouselBodyHeight("story", 1, "de", source.articleTitle, true, "editorial"), 950);
   for (const format of writingShareFormats) for (const variant of ["editorial", "marginNote", "statement"] as const) {
@@ -175,17 +176,17 @@ test("Story lowers both text regions without moving headers/footers or centering
   assert.match(css, /data-format="story"\] \.social-post-identity \{ align-self: start; height: var\(--social-post-header-zone-min-height\)/u);
 });
 
-test("short Story continuation highlights use bounded spare capacity without surrendering footer protection", () => {
+test("Story highlights start in the consistent reading region and retain footer protection", () => {
   const highlight = { kind: "paragraph" as const, editorialType: "keyThought" as const, text: "A short authored thought.", separatorBefore: "" };
   const short = writingSocialPostLayout("story", 1, "de", source.articleTitle, true, [highlight]);
-  assert.equal(short.contentOffset, 400);
-  assert.equal(short.bodyTop, 616);
-  assert.equal(short.bodyBottom, 1680);
-  assert.equal(writingSocialPostLayout("story", 0, "de", source.articleTitle, true, [highlight]).contentOffset, 160, "title cards keep their established title/body rhythm");
+  assert.equal(short.contentOffset, 112);
+  assert.equal(short.bodyTop, 428);
+  assert.equal(short.bodyBottom, 1568);
+  assert.equal(writingSocialPostLayout("story", 0, "de", source.articleTitle, true, [highlight]).contentOffset, 112, "title cards use the same intentional prelude");
   const height = estimatedCarouselBlocksHeight([highlight], "story", "socialPost", "de");
   assert.ok(height <= short.bodyHeight);
   const html = renderToStaticMarkup(createElement(WritingSocialPostCard, { blocks: [highlight], cardIndex: 1, cardTotal: 2, format: "story", source, copy: writingShareDictionaries.de, text: highlight.text }));
-  assert.ok(html.includes(`--writing-social-header-region-height:${carouselExportLength(84 + short.contentOffset)}`));
+  assert.ok(html.includes(`--writing-social-header-region-height:${carouselExportLength(100 + short.contentOffset)}`));
   const real = segmentWritingThought(text, "story", "socialPost", "de", source);
   assert.equal(real.status, "ready");
   if (real.status !== "ready") return;
@@ -193,11 +194,79 @@ test("short Story continuation highlights use bounded spare capacity without sur
     const region = writingSocialPostLayout("story", index, "de", source.articleTitle, true, segment.blocks);
     const occupied = estimatedCarouselBlocksHeight(segment.blocks, "story", "socialPost", "de");
     assert.ok(occupied <= region.bodyHeight);
-    assert.ok(region.contentOffset >= 160 && region.contentOffset <= 400);
+    assert.equal(region.contentOffset, 112);
     assert.equal(availableCarouselBodyHeight("story", index, "de", source.articleTitle, true, "socialPost", segment.blocks), region.bodyHeight);
     assert.ok(writingCarouselSegmentFits(segment.blocks, "story", "socialPost", "de", index, source));
   });
   for (const format of ["portrait", "square"] as const) assert.equal(writingSocialPostLayout(format, 1, "de", source.articleTitle, true, [highlight]).contentOffset, 0);
+});
+
+test("locked Story branding is bounded across the whole real carousel with five truthful windowed dots", () => {
+  const result = segmentWritingThought(text, "story", "socialPost", "de", source);
+  assert.equal(result.status, "ready");
+  if (result.status !== "ready") return;
+  assert.equal(reconstructWritingThought(result.segments), text);
+  for (const [index, segment] of result.segments.entries()) {
+    const html = renderToStaticMarkup(createElement(WritingSocialPostCard, { blocks: segment.blocks, cardIndex: index, cardTotal: result.segments.length, copy: writingShareDictionaries.de, format: "story", source, text: segment.text }));
+    assert.equal((html.match(/data-story-bubble=/gu) ?? []).length, 2);
+    assert.equal((html.match(/data-active="true"/gu) ?? []).length, 1, `active dot on page ${index + 1}`);
+    assert.equal((html.match(/<i(?: |\/|>)/gu) ?? []).length, 5, "compact five-position window");
+    assert.ok(html.includes(`${String(index + 1).padStart(2, "0")} / ${String(result.segments.length).padStart(2, "0")}`));
+    assert.ok(html.includes(`--writing-carousel-body-font-size:${carouselExportLength(46)}`));
+    assert.ok(html.includes(`--writing-story-right:${carouselExportLength(144)}`));
+    assert.doesNotMatch(html, /writing-post-frame|writing-post-accent/u);
+    const region = writingSocialPostLayout("story", index, "de", source.articleTitle, true, segment.blocks);
+    assert.equal(region.identityTop, 176);
+    assert.equal(region.bodyBottom, 1568);
+    assert.equal(region.footerTop + 184, 1920 - 128);
+    assert.ok(estimatedCarouselBlocksHeight(segment.blocks, "story", "socialPost", "de") <= region.bodyHeight);
+  }
+  for (const format of ["portrait", "square"] as const) {
+    const html = renderToStaticMarkup(createElement(WritingSocialPostCard, { cardIndex: 0, cardTotal: 2, copy: writingShareDictionaries.de, format, source, text: blocks[0].text }));
+    assert.doesNotMatch(html, /writing-story-(?:bubble|dots|right)/u);
+    assert.match(html, /writing-post-frame/u);
+  }
+  const single = renderToStaticMarkup(createElement(WritingSocialPostCard, { cardIndex: 0, cardTotal: 1, copy: writingShareDictionaries.de, format: "story", source, text: "Short authored copy." }));
+  assert.doesNotMatch(single, /writing-story-dots|data-zone="indicator"/u);
+});
+
+test("every Story card uses the existing localized article reading time, with other formats unchanged", () => {
+  for (const [language, copy] of Object.entries(writingShareDictionaries)) {
+    const result = segmentWritingThought(text, "story", "socialPost", source.language, source);
+    assert.equal(result.status, "ready");
+    if (result.status !== "ready") continue;
+    for (const [index, segment] of result.segments.entries()) {
+      const props = { blocks: segment.blocks, cardIndex: index, cardTotal: result.segments.length, copy, format: "story" as const, source, text: segment.text };
+      const html = renderToStaticMarkup(createElement(WritingSocialPostCard, props));
+      const expected = copy.readingTime.replace("{minutes}", String(source.readingMinutes));
+      assert.ok(html.includes(`<div class="social-post-metadata"><span>${expected}</span></div>`), `${language} reading time on Story page ${index + 1}`);
+      const absent = renderToStaticMarkup(createElement(WritingSocialPostCard, { ...props, source: { ...source, readingMinutes: undefined } }));
+      assert.doesNotMatch(absent, /class="social-post-metadata"/u, "no invented reading time when source has none");
+      assert.equal(html.replace(/<div class="social-post-metadata">.*?<\/div>/u, '<span aria-hidden="true"></span>'), absent, "reading time changes only footer metadata");
+    }
+    for (const format of ["portrait", "square"] as const) for (const cardIndex of [0, 1, 15]) {
+      const html = renderToStaticMarkup(createElement(WritingSocialPostCard, { cardIndex, cardTotal: 16, copy, format, source, text: blocks[0].text }));
+      assert.equal(html.includes('class="social-post-metadata"'), cardIndex === 0, `${language}/${format} retains first-card-only reading time`);
+    }
+  }
+  const css = readFileSync(new URL("../components/writing/share/social-post-card.css", import.meta.url), "utf8");
+  const selector = '.social-post-card[data-writing-card="true"][data-style="social-post"][data-format="story"]';
+  const metadata = css.split(`${selector} .social-post-metadata {`)[1]?.split("}")[0];
+  assert.ok(metadata);
+  assert.match(metadata, /position: absolute; left: 0; bottom: 0;/u);
+  assert.match(metadata, /line-height: 2\.962963cqw/u, "same footer line height as domain");
+  assert.match(metadata, /white-space: nowrap/u);
+});
+
+test("Story's larger typography reserves proportionate space for three-digit authored list markers", () => {
+  const list = { kind: "listItem" as const, listStyle: "ordered" as const, listNumber: 123, depth: 2, text: "Die Reihenfolge und Verschachtelung bleiben erhalten.", separatorBefore: "" };
+  const html = renderToStaticMarkup(createElement(WritingSocialPostCard, { blocks: [list], cardIndex: 1, cardTotal: 2, copy: writingShareDictionaries.de, format: "story", source, text: list.text }));
+  assert.ok(html.includes(`--writing-story-list-marker-scale:${46 / 34}`));
+  assert.match(html, />123\.<\/span>/u);
+  assert.match(html, /data-depth="2"/u);
+  assert.ok(writingCarouselSegmentFits([list], "story", "socialPost", "de", 1, source));
+  const css = readFileSync(new URL("../components/writing/share/social-post-card.css", import.meta.url), "utf8");
+  assert.match(css, /grid-template-columns: calc\(var\(--writing-card-list-marker-width\) \* var\(--writing-story-list-marker-scale\)\)/u);
 });
 
 test("real Feed/Square pagination keeps every accepted boundary in both Writing styles", () => {
