@@ -6,7 +6,8 @@ import { PersonalAdvantageShareCard, type AdvantageShareSection } from "@/compon
 import { ShareComposerHeading } from "@/components/sharing/share-composer-heading";
 import { ShareFileActions } from "@/components/sharing/share-file-actions";
 import { useCanonicalSiteUrl } from "@/components/site/canonical-site-url-context";
-import type { PersonalAdvantageUiCopy } from "@/data/personal-advantage-locales";
+import { getPersonalAdvantageDisplayLabels, type PersonalAdvantageUiCopy } from "@/data/personal-advantage-locales";
+import type { Locale } from "@/lib/i18n/config";
 import { emitPersonalAdvantageEvent } from "@/lib/personal-advantage-analytics";
 import { canonicalBtsShareUrl } from "@/lib/sharing/destinations";
 import type { PersonalAdvantageMap } from "@/types/personal-advantage";
@@ -14,7 +15,8 @@ import { writingShareFormats, type WritingShareFormat } from "@/types/writing";
 
 const shareSections: readonly AdvantageShareSection[] = ["advantage", "stack", "hidden", "shadow", "reminder"];
 
-export function PersonalAdvantageShareDialog({ copy, map, onClose }: { copy: PersonalAdvantageUiCopy; map: PersonalAdvantageMap; onClose: () => void }) {
+export function PersonalAdvantageShareDialog({ copy, locale = "en", map, onClose }: { copy: PersonalAdvantageUiCopy; locale?: Locale; map: PersonalAdvantageMap; onClose: () => void }) {
+  const labels = getPersonalAdvantageDisplayLabels(locale);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const canonicalSiteUrl = useCanonicalSiteUrl();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -44,7 +46,7 @@ export function PersonalAdvantageShareDialog({ copy, map, onClose }: { copy: Per
     return lines.filter(Boolean).join("\n");
   }, [copy, map, safeSections]);
   const renderKey = `${format}:${[...safeSections].sort().join("-")}`;
-  const card = <PersonalAdvantageShareCard copy={copy} format={format} map={map} sections={safeSections} />;
+  const card = <PersonalAdvantageShareCard copy={copy} format={format} locale={locale} map={map} sections={safeSections} />;
 
   const toggle = (section: AdvantageShareSection) => setSelected((current) => {
     const next = new Set(current);
@@ -60,7 +62,7 @@ export function PersonalAdvantageShareDialog({ copy, map, onClose }: { copy: Per
   return (
     <dialog ref={dialogRef} aria-labelledby="personal-advantage-share-title" className={`writing-share-dialog ${screenshotMode ? "writing-share-dialog-screenshot" : ""}`} onCancel={(event) => { event.preventDefault(); if (screenshotMode) setScreenshotMode(false); else dialogRef.current?.close(); }} onClose={onClose}>
       {screenshotMode ? <div className="writing-screenshot-surface" onPointerDown={() => setControlsVisible(true)}><p className="sr-only">{shareText}</p><button type="button" data-visible={controlsVisible} onFocus={() => setControlsVisible(true)} onClick={() => setScreenshotMode(false)} className="writing-screenshot-exit">{copy.exitScreenshot}</button><div className="writing-screenshot-card">{card}</div></div> : <div className="writing-share-composer">
-        <ShareComposerHeading closeLabel={copy.close} headingId="personal-advantage-share-title" onClose={() => dialogRef.current?.close()} product="PERSONAL ADVANTAGE" title={copy.shareTitle} />
+        <ShareComposerHeading closeLabel={copy.close} headingId="personal-advantage-share-title" onClose={() => dialogRef.current?.close()} product={labels.brand.toUpperCase()} title={copy.shareTitle} />
         <div className="writing-share-composer-grid"><section className="writing-share-preview" aria-label={copy.onePager}><div ref={cardRef} className="bts-share-capture-root">{card}</div><p className="sr-only">{shareText}</p></section><aside className="writing-share-controls">
           <div><p className="writing-share-control-label">{copy.share}</p><p className="mt-2 text-sm leading-6 text-slate-300">{copy.shareBody}</p></div>
           <fieldset><legend className="writing-share-control-label">{copy.shareTitle}</legend><div className="grid gap-2">{shareSections.map((section) => { const disabled = section === "hidden" && !map.hiddenAdvantages.length; return <label key={section} className={`flex min-h-11 items-center gap-3 rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-200 ${disabled ? "opacity-40" : "cursor-pointer"}`}><input type="checkbox" checked={safeSections.has(section)} disabled={disabled} onChange={() => toggle(section)} />{copy.shareChoices[section]}</label>; })}</div></fieldset>

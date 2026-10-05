@@ -111,5 +111,35 @@ const dictionaries: Record<Locale, MoneyProfileUiCopy> = {
 };
 
 export function getMoneyProfileUiCopy(locale: Locale): MoneyProfileUiCopy {
-  return dictionaries[locale];
+  if (locale !== "de") return dictionaries[locale];
+  return {
+    ...dictionaries.de,
+    cta: "Mein Geldprofil erkunden", revealTitle: "Dein Geldprofil ist bereit.", boundaryShort: "Das Geldprofil ist keine Finanz-, Anlage-, Steuer-, Kredit- oder Schuldberatung.",
+    contentLanguageNotice: "Fragen, Erklärungen und Ergebnisse werden auf Deutsch angezeigt. Die Auswertung nutzt in jeder Sprache dieselben Antworten, Regeln und Gewichtungen.",
+    profile: "Profil", meaning: "Bedeutung von Geld", baseline: "Im Alltag", underStress: "Unter Stress", works: "Was bereits funktioniert", blindSpots: "Blinde Flecken", tradeOffs: "Zielkonflikte", triggers: "Auslöser", helps: "Was eher hilft", playbook: "Dein Leitfaden für Geld", nextSteps: "Kleine nächste Schritte", experiment: "Probiere eine Sache", onePager: "Mein Geldprofil auf einer Seite", share: "Teilen", retake: "Erneut durchführen", atMyBest: "Wenn es gut läuft", watchFor: "Achte darauf", whatHelps: "Was mir hilft", myNextMove: "Mein nächster Schritt",
+    confidence: { "clear-pattern": "Klares Muster", "mixed-profile": "Gemischtes Profil", "context-dependent": "Kontextabhängig", "money-map": "Geldmuster-Karte – ohne erzwungenen Typ" },
+    shareChoices: { profile: "Mein Geldprofil", meaning: "Was Geld für mich bedeutet", strength: "Meine Stärke im Umgang mit Geld", reminder: "Meine Erinnerung / mein nächster Schritt" },
+    formats: { story: "Story · 9:16", portrait: "Hochformat · 4:5", square: "Quadrat · 1:1" },
+  };
+}
+
+const englishDisplayLabels = {
+  brand: "Money Profile", privacy: "Privacy + boundary", pattern: "PATTERN", meta: "Meta layer", baselineStress: "Baseline → Stress", smallMoves: "3–5 small moves", experiment: "Money Experiment", selected: "Selected", testThis: "Test this", contextDependent: "Context-dependent",
+  stressIntro: "Money can change our behaviour when it starts feeling threatening. These questions are about that shift — not who you are all the time.",
+  meaningExplanation: "These themes describe what money appears to represent in your answers. They interpret behaviour without inventing a cause.",
+  noFriction: "No repeated friction was strongly supported. Keep testing the map instead of inventing a problem.",
+  noTension: "No tension was strong enough to present as a stable pattern. That is a valid result.",
+  noTrigger: "No recurring trigger was strongly supported.",
+  shareFooter: "A map of patterns — not a financial score.",
+};
+export function getMoneyProfileDisplayLabels(locale: Locale): typeof englishDisplayLabels {
+  return locale === "de" ? {
+    brand: "Geldprofil", privacy: "Datenschutz und Grenzen", pattern: "MUSTER", meta: "Bedeutungsebene", baselineStress: "Alltag → Stress", smallMoves: "3–5 kleine Schritte", experiment: "Ein Experiment mit Geld", selected: "Ausgewählt", testThis: "Das ausprobieren", contextDependent: "Kontextabhängig",
+    stressIntro: "Geld kann unser Verhalten verändern, wenn es bedrohlich wirkt. Diese Fragen betrachten diese Veränderung – nicht, wer du immer bist.",
+    meaningExplanation: "Diese Themen beschreiben, wofür Geld in deinen Antworten zu stehen scheint. Sie deuten Verhalten, ohne eine Ursache zu erfinden.",
+    noFriction: "Keine wiederkehrende Schwierigkeit war stark belegt. Prüfe die Karte weiter, statt ein Problem zu erfinden.",
+    noTension: "Keine Spannung war stark genug, um sie als beständiges Muster darzustellen. Auch das ist ein gültiges Ergebnis.",
+    noTrigger: "Kein wiederkehrender Auslöser war stark belegt.",
+    shareFooter: "Eine Karte deiner Muster – kein Finanzscore.",
+  } : englishDisplayLabels;
 }

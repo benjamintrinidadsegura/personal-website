@@ -75,7 +75,7 @@ export const discoverySurfaces: Record<DiscoverySurfaceId, DiscoverySurfaceDefin
         boundary: "Diese strukturierte Selbstreflexion formuliert Hypothesen. Sie ist kein wissenschaftlich validierter Persönlichkeitstest und keine psychologische oder medizinische Diagnose.",
         relatedTitle: "Den Kontext weiter erkunden",
         related: [
-          { href: "/about/how-my-brain-works", label: "Ein konkretes Brain Manual ansehen" },
+          { href: "/about/how-my-brain-works", label: "Eine konkrete Anleitung zum Denken ansehen" },
           { href: "/find-your-next-step", label: "Stärken mit einem nächsten Schritt verbinden" },
         ],
       },
@@ -148,7 +148,7 @@ export const discoverySurfaces: Record<DiscoverySurfaceId, DiscoverySurfaceDefin
       de: {
         question: "Welcher Geldtyp bin ich?",
         answer: "Ein Geldprofil wird nicht durch Einkommen oder Kontostand bestimmt. Hilfreicher ist es, wiederkehrende Muster zu beobachten: welche Bedeutung Geld für dich hat, wie du entscheidest, was sich unter Stress verändert und welche kleinen Strukturen dir helfen könnten.",
-        boundary: "Das Money Profile ist Selbstreflexion über finanzielles Verhalten — keine Finanz-, Anlage-, Steuer-, Kredit- oder Schuldberatung und kein diagnostischer Test.",
+        boundary: "Das Geldprofil ist Selbstreflexion über finanzielles Verhalten — keine Finanz-, Anlage-, Steuer-, Kredit- oder Schuldberatung und kein diagnostischer Test.",
         relatedTitle: "Das größere Bild betrachten",
         related: [
           { href: "/life-alignment", label: "Geld im Kontext deiner Prioritäten betrachten" },

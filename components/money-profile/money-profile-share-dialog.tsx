@@ -6,7 +6,8 @@ import { MoneyProfileShareCard, type MoneyShareSection } from "@/components/mone
 import { ShareComposerHeading } from "@/components/sharing/share-composer-heading";
 import { ShareFileActions } from "@/components/sharing/share-file-actions";
 import { useCanonicalSiteUrl } from "@/components/site/canonical-site-url-context";
-import type { MoneyProfileUiCopy } from "@/data/money-profile-locales";
+import { getMoneyProfileDisplayLabels, type MoneyProfileUiCopy } from "@/data/money-profile-locales";
+import type { Locale } from "@/lib/i18n/config";
 import { emitMoneyProfileEvent } from "@/lib/money-profile-analytics";
 import { canonicalBtsShareUrl } from "@/lib/sharing/destinations";
 import type { MoneyProfileResult } from "@/types/money-profile";
@@ -14,7 +15,8 @@ import { writingShareFormats, type WritingShareFormat } from "@/types/writing";
 
 const shareSections: readonly MoneyShareSection[] = ["profile", "meaning", "strength", "reminder"];
 
-export function MoneyProfileShareDialog({ copy, result, onClose }: { copy: MoneyProfileUiCopy; result: MoneyProfileResult; onClose: () => void }) {
+export function MoneyProfileShareDialog({ copy, locale = "en", result, onClose }: { copy: MoneyProfileUiCopy; locale?: Locale; result: MoneyProfileResult; onClose: () => void }) {
+  const labels = getMoneyProfileDisplayLabels(locale);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const canonicalSiteUrl = useCanonicalSiteUrl();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -43,7 +45,7 @@ export function MoneyProfileShareDialog({ copy, result, onClose }: { copy: Money
     return lines.join("\n");
   }, [copy, label, result, selected]);
   const renderKey = `${format}:${[...selected].sort().join("-")}`;
-  const card = <MoneyProfileShareCard copy={copy} format={format} result={result} sections={selected} />;
+  const card = <MoneyProfileShareCard copy={copy} format={format} locale={locale} result={result} sections={selected} />;
   const toggle = (section: MoneyShareSection) => setSelected((current) => {
     const next = new Set(current);
     if (next.has(section)) next.delete(section); else next.add(section);
@@ -58,7 +60,7 @@ export function MoneyProfileShareDialog({ copy, result, onClose }: { copy: Money
   return (
     <dialog ref={dialogRef} aria-labelledby="money-profile-share-title" className={`writing-share-dialog ${screenshotMode ? "writing-share-dialog-screenshot" : ""}`} onCancel={(event) => { event.preventDefault(); if (screenshotMode) setScreenshotMode(false); else dialogRef.current?.close(); }} onClose={onClose}>
       {screenshotMode ? <div className="writing-screenshot-surface" onPointerDown={() => setControlsVisible(true)}><p className="sr-only">{shareText}</p><button type="button" data-visible={controlsVisible} onFocus={() => setControlsVisible(true)} onClick={() => setScreenshotMode(false)} className="writing-screenshot-exit">{copy.exitScreenshot}</button><div className="writing-screenshot-card">{card}</div></div> : <div className="writing-share-composer">
-        <ShareComposerHeading closeLabel={copy.close} headingId="money-profile-share-title" onClose={() => dialogRef.current?.close()} product="MONEY PROFILE" title={copy.shareTitle} />
+        <ShareComposerHeading closeLabel={copy.close} headingId="money-profile-share-title" onClose={() => dialogRef.current?.close()} product={labels.brand.toUpperCase()} title={copy.shareTitle} />
         <div className="writing-share-composer-grid"><section className="writing-share-preview" aria-label={copy.onePager}><div ref={cardRef} className="bts-share-capture-root">{card}</div><p className="sr-only">{shareText}</p></section><aside className="writing-share-controls">
           <div><p className="writing-share-control-label">{copy.share}</p><p className="mt-2 text-sm leading-6 text-slate-300">{copy.shareBody}</p></div>
           <fieldset><legend className="writing-share-control-label">{copy.shareTitle}</legend><div className="grid gap-2">{shareSections.map((section) => <label key={section} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-200"><input type="checkbox" checked={selected.has(section)} onChange={() => toggle(section)} />{copy.shareChoices[section]}</label>)}</div></fieldset>

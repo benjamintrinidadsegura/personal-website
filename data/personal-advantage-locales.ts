@@ -108,4 +108,26 @@ const dictionaries: Record<Locale, PersonalAdvantageUiCopy> = {
   ru: localized({ tagline: "Найдите сочетание, которое делает вас необычно полезным.", privacyTitle: "Некоторые вопросы личные.", languageNotice: "Канонический контент V1 пока написан на английском. Элементы управления соответствуют выбранному языку; скрытый машинный перевод не используется.", start: "Составить карту преимущества", resumeTitle: "С возвращением.", continue: "Продолжить", startOver: "Начать заново", back: "Назад", next: "Продолжить", skip: "Пропустить вопрос", close: "Закрыть", share: "Поделиться преимуществом", screenshot: "Режим снимка", exitScreenshot: "Выйти из режима снимка" }),
 };
 
-export function getPersonalAdvantageUiCopy(locale: Locale): PersonalAdvantageUiCopy { return dictionaries[locale]; }
+export function getPersonalAdvantageUiCopy(locale: Locale): PersonalAdvantageUiCopy {
+  if (locale !== "de") return dictionaries[locale];
+  return {
+    ...dictionaries.de,
+    method: "Persönliche Vorteile abbilden", expectation: ["~20–30 Min.", "Tiefgehende Reflexion", "Deine persönliche Vorteilskarte"],
+    languageNotice: "Fragen und Ergebnisdeutungen werden auf Deutsch angezeigt. Alle Sprachen nutzen dieselben Antwort-IDs, Hinweise und Auswertungsregeln.",
+    intro: "Dein Vorteil ist wahrscheinlich nicht die eine spektakuläre Fähigkeit. Er kann daraus entstehen, wie Denken, erlernte Fähigkeiten, Erfahrung, Energie und das Vertrauen anderer zusammenwirken.",
+    principles: ["Wir versuchen nicht, dich in einen Typ einzuordnen.", "Sei konkret, wenn du kannst. Reale Situationen sind hilfreicher als ideale Selbstbilder.", "Optimiere deine Antworten nicht. Es gibt keine universell beste Kombination.", "Überspringe alles, was du nicht beantworten möchtest."],
+    privacyPoints: ["Fortschritt bleibt ausschließlich in diesem Browser.", "Optionale Freitexte werden nicht gespeichert und nie bewertet.", "Keine Antworten gehen an KI, Nutzungsanalyse, Server oder ein Konto.", "Teilen ist ausdrücklich und nutzt nur eine sichere Zusammenfassung."],
+    coreAdvantage: "Dein Kernvorteil", stack: "Deine Kombination von Stärken", evidence: "Hinweise hinter deiner Karte", supporting: "Unterstützende Stärke", portfolio: "Deine weiteren Vorteilskombinationen", playbook: "Dein persönlicher Leitfaden", onePager: "Dein persönlicher Vorteil auf einer Seite", myAdvantage: "Mein persönlicher Vorteil", myStack: "Meine Kombination", myHiddenEdge: "Mein verborgener Hebel", share: "Meinen Vorteil teilen",
+    shareChoices: { advantage: "Mein Vorteil", stack: "Meine Kombination", hidden: "Mein verborgener Hebel", shadow: "Meine Übersteuerung / mein Gegengewicht", reminder: "Meine Erinnerung" },
+    formats: { story: "9:16 Story", portrait: "4:5 Hochformat", square: "1:1 Quadrat" },
+    experimentBody: "Wähle ein durch Hinweise gestütztes Experiment. Die Karte liefert Hypothesen; das echte Leben prüft sie.",
+    hypothesis: "Das ist kein Urteil. Deine Vorteilskarte ist eine Hypothese aus Mustern deiner Antworten. Nützlich wird sie, wenn du im echten Leben prüfst, ob sie trägt.",
+    exploreBrain: "Benjamins Anleitung zu seinem Denken ansehen",
+    confidence: { ...dictionaries.de.confidence, emerging: "Im Entstehen – prüfen, statt festlegen" },
+  };
+}
+
+const englishDisplayLabels = { brand: "Personal Advantage", before: "Before starting", privacy: "Privacy", transparency: "Transparency", hidden: "Hidden Advantage", experiment: "Advantage Experiment", overview: "Overview", environment: "Environment", tradeOffs: "Trade-offs", navigation: "Advantage Map", multiplierFallback: "A clearer feedback loop.", shareFooter: "A hypothesis to test in real life." };
+export function getPersonalAdvantageDisplayLabels(locale: Locale): typeof englishDisplayLabels {
+  return locale === "de" ? { brand: "Persönlicher Vorteil", before: "Bevor du beginnst", privacy: "Datenschutz", transparency: "Nachvollziehbarkeit", hidden: "Verborgener Vorteil", experiment: "Ein Experiment mit deinem Vorteil", overview: "Überblick", environment: "Umgebung", tradeOffs: "Zielkonflikte", navigation: "Vorteilskarte", multiplierFallback: "Eine klarere Rückkopplung.", shareFooter: "Eine Hypothese zum Prüfen im echten Leben." } : englishDisplayLabels;
+}

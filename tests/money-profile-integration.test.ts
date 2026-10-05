@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { getMoneyProfileDisplayLabels } from "../data/money-profile-locales";
 import { canonicalBtsShareUrl, webShareDestinations } from "../lib/sharing/destinations";
 
 const TEST_SITE_URL = "https://btshq.online";
@@ -49,7 +50,9 @@ test("Money One-Pager and share composer reuse the accepted safe BTS sharing fou
 test("Money result keeps progressive sections, Baseline and Stress visibly separate, and no score dashboard", () => {
   const experience = source("../components/money-profile/money-profile-experience.tsx");
   for (const section of ["money-profile", "money-meaning", "money-baseline", "money-tradeoffs", "money-playbook", "money-onepager"]) assert.equal(experience.includes(`id="${section}"`), true, section);
-  assert.match(experience, /Baseline → Stress/u);
+  assert.match(experience, /labels\.baselineStress/u);
+  assert.equal(getMoneyProfileDisplayLabels("en").baselineStress, "Baseline → Stress");
+  assert.equal(getMoneyProfileDisplayLabels("de").baselineStress, "Alltag → Stress");
   assert.match(experience, /ResultFeedback[\s\S]*product="money-profile"/u);
   assert.doesNotMatch(experience, /radar|wealth meter|financial health|maturity score/iu);
 });
