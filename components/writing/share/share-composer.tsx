@@ -1,5 +1,8 @@
 "use client";
 
+// Load the Writing Social Post contract with the lazy composer, including its export deck.
+import "./social-post-card.css";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ShareComposerHeading } from "@/components/sharing/share-composer-heading";

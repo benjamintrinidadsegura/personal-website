@@ -101,16 +101,16 @@ function pageHeight(units: readonly Unit[], format: WritingShareFormat, composit
     + (index > 0 ? carouselBlockSpacing(block.kind, blocks[index - 1].kind, composition) : 0), 0);
 }
 
-function availableHeight(format: WritingShareFormat, slideIndex: number, locale: WritingLanguage, options: CarouselPaginationOptions): number {
-  return availableCarouselBodyHeight(format, slideIndex, locale, options.articleTitle, options.kind === "article");
+function availableHeight(format: WritingShareFormat, composition: WritingShareComposition, slideIndex: number, locale: WritingLanguage, options: CarouselPaginationOptions): number {
+  return availableCarouselBodyHeight(format, slideIndex, locale, options.articleTitle, options.kind === "article", composition);
 }
 
 function pageFits(units: readonly Unit[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, slideIndex: number, options: CarouselPaginationOptions): boolean {
-  return pageHeight(units, format, composition, locale) <= availableHeight(format, slideIndex, locale, options);
+  return pageHeight(units, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options);
 }
 
 function textFitsEmptyPage(text: string, block: WritingShareBlock, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions): boolean {
-  return estimatedBlockHeight(text, block.kind, format, composition, locale, block) <= Math.min(availableHeight(format, 0, locale, options), availableHeight(format, 1, locale, options));
+  return estimatedBlockHeight(text, block.kind, format, composition, locale, block) <= Math.min(availableHeight(format, composition, 0, locale, options), availableHeight(format, composition, 1, locale, options));
 }
 
 function containsOversizedWord(text: string, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): boolean {
@@ -148,7 +148,11 @@ function splitByWords(sentence: string, blockIndex: number, block: WritingShareB
 }
 
 function unitsForBlock(block: WritingShareBlock, blockIndex: number, separatorBefore: Unit["separatorBefore"], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions) {
-  if (!containsOversizedWord(block.text, format, composition, locale) && textFitsEmptyPage(block.text, block, format, composition, locale, options)) {
+  // Ordinary Social Post paragraphs may continue at authored sentence boundaries,
+  // so a long paragraph need not leave the preceding card half empty. Highlights
+  // and list items remain atomic whenever they fit a card.
+  const sentencePacking = composition === "socialPost" && block.kind === "paragraph" && !block.editorialType;
+  if (!sentencePacking && !containsOversizedWord(block.text, format, composition, locale) && textFitsEmptyPage(block.text, block, format, composition, locale, options)) {
     return { oversizedWord: false, units: [{ ...block, blockIndex, separatorBefore }] satisfies Unit[] };
   }
   const units: Unit[] = [];
@@ -195,8 +199,8 @@ function balance(pages: Page[], format: WritingShareFormat, composition: Writing
       const combined = [...pages[leftIndex].units, ...pages[rightIndex].units];
       let bestBoundary = pages[leftIndex].units.length;
       const score = (left: Unit[], right: Unit[]) => {
-        const leftFill = pageHeight(left, format, composition, locale) / availableHeight(format, leftIndex, locale, options);
-        const rightFill = pageHeight(right, format, composition, locale) / availableHeight(format, rightIndex, locale, options);
+        const leftFill = pageHeight(left, format, composition, locale) / availableHeight(format, composition, leftIndex, locale, options);
+        const rightFill = pageHeight(right, format, composition, locale) / availableHeight(format, composition, rightIndex, locale, options);
         return Math.abs(leftFill - rightFill) + (right.length === 1 && rightFill < 0.3 ? 0.8 : 0) + (left.at(-1)?.kind === "heading" ? 1.5 : 0);
       };
       let bestScore = score(pages[leftIndex].units, pages[rightIndex].units);
@@ -241,12 +245,11 @@ export function estimatedCarouselBlocksHeight(blocks: readonly WritingCarouselBl
 }
 
 export function writingCarouselSegmentFits(blocks: readonly WritingCarouselBlock[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, slideIndex: number, options: CarouselPaginationOptions): boolean {
-  return estimatedCarouselBlocksHeight(blocks, format, composition, locale) <= availableHeight(format, slideIndex, locale, options);
+  return estimatedCarouselBlocksHeight(blocks, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options);
 }
 
 export function writingShareCapacity(format: WritingShareFormat, variant: WritingShareComposition): number {
-  void variant;
-  return carouselLayoutByFormat[format].bodyHeight;
+  return availableCarouselBodyHeight(format, 1, "en", undefined, false, variant);
 }
 
 export function reconstructCarousel(segments: readonly CarouselSegment[]): string {
@@ -260,6 +263,8 @@ export function writingCarouselIsComplete(canonicalText: string, segments: reado
 export function paginateWritingCarousel(value: string, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions, defaultMaxSlides: number): CarouselPaginationResult {
   const canonicalText = normalize(value);
   if (!canonicalText) return { status: "empty", canonicalText, segments: [] };
+  const maxSlides = options.maxSlides ?? defaultMaxSlides;
+  if (availableHeight(format, composition, 0, locale, options) <= 0) return { status: "tooLong", canonicalText, maxSlides, requiredSlides: null, segments: [] };
   const units: Unit[] = [];
   let oversizedWord = false;
   normalizedBlocks(canonicalText, options.blocks).forEach((block, index) => {
@@ -267,9 +272,11 @@ export function paginateWritingCarousel(value: string, format: WritingShareForma
     oversizedWord ||= split.oversizedWord;
     units.push(...split.units);
   });
-  const maxSlides = options.maxSlides ?? defaultMaxSlides;
   if (oversizedWord) return { status: "tooLong", canonicalText, maxSlides, requiredSlides: null, segments: [] };
-  const pages = enforceFinalFit(balance(paginate(units, format, composition, locale, options), format, composition, locale, options), format, composition, locale, options);
+  const packed = paginate(units, format, composition, locale, options);
+  // Social Post uses full top-aligned content regions; equalising adjacent pages
+  // introduces avoidable whitespace. Keep Editorial's existing balancing.
+  const pages = enforceFinalFit(composition === "socialPost" ? packed : balance(packed, format, composition, locale, options), format, composition, locale, options);
   if (pages.length > maxSlides) return { status: "tooLong", canonicalText, maxSlides, requiredSlides: pages.length, segments: [] };
   const segments = pages.map((page) => ({ separatorBefore: page.units[0]?.separatorBefore ?? "", text: textFor(page.units), blocks: blocksFor(page.units) }));
   if (!writingCarouselIsComplete(canonicalText, segments)) throw new Error("Writing carousel completeness invariant failed.");

@@ -1,0 +1,42 @@
+/* Loaded with the Writing composer so its preview/export contract cannot depend on an older global stylesheet.
+   Scope excludes Editorial, Quote cards and all other shared consumers. Geometry is in export-pixel cqw variables. */
+.social-post-card[data-writing-card="true"][data-style="social-post"] { background: #071826; color: white; font-family: var(--writing-social-font-family); }
+.social-post-card[data-writing-card="true"][data-style="social-post"]::before { content: none; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-blocks { width: 100%; color: #bec9d3; font-size: var(--writing-carousel-body-font-size); font-weight: var(--writing-carousel-body-weight); line-height: var(--writing-carousel-body-line-height); letter-spacing: normal; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-block { display: flow-root; white-space: pre-line; overflow-wrap: anywhere; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-block + .writing-card-block { margin-top: var(--writing-carousel-block-gap); }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-block[data-block-kind="heading"]:not(:first-child) { margin-top: var(--writing-carousel-heading-gap); }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-block[data-block-kind="listItem"] + .writing-card-block[data-block-kind="listItem"] { margin-top: var(--writing-carousel-list-gap); }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-block[data-block-kind="quote"]:not(:first-child) { margin-top: var(--writing-carousel-quote-gap); }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-heading { color: white; font-size: var(--writing-carousel-heading-font-size); font-weight: var(--writing-carousel-heading-weight); line-height: var(--writing-carousel-heading-line-height); }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-heading[data-heading-level="3"] { font-size: var(--writing-carousel-body-font-size); }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-list { display: grid; grid-template-columns: var(--writing-card-list-marker-width) minmax(0,1fr); gap: 1.111111cqw; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-list > span:first-child { color: #69e0ef; font-weight: 900; white-space: nowrap; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-quote { border-left: .370370cqw solid #ffae62; padding-left: 2.592593cqw; color: #d0d9e1; font-style: italic; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] [data-editorial-type] { padding: 2.222222cqw; color: #e9f3f6; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] [data-editorial-type="keyThought"] { border-left: .370370cqw solid #69e0ef; background: #0e2a36; font-weight: 700; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] [data-editorial-type="pullQuote"] { border-left: .370370cqw solid #ffae62; background: #14232e; font-style: italic; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] [data-editorial-type="shareable"] { border-left: .370370cqw solid #35d0e5; background: #0c2430; font-weight: 800; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-divider { height: .185185cqw; border: 0; margin-block: 1.851852cqw; background: #38505f; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-canvas { padding: var(--writing-carousel-safe-margin); }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-surface { height: 100%; min-height: 0; max-height: none; align-self: stretch; grid-template-areas: "identity" "body" "footer"; grid-template-rows: var(--social-post-header-zone-min-height) minmax(0,1fr) var(--social-post-footer-zone-min-height); row-gap: var(--writing-carousel-title-body-gap); border: 0; padding: var(--writing-carousel-safe-margin); background: #091d29; box-shadow: none; }
+.social-post-card[data-writing-card="true"][data-style="social-post"][data-has-title="true"] .social-post-surface { grid-template-areas: "identity" "title" "body" "footer"; grid-template-rows: var(--social-post-header-zone-min-height) var(--writing-social-title-height) minmax(0,1fr) var(--social-post-footer-zone-min-height); }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-surface::after { content: none; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-post-frame { position: absolute; inset: 0; border: .092593cqw solid rgba(255,255,255,.19); border-top-color: rgba(105,224,239,.5); pointer-events: none; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .writing-post-accent { position: absolute; top: 0; right: 0; width: 16cqw; height: 1.1cqw; background: #35d0e5; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-identity { grid-area: identity; min-height: 0; grid-template-columns: 6.666667cqw minmax(0,1fr) 12.962963cqw; gap: 2.222222cqw; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-avatar { width: 6.666667cqw; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-name { font-size: 2.777778cqw; line-height: 3.333333cqw; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-source { margin-top: .555556cqw; font-size: 1.851852cqw; line-height: 2.407407cqw; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-progress { font-size: 2.129630cqw; line-height: 2.777778cqw; letter-spacing: .04em; white-space: nowrap; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-title-zone { grid-area: title; width: var(--writing-carousel-body-width); max-width: 100%; max-height: none; overflow: visible; padding: 0; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-article-title { font-size: var(--writing-carousel-title-font-size); font-weight: 950; line-height: 1.04; letter-spacing: -.025em; text-wrap: wrap; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-body { grid-area: body; width: var(--writing-carousel-body-width); max-width: 100%; max-height: none; align-self: stretch; justify-content: flex-start; overflow: visible; padding: 0; margin: 0; height: 100%; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-title-zone + .social-post-body { margin-top: 0; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-reference { margin-top: 2.222222cqw; padding: 1.111111cqw 0 1.111111cqw 2.222222cqw; border-left-width: .185185cqw; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-reference span { font-size: 1.666667cqw; line-height: 2.222222cqw; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-reference strong { display: block; margin-top: .555556cqw; font-size: 2.037037cqw; line-height: 2.592593cqw; white-space: nowrap; text-overflow: ellipsis; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-footer { grid-area: footer; min-height: 0; gap: 2.222222cqw; padding-top: 2.222222cqw; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-metadata { font-size: 1.851852cqw; line-height: 2.407407cqw; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-domain { font-size: 2.314815cqw; line-height: 2.777778cqw; white-space: nowrap; }
+.social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-article-content { flex: none; }

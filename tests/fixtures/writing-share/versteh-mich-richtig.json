@@ -1,0 +1,565 @@
+{
+  "blocks": [
+    {
+      "content": [
+        {
+          "text": "Ich habe in letzter Zeit öfter darüber nachgedacht, wie schwierig es eigentlich ist, von anderen Menschen richtig eingeordnet zu werden.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-f6f93592-636c-425a-9701-4430e47d9584",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Und noch schwieriger ist wahrscheinlich die Frage, was man selbst dafür tun soll.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-2f102ba6-1219-492a-994e-b8738d441700",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "\nDenn wie soll ich mich so erklären, dass mein Gegenüber mich richtig versteht, wenn ich vorher gar nicht wissen kann, welchen Kontext diese Person braucht?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-dee11967-4264-4433-a46d-34b507967671",
+      "type": "keyThought"
+    },
+    {
+      "content": [
+        {
+          "text": "Manchmal reicht ein einziges Wort, damit zwei Menschen an komplett unterschiedliche Dinge denken.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-6df7d309-ee9d-416d-b0a3-82f915c59e92",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Kirmes.\nKerb.\nDippemess.\nDom.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-4a9b3d49-2874-4765-a3c7-0820ee5239f3",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Je nachdem, wo du herkommst, weißt du sofort, was gemeint ist.\nOder eben nicht.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-fbb975f7-7c09-40f8-9b56-1f310167c8c9",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Und selbst wenn zwei Menschen über dasselbe sprechen, heißt das noch lange nicht, dass sie dasselbe darunter verstehen.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-be0d150d-c8ce-41e3-960d-d50f4af22c25",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Eigentlich passiert genau das ständig.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-f14136bd-bfa0-47b9-be31-0bb4b1a78a18",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "In Gesprächen.\nBei der Arbeit.\nIn Beziehungen.\nUnd ganz besonders in Bewerbungsgesprächen.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-16233d81-9870-4c51-8283-a20cbcdf9df0",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Du sitzt jemandem gegenüber, den du vielleicht seit 20 Minuten kennst, und sollst dich so darstellen, dass diese Person danach ein möglichst vollständiges Bild von dir hat.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-9aa4ca72-21c5-441a-8368-aaa4d0375e8c",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Was erzählst du?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-047d193d-435a-418a-9e31-adfb9fd11480",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Was lässt du weg?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-cbbabe8b-2846-4da4-885a-31d126a98e3a",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Erzählst du deine Vergangenheit?\nDeine Gegenwart?\nDas, was im Lebenslauf steht?\nOder genau das, was nicht im Lebenslauf steht?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-f01b2fa2-969e-485c-85bf-5efee710432f",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Wie viel Kontext ist genug?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-163a6509-3ed8-4a5b-9338-05901b735c01",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Ich kenne mich selbst seit fast 32 Jahren und finde dadurch natürlich fast alles irgendwie relevant.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-fbb1e1df-b2a2-43c8-8e0b-3f3b4ecb9ff7",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Für mich gehört Punkt A zu Punkt B, weil dazwischen zehn Erfahrungen liegen, die für mich vollkommen logisch miteinander verbunden sind.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-a1b40e5b-583e-47ad-8ba4-05a8e2d15502",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "\nFür mich gehören Punkt A und Punkt B zusammen. Mein Gegenüber kennt aber die zehn Erfahrungen dazwischen nicht.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-c3e8fec6-cedd-4fc5-8b58-ece1e08a59b9",
+      "type": "keyThought"
+    },
+    {
+      "content": [
+        {
+          "text": "Und genau da entsteht wahrscheinlich ein großer Teil des Problems.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-56f4aacf-9976-4b3b-a6cb-27896a9685e3",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Bei anderen Menschen fällt mir das Aussortieren viel leichter.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-6f2d78af-0886-44de-a1b1-ffe7d0acb63c",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Da habe ich Abstand.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-659e25cf-90f8-43ef-862f-8abb81e40666",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Ich kann zuhören und sagen:",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-280f5fd8-5529-45f8-84f8-2b1d81dda23b",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Das ist wichtig.\nDas eher nicht.\nDas erklärt dein Verhalten.\nDas brauchst du für diese Geschichte nicht.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-66562098-51da-410f-8f58-6b946340eb66",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Bei mir selbst fehlt dieser Abstand.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-8f90cf96-5818-42bb-a0c1-8da6a9a3dc8c",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Vielleicht rede ich deshalb manchmal zu viel.\nVielleicht bin ich zu schnell.\nDu vielleicht zu langsam?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-aca631ad-dcc2-4824-8f3a-f454446b91c4",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Keine Ahnung.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-09425cd0-ccd4-4dae-b43f-7edb41b1df13",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Es gibt ja auch keinen universellen Knigge dafür, wie man sich richtig erklärt.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-998ec635-642b-4d80-b0b4-1f5a5dabf4c8",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "\"Erzähl etwas über dich.\"",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-c06e95d9-ede7-47cd-9221-79161aad7980",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Okay.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-25de367f-b131-4ddc-9f0b-56f92af9fe80",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Welche Version?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-d36fd692-a89a-4f19-99d1-ef47d95bee02",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Die berufliche?\nDie private?\nDie aktuelle?\nDie der letzten zehn Jahre?\nDie, die für diese Stelle relevant ist?\nDie, von der ich glaube, dass du sie hören möchtest?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-64b4ea2b-91c0-4f02-aa9f-afca43bd956e",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Und da kommt für mich noch ein anderer Punkt dazu.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-6ef859e6-87de-4d33-bad6-5f7d180bd1d3",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Erwartungen.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-7f6d8e84-5bb6-4ed5-8862-7bfe0446080a",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "\nWie soll man eine Erwartung erfüllen, wenn man nichts von der Erwartung weiß?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-f201a6a2-bb84-427d-a7a2-ef23808429b3",
+      "type": "pullQuote"
+    },
+    {
+      "content": [
+        {
+          "text": "Wenn mein Gegenüber eine bestimmte Information braucht, um mich richtig einordnen zu können, ich aber gar nicht weiß, dass genau diese Information fehlt - wie soll ich sie dann liefern?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-e6b8019b-8dcd-4565-9374-ed4668a35fa4",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Natürlich liegt ein Teil der Verantwortung bei mir.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-39e979ed-ea34-4a7b-8251-2ce60b07cbb0",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Ich muss kommunizieren können.\nIch muss Dinge einordnen können.\nIch muss lernen, nicht jede Geschichte mit 25 Nebensätzen zu erzählen.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-5e854464-0036-46cb-9076-a4005f6a3fae",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Aber Kommunikation besteht halt aus mindestens zwei Menschen.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-db933e67-c4ed-4516-9396-46c22ca2db44",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Gerade in Interviews habe ich manchmal das Gefühl, dass sehr viel Verantwortung bei der Person liegt, die sich erklären soll.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-d3cb3293-1c61-4aba-91cc-58d949b9cff8",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Sei präzise.\nSei relevant.\nSei authentisch.\nSei kurz.\nGib genug Kontext.\nAber nicht zu viel.\nErzähl deine Geschichte.\nAber bitte nur die Teile davon, die ich gerade brauche.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-24477948-bd92-4c4f-93a8-dbe9eb60f5f8",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Und wenn danach ein falscher Eindruck entsteht, war die eigene Kommunikation nicht gut genug.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-55832a2c-080a-4a31-9727-a9cacf59013e",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Vielleicht.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-4f4c179c-9b44-4048-b22d-0608d949ab6b",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "\nVielleicht wurde auch einfach nicht gut genug gefragt.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-cca0d44b-a5a6-4910-81fa-ddc84ea719a1",
+      "type": "keyThought"
+    },
+    {
+      "content": [
+        {
+          "text": "Wenn ich etwas sage und du merkst, dass dir Kontext fehlt - frag mich.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-8285ee53-b66c-4199-ae23-80ce6f9c21d7",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Wenn etwas nicht zusammenpasst - frag nach.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-a0a9244f-bc4e-4b3d-ab8e-8c564ae66b7d",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Wenn du nicht verstehst, warum ich eine Entscheidung getroffen habe - frag warum.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-0b010b77-ac81-486a-ba71-29b035cf1497",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Wenn meine Antwort zu oberflächlich ist - geh tiefer.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-be544697-fdc3-4369-8b46-698a3fc1bdbd",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Wenn sie zu ausführlich ist - führ mich zurück.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-0b8fa3d2-237b-4427-b49a-cb561aec1631",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "\nMissverständnisse entstehen nicht nur durch falsche Antworten. Manchmal entstehen sie durch fehlende Fragen.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-c999ddb2-2a2a-4bbe-aa1e-dc80ac724e95",
+      "type": "shareable"
+    },
+    {
+      "content": [
+        {
+          "text": "Ich finde es irgendwie merkwürdig, von Menschen zu erwarten, sich innerhalb kürzester Zeit perfekt zu komprimieren, während die andere Seite teilweise kaum Verantwortung dafür übernimmt, diese Person wirklich verstehen zu wollen.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-7794a564-ce61-4acc-a53a-6d05fab4dcd3",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Vielleicht ist genau das der Punkt.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-777c296d-928c-4777-8732-7dddc3241710",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "\nMenschen sind keine Lebensläufe. Keine Profile. Keine zehn Bulletpoints. Keine 60-Sekunden-Antwort auf \"Erzähl mal etwas über dich.\"",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-5241f9dd-06f1-46bb-a0d3-8af804b13035",
+      "type": "shareable"
+    },
+    {
+      "content": [
+        {
+          "text": "Jeder Ausschnitt kann richtig sein.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-4fa3efe5-1c6c-4642-9dac-73fad70a9978",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "Und gleichzeitig ein vollkommen falsches Gesamtbild erzeugen.",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-0708b7b2-4574-44ed-aafa-3a2c38655639",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "\nWie soll jemand mich richtig verstehen, wenn er nur einen Ausschnitt von mir sieht - und wie soll ich entscheiden, welcher Ausschnitt der richtige ist?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-04b233f0-a8a0-4dac-8d16-9d5be3cb9e2f",
+      "type": "keyThought"
+    },
+    {
+      "content": [
+        {
+          "text": "Und warum besitzt mein Gegenüber nicht die Kompetenz, Fragen zu stellen, um mich richtig einzuordnen?",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-457fc7c3-09da-40f2-8f0a-b5d3b1b00de1",
+      "type": "paragraph"
+    },
+    {
+      "content": [
+        {
+          "text": "",
+          "type": "text"
+        }
+      ],
+      "id": "writing-thought-a363ecf2-6b09-4333-b94f-f6c4c7404416",
+      "type": "paragraph"
+    }
+  ],
+  "version": 1
+}

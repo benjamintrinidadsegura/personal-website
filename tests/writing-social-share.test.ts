@@ -286,7 +286,7 @@ test("the final fit guard keeps every semantic slide inside the rendered body zo
       assert.ok(result.segments.length > 1, `${format}/${composition}: overflow creates another slide`);
       result.segments.forEach((segment, index) => {
         const height = estimatedCarouselBlocksHeight(segment.blocks, format, composition, "en");
-        const available = availableCarouselBodyHeight(format, index, "en", options.articleTitle, true);
+        const available = availableCarouselBodyHeight(format, index, "en", options.articleTitle, true, composition);
         assert.ok(height <= available, `${format}/${composition}/${index}: ${height} <= ${available}`);
         assert.equal(writingCarouselSegmentFits(segment.blocks, format, composition, "en", index, options), true, `${format}/${composition}/${index}`);
       });
@@ -295,7 +295,7 @@ test("the final fit guard keeps every semantic slide inside the rendered body zo
 });
 
 test("a legitimate long article may exceed 30 slides while the 50-slide abuse guard remains bounded", () => {
-  const blocks = Array.from({ length: 34 }, (_, index): WritingShareBlock => ({ kind: "paragraph", text: `BLOCK_${index} ${sentence("measured", 26)}` }));
+  const blocks = Array.from({ length: 34 }, (_, index): WritingShareBlock => ({ kind: "paragraph", text: `BLOCK_${index} ${sentence("measured", 52)}` }));
   const text = blocks.map(({ text: value }) => value).join("\n\n");
   const result = segmentWritingThought(text, "square", "socialPost", "en", { articleTitle: "A normal long-form article", blocks, kind: "article" });
   assert.equal(MAX_WRITING_SHARE_CARDS, 50);
@@ -385,10 +385,10 @@ test("highlight, heading, list, nesting and divider semantics survive extraction
   const document: WritingDocumentV1 = { version: 1, blocks: [
     { type: "divider" },
     { type: "heading", level: 2, content: text("A heading") },
-    { type: "keyThought", content: text(sentence("keythought", 120)), children: [{ type: "heading", level: 3, content: text("A nested heading") }] },
+    { type: "keyThought", content: text(sentence("keythought", 240)), children: [{ type: "heading", level: 3, content: text("A nested heading") }] },
     { type: "divider" },
-    { type: "pullQuote", content: text(sentence("pullquote", 95)) },
-    { type: "shareable", content: text(sentence("shareable", 100)) },
+    { type: "pullQuote", content: text(sentence("pullquote", 210)) },
+    { type: "shareable", content: text(sentence("shareable", 220)) },
     { type: "numberedListItem", content: text("First ordered item"), children: [{ type: "bulletListItem", content: text("Nested bullet") }] },
     { type: "numberedListItem", content: text("Second ordered item") },
     { type: "paragraph", content: text("An ordinary authored paragraph") },

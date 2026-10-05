@@ -115,15 +115,15 @@ function glyphWidth(glyph: string, fontSize: number): number {
   return fontSize * 0.53;
 }
 
-export function estimatedLineCount(value: string, width: number, fontSize: number, locale: WritingLanguage): number {
+export function estimatedLineCount(value: string, width: number, fontSize: number, locale: WritingLanguage, measure?: (text: string) => number): number {
   const widths = new Map<string, number>();
   return value.split("\n").reduce((total, line) => {
     let lines = 1;
     let current = 0;
     for (const word of line.match(/\S+/gu) ?? []) {
       let pixels = widths.get(word);
-      if (pixels === undefined) { pixels = graphemes(word, locale).reduce((sum, glyph) => sum + glyphWidth(glyph, fontSize), 0); widths.set(word, pixels); }
-      const gap = current ? glyphWidth(" ", fontSize) : 0;
+      if (pixels === undefined) { pixels = measure ? measure(word) : graphemes(word, locale).reduce((sum, glyph) => sum + glyphWidth(glyph, fontSize), 0); widths.set(word, pixels); }
+      const gap = current ? measure ? measure(" ") : glyphWidth(" ", fontSize) : 0;
       if (current && current + gap + pixels > width) { lines += 1; current = 0; }
       // Match normal word wrapping, with anywhere wrapping for a single long token.
       lines += Math.max(0, Math.ceil(pixels / width) - 1);
@@ -144,7 +144,46 @@ export function estimatedTitleHeight(title: string, format: WritingShareFormat, 
   return Math.min(layout.titleMaxHeight, estimatedLineCount(title, layout.bodyWidth, fontSize, locale) * lineHeight);
 }
 
-export function availableCarouselBodyHeight(format: WritingShareFormat, slideIndex: number, locale: WritingLanguage, articleTitle?: string, article = false): number {
+export const writingSocialPostFontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+let socialPostMeasureContext: CanvasRenderingContext2D | null | undefined;
+
+function socialPostLineCount(text: string, width: number, fontSize: number, locale: WritingLanguage, weight: number, italic = false, letterSpacing = 0): number {
+  // The composer runs in the browser. Measure its real font, including authored
+  // bold/italic highlights, rather than assume that every glyph has one width.
+  // Retain the deterministic conservative estimate for server rendering/tests.
+  if (typeof document === "undefined") return estimatedLineCount(text, width, fontSize, locale);
+  socialPostMeasureContext ??= document.createElement("canvas").getContext("2d");
+  const context = socialPostMeasureContext;
+  if (!context) return estimatedLineCount(text, width, fontSize, locale);
+  context.font = `${italic ? "italic " : ""}${weight} ${fontSize}px ${writingSocialPostFontFamily}`;
+  return estimatedLineCount(text, width, fontSize, locale, (value) => context.measureText(value).width + graphemes(value, locale).length * letterSpacing);
+}
+
+/** Social Post fills the space between fixed identity/footer zones. All values are export pixels. */
+export function writingSocialPostLayout(format: WritingShareFormat, slideIndex: number, locale: WritingLanguage, articleTitle = "", article = false) {
+  const layout = carouselLayoutByFormat[format];
+  const gap = 24;
+  // Canvas and surface each contribute one safe margin.
+  const inset = layout.safeMargin * 2;
+  const titleFontSize = carouselTitleFontSize(articleTitle, locale);
+  const titleHeight = article && slideIndex === 0 && articleTitle
+    ? socialPostLineCount(articleTitle, layout.bodyWidth, titleFontSize, locale, 950, false, -titleFontSize * 0.025) * titleFontSize * 1.04
+    : 0;
+  const identityTop = inset;
+  const titleTop = identityTop + layout.headerHeight + gap;
+  const bodyTop = titleTop + (titleHeight ? titleHeight + gap : 0);
+  const footerTop = layout.height - inset - layout.footerHeight;
+  const bodyBottom = footerTop - gap;
+  const contentHeight = bodyBottom - bodyTop;
+  // Thought cards retain their source reference below the semantic body.
+  const referenceHeight = !article && articleTitle ? 106 : 0;
+  return { gap, inset, identityTop, titleTop, titleHeight, bodyTop, bodyBottom, footerTop, contentHeight, referenceHeight, bodyHeight: contentHeight - referenceHeight };
+}
+
+export type WritingSocialPostLayout = ReturnType<typeof writingSocialPostLayout>;
+
+export function availableCarouselBodyHeight(format: WritingShareFormat, slideIndex: number, locale: WritingLanguage, articleTitle?: string, article = false, composition: WritingShareComposition = "editorial"): number {
+  if (composition === "socialPost") return writingSocialPostLayout(format, slideIndex, locale, articleTitle, article).bodyHeight;
   const layout = carouselLayoutByFormat[format];
   if (!article) return layout.bodyHeight;
   const safeBodyHeight = layout.bodyHeight - layout.bodyBottomSafety;
@@ -161,7 +200,9 @@ export function estimatedBlockHeight(text: string, kind: WritingShareBlockKind, 
   const inset = (block?.depth ?? 0) * 28 + (block?.editorialType ? 52 : kind === "quote" ? 32 : kind === "listItem" ? carouselListMarkerWidth(block ?? { kind, text }) + 12 : 0);
   const width = layout.bodyWidth - inset;
   const dividers = (block?.dividersBefore?.length ?? 0) + (block?.dividersAfter?.length ?? 0);
-  return estimatedLineCount(text, width, fontSize, locale) * lineHeight + (block?.editorialType ? 48 : 0) + dividers * 42;
+  const weight = heading ? typography.headingWeight : block?.editorialType === "keyThought" ? 700 : block?.editorialType === "shareable" ? 800 : typography.bodyWeight;
+  const lines = composition === "socialPost" ? socialPostLineCount(text, width, fontSize, locale, weight, kind === "quote" || block?.editorialType === "pullQuote") : estimatedLineCount(text, width, fontSize, locale);
+  return lines * lineHeight + (block?.editorialType ? 48 : 0) + dividers * 42;
 }
 
 export function carouselBlockSpacing(kind: WritingShareBlockKind, previousKind: WritingShareBlockKind, composition: WritingShareComposition): number {

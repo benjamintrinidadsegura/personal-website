@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 
 import { WritingCardBlocks } from "@/components/writing/share/share-card";
 import type { QuoteSocialPostFit } from "@/lib/sharing/quote-social-post-fit";
-import { carouselExportLength, carouselLayoutByFormat, carouselTypographyByComposition } from "@/lib/writing/carousel-layout";
+import { carouselExportLength, carouselLayoutByFormat, carouselTypographyByComposition, writingSocialPostFontFamily, type WritingSocialPostLayout } from "@/lib/writing/carousel-layout";
 import type { WritingCarouselBlock, WritingShareFormat } from "@/types/writing";
 
 type SocialPostScale = "short" | "medium" | "long";
@@ -28,6 +28,7 @@ export function SocialPostCard({
   textFit,
   titleScale,
   writingCard = false,
+  writingLayout,
 }: {
   articleTitle?: string;
   articleBodyHeight?: number;
@@ -48,11 +49,12 @@ export function SocialPostCard({
   textFit?: QuoteSocialPostFit;
   titleScale?: SocialPostScale;
   writingCard?: boolean;
+  writingLayout?: WritingSocialPostLayout;
 }) {
   const layout = carouselLayoutByFormat[format];
   const typography = carouselTypographyByComposition.socialPost;
   const fitStyle = {
-    "--social-post-body-zone-max-height": carouselExportLength(articleBodyHeight ?? layout.bodyHeight),
+    "--social-post-body-zone-max-height": carouselExportLength(writingLayout?.bodyHeight ?? articleBodyHeight ?? layout.bodyHeight),
     "--social-post-footer-zone-min-height": carouselExportLength(layout.footerHeight),
     "--social-post-header-zone-min-height": carouselExportLength(layout.headerHeight),
     "--social-post-indicator-zone-width": carouselExportLength(layout.indicatorWidth),
@@ -60,7 +62,11 @@ export function SocialPostCard({
     "--writing-carousel-safe-margin": carouselExportLength(layout.safeMargin),
     "--writing-carousel-body-width": carouselExportLength(layout.bodyWidth),
     "--writing-carousel-title-font-size": carouselExportLength(articleTitleFontSize ?? 57),
-    "--writing-carousel-title-body-gap": carouselExportLength(layout.titleBodyGap),
+    "--writing-carousel-title-body-gap": carouselExportLength(writingLayout?.gap ?? layout.titleBodyGap),
+    ...(writingLayout ? {
+      "--writing-social-title-height": carouselExportLength(writingLayout.titleHeight),
+      "--writing-social-font-family": writingSocialPostFontFamily,
+    } : {}),
     "--writing-carousel-body-font-size": carouselExportLength(typography.bodyFontSize),
     "--writing-carousel-body-line-height": carouselExportLength(typography.bodyLineHeight),
     "--writing-carousel-body-weight": typography.bodyWeight,
