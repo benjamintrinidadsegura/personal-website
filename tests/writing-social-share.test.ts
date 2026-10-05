@@ -294,6 +294,27 @@ test("the final fit guard keeps every semantic slide inside the rendered body zo
   }
 });
 
+test("reading limits keep oversized authored highlight and heading pairs safe and complete", () => {
+  const blocks: WritingShareBlock[] = [
+    { kind: "heading", headingLevel: 2, text: "Authored context" },
+    { kind: "paragraph", editorialType: "keyThought", text: Array(130).fill("Kontextverantwortung").join(" ") },
+    { kind: "paragraph", text: "Kein Wort geht verloren." },
+  ];
+  const text = blocks.map((block) => block.text).join("\n\n");
+  const snapshot = JSON.stringify(blocks);
+  for (const format of ["story", "portrait"] as const) {
+    const options = { articleTitle: "Versteh mich richtig", kind: "article" as const, blocks };
+    const result = segmentWritingThought(text, format, "socialPost", "de", options);
+    assert.equal(result.status, "ready");
+    if (result.status !== "ready") continue;
+    assert.equal(reconstructWritingThought(result.segments), text);
+    assert.ok(result.segments.flatMap((segment) => segment.blocks).some((block) => block.kind === "heading" && block.text === "Authored context"));
+    assert.ok(result.segments.flatMap((segment) => segment.blocks).filter((block) => block.editorialType === "keyThought").length > 1);
+    result.segments.forEach((segment, index) => assert.equal(writingCarouselSegmentFits(segment.blocks, format, "socialPost", "de", index, options), true));
+  }
+  assert.equal(JSON.stringify(blocks), snapshot);
+});
+
 test("a legitimate long article may exceed 30 slides while the 50-slide abuse guard remains bounded", () => {
   const blocks = Array.from({ length: 34 }, (_, index): WritingShareBlock => ({ kind: "paragraph", text: `BLOCK_${index} ${sentence("measured", 52)}` }));
   const text = blocks.map(({ text: value }) => value).join("\n\n");

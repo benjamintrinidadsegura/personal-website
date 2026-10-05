@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { WritingSocialPostCard } from "../components/writing/share/social-post-card";
 import { writingShareDictionaries } from "../data/i18n/writing-share";
-import { carouselExportLength, carouselLayoutByFormat, writingSocialPostLayout } from "../lib/writing/carousel-layout";
+import { carouselExportLength, carouselLayoutByFormat, estimatedBlockLineCount, writingSocialPostLayout, writingSocialPostReadabilityByFormat } from "../lib/writing/carousel-layout";
 import { estimatedCarouselBlocksHeight, writingCarouselSegmentFits } from "../lib/writing/carousel-pagination";
 import { writingDocumentToShareBlocks } from "../lib/writing/document";
 import { normalizeWritingThought, reconstructWritingThought, segmentWritingThought } from "../lib/writing/share-segmentation";
@@ -46,8 +46,8 @@ test("Social Post regions partition the actual card and continuation cards recla
   }
 });
 
-test("the actual production article has fuller deterministic Social Post pages without losing semantics or authored breaks", () => {
-  const maximumCounts = { story: 6, portrait: 9, square: 12 };
+test("the actual production article respects format reading budgets without losing semantics or authored breaks", () => {
+  const maximumCounts = { story: 18, portrait: 20, square: 12 };
   assert.ok(blocks.some((block) => block.text.length > 200), "real long paragraph fixture");
   assert.ok(blocks.some((block) => block.text.includes("\n")), "authored multiline fixture");
   for (const format of writingShareFormats) {
@@ -65,15 +65,30 @@ test("the actual production article has fuller deterministic Social Post pages w
       const height = estimatedCarouselBlocksHeight(segment.blocks, format, "socialPost", "de");
       assert.ok(height <= region.bodyHeight);
       assert.equal(writingCarouselSegmentFits(segment.blocks, format, "socialPost", "de", index, source), true);
-      // Authored atomic highlights can leave a little room; full non-final cards
-      // must still consume most of their content budget rather than be balanced down.
-      if (index < result.segments.length - 1) assert.ok(height / region.bodyHeight > 0.7, `${format}/${index}: density ${height / region.bodyHeight}`);
+      const reading = region.readability;
+      if (reading) {
+        assert.ok(height <= reading.maxBodyHeight);
+        assert.ok(segment.text.split(/\s+/u).length <= reading.maxWords);
+        assert.ok(segment.blocks.length <= reading.maxBlocks);
+        const highlights = segment.blocks.filter((block) => block.editorialType);
+        assert.ok(highlights.length <= 1);
+        if (highlights.length) {
+          const ordinary = segment.blocks.filter((block) => !block.editorialType && block.kind !== "heading");
+          assert.ok(ordinary.reduce((lines, block) => lines + estimatedBlockLineCount(block.text, block.kind, format, "socialPost", "de", block), 0) <= reading.highlightBodyMaxLines);
+          const highlightIndex = segment.blocks.findIndex((block) => block.editorialType);
+          assert.ok(highlightIndex === 0 || highlightIndex === segment.blocks.length - 1, "ordinary context stays on one side of the highlight");
+        }
+      } else if (index < result.segments.length - 1) {
+        assert.ok(height / region.bodyHeight > 0.7, `${format}/${index}: accepted Square density`);
+      }
       const html = renderToStaticMarkup(createElement(WritingSocialPostCard, { blocks: segment.blocks, cardIndex: index, cardTotal: result.segments.length, copy: writingShareDictionaries.de, format, source, text: segment.text }));
       assert.equal(html.includes('data-zone="title"'), index === 0);
       assert.ok(html.includes(`--social-post-body-zone-max-height:${carouselExportLength(region.bodyHeight)}`));
       assert.ok(html.includes(`--writing-social-title-height:${carouselExportLength(region.titleHeight)}`));
       assert.ok(html.includes(`--writing-carousel-title-body-gap:${carouselExportLength(region.gap)}`));
     });
+    if (format !== "square") assert.deepEqual(result.segments.flatMap((segment) => segment.blocks).map((block) => block.text), blocks.map((block) => block.text), "real authored paragraphs remain whole");
+    else assert.equal(result.segments.length, 12);
   }
 });
 
@@ -112,5 +127,63 @@ test("a title which consumes the whole Social Post content region refuses safely
     assert.equal(result.status, "tooLong");
     assert.equal(result.canonicalText, "The authored body remains intact.");
     assert.deepEqual(result.segments, []);
+  }
+});
+
+test("Story and Feed use explicit reading profiles while physical regions and Square stay unchanged", () => {
+  assert.deepEqual(writingSocialPostReadabilityByFormat.story, { maxBodyHeight: 1050, blockGap: 38, highlightGap: 56, maxWords: 90, maxBlocks: 8, paragraphMaxLines: 6, highlightBodyMaxLines: 6, preferredHighlightBodyBlocks: 1 });
+  assert.deepEqual(writingSocialPostReadabilityByFormat.portrait, { maxBodyHeight: 800, blockGap: 30, highlightGap: 44, maxWords: 80, maxBlocks: 7, paragraphMaxLines: 7, highlightBodyMaxLines: 5, preferredHighlightBodyBlocks: 1 });
+  assert.equal(writingSocialPostReadabilityByFormat.square, null);
+  for (const format of ["story", "portrait"] as const) {
+    const physical = writingSocialPostLayout(format, 1, "de", source.articleTitle, true);
+    const reading = physical.readability;
+    assert.ok(reading);
+    assert.ok(physical.bodyHeight > reading.maxBodyHeight);
+    assert.equal(physical.bodyBottom + 24, physical.footerTop);
+    const html = renderToStaticMarkup(createElement(WritingSocialPostCard, { blocks: blocks.slice(0, 1).map((block) => ({ ...block, separatorBefore: "" })), cardIndex: 1, cardTotal: 2, copy: writingShareDictionaries.de, format, source, text: blocks[0].text }));
+    assert.ok(html.includes(`--writing-carousel-block-gap:${carouselExportLength(reading.blockGap)}`));
+    assert.ok(html.includes(`--writing-social-highlight-gap:${carouselExportLength(reading.highlightGap)}`));
+  }
+});
+
+test("each highlight has a strict six-line/five-line context limit and cannot be surrounded by ordinary copy", () => {
+  for (const format of ["story", "portrait"] as const) {
+    const reading = writingSocialPostReadabilityByFormat[format];
+    for (const editorialType of ["keyThought", "pullQuote", "shareable"] as const) {
+      const highlight = { kind: editorialType === "pullQuote" ? "quote" as const : "paragraph" as const, editorialType, text: "An authored highlight.", separatorBefore: "" };
+      const context = { kind: "paragraph" as const, text: Array(reading.highlightBodyMaxLines).fill("Context.").join("\n"), separatorBefore: "\n\n" };
+      assert.equal(writingCarouselSegmentFits([highlight, context], format, "socialPost", "de", 1, source), true);
+      assert.equal(writingCarouselSegmentFits([highlight, { ...context, text: context.text + "\nOne more line." }], format, "socialPost", "de", 1, source), false);
+      assert.equal(writingCarouselSegmentFits([{ ...context, text: "Before." }, highlight, { ...context, text: "After." }], format, "socialPost", "de", 1, source), false);
+      assert.equal(writingCarouselSegmentFits([highlight, { ...highlight, separatorBefore: "\n\n" }], format, "socialPost", "de", 1, source), false);
+    }
+  }
+});
+
+test("equally sized reading carousels prefer one adjacent short context block per highlight", () => {
+  const authored = [{ kind: "paragraph" as const, text: "Opening context." }, { kind: "paragraph" as const, text: "Another context." }, { kind: "paragraph" as const, editorialType: "keyThought" as const, text: "The authored thought." }, { kind: "paragraph" as const, text: "Following context." }];
+  const canonical = authored.map((block) => block.text).join("\n\n");
+  for (const format of ["story", "portrait"] as const) {
+    const result = segmentWritingThought(canonical, format, "socialPost", "de", { ...source, blocks: authored });
+    assert.equal(result.status, "ready");
+    if (result.status !== "ready") continue;
+    assert.equal(reconstructWritingThought(result.segments), canonical);
+    assert.equal(result.segments.length, 2);
+    const highlight = result.segments.find((segment) => segment.blocks.some((block) => block.editorialType));
+    assert.equal(highlight?.blocks.filter((block) => !block.editorialType).length, 1);
+  }
+});
+
+test("long uninterrupted paragraphs split losslessly within the reading limit", () => {
+  const canonical = "Kontext verstehen und Entscheidungen erklären. ".repeat(35).trim() + "\nEin bewusst gesetzter Umbruch bleibt erhalten.";
+  for (const format of ["story", "portrait"] as const) {
+    const result = segmentWritingThought(canonical, format, "socialPost", "de", { ...source, blocks: [{ kind: "paragraph", text: canonical }] });
+    assert.equal(result.status, "ready");
+    if (result.status !== "ready") continue;
+    assert.equal(reconstructWritingThought(result.segments), canonical);
+    assert.ok(result.segments.length > 1);
+    for (const segment of result.segments) for (const block of segment.blocks) for (const line of block.text.split("\n")) {
+      assert.ok(estimatedBlockLineCount(line, block.kind, format, "socialPost", "de", block) <= writingSocialPostReadabilityByFormat[format].paragraphMaxLines);
+    }
   }
 });

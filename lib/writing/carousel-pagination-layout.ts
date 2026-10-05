@@ -1,9 +1,11 @@
 import {
   availableCarouselBodyHeight,
-  carouselBlockSpacing,
   carouselLayoutByFormat,
   estimatedBlockHeight,
+  estimatedBlockLineCount,
   estimatedWordWidth,
+  writingCarouselBlockSpacing,
+  writingSocialPostReadabilityByFormat,
 } from "@/lib/writing/carousel-layout";
 import type {
   WritingCarouselBlock,
@@ -98,19 +100,41 @@ function blocksFor(units: readonly Unit[]): WritingCarouselBlock[] {
 function pageHeight(units: readonly Unit[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): number {
   return internalBlocksFor(units).reduce((height, block, index, blocks) => height
     + estimatedBlockHeight(block.text, block.kind, format, composition, locale, block)
-    + (index > 0 ? carouselBlockSpacing(block.kind, blocks[index - 1].kind, composition) : 0), 0);
+    + (index > 0 ? writingCarouselBlockSpacing(block, blocks[index - 1], format, composition) : 0), 0);
 }
 
 function availableHeight(format: WritingShareFormat, composition: WritingShareComposition, slideIndex: number, locale: WritingLanguage, options: CarouselPaginationOptions): number {
-  return availableCarouselBodyHeight(format, slideIndex, locale, options.articleTitle, options.kind === "article", composition);
+  const physicalHeight = availableCarouselBodyHeight(format, slideIndex, locale, options.articleTitle, options.kind === "article", composition);
+  const reading = composition === "socialPost" ? writingSocialPostReadabilityByFormat[format] : null;
+  return reading ? Math.min(physicalHeight, reading.maxBodyHeight) : physicalHeight;
+}
+
+function blocksFitReadability(blocks: readonly WritingShareBlock[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): boolean {
+  const reading = composition === "socialPost" ? writingSocialPostReadabilityByFormat[format] : null;
+  if (!reading) return true;
+  if (blocks.length > reading.maxBlocks || blocks.reduce((words, block) => words + (block.text.match(/\S+/gu)?.length ?? 0), 0) > reading.maxWords) return false;
+  // Authored line breaks already interrupt a text wall; cap uninterrupted wrapped runs.
+  if (blocks.some((block) => block.kind === "paragraph" && !block.editorialType && block.text.split("\n").some((line) => estimatedBlockLineCount(line, block.kind, format, composition, locale, block) > reading.paragraphMaxLines))) return false;
+  const highlights = blocks.filter((block) => block.editorialType);
+  if (highlights.length > 1) return false;
+  if (!highlights.length) return true;
+  const ordinary = blocks.filter((block) => !block.editorialType && block.kind !== "heading");
+  const highlightIndex = blocks.findIndex((block) => block.editorialType);
+  const before = blocks.slice(0, highlightIndex).some((block) => !block.editorialType && block.kind !== "heading");
+  const after = blocks.slice(highlightIndex + 1).some((block) => !block.editorialType && block.kind !== "heading");
+  // Context may precede OR follow a highlight; never surround it with body copy.
+  return !(before && after)
+    && ordinary.reduce((lines, block) => lines + estimatedBlockLineCount(block.text, block.kind, format, composition, locale, block), 0) <= reading.highlightBodyMaxLines;
 }
 
 function pageFits(units: readonly Unit[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, slideIndex: number, options: CarouselPaginationOptions): boolean {
-  return pageHeight(units, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options);
+  return pageHeight(units, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options)
+    && blocksFitReadability(internalBlocksFor(units), format, composition, locale);
 }
 
 function textFitsEmptyPage(text: string, block: WritingShareBlock, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions): boolean {
-  return estimatedBlockHeight(text, block.kind, format, composition, locale, block) <= Math.min(availableHeight(format, composition, 0, locale, options), availableHeight(format, composition, 1, locale, options));
+  return estimatedBlockHeight(text, block.kind, format, composition, locale, block) <= Math.min(availableHeight(format, composition, 0, locale, options), availableHeight(format, composition, 1, locale, options))
+    && blocksFitReadability([{ ...block, text }], format, composition, locale);
 }
 
 function containsOversizedWord(text: string, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): boolean {
@@ -148,10 +172,9 @@ function splitByWords(sentence: string, blockIndex: number, block: WritingShareB
 }
 
 function unitsForBlock(block: WritingShareBlock, blockIndex: number, separatorBefore: Unit["separatorBefore"], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions) {
-  // Ordinary Social Post paragraphs may continue at authored sentence boundaries,
-  // so a long paragraph need not leave the preceding card half empty. Highlights
-  // and list items remain atomic whenever they fit a card.
-  const sentencePacking = composition === "socialPost" && block.kind === "paragraph" && !block.editorialType;
+  // Keep authored paragraphs whole within Story/Feed reading budgets. Square
+  // retains its accepted sentence packing; oversized blocks still split losslessly.
+  const sentencePacking = composition === "socialPost" && format === "square" && block.kind === "paragraph" && !block.editorialType;
   if (!sentencePacking && !containsOversizedWord(block.text, format, composition, locale) && textFitsEmptyPage(block.text, block, format, composition, locale, options)) {
     return { oversizedWord: false, units: [{ ...block, blockIndex, separatorBefore }] satisfies Unit[] };
   }
@@ -190,6 +213,38 @@ function paginate(units: readonly Unit[], format: WritingShareFormat, compositio
   }
   push();
   return pages;
+}
+
+/** Choose boundaries within reading limits without stranding tiny body-only pages around highlights. */
+function paginateReadingPages(units: readonly Unit[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions): Page[] {
+  const reading = writingSocialPostReadabilityByFormat[format];
+  if (!reading) return paginate(units, format, composition, locale, options);
+  type Choice = { pages: Page[]; penalty: number };
+  const choices: (Choice | undefined)[] = Array(units.length + 1);
+  choices[units.length] = { pages: [], penalty: 0 };
+  for (let start = units.length - 1; start >= 0; start -= 1) {
+    const candidate: Unit[] = [];
+    for (let end = start; end < units.length; end += 1) {
+      candidate.push(units[end]);
+      const slideIndex = start === 0 ? 0 : 1;
+      if (!pageFits(candidate, format, composition, locale, slideIndex, options)) break;
+      // Keep a heading with its following content, as in the existing paginator.
+      if (units[end].kind === "heading" && end < units.length - 1) continue;
+      const tail = choices[end + 1];
+      if (!tail) continue;
+      const blocks = internalBlocksFor(candidate);
+      const highlight = blocks.some((block) => block.editorialType);
+      const ordinaryCount = blocks.filter((block) => !block.editorialType && block.kind !== "heading").length;
+      const fill = pageHeight(candidate, format, composition, locale) / availableHeight(format, composition, slideIndex, locale, options);
+      const penalty = tail.penalty + (highlight ? ordinaryCount === 0 ? 0.15 : Math.max(0, ordinaryCount - reading.preferredHighlightBodyBlocks) : (1 - fill) ** 2 * (end === units.length - 1 ? 0.25 : 1));
+      const pages = [{ units: [...candidate] }, ...tail.pages];
+      const best = choices[start];
+      if (!best || pages.length < best.pages.length || (pages.length === best.pages.length && penalty < best.penalty - 0.0001)) choices[start] = { pages, penalty };
+    }
+  }
+  // An oversized authored heading/next-block pair may not fit together even
+  // though each unit fits safely. Preserve the existing per-unit fallback.
+  return choices[0]?.pages ?? paginate(units, format, composition, locale, options);
 }
 
 function balance(pages: Page[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions): Page[] {
@@ -241,15 +296,16 @@ function enforceFinalFit(pages: Page[], format: WritingShareFormat, composition:
 export function estimatedCarouselBlocksHeight(blocks: readonly WritingCarouselBlock[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage): number {
   return blocks.reduce((height, block, index) => height
     + estimatedBlockHeight(block.text, block.kind, format, composition, locale, block)
-    + (index > 0 ? carouselBlockSpacing(block.kind, blocks[index - 1].kind, composition) : 0), 0);
+    + (index > 0 ? writingCarouselBlockSpacing(block, blocks[index - 1], format, composition) : 0), 0);
 }
 
 export function writingCarouselSegmentFits(blocks: readonly WritingCarouselBlock[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, slideIndex: number, options: CarouselPaginationOptions): boolean {
-  return estimatedCarouselBlocksHeight(blocks, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options);
+  return estimatedCarouselBlocksHeight(blocks, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options)
+    && blocksFitReadability(blocks, format, composition, locale);
 }
 
 export function writingShareCapacity(format: WritingShareFormat, variant: WritingShareComposition): number {
-  return availableCarouselBodyHeight(format, 1, "en", undefined, false, variant);
+  return availableHeight(format, variant, 1, "en", {});
 }
 
 export function reconstructCarousel(segments: readonly CarouselSegment[]): string {
@@ -273,7 +329,9 @@ export function paginateWritingCarousel(value: string, format: WritingShareForma
     units.push(...split.units);
   });
   if (oversizedWord) return { status: "tooLong", canonicalText, maxSlides, requiredSlides: null, segments: [] };
-  const packed = paginate(units, format, composition, locale, options);
+  const packed = composition === "socialPost" && writingSocialPostReadabilityByFormat[format]
+    ? paginateReadingPages(units, format, composition, locale, options)
+    : paginate(units, format, composition, locale, options);
   // Social Post uses full top-aligned content regions; equalising adjacent pages
   // introduces avoidable whitespace. Keep Editorial's existing balancing.
   const pages = enforceFinalFit(composition === "socialPost" ? packed : balance(packed, format, composition, locale, options), format, composition, locale, options);

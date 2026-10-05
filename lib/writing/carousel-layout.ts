@@ -145,6 +145,14 @@ export function estimatedTitleHeight(title: string, format: WritingShareFormat, 
 }
 
 export const writingSocialPostFontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
+/** Reading limits are separate from the protected physical content region. Square keeps its accepted density. */
+export const writingSocialPostReadabilityByFormat = {
+  story: { maxBodyHeight: 1050, blockGap: 38, highlightGap: 56, maxWords: 90, maxBlocks: 8, paragraphMaxLines: 6, highlightBodyMaxLines: 6, preferredHighlightBodyBlocks: 1 },
+  portrait: { maxBodyHeight: 800, blockGap: 30, highlightGap: 44, maxWords: 80, maxBlocks: 7, paragraphMaxLines: 7, highlightBodyMaxLines: 5, preferredHighlightBodyBlocks: 1 },
+  square: null,
+} as const;
+
 let socialPostMeasureContext: CanvasRenderingContext2D | null | undefined;
 
 function socialPostLineCount(text: string, width: number, fontSize: number, locale: WritingLanguage, weight: number, italic = false, letterSpacing = 0): number {
@@ -177,7 +185,7 @@ export function writingSocialPostLayout(format: WritingShareFormat, slideIndex: 
   const contentHeight = bodyBottom - bodyTop;
   // Thought cards retain their source reference below the semantic body.
   const referenceHeight = !article && articleTitle ? 106 : 0;
-  return { gap, inset, identityTop, titleTop, titleHeight, bodyTop, bodyBottom, footerTop, contentHeight, referenceHeight, bodyHeight: contentHeight - referenceHeight };
+  return { gap, inset, identityTop, titleTop, titleHeight, bodyTop, bodyBottom, footerTop, contentHeight, referenceHeight, bodyHeight: contentHeight - referenceHeight, readability: writingSocialPostReadabilityByFormat[format] };
 }
 
 export type WritingSocialPostLayout = ReturnType<typeof writingSocialPostLayout>;
@@ -191,17 +199,22 @@ export function availableCarouselBodyHeight(format: WritingShareFormat, slideInd
   return Math.max(safeBodyHeight * 0.38, safeBodyHeight - estimatedTitleHeight(articleTitle ?? "", format, locale) - layout.titleBodyGap);
 }
 
-export function estimatedBlockHeight(text: string, kind: WritingShareBlockKind, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, block?: WritingShareBlock): number {
+export function estimatedBlockLineCount(text: string, kind: WritingShareBlockKind, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, block?: WritingShareBlock): number {
   const layout = carouselLayoutByFormat[format];
   const typography = carouselTypographyByComposition[composition];
   const heading = kind === "heading";
   const fontSize = heading ? block?.headingLevel === 3 ? typography.bodyFontSize : typography.headingFontSize : typography.bodyFontSize;
-  const lineHeight = heading ? typography.headingLineHeight : typography.bodyLineHeight;
   const inset = (block?.depth ?? 0) * 28 + (block?.editorialType ? 52 : kind === "quote" ? 32 : kind === "listItem" ? carouselListMarkerWidth(block ?? { kind, text }) + 12 : 0);
   const width = layout.bodyWidth - inset;
-  const dividers = (block?.dividersBefore?.length ?? 0) + (block?.dividersAfter?.length ?? 0);
   const weight = heading ? typography.headingWeight : block?.editorialType === "keyThought" ? 700 : block?.editorialType === "shareable" ? 800 : typography.bodyWeight;
-  const lines = composition === "socialPost" ? socialPostLineCount(text, width, fontSize, locale, weight, kind === "quote" || block?.editorialType === "pullQuote") : estimatedLineCount(text, width, fontSize, locale);
+  return composition === "socialPost" ? socialPostLineCount(text, width, fontSize, locale, weight, kind === "quote" || block?.editorialType === "pullQuote") : estimatedLineCount(text, width, fontSize, locale);
+}
+
+export function estimatedBlockHeight(text: string, kind: WritingShareBlockKind, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, block?: WritingShareBlock): number {
+  const typography = carouselTypographyByComposition[composition];
+  const lineHeight = kind === "heading" ? typography.headingLineHeight : typography.bodyLineHeight;
+  const dividers = (block?.dividersBefore?.length ?? 0) + (block?.dividersAfter?.length ?? 0);
+  const lines = estimatedBlockLineCount(text, kind, format, composition, locale, block);
   return lines * lineHeight + (block?.editorialType ? 48 : 0) + dividers * 42;
 }
 
@@ -211,6 +224,14 @@ export function carouselBlockSpacing(kind: WritingShareBlockKind, previousKind: 
   if (kind === "quote") return typography.quoteGap;
   if (kind === "listItem" && previousKind === "listItem") return typography.listGap;
   return typography.blockGap;
+}
+
+export function writingCarouselBlockSpacing(block: WritingShareBlock, previous: WritingShareBlock, format: WritingShareFormat, composition: WritingShareComposition): number {
+  const reading = composition === "socialPost" ? writingSocialPostReadabilityByFormat[format] : null;
+  if (!reading) return carouselBlockSpacing(block.kind, previous.kind, composition);
+  if (block.editorialType || previous.editorialType) return reading.highlightGap;
+  if (block.kind === "listItem" && previous.kind === "listItem") return carouselTypographyByComposition.socialPost.listGap;
+  return reading.blockGap;
 }
 
 export function estimatedWordWidth(word: string, composition: WritingShareComposition, locale: WritingLanguage): number {
