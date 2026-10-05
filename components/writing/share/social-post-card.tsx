@@ -14,7 +14,7 @@ export function WritingSocialPostCard({ blocks, cardIndex, cardTotal, copy, form
       writingCard
       articleTitleFontSize={carouselTitleFontSize(source.articleTitle, source.language)}
       articleTitle={source.kind === "article" && firstSlide ? source.articleTitle : undefined}
-      writingLayout={writingSocialPostLayout(format, cardIndex, source.language, source.articleTitle, source.kind === "article")}
+      writingLayout={writingSocialPostLayout(format, cardIndex, source.language, source.articleTitle, source.kind === "article", blocks)}
       articleBlocks={blocks?.length ? blocks : [{ kind: "paragraph", separatorBefore: "", text }]}
       domain={source.domain}
       format={format}

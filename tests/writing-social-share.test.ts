@@ -224,7 +224,7 @@ test("article cards preserve semantic typography instead of turning body copy in
   );
 });
 
-test("Story and Feed reserve a conservative body-bottom buffer while Square geometry stays unchanged", () => {
+test("Feed and other Story compositions retain their body-bottom buffer while Square geometry stays unchanged", () => {
   assert.deepEqual(
     {
       bodyBottomSafety: carouselLayoutByFormat.square.bodyBottomSafety,
@@ -235,15 +235,16 @@ test("Story and Feed reserve a conservative body-bottom buffer while Square geom
   );
 
   for (const [format, expectedBuffer] of [["story", 120], ["portrait", 96]] as const) {
+    const composition = format === "story" ? "marginNote" : "editorial";
     const layout = carouselLayoutByFormat[format];
-    const safeHeight = availableCarouselBodyHeight(format, 1, "en", "", true);
+    const safeHeight = availableCarouselBodyHeight(format, 1, "en", "", true, composition);
     assert.equal(layout.bodyBottomSafety, expectedBuffer);
     assert.equal(safeHeight, layout.bodyHeight - expectedBuffer);
 
     let boundaryBlock: WritingCarouselBlock | undefined;
     for (let wordCount = 1; wordCount <= 500; wordCount += 1) {
       const candidate: WritingCarouselBlock = { kind: "paragraph", separatorBefore: "", text: sentence("buffer", wordCount) };
-      const estimated = estimatedCarouselBlocksHeight([candidate], format, "editorial", "en");
+      const estimated = estimatedCarouselBlocksHeight([candidate], format, composition, "en");
       if (estimated > safeHeight && estimated <= layout.bodyHeight) {
         boundaryBlock = candidate;
         break;
@@ -252,11 +253,11 @@ test("Story and Feed reserve a conservative body-bottom buffer while Square geom
     assert.ok(boundaryBlock, `${format}: fixture occupies the former optimistic footer-adjacent zone`);
     if (!boundaryBlock) continue;
     assert.equal(
-      writingCarouselSegmentFits([boundaryBlock], format, "editorial", "en", 1, { articleTitle: "Buffer fixture", blocks: [boundaryBlock], kind: "article" }),
+      writingCarouselSegmentFits([boundaryBlock], format, composition, "en", 1, { articleTitle: "Buffer fixture", blocks: [boundaryBlock], kind: "article" }),
       false,
       `${format}: the safety zone forces overflow onto another slide`,
     );
-    const result = segmentWritingThought(boundaryBlock.text, format, "editorial", "en", { articleTitle: "Buffer fixture", blocks: [boundaryBlock], kind: "article" });
+    const result = segmentWritingThought(boundaryBlock.text, format, composition, "en", { articleTitle: "Buffer fixture", blocks: [boundaryBlock], kind: "article" });
     assert.equal(result.status, "ready");
     if (result.status === "ready") assert.ok(result.segments.length > 1, `${format}: buffer may increase slide count`);
   }

@@ -1,5 +1,6 @@
 /* Loaded with the Writing composer so its preview/export contract cannot depend on an older global stylesheet.
-   Scope excludes Editorial, Quote cards and all other shared consumers. Geometry is in export-pixel cqw variables. */
+   Story's Editorial offset and Writing Social Post rules exclude Quote cards and other shared consumers. */
+.writing-share-card[data-writing-card="true"][data-format="story"][data-variant="editorial"][data-content] .writing-share-card-content { padding-top: var(--writing-carousel-content-start-gap); }
 .social-post-card[data-writing-card="true"][data-style="social-post"] { background: #071826; color: white; font-family: var(--writing-social-font-family); }
 .social-post-card[data-writing-card="true"][data-style="social-post"]::before { content: none; }
 .social-post-card[data-writing-card="true"][data-style="social-post"] .writing-card-blocks { width: 100%; color: #bec9d3; font-size: var(--writing-carousel-body-font-size); font-weight: var(--writing-carousel-body-weight); line-height: var(--writing-carousel-body-line-height); letter-spacing: normal; }
@@ -23,6 +24,9 @@
 .social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-canvas { padding: var(--writing-carousel-safe-margin); }
 .social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-surface { height: 100%; min-height: 0; max-height: none; align-self: stretch; grid-template-areas: "identity" "body" "footer"; grid-template-rows: var(--social-post-header-zone-min-height) minmax(0,1fr) var(--social-post-footer-zone-min-height); row-gap: var(--writing-carousel-title-body-gap); border: 0; padding: var(--writing-carousel-safe-margin); background: #091d29; box-shadow: none; }
 .social-post-card[data-writing-card="true"][data-style="social-post"][data-has-title="true"] .social-post-surface { grid-template-areas: "identity" "title" "body" "footer"; grid-template-rows: var(--social-post-header-zone-min-height) var(--writing-social-title-height) minmax(0,1fr) var(--social-post-footer-zone-min-height); }
+.social-post-card[data-writing-card="true"][data-style="social-post"][data-format="story"] .social-post-surface { grid-template-rows: var(--writing-social-header-region-height) minmax(0,1fr) var(--social-post-footer-zone-min-height); }
+.social-post-card[data-writing-card="true"][data-style="social-post"][data-format="story"][data-has-title="true"] .social-post-surface { grid-template-rows: var(--writing-social-header-region-height) var(--writing-social-title-height) minmax(0,1fr) var(--social-post-footer-zone-min-height); }
+.social-post-card[data-writing-card="true"][data-style="social-post"][data-format="story"] .social-post-identity { align-self: start; height: var(--social-post-header-zone-min-height); }
 .social-post-card[data-writing-card="true"][data-style="social-post"] .social-post-surface::after { content: none; }
 .social-post-card[data-writing-card="true"][data-style="social-post"] .writing-post-frame { position: absolute; inset: 0; border: .092593cqw solid rgba(255,255,255,.19); border-top-color: rgba(105,224,239,.5); pointer-events: none; }
 .social-post-card[data-writing-card="true"][data-style="social-post"] .writing-post-accent { position: absolute; top: 0; right: 0; width: 16cqw; height: 1.1cqw; background: #35d0e5; }

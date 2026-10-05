@@ -146,9 +146,12 @@ export function estimatedTitleHeight(title: string, format: WritingShareFormat, 
 
 export const writingSocialPostFontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
+/** Story text starts lower while identity/footer stay fixed; other formats retain their accepted geometry. */
+export const writingStoryBalance = { contentOffset: 160, highlightMaxOffset: 240, editorialArticleBodyHeight: 950, editorialTitlePreludeHeight: 42 } as const;
+
 /** Reading limits are separate from the protected physical content region. Square keeps its accepted density. */
 export const writingSocialPostReadabilityByFormat = {
-  story: { maxBodyHeight: 1050, blockGap: 38, highlightGap: 56, maxWords: 90, maxBlocks: 8, paragraphMaxLines: 6, highlightBodyMaxLines: 6, preferredHighlightBodyBlocks: 1 },
+  story: { maxBodyHeight: 1150, blockGap: 38, highlightGap: 56, maxWords: 100, maxBlocks: 8, paragraphMaxLines: 6, highlightBodyMaxLines: 6, preferredHighlightBodyBlocks: 1 },
   portrait: { maxBodyHeight: 800, blockGap: 30, highlightGap: 44, maxWords: 80, maxBlocks: 7, paragraphMaxLines: 7, highlightBodyMaxLines: 5, preferredHighlightBodyBlocks: 1 },
   square: null,
 } as const;
@@ -168,7 +171,7 @@ function socialPostLineCount(text: string, width: number, fontSize: number, loca
 }
 
 /** Social Post fills the space between fixed identity/footer zones. All values are export pixels. */
-export function writingSocialPostLayout(format: WritingShareFormat, slideIndex: number, locale: WritingLanguage, articleTitle = "", article = false) {
+export function writingSocialPostLayout(format: WritingShareFormat, slideIndex: number, locale: WritingLanguage, articleTitle = "", article = false, blocks?: readonly WritingShareBlock[]) {
   const layout = carouselLayoutByFormat[format];
   const gap = 24;
   // Canvas and surface each contribute one safe margin.
@@ -178,25 +181,41 @@ export function writingSocialPostLayout(format: WritingShareFormat, slideIndex: 
     ? socialPostLineCount(articleTitle, layout.bodyWidth, titleFontSize, locale, 950, false, -titleFontSize * 0.025) * titleFontSize * 1.04
     : 0;
   const identityTop = inset;
-  const titleTop = identityTop + layout.headerHeight + gap;
+  // Isolated Story highlights use some spare reading capacity above the text.
+  // This bounded inset is never larger than the unoccupied reading budget.
+  const highlightHeight = format === "story" && slideIndex > 0 && blocks?.some((block) => block.editorialType)
+    ? blocks.reduce((height, block, index) => height + estimatedBlockHeight(block.text, block.kind, format, "socialPost", locale, block)
+      + (index > 0 ? writingCarouselBlockSpacing(block, blocks[index - 1], format, "socialPost") : 0), 0)
+    : null;
+  const highlightOffset = highlightHeight === null ? 0 : Math.min(writingStoryBalance.highlightMaxOffset, Math.max(0, writingSocialPostReadabilityByFormat.story.maxBodyHeight - highlightHeight));
+  const contentOffset = format === "story" ? writingStoryBalance.contentOffset + highlightOffset : 0;
+  const titleTop = identityTop + layout.headerHeight + gap + contentOffset;
   const bodyTop = titleTop + (titleHeight ? titleHeight + gap : 0);
   const footerTop = layout.height - inset - layout.footerHeight;
   const bodyBottom = footerTop - gap;
   const contentHeight = bodyBottom - bodyTop;
   // Thought cards retain their source reference below the semantic body.
   const referenceHeight = !article && articleTitle ? 106 : 0;
-  return { gap, inset, identityTop, titleTop, titleHeight, bodyTop, bodyBottom, footerTop, contentHeight, referenceHeight, bodyHeight: contentHeight - referenceHeight, readability: writingSocialPostReadabilityByFormat[format] };
+  return { gap, inset, identityTop, titleTop, titleHeight, bodyTop, bodyBottom, footerTop, contentHeight, referenceHeight, bodyHeight: contentHeight - referenceHeight, contentOffset, readability: writingSocialPostReadabilityByFormat[format] };
 }
 
 export type WritingSocialPostLayout = ReturnType<typeof writingSocialPostLayout>;
 
-export function availableCarouselBodyHeight(format: WritingShareFormat, slideIndex: number, locale: WritingLanguage, articleTitle?: string, article = false, composition: WritingShareComposition = "editorial"): number {
-  if (composition === "socialPost") return writingSocialPostLayout(format, slideIndex, locale, articleTitle, article).bodyHeight;
+export function availableCarouselBodyHeight(format: WritingShareFormat, slideIndex: number, locale: WritingLanguage, articleTitle?: string, article = false, composition: WritingShareComposition = "editorial", blocks?: readonly WritingShareBlock[]): number {
+  if (composition === "socialPost") return writingSocialPostLayout(format, slideIndex, locale, articleTitle, article, blocks).bodyHeight;
   const layout = carouselLayoutByFormat[format];
   if (!article) return layout.bodyHeight;
-  const safeBodyHeight = layout.bodyHeight - layout.bodyBottomSafety;
-  if (slideIndex > 0) return safeBodyHeight;
-  return Math.max(safeBodyHeight * 0.38, safeBodyHeight - estimatedTitleHeight(articleTitle ?? "", format, locale) - layout.titleBodyGap);
+  const safeBodyHeight = format === "story" && composition === "editorial" ? writingStoryBalance.editorialArticleBodyHeight : layout.bodyHeight - layout.bodyBottomSafety;
+  const readingHeight = slideIndex > 0 ? safeBodyHeight : Math.max(safeBodyHeight * 0.38, safeBodyHeight - estimatedTitleHeight(articleTitle ?? "", format, locale) - layout.titleBodyGap);
+  if (format !== "story" || composition !== "editorial") return readingHeight;
+  // The larger Story reading budget must still clear the real title and footer.
+  // Measure the title without the legacy title-height cap or minimum body floor.
+  const titleFontSize = carouselTitleFontSize(articleTitle ?? "", locale);
+  const titleHeight = slideIndex === 0 && articleTitle ? socialPostLineCount(articleTitle, layout.bodyWidth, titleFontSize, locale, 950, false, -titleFontSize * 0.025) * titleFontSize * 1.04 : 0;
+  const bodyTop = layout.safeMargin + layout.headerHeight + layout.titleBodyGap + writingStoryBalance.contentOffset
+    + (slideIndex === 0 ? writingStoryBalance.editorialTitlePreludeHeight + titleHeight + layout.titleBodyGap : 0);
+  const physicalHeight = layout.height - layout.safeMargin - layout.footerHeight - layout.bodyBottomSafety - bodyTop;
+  return Math.min(readingHeight, physicalHeight);
 }
 
 export function estimatedBlockLineCount(text: string, kind: WritingShareBlockKind, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, block?: WritingShareBlock): number {

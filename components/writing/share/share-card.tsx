@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { availableCarouselBodyHeight, carouselExportLength, carouselLayoutByFormat, carouselListMarkerWidth, carouselTitleFontSize, carouselTypographyByComposition } from "@/lib/writing/carousel-layout";
+import { availableCarouselBodyHeight, carouselExportLength, carouselLayoutByFormat, carouselListMarkerWidth, carouselTitleFontSize, carouselTypographyByComposition, writingStoryBalance } from "@/lib/writing/carousel-layout";
 import { writingShareTextScale } from "@/lib/writing/share-segmentation";
 import type { WritingCarouselBlock, WritingShareFormat, WritingShareSource, WritingShareVariant } from "@/types/writing";
 
@@ -53,7 +53,7 @@ export function ShareCard({
     "--writing-carousel-body-width": carouselExportLength(layout.bodyWidth),
     "--writing-carousel-title-font-size": carouselExportLength(carouselTitleFontSize(source.articleTitle, source.language)),
     "--writing-carousel-header-height": carouselExportLength(layout.headerHeight),
-    "--writing-carousel-body-zone-height": carouselExportLength(availableCarouselBodyHeight(format, cardIndex, source.language, source.articleTitle, source.kind === "article")),
+    "--writing-carousel-body-zone-height": carouselExportLength(availableCarouselBodyHeight(format, cardIndex, source.language, source.articleTitle, source.kind === "article", variant)),
     "--writing-carousel-footer-height": carouselExportLength(layout.footerHeight),
     "--writing-carousel-title-body-gap": carouselExportLength(layout.titleBodyGap),
     "--writing-carousel-body-font-size": carouselExportLength(typography.bodyFontSize),
@@ -66,6 +66,9 @@ export function ShareCard({
     "--writing-carousel-heading-gap": carouselExportLength(typography.headingGap),
     "--writing-carousel-list-gap": carouselExportLength(typography.listGap),
     "--writing-carousel-quote-gap": carouselExportLength(typography.quoteGap),
+    ...(format === "story" && variant === "editorial" ? {
+      "--writing-carousel-content-start-gap": carouselExportLength(layout.titleBodyGap + writingStoryBalance.contentOffset),
+    } : {}),
   } as CSSProperties;
 
   return (

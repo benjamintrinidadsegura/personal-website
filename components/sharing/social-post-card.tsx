@@ -70,6 +70,9 @@ export function SocialPostCard({
     ...(writingLayout?.readability ? {
       "--writing-social-highlight-gap": carouselExportLength(writingLayout.readability.highlightGap),
     } : {}),
+    ...(writingLayout?.contentOffset ? {
+      "--writing-social-header-region-height": carouselExportLength(layout.headerHeight + writingLayout.contentOffset),
+    } : {}),
     "--writing-carousel-body-font-size": carouselExportLength(typography.bodyFontSize),
     "--writing-carousel-body-line-height": carouselExportLength(typography.bodyLineHeight),
     "--writing-carousel-body-weight": typography.bodyWeight,

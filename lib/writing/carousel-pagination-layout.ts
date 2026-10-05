@@ -103,8 +103,8 @@ function pageHeight(units: readonly Unit[], format: WritingShareFormat, composit
     + (index > 0 ? writingCarouselBlockSpacing(block, blocks[index - 1], format, composition) : 0), 0);
 }
 
-function availableHeight(format: WritingShareFormat, composition: WritingShareComposition, slideIndex: number, locale: WritingLanguage, options: CarouselPaginationOptions): number {
-  const physicalHeight = availableCarouselBodyHeight(format, slideIndex, locale, options.articleTitle, options.kind === "article", composition);
+function availableHeight(format: WritingShareFormat, composition: WritingShareComposition, slideIndex: number, locale: WritingLanguage, options: CarouselPaginationOptions, blocks?: readonly WritingShareBlock[]): number {
+  const physicalHeight = availableCarouselBodyHeight(format, slideIndex, locale, options.articleTitle, options.kind === "article", composition, blocks);
   const reading = composition === "socialPost" ? writingSocialPostReadabilityByFormat[format] : null;
   return reading ? Math.min(physicalHeight, reading.maxBodyHeight) : physicalHeight;
 }
@@ -128,12 +128,13 @@ function blocksFitReadability(blocks: readonly WritingShareBlock[], format: Writ
 }
 
 function pageFits(units: readonly Unit[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, slideIndex: number, options: CarouselPaginationOptions): boolean {
-  return pageHeight(units, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options)
+  return pageHeight(units, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options, internalBlocksFor(units))
     && blocksFitReadability(internalBlocksFor(units), format, composition, locale);
 }
 
 function textFitsEmptyPage(text: string, block: WritingShareBlock, format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, options: CarouselPaginationOptions): boolean {
-  return estimatedBlockHeight(text, block.kind, format, composition, locale, block) <= Math.min(availableHeight(format, composition, 0, locale, options), availableHeight(format, composition, 1, locale, options))
+  const candidate = [{ ...block, text }];
+  return estimatedBlockHeight(text, block.kind, format, composition, locale, block) <= Math.min(availableHeight(format, composition, 0, locale, options, candidate), availableHeight(format, composition, 1, locale, options, candidate))
     && blocksFitReadability([{ ...block, text }], format, composition, locale);
 }
 
@@ -300,7 +301,7 @@ export function estimatedCarouselBlocksHeight(blocks: readonly WritingCarouselBl
 }
 
 export function writingCarouselSegmentFits(blocks: readonly WritingCarouselBlock[], format: WritingShareFormat, composition: WritingShareComposition, locale: WritingLanguage, slideIndex: number, options: CarouselPaginationOptions): boolean {
-  return estimatedCarouselBlocksHeight(blocks, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options)
+  return estimatedCarouselBlocksHeight(blocks, format, composition, locale) <= availableHeight(format, composition, slideIndex, locale, options, blocks)
     && blocksFitReadability(blocks, format, composition, locale);
 }
 
