@@ -11,6 +11,7 @@ import {
 } from "@/lib/supabase/auth-cookies";
 import { defaultLocale, isLocale, localeHeaderName } from "@/lib/i18n/config";
 import { getRequestLocaleRouting, isLocaleAwarePublicPath } from "@/lib/i18n/routing";
+import { cloudflareAnalyticsHeader, isPublicAnalyticsPath, needsAnalyticsDocumentNavigation } from "@/lib/cloudflare-web-analytics";
 
 type CookieItem = { name: string; value: string; options: CookieOptions };
 type LocaleRouting = ReturnType<typeof getRequestLocaleRouting>;
@@ -19,12 +20,15 @@ const internalLocaleHeaderName = "x-bts-internal-rewrite-locale";
 function createResponse(request: NextRequest, routing: LocaleRouting, shouldRewrite: boolean) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(localeHeaderName, routing.locale);
+  const publicAnalyticsPath = isPublicAnalyticsPath(routing.internalPathname);
+  requestHeaders.set(cloudflareAnalyticsHeader, publicAnalyticsPath ? "1" : "0");
   if (shouldRewrite) requestHeaders.set(internalLocaleHeaderName, routing.locale);
   else requestHeaders.delete(internalLocaleHeaderName);
   const response = shouldRewrite
     ? NextResponse.rewrite(new URL(`${routing.internalPathname}${request.nextUrl.search}`, request.url), { request: { headers: requestHeaders } })
     : NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Language", routing.locale);
+  if (!publicAnalyticsPath) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 
@@ -51,6 +55,14 @@ export async function proxy(request: NextRequest) {
     const response = NextResponse.redirect(destination, 308);
     response.headers.set("Content-Language", defaultLocale);
     return response;
+  }
+
+  if (request.method === "GET" && request.headers.get("rsc") === "1" && needsAnalyticsDocumentNavigation(
+    securityPathname, request.headers.get("referer") || request.headers.get("next-url"), `${request.nextUrl.protocol}//${request.headers.get("host") || request.nextUrl.host}`,
+  )) {
+    // Next handles a non-Flight response as a full document navigation. This
+    // prevents an already loaded public beacon from observing private routes.
+    return new NextResponse(null, { headers: { "Content-Type": "text/html", "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" } });
   }
 
   const url = process.env.SUPABASE_URL;

@@ -17,6 +17,8 @@ const securityHeaders = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  // Preserve RSC headers so proxy.ts can enforce the public/private analytics boundary.
+  skipProxyUrlNormalize: true,
   experimental: {
     serverActions: {
       bodySizeLimit: "192kb",

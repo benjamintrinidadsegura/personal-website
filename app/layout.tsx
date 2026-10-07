@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
+import Script from "next/script";
 import { LocaleProvider } from "@/components/i18n/locale-context";
 import { DiscoveryProvider } from "@/components/discovery/discovery-context";
 import { Footer } from "@/components/layout/footer";
@@ -15,6 +17,7 @@ import { localeDetails, locales } from "@/lib/i18n/config";
 import { getGlobalDictionary } from "@/data/i18n/global";
 import { getSiteVerificationMetadata } from "@/lib/search-discovery";
 import { absoluteSiteUrl, isCanonicalIndexingEnvironment, requireSiteUrl } from "@/lib/site-url";
+import { cloudflareAnalyticsHeader, cloudflareBeaconData, cloudflareBeaconUrl, isCloudflareAnalyticsEnabled } from "@/lib/cloudflare-web-analytics";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -47,6 +50,10 @@ export const viewport: Viewport = { themeColor: "#04111b" };
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = await getLocale();
   const siteUrl = requireSiteUrl();
+  const requestHeaders = await headers();
+  const analyticsEnabled = requestHeaders.get(cloudflareAnalyticsHeader) === "1" && isCloudflareAnalyticsEnabled({
+    siteOrigin: siteUrl.origin, requestHost: requestHeaders.get("x-forwarded-host") || requestHeaders.get("host"), nodeEnv: process.env.NODE_ENV, vercelEnv: process.env.VERCEL_ENV,
+  });
   const [publishedWriting, accountState] = await Promise.all([
     getPublishedWriting(locale),
     getAccountState(),
@@ -88,6 +95,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <Footer />
           </CanonicalSiteUrlProvider>
         </LocaleProvider>
+        {analyticsEnabled ? <Script id="cloudflare-web-analytics" type="module" src={cloudflareBeaconUrl} data-cf-beacon={cloudflareBeaconData} strategy="afterInteractive" /> : null}
       </body>
     </html>
   );
