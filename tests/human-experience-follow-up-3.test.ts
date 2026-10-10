@@ -52,6 +52,10 @@ function draftSaveHarness() {
     generationRef: { current: 1 },
     savedGenerationRef: { current: 0 },
     savePromiseRef: { current: null as Promise<WritingActionState> | null },
+    publishingRef: { current: false },
+    editorErrorRef: { current: null as string | null },
+    editorStateRef: { current: { raw: [] } },
+    recoveryPausedRef: { current: false },
   };
   let finish!: (result: WritingActionState) => void;
   const pending = new Promise<WritingActionState>((resolve) => { finish = resolve; });
@@ -59,11 +63,14 @@ function draftSaveHarness() {
   const production = runInNewContext(compiled, {
     ...refs, FormData, parseWritingInput, writingSnapshotFingerprint, isWritingSnapshotDirty,
     article: { id: "fixture", status: "draft" }, editorError: null,
+    currentEditorIsValid: () => !refs.editorErrorRef.current,
+    cacheCurrentDraft: () => undefined, finishRecoverySave: () => undefined,
     saveWritingAction: (_state: WritingActionState, data: FormData) => { requests.push(data); return pending; },
     setSnapshot: (next: WritingSnapshotContent) => { state.editor = next; state.reconciliations += 1; },
     setPersistedFingerprint: (next: string) => { state.persisted = next; },
     setPhase: (next: string | ((current: string) => string)) => { state.phase = typeof next === "function" ? next(state.phase) : next; },
     setLastAction: () => undefined, setFeedback: () => undefined,
+    setServerUpdatedAt: () => undefined,
   }) as { runDraftSave: () => Promise<WritingActionState>; markChanged: (update: (current: WritingSnapshotContent) => WritingSnapshotContent) => void };
   return { ...refs, state, requests, finish, save: production.runDraftSave, edit: production.markChanged };
 }
@@ -172,14 +179,14 @@ test("FOLLOW-UP 3 clean same-document navigation does not count as leaving", () 
 test("FOLLOW-UP 3 Studio guards actual unsaved identity, acks only submitted revisions, and skips same-route events", () => {
   const form = source("../components/admin/writing-form.tsx");
   assert.match(form, /const hasUnsavedChanges = isDirty/u);
-  assert.match(form, /if \(!hasUnsavedChanges\) return/u);
-  assert.match(form, /const stillDirty = \(\) => isWritingSnapshotDirty\(currentFingerprintRef\.current, persistedFingerprintRef\.current\)/u);
+  assert.doesNotMatch(form, /if \(!hasUnsavedChanges\) return/u, "live raw-state guards must already be installed while the editor is clean");
+  assert.match(form, /const stillDirty = \(\) => !!editorErrorRef\.current \|\| isWritingSnapshotDirty\(currentFingerprintRef\.current, persistedFingerprintRef\.current\)/u);
   assert.match(form, /if \(confirmedNavigationRef\.current \|\| !stillDirty\(\)\) return/u);
   assert.match(form, /event\.preventDefault\(\);\s*event\.returnValue = ""/u);
   assert.match(form, /const savingFingerprint = writingSnapshotFingerprint\(savedSnapshot\)/u);
   assert.match(form, /persistedFingerprintRef\.current = savingFingerprint/u);
   assert.match(form, /isWritingSnapshotDirty\(currentFingerprintRef\.current, savingFingerprint\)/u);
-  assert.match(form, /const publishingFingerprint = writingSnapshotFingerprint\(publishingSnapshot\)/u);
+  assert.match(form, /const publishingFingerprint = writingSnapshotFingerprint\(publishedSnapshot\)/u);
   assert.match(form, /persistedFingerprintRef\.current = publishingFingerprint/u);
   assert.match(form, /if \(!localValidation\.success\) \{/u);
   assert.match(form, /writingNavigationLeavesDocument\(window\.location\.href, navigationEvent\.destination\.url\)/u);

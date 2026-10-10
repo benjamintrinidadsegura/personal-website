@@ -17,10 +17,15 @@ import {
 } from "@blocknote/react";
 import { useCallback, useEffect } from "react";
 
-import { blockNoteToWritingDocument, writingDocumentToBlockNote, writingEditorSchema } from "@/lib/writing/blocknote-adapter";
+import { canRestoreWritingEditorRaw, captureWritingEditorState, writingDocumentToBlockNote, writingEditorSchema, type WritingEditorState } from "@/lib/writing/blocknote-adapter";
 import type { WritingDocumentV1 } from "@/types/writing";
 
 const allowedSlashKeys = new Set(["paragraph", "heading_2", "heading_3", "bullet_list", "numbered_list", "quote", "divider"]);
+
+export type WritingEditorHandle = {
+  capture: () => WritingEditorState;
+  restore: (raw: unknown) => boolean;
+};
 
 function RestrictedFormattingToolbar(props: FormattingToolbarProps) {
   return (
@@ -34,12 +39,12 @@ function RestrictedFormattingToolbar(props: FormattingToolbarProps) {
 
 export function WritingEditor({
   initialDocument,
-  onChange,
-  onInvalid,
+  onStateChange,
+  onReady,
 }: {
   initialDocument: WritingDocumentV1;
-  onChange: (document: WritingDocumentV1) => void;
-  onInvalid: (message: string | null) => void;
+  onStateChange: (state: WritingEditorState) => void;
+  onReady: (handle: WritingEditorHandle | null) => void;
 }) {
   const editor = useCreateBlockNote({
     schema: writingEditorSchema,
@@ -48,7 +53,17 @@ export function WritingEditor({
 
   useEffect(() => {
     editor.domElement?.setAttribute("aria-label", "Article document");
-  }, [editor]);
+    onReady({
+      capture: () => captureWritingEditorState(editor.document),
+      restore: (raw) => {
+        if (!canRestoreWritingEditorRaw(raw)) return false;
+        // replaceBlocks is one undoable transaction, not a reinitialization.
+        editor.replaceBlocks(editor.document, raw);
+        return true;
+      },
+    });
+    return () => onReady(null);
+  }, [editor, onReady]);
 
   const getSlashItems = useCallback(async (query: string) => {
     const allowed = getDefaultReactSlashMenuItems(editor).filter((item) => allowedSlashKeys.has((item as DefaultReactSuggestionItem & { key?: string }).key ?? ""));
@@ -99,15 +114,7 @@ export function WritingEditor({
         tableHandles={false}
         emojiPicker={false}
         comments={false}
-        onChange={() => {
-          const result = blockNoteToWritingDocument(editor.document);
-          if (!result.success) {
-            onInvalid(result.message);
-            return;
-          }
-          onInvalid(null);
-          onChange(result.data);
-        }}
+        onChange={() => onStateChange(captureWritingEditorState(editor.document))}
       >
         <FormattingToolbarController formattingToolbar={RestrictedFormattingToolbar} />
         <SuggestionMenuController triggerCharacter="/" getItems={getSlashItems} />

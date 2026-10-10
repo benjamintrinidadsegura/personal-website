@@ -302,7 +302,8 @@ test("Studio guards every local-change phase across links, reload, Back, and For
   const form = readFileSync(new URL("../components/admin/writing-form.tsx", import.meta.url), "utf8");
   for (const phase of ["dirty", "waiting", "saving", "failed", "conflict"]) assert.equal(form.includes(`"${phase}"`), true, phase);
   assert.equal(form.includes('const hasUnsavedChanges = isDirty'), true);
-  assert.equal(form.includes("if (!hasUnsavedChanges) return"), true);
+  assert.equal(form.includes("if (!hasUnsavedChanges) return"), false, "guards are installed while clean and read live raw-state refs");
+  assert.equal(form.includes("const stillDirty = () => !!editorErrorRef.current"), true);
   assert.equal(form.includes('addEventListener("beforeunload"'), true);
   assert.equal(form.includes('addEventListener("navigate", guardNavigation)'), true);
   assert.equal(form.includes('addEventListener("popstate", guardHistory, true)'), true);
@@ -323,33 +324,16 @@ test("Studio synchronizes the latest editor snapshot before save or publish", ()
   assert.equal(form.includes("const publishingSnapshot = snapshotRef.current"), true);
 });
 
-test("Edit and Preview remount the editor from the current lossless local snapshot", () => {
+test("Edit and Preview keep the same editor mounted; real browser regressions verify raw content and undo", () => {
   const form = readFileSync(new URL("../components/admin/writing-form.tsx", import.meta.url), "utf8");
   assert.equal(form.includes("document: initialDocument"), true);
   assert.equal(form.includes("<WritingEditor initialDocument={snapshot.document}"), true);
   assert.equal(form.includes("<WritingEditor initialDocument={initialDocument}"), false);
   assert.equal(form.includes("<WritingDocument document={snapshot.document}"), true);
   assert.equal(form.includes("key={snapshot.document}"), false);
-
-  const structuredDocument: WritingDocumentV1 = { version: 1, blocks: [
-    { type: "heading", level: 2, content: [{ type: "text", text: "Current heading", styles: { italic: true } }] },
-    { type: "bulletListItem", content: [{ type: "text", text: "Current list item" }] },
-    { type: "quote", content: [{ type: "link", href: "https://example.com", content: [{ type: "text", text: "Current safe link" }] }] },
-    { type: "divider" },
-  ] };
-  const localSnapshot = {
-    title: "Current title",
-    deck: "Current deck",
-    excerpt: "Current excerpt",
-    contentType: "essay" as const,
-    topics: ["Building", "Life"],
-    document: structuredDocument,
-  };
-  const remount = (current: typeof localSnapshot) => current;
-  const afterRepeatedCycles = remount(remount(remount(localSnapshot)));
-  assert.deepEqual(afterRepeatedCycles, localSnapshot);
-  assert.deepEqual(afterRepeatedCycles.document, structuredDocument);
-  assert.deepEqual(afterRepeatedCycles.document.blocks.map((block) => block.type), ["heading", "bulletListItem", "quote", "divider"]);
+  assert.equal(form.includes('hidden={mode !== "edit"}'), true);
+  assert.equal(form.includes("onStateChange={onEditorStateChange}"), true);
+  assert.equal(form.includes("Preview unavailable for the current document"), true);
 });
 
 test("mode switching is local-only and publishing reads the latest snapshot ref", () => {

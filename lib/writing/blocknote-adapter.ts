@@ -9,7 +9,7 @@ import {
   type PartialBlock,
 } from "@blocknote/core";
 
-import { validateWritingDocument, type WritingDocumentValidationResult } from "@/lib/writing/document";
+import { isSafeWritingLink } from "@/lib/writing/document";
 import type { WritingDocumentBlock, WritingDocumentV1, WritingInlineContent, WritingText } from "@/types/writing";
 
 function editorialBlockDom(tagName: "p" | "blockquote", className: string) {
@@ -64,11 +64,13 @@ export const writingEditorSchema = BlockNoteSchema.create({
   },
 });
 
-type EditorBlock = PartialBlock<
+export type WritingEditorBlock = PartialBlock<
   typeof writingEditorSchema.blockSchema,
   typeof writingEditorSchema.inlineContentSchema,
   typeof writingEditorSchema.styleSchema
 >;
+
+export { blockNoteToWritingDocument, captureWritingEditorState, type WritingEditorState } from "@/lib/writing/editor-state";
 
 function toEditorText(text: WritingText) {
   return { type: "text" as const, text: text.text, styles: { bold: text.styles?.bold === true, italic: text.styles?.italic === true } };
@@ -80,7 +82,7 @@ function toEditorInline(content: WritingInlineContent[]) {
     : { type: "link" as const, href: item.href, content: item.content.map(toEditorText) });
 }
 
-function toEditorBlock(block: WritingDocumentBlock): EditorBlock {
+function toEditorBlock(block: WritingDocumentBlock): WritingEditorBlock {
   const children = block.children?.map(toEditorBlock);
   const identity = block.id ? { id: block.id } : {};
   if (block.type === "divider") return { ...identity, type: "divider", children };
@@ -88,7 +90,7 @@ function toEditorBlock(block: WritingDocumentBlock): EditorBlock {
   return { ...identity, type: block.type, content: toEditorInline(block.content), children };
 }
 
-export function writingDocumentToBlockNote(document: WritingDocumentV1): EditorBlock[] {
+export function writingDocumentToBlockNote(document: WritingDocumentV1): WritingEditorBlock[] {
   return document.blocks.map(toEditorBlock);
 }
 
@@ -96,58 +98,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function readEditorInline(value: unknown): unknown[] | null {
-  if (!Array.isArray(value)) return null;
-  return value.map((item) => {
-    if (!isRecord(item) || typeof item.type !== "string") return null;
-    if (item.type === "text") {
-      if (typeof item.text !== "string" || !isRecord(item.styles)) return null;
-      const styleKeys = Object.entries(item.styles).filter(([, enabled]) => enabled === true).map(([key]) => key);
-      if (styleKeys.some((key) => key !== "bold" && key !== "italic")) return null;
-      const styles = Object.fromEntries(styleKeys.map((key) => [key, true]));
-      return Object.keys(styles).length > 0 ? { type: "text", text: item.text, styles } : { type: "text", text: item.text };
-    }
-    if (item.type === "link" && typeof item.href === "string" && Array.isArray(item.content)) {
-      const content = readEditorInline(item.content);
-      if (!content || content.some((child) => !isRecord(child) || child.type !== "text")) return null;
-      return { type: "link", href: item.href, content };
-    }
-    return null;
+/** Reject incompatible backups before asking BlockNote to replace any nodes. */
+export function canRestoreWritingEditorRaw(raw: unknown): raw is WritingEditorBlock[] {
+  const inline = (value: unknown): boolean => Array.isArray(value) && value.every((item) => {
+    if (!isRecord(item)) return false;
+    if (item.type === "link") return Object.keys(item).every((key) => ["type", "href", "content"].includes(key)) && typeof item.href === "string" && isSafeWritingLink(item.href) && inline(item.content) && (item.content as unknown[]).every((child) => isRecord(child) && child.type === "text");
+    return item.type === "text" && typeof item.text === "string" && isRecord(item.styles)
+      && Object.keys(item).every((key) => ["type", "text", "styles"].includes(key))
+      && Object.entries(item.styles).every(([key, value]) => ["bold", "italic"].includes(key) && typeof value === "boolean");
   });
-}
-
-function hasUnsupportedProps(value: unknown, heading: boolean): boolean {
-  if (!isRecord(value)) return true;
-  return Object.entries(value).some(([key, setting]) => {
-    if (heading && key === "level") return setting !== 2 && setting !== 3;
-    if (key === "backgroundColor") return setting !== "default";
-    if (key === "textColor") return setting !== "default";
-    if (key === "textAlignment") return setting !== "left";
-    return true;
+  const blocks = (value: unknown, depth: number): boolean => depth <= 32 && Array.isArray(value) && value.every((block) => {
+    if (!isRecord(block) || typeof block.id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/u.test(block.id) || typeof block.type !== "string" || !isRecord(block.props)) return false;
+    if (!Object.keys(block).every((key) => ["id", "type", "props", "content", "children"].includes(key))) return false;
+    if (!Object.hasOwn(writingEditorSchema.blockSchema, block.type)) return false;
+    const config = writingEditorSchema.blockSchema[block.type as keyof typeof writingEditorSchema.blockSchema];
+    if (!config) return false;
+    const props = config.propSchema as Record<string, { default: unknown; type?: string; values?: readonly unknown[] }>;
+    // A full raw backup must not acquire missing properties through defaults.
+    // Undefined optional list starts are the exception: JSON omits those.
+    if (!Object.entries(props).every(([key, spec]) => spec.default === undefined || (Object.hasOwn(block.props as object, key) && (block.props as Record<string, unknown>)[key] !== undefined))) return false;
+    if (!Object.entries(block.props).every(([key, value]) => Object.hasOwn(props, key)
+      && ((value === undefined && props[key].default === undefined) || (typeof value === (props[key].type ?? typeof props[key].default) && (!props[key].values || props[key].values.includes(value)))))) return false;
+    return (config.content === "none" ? block.content === undefined || (Array.isArray(block.content) && block.content.length === 0) : inline(block.content)) && blocks(block.children, depth + 1);
   });
-}
-
-function readEditorBlocks(value: unknown): unknown[] | null {
-  if (!Array.isArray(value)) return null;
-  return value.map((item) => {
-    if (!isRecord(item) || typeof item.type !== "string" || !Array.isArray(item.children)) return null;
-    if (typeof item.id !== "string") return null;
-    const identity = { id: item.id };
-    const children = readEditorBlocks(item.children);
-    if (!children || children.some((child) => child === null)) return null;
-    const childValue = children.length > 0 ? { children } : {};
-    if (item.type === "divider") return { ...identity, type: "divider", ...childValue };
-    if (!["paragraph", "heading", "bulletListItem", "numberedListItem", "quote", "keyThought", "pullQuote", "shareable"].includes(item.type) || hasUnsupportedProps(item.props, item.type === "heading")) return null;
-    const content = readEditorInline(item.content);
-    if (!content || content.some((inline) => inline === null)) return null;
-    return item.type === "heading"
-      ? { ...identity, type: "heading", level: (item.props as Record<string, unknown>).level, content, ...childValue }
-      : { ...identity, type: item.type, content, ...childValue };
-  });
-}
-
-export function blockNoteToWritingDocument(value: unknown): WritingDocumentValidationResult {
-  const blocks = readEditorBlocks(value);
-  if (!blocks || blocks.some((block) => block === null)) return { success: false, message: "The editor contains unsupported content or formatting." };
-  return validateWritingDocument({ version: 1, blocks });
+  return Array.isArray(raw) && raw.length > 0 && blocks(raw, 0);
 }
