@@ -55,7 +55,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     siteOrigin: siteUrl.origin, requestHost: requestHeaders.get("x-forwarded-host") || requestHeaders.get("host"), nodeEnv: process.env.NODE_ENV, vercelEnv: process.env.VERCEL_ENV,
   });
   const [publishedWriting, accountState] = await Promise.all([
-    getPublishedWriting(locale),
+    getPublishedWriting(locale, { consumer: "discovery_index" }),
     getAccountState(),
   ]);
   const hasPublishedWriting = publishedWriting.length > 0;

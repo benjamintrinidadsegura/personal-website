@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function WritingPage() {
   const locale = await getLocale();
-  const articles = await getPublishedWriting(locale);
+  const articles = await getPublishedWriting(locale, { consumer: "writing_index" });
   const copy = getWritingDictionary(locale).page;
   const shareCopy = getWritingShareDictionary(locale);
   const globalCopy = getGlobalDictionary(locale);

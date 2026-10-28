@@ -9,13 +9,14 @@ export class SupabaseConfigurationError extends Error {
   }
 }
 
-export function getSupabaseServerClient() {
+export function getSupabaseServerClient(options?: { fetch?: typeof globalThis.fetch }) {
   const url = process.env.SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
 
   if (!url || !secretKey) throw new SupabaseConfigurationError();
 
   return createClient(url, secretKey, {
+    ...(options?.fetch ? { global: { fetch: options.fetch } } : {}),
     auth: {
       autoRefreshToken: false,
       detectSessionInUrl: false,

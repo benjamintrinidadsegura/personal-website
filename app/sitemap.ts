@@ -5,7 +5,7 @@ import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
 import { lifeAlignment } from "@/data/life-alignment";
 import { availableLifeAlignmentModules } from "@/data/life-alignment-modules";
 import { projects } from "@/data/projects";
-import { getPublishedWriting } from "@/lib/writing/queries";
+import { getPublishedWritingResult } from "@/lib/writing/queries";
 import type { PublicWritingSummary } from "@/types/writing";
 import { getLocalizedPathname } from "@/lib/i18n/routing";
 import { defaultLocale, locales } from "@/lib/i18n/config";
@@ -48,5 +48,21 @@ export function createSitemap(publishedWriting: PublicWritingSummary[]): Metadat
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  return createSitemap(await getPublishedWriting());
+  const { classifyWritingReadFailure, logWritingDiagnostic, newWritingCorrelationId } = await import("@/lib/writing/read-diagnostics");
+  const correlationId = newWritingCorrelationId();
+  const started = performance.now();
+  try {
+    const result = await getPublishedWritingResult(undefined, { consumer: "sitemap", correlationId });
+    // Preserve the existing output policy: unavailable emits static routes only.
+    // Throwing here could retain older publication output through ISR error fallback.
+    const entries = createSitemap(result.data);
+    logWritingDiagnostic({ operation: "sitemap_generation", state: result.status === "unavailable" || entries.length === 0 ? "unavailable" : "success",
+      correlationId, durationMs: performance.now() - started, acceptedCount: result.data.length,
+      emittedUrlCount: entries.length, failure: entries.length === 0 ? { errorClass: "empty_sitemap" } : undefined });
+    return entries;
+  } catch (error) {
+    logWritingDiagnostic({ operation: "sitemap_generation", state: "unavailable", correlationId,
+      durationMs: performance.now() - started, failure: classifyWritingReadFailure(error) });
+    throw error;
+  }
 }

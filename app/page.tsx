@@ -16,7 +16,7 @@ export const revalidate = 300;
 
 export default async function Home() {
   const locale = await getLocale();
-  const publishedWritingResult = await getPublishedWritingResult(locale);
+  const publishedWritingResult = await getPublishedWritingResult(locale, { consumer: "home" });
   const publishedWriting = publishedWritingResult.data;
   return (
     <ContextCanvas>
