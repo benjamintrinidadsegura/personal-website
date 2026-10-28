@@ -110,3 +110,36 @@ test("missing production canonical origin still fails closed without generated U
   assert.equal(fixture.records[0].error_class, "empty_sitemap");
   assert.equal(fixture.records[0].emitted_url_count, 0);
 });
+
+test("the 17-article language distribution preserves 387 URLs and removes withdrawn or stale translations", async () => {
+  const rows = Array.from({ length: 17 }, (_, index) => ({
+    ...row, id: `published-${index}`, slug: `published-${index}`,
+    translations: config.locales.filter(locale => locale !== "de").slice(0, index < 14 ? 6 : index === 14 ? 3 : 5).map(locale => ({
+      locale, title: `An authored thought ${locale}`, deck: row.deck, excerpt: row.excerpt,
+      body: row.body, body_json: row.body_json, status: "translated", source_revision: 3,
+    })),
+  }));
+  const summaries = rows.map(value => mapPublicWritingSummary(value, "de")).filter(value => value !== null);
+  assert.equal(summaries.length, 17);
+  let current: PublishedWritingReadResult = { status: "data", data: summaries };
+  const fixture = sitemapHarness(async () => current);
+  const entries = await fixture.sitemap.default();
+  assert.equal(entries.length, 387);
+  assert.equal(entries.filter(({ url }) => /\/writing\/published-\d+$/u.test(url)).length, 114);
+  assert.equal(new Set(entries.map(({ url }) => url)).size, entries.length);
+  assert.ok(entries.every(({ url }) => url.startsWith("https://btshq.online/")));
+
+  assert.equal(mapPublicWritingSummary({ ...rows[0], status: "draft" }, "de"), null);
+  current = { status: "data", data: summaries.slice(1) };
+  assert.equal((await fixture.sitemap.default()).some(({ url }) => /\/writing\/published-0$/u.test(url)), false);
+
+  const revised = mapPublicWritingSummary({ ...rows[1], source_revision: 4 }, "de");
+  assert.ok(revised);
+  assert.deepEqual(revised.availableLanguages, ["de"]);
+  current = { status: "data", data: [revised] };
+  const remaining = (await fixture.sitemap.default()).filter(({ url }) => /\/writing\/published-1$/u.test(url));
+  assert.equal(remaining.length, 1);
+  assert.equal(remaining[0].url, "https://btshq.online/writing/published-1");
+  current = { status: "unavailable", data: [] };
+  assert.equal((await fixture.sitemap.default()).some(({ url }) => /\/writing\/published-\d+$/u.test(url)), false);
+});

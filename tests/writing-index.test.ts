@@ -16,6 +16,7 @@ import { localeDetails, locales, type Locale } from "../lib/i18n/config";
 import { createLocalizedMetadata } from "../lib/i18n/metadata";
 import { localizeHref } from "../lib/i18n/routing";
 import type { PublicWritingSummary } from "../types/writing";
+import type { PublishedWritingReadResult } from "../lib/writing/queries";
 
 const labels = {
   de: ["Neuester Text", "Weitere Texte"],
@@ -37,7 +38,7 @@ const compiledPage = ts.transpileModule(readFileSync(new URL("../app/writing/pag
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
 }).outputText;
 
-function loadIndex(locale: Locale, published: PublicWritingSummary[]) {
+function loadIndex(locale: Locale, result: PublishedWritingReadResult) {
   // Render the current production page with fixture data; no server, database,
   // newsletter or request-header integration is required for these UI checks.
   const exports = {};
@@ -52,7 +53,12 @@ function loadIndex(locale: Locale, published: PublicWritingSummary[]) {
     "@/lib/i18n/metadata": { createLocalizedMetadata },
     "@/lib/i18n/routing": { localizeHref },
     "@/lib/i18n/server": { getLocale: async () => locale },
-    "@/lib/writing/queries": { getPublishedWriting: async (requested: Locale) => { assert.equal(requested, locale); return published; } },
+    "@/lib/writing/queries": {
+      getPublishedWritingResult: async (requested: Locale) => { assert.equal(requested, locale); return result; },
+      // Keep the legacy reader executable so this test catches false-empty
+      // presentation if the page accidentally returns to the array-only API.
+      getPublishedWriting: async () => result.data,
+    },
     "@/lib/i18n/config": { localeDetails },
   };
   runInNewContext(compiledPage, { exports, require: (name: string) => {
@@ -79,13 +85,14 @@ test("Writing index public query selects published articles newest-first", () =>
 
 test("Writing index renders the newest article once in the hero and preserves the remaining order and localized URLs", async () => {
   for (const locale of locales) {
-    const html = renderToStaticMarkup(await loadIndex(locale, articles).default());
+    const html = renderToStaticMarkup(await loadIndex(locale, { status: "data", data: articles }).default());
     const copy = writingCopy.getWritingDictionary(locale).page;
     assert.ok(html.includes(`>${copy.featured}</p>`), locale);
     assert.ok(html.includes(`>${copy.latest}</h2>`), locale);
     const links = [...html.matchAll(/<a href="([^"]+)"[^>]*class="writing-index-(?:featured|row)\b/gu)].map((match) => match[1]);
     assert.deepEqual(links, articles.map((article) => localizeHref(`/writing/${article.slug}`, locale)), locale);
     const remaining = html.slice(html.indexOf("<ol"));
+    assert.doesNotMatch(html, /id="empty-writing-title"|data-writing-index-unavailable/u);
     assert.equal(remaining.includes("/writing/newest"), false, locale);
     assert.ok(remaining.indexOf("/writing/previous") < remaining.indexOf("/writing/oldest"), locale);
   }
@@ -93,7 +100,7 @@ test("Writing index renders the newest article once in the hero and preserves th
 
 test("Writing index with one article displays only the newest hero", async () => {
   for (const locale of locales) {
-    const html = renderToStaticMarkup(await loadIndex(locale, articles.slice(0, 1)).default());
+    const html = renderToStaticMarkup(await loadIndex(locale, { status: "data", data: articles.slice(0, 1) }).default());
     assert.match(html, /id="featured-writing-title"/u);
     assert.doesNotMatch(html, /id="latest-writing-title"|data-writing-index-mosaic/u);
     assert.equal([...html.matchAll(/href="[^"]*\/writing\/newest"/gu)].length, 1, locale);
@@ -102,18 +109,37 @@ test("Writing index with one article displays only the newest hero", async () =>
 
 test("Writing index with no published articles retains its localized empty state", async () => {
   for (const locale of locales) {
-    const html = renderToStaticMarkup(await loadIndex(locale, []).default());
+    const html = renderToStaticMarkup(await loadIndex(locale, { status: "data", data: [] }).default());
     assert.ok(html.includes(writingCopy.getWritingDictionary(locale).page.firstTitle), locale);
     assert.match(html, /id="empty-writing-title"/u);
-    assert.doesNotMatch(html, /id="featured-writing-title"|id="latest-writing-title"/u);
+    assert.doesNotMatch(html, /id="featured-writing-title"|id="latest-writing-title"|data-writing-index-unavailable/u);
+  }
+});
+
+test("Writing index read failures show localized recovery instead of claiming no articles exist", async () => {
+  for (const locale of locales) {
+    const html = renderToStaticMarkup(await loadIndex(locale, { status: "unavailable", data: [] }).default());
+    const copy = writingCopy.getWritingDictionary(locale).page;
+    assert.ok(html.includes(copy.unavailableTitle), locale);
+    assert.ok(html.includes(copy.unavailableBody), locale);
+    assert.match(html, /<section role="status" aria-labelledby="unavailable-writing-title" data-writing-index-unavailable/u);
+    assert.match(html, /<h2 id="unavailable-writing-title"/u);
+    assert.doesNotMatch(html, /id="empty-writing-title"|id="featured-writing-title"|id="latest-writing-title"|data-writing-index-mosaic|class="writing-index-(?:featured|row)\b/u);
+    assert.ok(!html.includes(copy.firstTitle), locale);
+    assert.ok(!html.includes(copy.firstBody), locale);
+    const empty = renderToStaticMarkup(await loadIndex(locale, { status: "data", data: [] }).default());
+    assert.notEqual(html, empty, locale);
+    assert.equal(html.match(/<header[\s\S]*?<\/header>/u)?.[0], empty.match(/<header[\s\S]*?<\/header>/u)?.[0], "recovery must preserve the editorial header");
   }
 });
 
 test("Writing index metadata and canonical URLs remain localized", async () => {
   for (const locale of locales) {
-    const metadata = await loadIndex(locale, articles).generateMetadata();
-    assert.equal(metadata.title, "Writing | btshq.online");
-    assert.equal(metadata.description, writingCopy.getWritingDictionary(locale).page.description);
-    assert.equal(metadata.alternates?.canonical, localizeHref("/writing", locale));
+    for (const result of [{ status: "data", data: articles }, { status: "data", data: [] }, { status: "unavailable", data: [] }] satisfies PublishedWritingReadResult[]) {
+      const metadata = await loadIndex(locale, result).generateMetadata();
+      assert.equal(metadata.title, "Writing | btshq.online");
+      assert.equal(metadata.description, writingCopy.getWritingDictionary(locale).page.description);
+      assert.equal(metadata.alternates?.canonical, localizeHref("/writing", locale));
+    }
   }
 });

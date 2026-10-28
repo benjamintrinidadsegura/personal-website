@@ -19,9 +19,9 @@ const row = {
 };
 
 type Response = { data: unknown; error: unknown; status?: number };
-function publicQueries(response: Response | Error = { data: [], error: null }, configured = true, hang = false, client?: object, cacheResults = false) {
+function publicQueries(response: Response | Error = { data: [], error: null }, configured = true, hang = false, client?: object, cacheResults = false, fetchImpl?: typeof globalThis.fetch, memoizeRequest = false) {
   const calls: Array<[string, ...unknown[]]> = [];
-  const { diagnostics, records } = writingDiagnosticsHarness();
+  const { diagnostics, records } = writingDiagnosticsHarness({ fetch: fetchImpl });
   const cacheArguments: unknown[][] = [];
   const cachePolicies: unknown[] = [];
   let signal: AbortSignal | undefined;
@@ -39,6 +39,15 @@ function publicQueries(response: Response | Error = { data: [], error: null }, c
     },
   };
   const queries = loadSource<typeof Queries>("lib/writing/queries.ts", {
+    "react": { cache: (callback: (...args: unknown[]) => unknown) => {
+      const request = new Map<string, unknown>();
+      return (...args: unknown[]) => {
+        if (!memoizeRequest) return callback(...args);
+        const key = JSON.stringify(args);
+        if (!request.has(key)) request.set(key, callback(...args));
+        return request.get(key);
+      };
+    } },
     "next/cache": { unstable_cache: (callback: (...args: unknown[]) => unknown, keys: string[], options: object) => {
       cachePolicies.push({ keys, options });
       const values = new Map<string, unknown>();
@@ -54,10 +63,77 @@ function publicQueries(response: Response | Error = { data: [], error: null }, c
     "@/lib/public-content-hygiene": hygiene,
     "@/lib/writing/read-deadline": { withPublicWritingReadDeadline: <T, F>(read: (signal: AbortSignal) => Promise<T>, fallback: F, _timeout?: number, onFailure?: Parameters<typeof withPublicWritingReadDeadline>[3]) => withPublicWritingReadDeadline(read, fallback, 10, onFailure) },
     "@/lib/writing/read-diagnostics": diagnostics,
-    "@/lib/supabase/server": { getSupabaseServerClient: () => client ?? ({ from: (table: string) => { calls.push(["from", table]); return builder; } }) },
+    "@/lib/supabase/server": { getSupabaseServerClient: (options?: { fetch?: typeof globalThis.fetch }) => client ?? (fetchImpl
+      ? createClient("https://fixture.invalid", "fixture-only", { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }, global: { fetch: options?.fetch } })
+      : { from: (table: string) => { calls.push(["from", table]); return builder; } }) },
   }, { process: { env: configured ? { SUPABASE_URL: "https://fixture.invalid", SUPABASE_SECRET_KEY: "fixture-only" } : {} } });
   return { queries, calls, records, cacheArguments, cachePolicies, signal: () => signal };
 }
+
+test("one render shares a pending collection read across consumers without sharing consumer diagnostics", async () => {
+  const fixture = publicQueries({ data: null, error: { code: "PGRST303" }, status: 401 }, true, false, undefined, false, undefined, true);
+  const results = await Promise.all([
+    fixture.queries.getPublishedWritingResult("de", { consumer: "home" }),
+    fixture.queries.getPublishedWritingResult("de", { consumer: "writing_index" }),
+  ]);
+  assert.deepEqual(results, [{ status: "unavailable", data: [] }, { status: "unavailable", data: [] }]);
+  assert.equal(fixture.calls.filter(([name]) => name === "from").length, 1);
+  const deliveries = fixture.records.filter(({ operation }) => operation === "collection_result");
+  assert.deepEqual(deliveries.map(({ consumer }) => consumer), ["home", "writing_index"]);
+  assert.equal(deliveries[0].origin_read_id, deliveries[1].origin_read_id);
+  assert.notEqual(deliveries[0].correlation_id, deliveries[1].correlation_id);
+  await fixture.queries.getPublishedWritingResult("en");
+  assert.equal(fixture.calls.filter(([name]) => name === "from").length, 2, "locales have separate request identities");
+  await Promise.all([
+    fixture.queries.getPublishedWritingBySlug("published-one", "de"),
+    fixture.queries.getPublishedWritingBySlug("published-one", "de"),
+  ]);
+  assert.equal(fixture.calls.filter(([name]) => name === "from").length, 3, "article metadata and page share a read");
+  const nextRequest = publicQueries({ data: [], error: null }, true, false, undefined, false, undefined, true);
+  assert.deepEqual(await nextRequest.queries.getPublishedWritingResult("de"), { status: "data", data: [] });
+  assert.equal(nextRequest.calls.filter(([name]) => name === "from").length, 1, "request memoization does not cross render boundaries");
+});
+
+test("HTTP 200 headers do not complete a collection read whose body stalls; deadline cancels without retries", async () => {
+  let attempts = 0;
+  let aborted = false;
+  const fetch: typeof globalThis.fetch = async (_input, init) => {
+    attempts++;
+    const body = new ReadableStream<Uint8Array>({ start(controller) {
+      init?.signal?.addEventListener("abort", () => {
+        aborted = true;
+        controller.error(new DOMException("fixture body cancelled", "AbortError"));
+      }, { once: true });
+    } });
+    return new globalThis.Response(body, { status: 200, headers: { "content-type": "application/json", "sb-request-id": "01a1848c-1f79-7cd9-a9b0-78ba65215aa0" } });
+  };
+  const fixture = publicQueries(undefined, true, false, undefined, false, fetch);
+  assert.deepEqual(await fixture.queries.getPublishedWritingResult("tr"), { status: "unavailable", data: [] });
+  assert.equal(aborted, true);
+  assert.equal(attempts, 1);
+  assert.equal(fixture.records[0].http_status, 200);
+  assert.equal(fixture.records[0].state, "timeout");
+  assert.equal(fixture.records[0].error_class, "deadline");
+  assert.equal(fixture.records[0].received_count, undefined, "validation was not reached");
+  const settledRecords = JSON.stringify(fixture.records);
+  await new Promise(resolve => setTimeout(resolve, 5));
+  assert.equal(JSON.stringify(fixture.records), settledRecords, "late SDK rejection cannot rewrite the result or diagnostics");
+});
+
+test("a fully received HTTP 200 body must still pass document/publication validation", async () => {
+  let attempts = 0;
+  const fetch: typeof globalThis.fetch = async () => {
+    attempts++;
+    return new globalThis.Response(JSON.stringify([row, { ...row, status: "draft" }, { ...row, body_json: { version: 1, blocks: [{ type: "html" }] } }]), { headers: { "content-type": "application/json" } });
+  };
+  const fixture = publicQueries(undefined, true, false, undefined, false, fetch);
+  const result = await fixture.queries.getPublishedWritingResult("de");
+  assert.equal(result.status, "data");
+  assert.deepEqual(result.data.map(({ id }) => id), [row.id]);
+  assert.equal(attempts, 1);
+  assert.equal(fixture.records[0].received_count, 3);
+  assert.equal(fixture.records[0].accepted_count, 1);
+});
 
 test("public Writing requests publication gates and newest-first ordering, then removes invalid and synthetic records", async () => {
   const { queries, calls } = publicQueries({ data: [

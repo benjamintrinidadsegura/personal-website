@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 
 import { isPublicWritingReady } from "@/lib/public-content-hygiene";
 import { mapPublicWritingArticle, mapPublicWritingSummary } from "@/lib/writing/domain";
@@ -24,7 +25,9 @@ type CachedPublishedWritingRead = {
 // Preserve the deployed projection during this diagnostic release.
 const PUBLIC_WRITING_SELECT = "id, slug, title, deck, excerpt, body, body_json, content_type, topics, status, published_at, source_locale, source_revision, translations:writing_article_translations(locale, title, deck, excerpt, body, body_json, status, source_revision, generated_at)";
 
-const queryPublishedWriting = unstable_cache(async (locale: WritingLanguage): Promise<CachedPublishedWritingRead> => {
+// Layout and page share one pending read per render. Consumer diagnostics stay
+// outside this memoized boundary; the persistent cache policy is unchanged.
+const queryPublishedWriting = cache(unstable_cache(async (locale: WritingLanguage): Promise<CachedPublishedWritingRead> => {
   const { classifyWritingReadFailure, observeWritingRead } = await import("@/lib/writing/read-diagnostics");
   const observation = observeWritingRead();
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
@@ -71,9 +74,9 @@ const queryPublishedWriting = unstable_cache(async (locale: WritingLanguage): Pr
   const state = failure?.errorClass === "deadline" ? "timeout" : result.status === "data" ? "success" : "unavailable";
   observation.finish(state, locale, failure, { receivedCount, acceptedCount }, httpStatus);
   return { result, diagnostic: { readId: observation.readId, state } };
-}, ["published-writing"], { revalidate: CACHE_SECONDS, tags: ["published-writing"] });
+}, ["published-writing"], { revalidate: CACHE_SECONDS, tags: ["published-writing"] }));
 
-const queryPublishedWritingBySlug = unstable_cache(async (slug: string, locale: WritingLanguage): Promise<PublicWritingArticle | null> => {
+const queryPublishedWritingBySlug = cache(unstable_cache(async (slug: string, locale: WritingLanguage): Promise<PublicWritingArticle | null> => {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) return null;
   return withPublicWritingReadDeadline(async (signal) => {
     const { getSupabaseServerClient } = await import("@/lib/supabase/server");
@@ -89,7 +92,7 @@ const queryPublishedWritingBySlug = unstable_cache(async (slug: string, locale: 
     const article = mapPublicWritingArticle(data as UnknownRow, locale);
     return article && isPublicWritingReady(article) ? article : null;
   }, null);
-}, ["published-writing-by-slug"], { revalidate: CACHE_SECONDS, tags: ["published-writing"] });
+}, ["published-writing-by-slug"], { revalidate: CACHE_SECONDS, tags: ["published-writing"] }));
 
 export async function getPublishedWriting(locale: WritingLanguage = "de", context?: WritingReadContext): Promise<PublicWritingSummary[]> {
   return (await getPublishedWritingResult(locale, context)).data;

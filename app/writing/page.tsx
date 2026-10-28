@@ -9,7 +9,7 @@ import { getGlobalDictionary } from "@/data/i18n/global";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
 import { localizeHref } from "@/lib/i18n/routing";
 import { getLocale } from "@/lib/i18n/server";
-import { getPublishedWriting } from "@/lib/writing/queries";
+import { getPublishedWritingResult } from "@/lib/writing/queries";
 import { localeDetails } from "@/lib/i18n/config";
 import type { WritingLanguage } from "@/types/writing";
 
@@ -21,7 +21,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function WritingPage() {
   const locale = await getLocale();
-  const articles = await getPublishedWriting(locale, { consumer: "writing_index" });
+  const result = await getPublishedWritingResult(locale, { consumer: "writing_index" });
+  const articles = result.data;
   const copy = getWritingDictionary(locale).page;
   const shareCopy = getWritingShareDictionary(locale);
   const globalCopy = getGlobalDictionary(locale);
@@ -39,7 +40,12 @@ export default async function WritingPage() {
           <div><p className="text-xs font-black uppercase tracking-[0.3em] text-[#35d0e5]">{copy.eyebrow}</p><h1 className="mt-7 whitespace-pre-line text-[clamp(3.7rem,11vw,9rem)] font-black leading-[0.84] tracking-[-0.06em] text-white">{copy.title}</h1></div>
           <p className="border-l border-[#ff9a3d] pl-7 text-xl font-bold leading-9 text-slate-200">{copy.introduction}</p>
         </header>
-        {featured ? (
+        {result.status === "unavailable" ? (
+          <section role="status" aria-labelledby="unavailable-writing-title" data-writing-index-unavailable className="border-b border-white/15 py-20">
+            <h2 id="unavailable-writing-title" className="text-3xl font-black text-white">{copy.unavailableTitle}</h2>
+            <p className="mt-4 max-w-2xl leading-7 text-slate-300">{copy.unavailableBody}</p>
+          </section>
+        ) : featured ? (
           <section aria-labelledby="featured-writing-title" className="border-b border-white/15 py-20 sm:py-28">
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">{copy.featured}</p>
             <Link href={localizeHref(`/writing/${featured.slug}`, locale)} className="writing-index-featured group mt-8 grid gap-8 border border-white/10 bg-white/[0.02] p-7 transition hover:border-[#35d0e5]/50 sm:p-10 lg:grid-cols-[1fr_0.35fr]">
