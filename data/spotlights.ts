@@ -340,16 +340,3 @@ export const publishedSpotlights = filterPublishedSpotlights(spotlights);
 export function getPublishedSpotlight(slug: string) {
   return publishedSpotlights.find((entry) => entry.slug === slug);
 }
-
-export function getRelatedSpotlights(spotlight: SpotlightPerson, limit = 3) {
-  return publishedSpotlights
-    .filter(({ id }) => id !== spotlight.id)
-    .map((candidate) => ({
-      candidate,
-      score: candidate.expertise.filter((topic) => spotlight.expertise.includes(topic)).length +
-        Number(candidate.format === spotlight.format),
-    }))
-    .sort((left, right) => right.score - left.score || left.candidate.fullName.localeCompare(right.candidate.fullName, "de"))
-    .slice(0, limit)
-    .map(({ candidate }) => candidate);
-}

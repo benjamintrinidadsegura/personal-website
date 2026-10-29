@@ -112,4 +112,25 @@ const ru: PrivacyReleaseCopy = {
   },
 };
 
-export const privacyReleaseCopy = { de, en, es, tr, pl, el, ru } as const satisfies Record<Locale, PrivacyReleaseCopy>;
+export const homeViewPreferencePrivacy: Record<Locale, string> = {
+  de: "Nur eine ausdrücklich gewählte Discover-/Explore-Ansicht wird unter btshq:home-view:v1 im lokalen Speicher dieses Browsers gemerkt. Gespeichert wird nur discover oder explore, ohne Kontoabgleich oder Übermittlung an Analytics. Ankerlinks ändern diese Präferenz nicht; das Löschen der Browserdaten entfernt sie.",
+  en: "Only an explicitly selected Discover/Explore view is remembered under btshq:home-view:v1 in this browser's local storage. It stores only discover or explore, without account sync or transmission to analytics. Anchor links do not change this preference; clearing browser data removes it.",
+  es: "Solo se recuerda una vista Discover/Explore elegida expresamente, bajo btshq:home-view:v1 en el almacenamiento local de este navegador. Guarda únicamente discover o explore, sin sincronizar cuentas ni enviar datos a analítica. Los enlaces de sección no cambian la preferencia; borrar los datos del navegador la elimina.",
+  tr: "Yalnızca açıkça seçilen Discover/Explore görünümü bu tarayıcının yerel depolamasında btshq:home-view:v1 anahtarıyla hatırlanır. Sadece discover veya explore saklanır; hesapla eşitlenmez ve analitiğe gönderilmez. Bölüm bağlantıları bu tercihi değiştirmez; tarayıcı verileri silindiğinde tercih de silinir.",
+  pl: "Tylko wyraźnie wybrany widok Discover/Explore jest zapamiętywany lokalnie w tej przeglądarce pod kluczem btshq:home-view:v1. Zapisywane jest wyłącznie discover lub explore, bez synchronizacji z kontem i wysyłania do analityki. Linki do sekcji nie zmieniają preferencji; usunięcie danych przeglądarki ją usuwa.",
+  el: "Μόνο η ρητή επιλογή προβολής Discover/Explore αποθηκεύεται τοπικά σε αυτό το πρόγραμμα περιήγησης με κλειδί btshq:home-view:v1. Αποθηκεύεται μόνο discover ή explore, χωρίς συγχρονισμό λογαριασμού ή αποστολή σε analytics. Οι σύνδεσμοι ενοτήτων δεν αλλάζουν την προτίμηση· η διαγραφή δεδομένων περιήγησης την αφαιρεί.",
+  ru: "Только явно выбранный вид Discover/Explore сохраняется локально в этом браузере под ключом btshq:home-view:v1. Хранится лишь discover или explore, без синхронизации с аккаунтом и передачи в аналитику. Ссылки на разделы не меняют предпочтение; очистка данных браузера удаляет его.",
+};
+
+function withHomeViewPreference(copy: PrivacyReleaseCopy, locale: Locale): PrivacyReleaseCopy {
+  return {
+    ...copy,
+    sections: { ...copy.sections, storage: { ...copy.sections.storage, body: [...copy.sections.storage.body, homeViewPreferencePrivacy[locale]] } },
+  };
+}
+
+export const privacyReleaseCopy = {
+  de: withHomeViewPreference(de, "de"), en: withHomeViewPreference(en, "en"),
+  es: withHomeViewPreference(es, "es"), tr: withHomeViewPreference(tr, "tr"),
+  pl: withHomeViewPreference(pl, "pl"), el: withHomeViewPreference(el, "el"), ru: withHomeViewPreference(ru, "ru"),
+} satisfies Record<Locale, PrivacyReleaseCopy>;

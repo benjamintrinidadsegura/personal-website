@@ -37,7 +37,7 @@ test("the root server layout injects one validated origin for every route", () =
   assert.match(layout, /const siteUrl = requireSiteUrl\(\)/u);
   assert.match(layout, /<CanonicalSiteUrlProvider canonicalSiteUrl=\{siteUrl\.origin\}>/u);
   assert.match(layout, /<main id="main-content">\{children\}<\/main>/u);
-  assert.match(home, /<Hero \/>/u);
+  assert.match(home, /<Hero anchorId="explore-home" \/>/u);
   assert.doesNotMatch(home, /SITE_URL|process\.env|requireSiteUrl|getSiteUrl/u);
 });
 

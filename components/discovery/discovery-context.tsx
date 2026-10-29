@@ -7,6 +7,7 @@ import { useLocale } from "@/components/i18n/locale-context";
 import { discoveryIndex } from "@/data/discovery-index";
 import { localizeDiscoveryItems } from "@/data/i18n/discovery";
 import { createAdaptiveDiscoveryView, discoverItems, groupDiscoveryItems } from "@/lib/discovery";
+import { revealHomeAnchor } from "@/lib/home-view";
 import type { AdaptiveDiscoveryView, DiscoveryGroup, DiscoveryItem, DiscoveryMatch } from "@/types/discovery";
 
 interface DiscoveryContextValue {
@@ -158,7 +159,11 @@ export function DiscoveryProvider({ children, items = discoveryIndex }: { childr
       if (document.querySelector("[data-context-discovery-view]")) return false;
 
       frame = window.requestAnimationFrame(() => {
-        document.getElementById(pendingAnchorId)?.scrollIntoView();
+        const target = document.getElementById(pendingAnchorId);
+        if (target) {
+          revealHomeAnchor(target);
+          target.scrollIntoView();
+        }
         setPendingAnchorId((current) => current === pendingAnchorId ? null : current);
       });
       return true;

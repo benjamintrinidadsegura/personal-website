@@ -68,7 +68,7 @@ export async function HqPulse({ publishedWriting = [] }: { publishedWriting?: re
   return (
     <section id="pulse" aria-labelledby="pulse-title" className="scroll-mt-24 border-y border-white/10 bg-[#061521] px-5 py-24 sm:px-8 sm:py-32">
       <div className="mx-auto max-w-[90rem]">
-        <header className="grid gap-8 border-b border-white/15 pb-12 lg:grid-cols-[0.42fr_1fr] lg:items-end">
+        <header id="now" className="grid gap-8 border-b border-white/15 pb-12 lg:grid-cols-[0.42fr_1fr] lg:items-end">
           <p className="font-mono text-xs font-black uppercase tracking-[0.3em] text-[#35d0e5]">{copy.eyebrow}</p>
           <div>
             <h2 id="pulse-title" className="max-w-5xl text-4xl font-black tracking-[-0.035em] text-white sm:text-6xl lg:text-7xl">{copy.title}</h2>

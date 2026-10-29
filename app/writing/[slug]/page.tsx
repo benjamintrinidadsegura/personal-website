@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { ContentContinuation } from "@/components/content/content-continuation";
 
 import { ArticleBody } from "@/components/writing/article-body";
 import { WritingNewsletterStatus } from "@/components/admin/writing-newsletter-status";
@@ -138,6 +140,7 @@ export default async function WritingArticlePage({ params, searchParams }: { par
             {article.bodyJson ? <WritingDocument document={article.bodyJson} shareContext={shareContext} shareCopy={shareCopy} /> : <ArticleBody body={article.body} shareContext={shareContext} shareCopy={shareCopy} />}
           </section>
         </div>
+        <Suspense fallback={null}><ContentContinuation source={{ kind: "writing", slug: article.slug }} locale={locale} article={article} /></Suspense>
         <NewsletterCta />
         <Discussion articleId={article.id} discussion={discussion} participation={participation} />
         <footer className="border-t border-white/15 py-14"><Link href={localizeHref("/writing", locale)} className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 font-bold text-slate-200 hover:border-[#35d0e5]/50">{copy.back}</Link></footer>

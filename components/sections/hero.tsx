@@ -6,13 +6,13 @@ import { AiSummaryCard } from "@/components/sections/ai-summary-card";
 import { getAiSummaryCopy } from "@/data/i18n/ai-summary";
 import { getHomeCopy } from "@/data/i18n/home";
 
-export function Hero() {
+export function Hero({ anchorId = "home" }: { anchorId?: string }) {
   const reduceMotion = useReducedMotion();
   const locale = useLocale();
   const copy = getHomeCopy(locale).hero;
   const aiSummaryCopy = getAiSummaryCopy(locale);
   return (
-    <section id="home" aria-labelledby="hero-title" className="hero-grid relative flex min-h-[96svh] items-center overflow-hidden px-5 pb-20 pt-32 sm:px-8">
+    <section id={anchorId} aria-labelledby="hero-title" className="hero-grid relative flex min-h-[96svh] items-center overflow-hidden px-5 pb-20 pt-32 sm:px-8">
       <div aria-hidden="true" className="hero-glow absolute inset-0" />
       <motion.div initial={reduceMotion ? false : { opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: "easeOut" }} className="relative mx-auto grid min-w-0 w-full max-w-[90rem] grid-cols-[minmax(0,1fr)] gap-14 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] lg:items-end">
         <div className="min-w-0">

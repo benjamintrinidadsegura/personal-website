@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import { ContentContinuation } from "@/components/content/content-continuation";
 import { getProjectPageCopy } from "@/data/i18n/project-page";
 import type { Locale } from "@/lib/i18n/config";
 import { localizeHref } from "@/lib/i18n/routing";
@@ -56,6 +57,7 @@ export function ProjectDetail({ project, locale }: { project: Project; locale: L
 
         {project.mediaNote ? <aside className="mt-12 border-l-2 border-[var(--project-accent)] bg-white/[0.025] p-6"><p className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--project-accent)]">{copy.mediaEyebrow}</p><p className="mt-3 text-slate-300">{project.mediaNote}</p></aside> : null}
 
+        <ContentContinuation source={{ kind: "project", slug: project.slug }} locale={locale} />
         <div className="mt-14 flex flex-col items-start justify-between gap-6 border-t border-white/15 pt-10 sm:flex-row sm:items-center"><p className="max-w-xl text-slate-400">{copy.ecosystemNote}</p><Link href={localizeHref("/#contact", locale)} className="rounded-full bg-[var(--project-accent)] px-6 py-3 text-center font-black text-[#041018] transition hover:-translate-y-0.5">{project.contactCta ?? copy.defaultContactCta}</Link></div>
       </div>
     </article>

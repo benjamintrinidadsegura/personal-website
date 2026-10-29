@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:echowall": "tsx --test tests/echowall-foundation.test.ts",
     "test:discovery": "tsx --test tests/discovery-engine.test.ts",
+    "test:home-contracts": "tsx --test tests/share-url-security.test.ts tests/discover-editorial.test.ts tests/home-view.test.ts tests/home-baseline.test.ts tests/discovery-state.test.ts tests/writing-public-query.test.ts tests/discovery-engine.test.ts tests/navigation-feedback.test.ts tests/writing-foundation.test.ts tests/writing-completion.test.ts tests/writing-index.test.ts tests/quote-universe.test.ts tests/writing-social-share.test.ts tests/public-seven-locales.test.ts tests/search-discovery-foundation.test.ts tests/cloudflare-web-analytics.test.ts",
     "test:ecosystem": "tsx --test tests/ecosystem-integration.test.ts",
     "test:hq-pulse": "tsx --test tests/hq-pulse.test.ts",
     "test:feedback": "tsx --test tests/feedback-foundation.test.ts",

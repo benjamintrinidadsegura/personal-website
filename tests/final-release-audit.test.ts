@@ -25,7 +25,11 @@ test("release privacy disclosure is complete and explicit in all seven locales",
   }
 
   assert.match(privacyReleaseCopy.de.sections.account.body.join(" "), /eu-central-1/u);
-  assert.match(privacyReleaseCopy.de.sections.storage.body.join(" "), /keine Webanalyse/u);
+  // Public Cloudflare analytics superseded the original no-analytics release copy.
+  // Keep the disclosure aligned with that boundary, not an obsolete absence claim.
+  for (const locale of locales) assert.match(privacyReleaseCopy[locale].sections.storage.body.join(" "), /Cloudflare/u, locale);
+  assert.match(privacyReleaseCopy.de.sections.storage.body.join(" "), /keine Cookies, keinen Local Storage und kein Fingerprinting/u);
+  assert.match(privacyReleaseCopy.de.sections.storage.body.join(" "), /nicht an die Webanalyse übermittelt/u);
   assert.match(privacyReleaseCopy.de.sections.media.body.join(" "), /youtube-nocookie\.com/u);
   assert.match(privacyReleaseCopy.de.sections.contributions.body.join(" "), /keine rohe IP-Adresse/u);
 });

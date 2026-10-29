@@ -487,6 +487,7 @@ test("overlay results navigate directly without selecting a canvas top match", (
 test("context canvas stays homepage-local while the root layout remains server-rendered", () => {
   const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
   const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const views = readFileSync(new URL("../components/home/home-views.tsx", import.meta.url), "utf8");
   const context = readFileSync(new URL("../components/discovery/discovery-context.tsx", import.meta.url), "utf8");
   const canvas = readFileSync(new URL("../components/discovery/context-canvas.tsx", import.meta.url), "utf8");
   const discoveryView = readFileSync(new URL("../components/discovery/context-discovery-view.tsx", import.meta.url), "utf8");
@@ -500,9 +501,11 @@ test("context canvas stays homepage-local while the root layout remains server-r
   assert.equal(layout.startsWith('"use client"'), false);
   assert.equal(layout.includes("<DiscoveryProvider items={discoveryItems}>"), true);
   assert.equal(layout.includes("<ContextCanvas"), false);
-  assert.ok(page.indexOf("<ContextCanvas>") < page.indexOf("<Hero />"));
-  assert.ok(page.indexOf("<Hero />") < page.indexOf("<HqPulse publishedWriting={publishedWriting} />"));
-  assert.ok(page.indexOf("<HqPulse publishedWriting={publishedWriting} />") < page.indexOf("</ContextCanvas>"));
+  assert.ok(page.includes("<HomeViews"));
+  assert.ok(page.indexOf('<Hero anchorId="explore-home" />') < page.indexOf("<HqPulse publishedWriting={publishedWriting} />"));
+  assert.equal((views.match(/<ContextCanvas>/gu) ?? []).length, 1);
+  assert.ok(views.indexOf("<ContextCanvas>") < views.indexOf("{explore}"));
+  assert.ok(views.indexOf("{explore}") < views.indexOf("</ContextCanvas>"));
   assert.equal(context.includes("localizeDiscoveryItems(items, locale)"), true);
   assert.equal(context.includes("discoverItems(localizedItems, query)"), true);
   assert.equal(context.includes("createAdaptiveDiscoveryView(matches, selectedMatchId)"), true);

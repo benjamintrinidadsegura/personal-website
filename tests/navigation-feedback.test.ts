@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   getSectionNavigationPlan,
+  focusSectionDestination,
   sectionScrollBehavior,
   shouldHandleSectionNavigation,
   shouldStartNavigationFeedback,
@@ -61,6 +62,28 @@ test("long and reduced-motion section jumps are immediate while nearby jumps may
   assert.equal(sectionScrollBehavior(320, false), "smooth");
   assert.equal(sectionScrollBehavior(0, false), "smooth");
   assert.equal(sectionScrollBehavior(120, true), "auto");
+});
+
+test("shared home and skip-link destinations focus the visible mode heading instead of the hidden panel", () => {
+  const focused: string[] = [];
+  const heading = (id: string, visible: boolean) => {
+    const attributes = new Set<string>();
+    return {
+      id, getClientRects: () => visible ? [{}] : [],
+      hasAttribute: (name: string) => attributes.has(name),
+      setAttribute: (name: string) => attributes.add(name),
+      removeAttribute: (name: string) => attributes.delete(name),
+      focus: () => focused.push(id), addEventListener() {},
+    };
+  };
+  for (const mode of ["discover", "explore"]) {
+    const section = {
+      matches: () => false,
+      querySelectorAll: () => [heading("discover-title", mode === "discover"), heading("hero-title", mode === "explore")],
+    };
+    focusSectionDestination(section as unknown as HTMLElement);
+  }
+  assert.deepEqual(focused, ["discover-title", "hero-title"]);
 });
 
 test("feedback is layout-neutral, reduced-motion safe and covers full-document locale changes", () => {

@@ -1,4 +1,4 @@
-import { getPublishedSpotlight, getRelatedSpotlights, publishedSpotlights, spotlightConfig } from "@/data/spotlights";
+import { getPublishedSpotlight, publishedSpotlights, spotlightConfig } from "@/data/spotlights";
 import type { Locale } from "@/lib/i18n/config";
 import type { SpotlightPerson } from "@/types/content";
 
@@ -225,11 +225,6 @@ export function getLocalizedPublishedSpotlights(locale: Locale): SpotlightPerson
 export function getLocalizedPublishedSpotlight(slug: string, locale: Locale): SpotlightPerson | undefined {
   const spotlight = getPublishedSpotlight(slug);
   return spotlight ? localizeSpotlight(spotlight, locale) : undefined;
-}
-
-export function getLocalizedRelatedSpotlights(spotlight: SpotlightPerson, locale: Locale): SpotlightPerson[] {
-  const source = getPublishedSpotlight(spotlight.slug);
-  return source ? getRelatedSpotlights(source).map((related) => localizeSpotlight(related, locale)) : [];
 }
 
 type PeopleCopy = {

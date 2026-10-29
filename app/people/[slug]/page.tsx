@@ -3,7 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrivacyVideo } from "@/components/spotlight/privacy-video";
-import { getLocalizedPublishedSpotlight, getLocalizedRelatedSpotlights, getPeopleCopy } from "@/data/i18n/people";
+import { ContentContinuation } from "@/components/content/content-continuation";
+import { getLocalizedPublishedSpotlight, getPeopleCopy } from "@/data/i18n/people";
 import { getPublishedSpotlight, publishedSpotlights } from "@/data/spotlights";
 import { createLocalizedMetadata, defaultSocialImage } from "@/lib/i18n/metadata";
 import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
@@ -32,7 +33,6 @@ export default async function SpotlightPage({ params }: SpotlightPageProps) {
   const sourceSpotlight = getPublishedSpotlight(slug);
   if (!spotlight) notFound();
   const copy = getPeopleCopy(locale);
-  const related = getLocalizedRelatedSpotlights(spotlight, locale);
   const siteUrl = requireSiteUrl();
   const canonical = absoluteSiteUrl(getLocalizedPathname(`/people/${spotlight.slug}`, locale), siteUrl);
   const personEntityId = absoluteSiteUrl(`/people/${spotlight.slug}#person`, siteUrl);
@@ -135,7 +135,8 @@ export default async function SpotlightPage({ params }: SpotlightPageProps) {
 
         {(spotlight.externalLinks?.length || spotlight.spotifyUrl) && <section aria-labelledby="links-title" className="grid min-w-0 grid-cols-1 gap-8 border-b border-white/15 py-16 lg:grid-cols-[0.35fr_1fr]"><p className="font-mono text-xs uppercase tracking-[0.22em] text-[#35d0e5]">{copy.links}</p><div><h2 id="links-title" className="text-3xl font-black text-white">{copy.linksTitle}</h2><div className="mt-7 flex flex-wrap gap-3">{spotlight.externalLinks?.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/15 px-5 py-3 font-bold text-white hover:border-[#35d0e5]">{link.label} ↗</a>)}{spotlight.spotifyUrl && <a href={spotlight.spotifyUrl} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/15 px-5 py-3 font-bold text-white hover:border-[#ff9a3d]">{copy.spotify} ↗</a>}</div></div></section>}
 
-        <section aria-labelledby="related-title" className="py-20"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">{copy.related}</p><h2 id="related-title" className="mt-5 text-4xl font-black text-white sm:text-5xl">{copy.relatedTitle}</h2></div><Link href={localizeHref("/people", locale)} className="font-black text-[#35d0e5]">{copy.all} →</Link></div><div className="mt-10 grid min-w-0 grid-cols-1 border-l border-t border-white/10 lg:grid-cols-3">{related.map((person) => <Link key={person.id} href={localizeHref(`/people/${person.slug}`, locale)} className="group border-b border-r border-white/10 p-7 transition hover:bg-white/[0.025]"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#35d0e5]">{person.format}</p><h3 className="mt-7 text-2xl font-black text-white">{person.fullName}</h3><p className="mt-3 leading-7 text-slate-400">{person.shortIntroduction}</p><p className="mt-7 font-black text-white group-hover:text-[#ff9a3d]">{copy.openConversation} →</p></Link>)}</div></section>
+        <ContentContinuation source={{ kind: "person", id: spotlight.id }} locale={locale} />
+        <footer className="border-t border-white/15 py-8"><Link href={localizeHref("/people", locale)} className="inline-flex min-h-11 items-center font-bold text-[#35d0e5] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5]">{copy.all} →</Link></footer>
       </div>
     </article>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { revealHomeAnchor } from "@/lib/home-view";
 
 const PENDING_ATTRIBUTE = "data-navigation-pending";
 const SETTLING_ATTRIBUTE = "data-navigation-settling";
@@ -127,10 +128,10 @@ export function startNavigationFeedback() {
   fallbackTimer = window.setTimeout(stopNavigationFeedback, FALLBACK_TIMEOUT_MS);
 }
 
-function focusSectionDestination(section: HTMLElement) {
+export function focusSectionDestination(section: HTMLElement) {
   const destination = section.matches("h1, h2, h3, h4, h5, h6")
     ? section
-    : section.querySelector<HTMLElement>("h1, h2, h3, h4, h5, h6") ?? section;
+    : [...section.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6")].find((heading) => heading.getClientRects().length > 0) ?? section;
   const hadTabIndex = destination.hasAttribute("tabindex");
   if (!hadTabIndex) destination.setAttribute("tabindex", "-1");
   destination.setAttribute("data-section-navigation-target", "true");
@@ -142,6 +143,7 @@ function focusSectionDestination(section: HTMLElement) {
 }
 
 function revealSection(section: HTMLElement, forceImmediate = false) {
+  revealHomeAnchor(section);
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const behavior = forceImmediate
     ? "auto"

@@ -11,7 +11,7 @@ import type { QuoteSelectionContext, SelectedQuote } from "@/types/quote";
 
 type ContextWithoutLocale = Omit<QuoteSelectionContext, "locale" | "excludeIds" | "excludeFamilies" | "seed">;
 
-export function QuoteExperience({ context, description, safeSharePath = "/", title, variant = "result" }: { context: ContextWithoutLocale; description?: string; safeSharePath?: string; title?: string; variant?: "daily" | "result" | "fyns" }) {
+export function QuoteExperience({ context, description, safeSharePath = "/", title, variant = "result", presentation = "full" }: { context: ContextWithoutLocale; description?: string; safeSharePath?: string; title?: string; variant?: "daily" | "result" | "fyns"; presentation?: "full" | "compact" }) {
   const locale = useLocale();
   const copy = quoteDictionaries[locale];
   const headingId = useId();
@@ -34,7 +34,7 @@ export function QuoteExperience({ context, description, safeSharePath = "/", tit
   };
 
   return (
-    <section aria-labelledby={headingId} className={`quote-experience ${variant === "daily" ? "quote-experience-daily" : "quote-experience-result"}`} data-quote-surface={context.surface} data-quote-id={current.id}>
+    <section aria-labelledby={headingId} className={`quote-experience ${variant === "daily" ? "quote-experience-daily" : "quote-experience-result"}${presentation === "compact" ? " quote-experience-compact" : ""}`} data-quote-surface={context.surface} data-quote-id={current.id}>
       <div className="quote-experience-copy">
         <p className="quote-experience-eyebrow">{eyebrow}</p>
         <h2 id={headingId} className="quote-experience-title">{surfaceTitle}</h2>

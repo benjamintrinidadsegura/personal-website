@@ -5,10 +5,14 @@ import { createElement, type ComponentType, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { HomeQuote } from "../components/quotes/home-quote";
+import { QuoteShareCard } from "../components/quotes/quote-share-card";
 import { LocaleProvider } from "../components/i18n/locale-context";
 import { quoteUniverse } from "../data/quotes";
 import { locales, type Locale } from "../lib/i18n/config";
-import { selectQuote } from "../lib/quotes";
+import { dailyQuoteKey, selectQuote } from "../lib/quotes";
+import { quoteDictionaries } from "../data/i18n/quotes";
+import { canonicalBtsShareUrl } from "../lib/sharing/destinations";
+import { writingShareFormats } from "../types/writing";
 import type { QuoteRecord } from "../types/quote";
 
 test("the curated universe has stable identities, meaningful volume, and complete locales", () => {
@@ -27,6 +31,12 @@ test("daily selection is deterministic for date and locale", () => {
   const context = { locale: "en" as const, surface: "daily" as const, dateKey: "2026-09-21" };
   assert.deepEqual(selectQuote(context), selectQuote(context));
   assert.equal(selectQuote(context).fallbackLevel, "specific");
+});
+
+test("the daily date boundary remains UTC, including Berlin midnight and daylight-saving offsets", () => {
+  assert.equal(dailyQuoteKey(new Date("2026-10-26T00:30:00+01:00")), "2026-10-25");
+  assert.equal(dailyQuoteKey(new Date("2026-07-01T00:30:00+02:00")), "2026-06-30");
+  assert.equal(dailyQuoteKey(new Date("2026-10-26T00:00:00Z")), "2026-10-26");
 });
 
 test("homepage quote renders semantic localized controls without client-only failure", () => {
@@ -78,6 +88,45 @@ const fixture = (id: string, family: string, product: "general" | "life-alignmen
   dailyEligible: true,
   shareEligible: true,
   status: "active",
+});
+
+test("daily quotes exclude unpublished, retired, non-daily and out-of-window records in all seven locales", () => {
+  const eligible = { ...fixture("eligible", "eligible-family"), activeFrom: "2026-10-26", activeUntil: "2026-10-26" };
+  const records: QuoteRecord[] = [
+    { ...fixture("draft", "draft-family"), status: "draft" },
+    { ...fixture("retired", "retired-family"), status: "retired" },
+    { ...fixture("result-only", "result-family"), dailyEligible: false },
+    { ...fixture("future", "future-family"), activeFrom: "2026-10-27" },
+    { ...fixture("expired", "expired-family"), activeUntil: "2026-10-25" },
+    eligible,
+  ];
+  for (const locale of locales) {
+    const context = { locale, surface: "daily" as const, dateKey: "2026-10-26" };
+    const selected = selectQuote(context, records);
+    assert.equal(selected.id, eligible.id);
+    assert.equal(selected.eligibleCount, 1);
+    assert.deepEqual(selectQuote(context, records), selected);
+  }
+});
+
+test("quote share cards retain complete localized text and attribution in every format, with safe home source URLs", () => {
+  for (const locale of locales) {
+    const quote = selectQuote({ locale, surface: "daily", dateKey: "2026-10-26" });
+    for (const format of writingShareFormats) {
+      const html = renderToStaticMarkup(createElement(QuoteShareCard, { format, quote, originalLabel: quoteDictionaries[locale].original, surfaceLabel: quoteDictionaries[locale].dailyEyebrow }));
+      assert.ok(html.includes(quote.text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;")), `${locale}:${format}`);
+      assert.ok(html.includes(quote.attribution));
+      assert.ok(html.includes(`data-format="${format}"`));
+    }
+    assert.equal(canonicalBtsShareUrl(locale === "de" ? "/" : `/${locale}`, "https://btshq.online"), locale === "de" ? "https://btshq.online/" : `https://btshq.online/${locale}`);
+  }
+  for (const path of ["/account", "/?sessionId=private", "https://external.invalid/", "/#private-result"]) {
+    assert.equal(canonicalBtsShareUrl(path, "https://btshq.online"), null);
+  }
+});
+
+test("shared URL helper rejects private Life Alignment invitation paths", () => {
+  assert.equal(canonicalBtsShareUrl("/life-alignment/invite/private-token", "https://btshq.online"), null);
 });
 
 test("explicit fallbacks broaden from product to theme to general", () => {
