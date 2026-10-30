@@ -25,9 +25,7 @@ type CachedPublishedWritingRead = {
 // Preserve the deployed projection during this diagnostic release.
 const PUBLIC_WRITING_SELECT = "id, slug, title, deck, excerpt, body, body_json, content_type, topics, status, published_at, source_locale, source_revision, translations:writing_article_translations(locale, title, deck, excerpt, body, body_json, status, source_revision, generated_at)";
 
-// Layout and page share one pending read per render. Consumer diagnostics stay
-// outside this memoized boundary; the persistent cache policy is unchanged.
-const queryPublishedWriting = cache(unstable_cache(async (locale: WritingLanguage): Promise<CachedPublishedWritingRead> => {
+async function readPublishedWriting(locale: WritingLanguage, fresh = false): Promise<CachedPublishedWritingRead> {
   const { classifyWritingReadFailure, observeWritingRead } = await import("@/lib/writing/read-diagnostics");
   const observation = observeWritingRead();
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
@@ -41,7 +39,9 @@ const queryPublishedWriting = cache(unstable_cache(async (locale: WritingLanguag
   let acceptedCount: number | undefined;
   const result = await withPublicWritingReadDeadline(async (signal) => {
     const { getSupabaseServerClient } = await import("@/lib/supabase/server");
-    const client = getSupabaseServerClient({ fetch: observation.fetch });
+    const client = getSupabaseServerClient({ fetch: fresh
+      ? (input, init) => observation.fetch(input, { ...init, cache: "no-store" })
+      : observation.fetch });
     phase = "upstream";
     const { data, error, status } = await client
       .from("writing_articles")
@@ -74,7 +74,13 @@ const queryPublishedWriting = cache(unstable_cache(async (locale: WritingLanguag
   const state = failure?.errorClass === "deadline" ? "timeout" : result.status === "data" ? "success" : "unavailable";
   observation.finish(state, locale, failure, { receivedCount, acceptedCount }, httpStatus);
   return { result, diagnostic: { readId: observation.readId, state } };
-}, ["published-writing"], { revalidate: CACHE_SECONDS, tags: ["published-writing"] }));
+}
+
+// Layout and page still share the same persistent policy and pending render read.
+const queryPublishedWriting = cache(unstable_cache(
+  (locale: WritingLanguage) => readPublishedWriting(locale),
+  ["published-writing"], { revalidate: CACHE_SECONDS, tags: ["published-writing"] },
+));
 
 const queryPublishedWritingBySlug = cache(unstable_cache(async (slug: string, locale: WritingLanguage): Promise<PublicWritingArticle | null> => {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) return null;
@@ -99,13 +105,22 @@ export async function getPublishedWriting(locale: WritingLanguage = "de", contex
 }
 
 export async function getPublishedWritingResult(locale: WritingLanguage = "de", context: WritingReadContext = { consumer: "unspecified" }): Promise<PublishedWritingReadResult> {
+  return deliverPublishedWritingResult(() => queryPublishedWriting(locale), locale, context);
+}
+
+/** Sitemap alone bypasses persistent and render caches, including the fetch Data Cache. */
+export async function getPublishedWritingForSitemap(correlationId: string): Promise<PublishedWritingReadResult> {
+  return deliverPublishedWritingResult(() => readPublishedWriting("de", true), "de", { consumer: "sitemap", correlationId });
+}
+
+async function deliverPublishedWritingResult(read: () => Promise<CachedPublishedWritingRead>, locale: WritingLanguage, context: WritingReadContext): Promise<PublishedWritingReadResult> {
   const { classifyWritingReadFailure, logWritingDiagnostic, newWritingCorrelationId } = await import("@/lib/writing/read-diagnostics");
   const started = performance.now();
   const correlationId = context.correlationId ?? newWritingCorrelationId();
   try {
-    const { result, diagnostic } = await queryPublishedWriting(locale);
+    const { result, diagnostic } = await read();
     // Failures expose cached origin IDs; sitemap additionally traces each actual generation.
-    // No headers()/cookies() inside this reader: metadata routes retain static/ISR behavior.
+    // No headers()/cookies() inside the shared reader; each caller controls route caching.
     if (result.status === "unavailable" || context.consumer === "sitemap") {
       logWritingDiagnostic({ operation: "collection_result", state: result.status === "data" ? "success" : "unavailable",
         correlationId, consumer: context.consumer, locale, durationMs: performance.now() - started,

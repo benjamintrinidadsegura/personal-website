@@ -32,6 +32,16 @@ const nextConfig: NextConfig = {
   },
   headers: async () => [
     {
+      source: "/sitemap.xml",
+      // Also cover framework-generated error responses; metadata's success header
+      // alone only requests browser revalidation and does not govern every CDN.
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "CDN-Cache-Control", value: "no-store" },
+        { key: "Vercel-CDN-Cache-Control", value: "no-store" },
+      ],
+    },
+    {
       source: "/:path*",
       headers: [...securityHeaders],
     },

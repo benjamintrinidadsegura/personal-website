@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import nextConfig from "../next.config";
 import * as spotlights from "../data/spotlights";
 import * as nextStep from "../data/find-your-next-step";
 import * as lifeAlignment from "../data/life-alignment";
@@ -29,24 +30,42 @@ function sitemapHarness(read: (...args: unknown[]) => Promise<PublishedWritingRe
     "@/data/life-alignment-modules": modules, "@/data/projects": projects,
     "@/lib/i18n/routing": routing, "@/lib/i18n/config": config,
     "@/lib/search-discovery": { ...searchDiscovery, getCanonicalProductionUrl: () => canonical ? new URL("https://btshq.online") : null },
-    "@/lib/writing/queries": { getPublishedWritingResult: (...args: unknown[]) => { calls.push(args); return read(...args); } },
+    "@/lib/writing/queries": { getPublishedWritingForSitemap: (...args: unknown[]) => { calls.push(args); return read(...args); } },
     "@/lib/writing/read-diagnostics": diagnostics,
   });
   return { sitemap, records, calls };
 }
 
+test("only the sitemap adds explicit no-store protection for browser and CDN error responses", async () => {
+  const rules = await nextConfig.headers!();
+  const rule = rules.find(({ source }) => source === "/sitemap.xml");
+  assert.ok(rule);
+  const headers = Object.fromEntries(rule.headers.map(({ key, value }) => [key.toLowerCase(), value]));
+  assert.match(headers["cache-control"], /private, no-store, max-age=0/u);
+  assert.equal(headers["cdn-cache-control"], "no-store");
+  assert.equal(headers["vercel-cdn-cache-control"], "no-store");
+  assert.ok(rules.filter(({ source }) => source !== "/sitemap.xml").every(({ headers }) => headers.every(({ key }) => !/cdn-cache-control/iu.test(key))));
+});
+
 test("sitemap generation distinguishes successful empty and unavailable reads without inventing Writing URLs", async () => {
   for (const status of ["data", "unavailable"] as const) {
     const fixture = sitemapHarness(async () => ({ status, data: [] }));
+    if (status === "unavailable") {
+      await assert.rejects(fixture.sitemap.default(), /Sitemap temporarily unavailable\./u);
+      assert.equal(fixture.records[0].state, "unavailable");
+      assert.equal(fixture.records[0].emitted_url_count, 0);
+      continue;
+    }
     const entries = await fixture.sitemap.default();
     assert.deepEqual(entries, fixture.sitemap.createSitemap([]));
-    assert.ok(entries.length > 0);
+    assert.equal(entries.length, 273);
     assert.equal(entries.some(({ url }) => new URL(url).pathname.includes("/writing/published-fixture")), false);
     assert.equal(fixture.records[0].state, status === "data" ? "success" : "unavailable");
     assert.equal(fixture.records[0].accepted_count, 0);
     assert.equal(fixture.records[0].emitted_url_count, entries.length);
     assert.equal(fixture.records[0].cache_event, "handler_execution");
-    assert.deepEqual(fixture.calls, [[undefined, { consumer: "sitemap", correlationId: fixture.records[0].correlation_id }]]);
+    assert.deepEqual(fixture.calls, [[fixture.records[0].correlation_id]]);
+    assert.equal(fixture.sitemap.dynamic, "force-dynamic");
     for (const locale of config.locales) {
       assert.ok(entries.some(({ url }) => url === `https://btshq.online${routing.getLocalizedPathname("/writing", locale)}`));
     }
@@ -90,13 +109,15 @@ test("generation never restores prior article records after a withdrawn, synthet
     assert.equal((await fixture.sitemap.default()).some(({ url }) => url.includes(`/writing/${row.slug}`)), false);
   }
   current = { status: "unavailable", data: [] };
-  assert.equal((await fixture.sitemap.default()).some(({ url }) => url.includes(`/writing/${row.slug}`)), false);
+  await assert.rejects(fixture.sitemap.default(), /Sitemap temporarily unavailable/u);
+  current = { status: "data", data: [summary] };
+  assert.ok((await fixture.sitemap.default()).some(({ url }) => url.includes(`/writing/${row.slug}`)), "recovery is read on the very next attempt");
 });
 
 test("sitemap exceptions remain exceptions and log only safe classifications", async () => {
   const error = Object.assign(new Error("PRIVATE_TOKEN PRIVATE_PERSON PRIVATE_ARTICLE"), { code: "PGRST303", details: "PRIVATE_SESSION" });
   const fixture = sitemapHarness(async () => { throw error; });
-  await assert.rejects(fixture.sitemap.default(), (caught) => caught === error);
+  await assert.rejects(fixture.sitemap.default(), { message: "Sitemap temporarily unavailable." });
   assert.equal(fixture.records[0].state, "unavailable");
   assert.equal(fixture.records[0].error_class, "auth_claims");
   assert.equal(fixture.records[0].claim_reason, "unclassified");
@@ -106,9 +127,8 @@ test("sitemap exceptions remain exceptions and log only safe classifications", a
 test("missing production canonical origin still fails closed without generated URLs", async () => {
   const fixture = sitemapHarness(async () => ({ status: "data", data: [] }), false);
   assert.deepEqual(await fixture.sitemap.default(), []);
-  assert.equal(fixture.records[0].state, "unavailable");
-  assert.equal(fixture.records[0].error_class, "empty_sitemap");
-  assert.equal(fixture.records[0].emitted_url_count, 0);
+  assert.deepEqual(fixture.calls, [], "Preview never queries the publication backend");
+  assert.deepEqual(fixture.records, []);
 });
 
 test("the 17-article language distribution preserves 387 URLs and removes withdrawn or stale translations", async () => {
@@ -141,5 +161,5 @@ test("the 17-article language distribution preserves 387 URLs and removes withdr
   assert.equal(remaining.length, 1);
   assert.equal(remaining[0].url, "https://btshq.online/writing/published-1");
   current = { status: "unavailable", data: [] };
-  assert.equal((await fixture.sitemap.default()).some(({ url }) => /\/writing\/published-\d+$/u.test(url)), false);
+  await assert.rejects(fixture.sitemap.default(), /Sitemap temporarily unavailable/u);
 });

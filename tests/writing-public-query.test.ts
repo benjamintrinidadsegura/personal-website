@@ -320,3 +320,83 @@ test("the unchanged deployed publication rules reject invalid documents, withdra
   const syntheticTranslation = { locale: "en", title: "Synthetic content", deck: row.deck, excerpt: row.excerpt, body: row.body, body_json: bodyJson, status: "translated", source_revision: 3 };
   assert.deepEqual((await publicQueries({ data: [{ ...row, translations: [syntheticTranslation] }], error: null }).queries.getPublishedWritingResult("en")).data, []);
 });
+
+test("sitemap reads bypass both existing caches and fetch Data Cache without changing other consumers", async () => {
+  let current = [row];
+  const requests: Array<{ url: URL; cache?: RequestCache; signal?: AbortSignal | null }> = [];
+  const fetch: typeof globalThis.fetch = async (input, init) => {
+    requests.push({ url: new URL(String(input)), cache: init?.cache, signal: init?.signal });
+    return new globalThis.Response(JSON.stringify(current), { headers: { "content-type": "application/json" } });
+  };
+  const fixture = publicQueries(undefined, true, false, undefined, true, fetch, true);
+  const before = await fixture.queries.getPublishedWritingResult("de", { consumer: "home" });
+  assert.equal(before.data.length, 1);
+  current = [];
+  assert.deepEqual(await fixture.queries.getPublishedWritingForSitemap("fixture-correlation"), { status: "data", data: [] });
+  assert.equal(requests.at(-1)?.cache, "no-store");
+  assert.ok(requests.at(-1)?.signal instanceof AbortSignal);
+  current = [row];
+  assert.equal((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data.length, 1);
+  assert.equal(requests.length, 3, "each attempt executes a new SDK read, even in one render");
+  assert.deepEqual(await fixture.queries.getPublishedWritingResult("de", { consumer: "discovery_index" }), before);
+  assert.equal(requests.length, 3, "home/search retain their render and persistent cache");
+  assert.equal(requests[0].cache, undefined);
+  assert.equal(fixture.cacheArguments.length, 1, "fresh sitemap reads never enter unstable_cache");
+  assert.deepEqual(fixture.cachePolicies, [
+    { keys: ["published-writing"], options: { revalidate: 300, tags: ["published-writing"] } },
+    { keys: ["published-writing-by-slug"], options: { revalidate: 300, tags: ["published-writing"] } },
+  ]);
+  for (const { url } of requests) {
+    assert.equal(url.searchParams.get("status"), "eq.published");
+    assert.equal(url.searchParams.get("slug"), "not.is.null");
+    assert.equal(url.searchParams.get("published_at"), "not.is.null");
+    assert.equal(url.searchParams.get("limit"), "100");
+  }
+});
+
+test("fresh sitemap SDK failures and timeouts remain unavailable and the next read can recover", async () => {
+  for (const failure of ["auth", "upstream", "network", "timeout", "stalled-body"] as const) {
+    let recovering = false;
+    let aborted = false;
+    const fetch: typeof globalThis.fetch = async (_input, init) => {
+      if (recovering) return new globalThis.Response(JSON.stringify([row]), { headers: { "content-type": "application/json" } });
+      if (failure === "auth" || failure === "upstream") return new globalThis.Response(JSON.stringify({ code: "PGRST303", message: "PRIVATE_ERROR_TOKEN" }), { status: failure === "auth" ? 401 : 503 });
+      if (failure === "network") throw new TypeError("PRIVATE_NETWORK_TOKEN");
+      if (failure === "timeout") return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => { aborted = true; reject(new DOMException("fixture aborted", "AbortError")); }, { once: true });
+      });
+      return new globalThis.Response(new ReadableStream({ start(controller) {
+        init?.signal?.addEventListener("abort", () => { aborted = true; controller.error(new DOMException("fixture aborted", "AbortError")); }, { once: true });
+      } }));
+    };
+    const fixture = publicQueries(undefined, true, false, undefined, true, fetch, true);
+    assert.deepEqual(await fixture.queries.getPublishedWritingForSitemap("fixture-correlation"), { status: "unavailable", data: [] }, failure);
+    if (failure === "timeout" || failure === "stalled-body") {
+      assert.equal(aborted, true);
+      assert.equal(fixture.records[0].state, "timeout");
+      assert.equal(fixture.records[0].error_class, "deadline");
+    }
+    recovering = true;
+    assert.equal((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data.length, 1);
+    assert.equal(fixture.cacheArguments.length, 0);
+    assert.doesNotMatch(JSON.stringify(fixture.records), /PRIVATE_|published-one|authored/iu);
+  }
+});
+
+test("fresh sitemap publication, withdrawal and translation changes are visible immediately", async () => {
+  const translations = locales.filter(locale => locale !== "de").map(locale => ({ locale, title: `Current thought ${locale}`, deck: row.deck, excerpt: row.excerpt, body: row.body, body_json: bodyJson, status: "translated", source_revision: 3 }));
+  let current = [{ ...row, translations }];
+  const fetch: typeof globalThis.fetch = async () => new globalThis.Response(JSON.stringify(current));
+  const fixture = publicQueries(undefined, true, false, undefined, true, fetch, true);
+  assert.deepEqual((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data[0].availableLanguages, locales);
+  for (const invalid of [{ ...row, status: "draft" }, { ...row, title: "QA" }, { ...row, published_at: null }, { ...row, body_json: { version: 1, blocks: [{ type: "html" }] } }]) {
+    current = [{ ...invalid, translations }] as typeof current;
+    assert.deepEqual((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data, []);
+  }
+  current = [];
+  assert.deepEqual((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data, [], "deleted publication");
+  current = [{ ...row, translations }];
+  assert.equal((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data.length, 1, "new publication");
+  current = [{ ...row, source_revision: 4, translations }];
+  assert.deepEqual((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data[0].availableLanguages, ["de"]);
+});
