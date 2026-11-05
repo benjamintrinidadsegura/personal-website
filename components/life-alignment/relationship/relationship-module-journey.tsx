@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 import { saveRelationshipAnswersAction, createRelationshipSessionAction, type RelationshipActionResult } from "@/app/life-alignment/actions";
-import { buildSoloRelationshipResultAction } from "@/app/life-alignment/solo-actions";
 import { useLocale, useLocalizedHref } from "@/components/i18n/locale-context";
 import { useRelationshipPrintMode } from "@/components/life-alignment/relationship/relationship-print-mode";
 import { RelationshipResultQuote } from "@/components/quotes/result-quotes";
 import { relationshipUi } from "@/data/i18n/life-alignment-relationship-ui";
 import { relationshipText } from "@/data/life-alignment-relationship";
+import { buildRelationshipSoloResult, normalizeRelationshipAnswers } from "@/lib/life-alignment-relationship";
 import type { RelationshipAnswer, RelationshipModuleDefinition, RelationshipSoloResult } from "@/types/life-alignment-relationship";
 
 type Mode = "entry" | "solo" | "session" | "waiting" | "result";
@@ -35,8 +35,8 @@ export function RelationshipModuleJourney({ module, authenticated }: { module: R
     setAnswers((current) => ({ ...current, [questionId]: { ...current[questionId], ...patch } }));
   }
 
-  function serializedAnswers(): string {
-    return JSON.stringify(Object.fromEntries(Object.entries(answers).filter(([, answer]) => answer.value && answer.importance)));
+  function completeAnswers() {
+    return Object.fromEntries(Object.entries(answers).filter(([, answer]) => answer.value && answer.importance));
   }
 
   function sectionComplete(): boolean {
@@ -48,7 +48,7 @@ export function RelationshipModuleJourney({ module, authenticated }: { module: R
     const formData = new FormData();
     formData.set("sessionId", session.sessionId);
     formData.set("moduleId", module.id);
-    formData.set("answers", serializedAnswers());
+    formData.set("answers", JSON.stringify(completeAnswers()));
     formData.set("complete", complete ? "yes" : "no");
     return saveRelationshipAnswersAction(idleResult, formData);
   }
@@ -57,17 +57,19 @@ export function RelationshipModuleJourney({ module, authenticated }: { module: R
     if (!sectionComplete()) { setMessage(relationshipUi(locale, "answerRequired")); return; }
     setMessage(null);
     const final = sectionIndex === module.sections.length - 1;
+    if (final && mode === "solo") {
+      const normalized = normalizeRelationshipAnswers(module, completeAnswers());
+      if (!normalized) { setMessage(relationshipUi(locale, "answerRequired")); return; }
+      setSoloResult(buildRelationshipSoloResult(module.id, normalized, locale));
+      setMode("result");
+      return;
+    }
     startTransition(async () => {
       if (mode === "session" && session) {
         const saved = await persistSessionAnswers(final);
         if (!saved.ok) { setMessage(relationshipUi(locale, "saveFailed")); return; }
         if (final) { setMode("waiting"); router.push(localizeHref(`/life-alignment/session/${session.sessionId}`)); return; }
         setMessage(relationshipUi(locale, "saved"));
-      }
-      if (final && mode === "solo") {
-        const result = await buildSoloRelationshipResultAction(module.id, serializedAnswers());
-        if (!result) { setMessage(relationshipUi(locale, "answerRequired")); return; }
-        setSoloResult(result); setMode("result"); return;
       }
       setSectionIndex((index) => Math.min(index + 1, module.sections.length - 1));
       window.scrollTo({ top: 0, behavior: "smooth" });

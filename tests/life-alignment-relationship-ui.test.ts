@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { assertRelationshipSessionUiCompleteness } from "../data/i18n/life-alignment-relationship-session-ui";
@@ -8,6 +8,17 @@ import { assertRelationshipModuleCompleteness, getRelationshipModule, relationsh
 import { locales } from "../lib/i18n/config";
 
 const readSource = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+
+test("solo reflection validates and calculates in memory before the invite-only network branch", () => {
+  const journey = readSource("../components/life-alignment/relationship/relationship-module-journey.tsx");
+  const submit = journey.slice(journey.indexOf("function next()"), journey.indexOf("function createSession()"));
+  const solo = submit.slice(submit.indexOf('if (final && mode === "solo")'), submit.indexOf("startTransition("));
+  assert.match(solo, /normalizeRelationshipAnswers\(module, completeAnswers\(\)\)/u);
+  assert.match(solo, /buildRelationshipSoloResult\(module\.id, normalized, locale\)/u);
+  assert.doesNotMatch(solo, /await|Action\(|fetch\(|persistSessionAnswers|Storage|sendBeacon/u);
+  assert.match(submit, /if \(mode === "session" && session\) \{\s+const saved = await persistSessionAnswers\(final\)/u);
+  assert.equal(existsSync(new URL("../app/life-alignment/solo-actions.ts", import.meta.url)), false);
+});
 
 test("all relationship definitions and UI labels are complete in seven locales", () => {
   assert.doesNotThrow(assertRelationshipModuleCompleteness);
