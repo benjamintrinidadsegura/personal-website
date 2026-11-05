@@ -192,12 +192,12 @@ export function buildRelationshipSoloResult(moduleId: RelationshipModuleId, answ
   const definition = getRelationshipModule(moduleId);
   if (!isRelationshipAssessmentComplete(definition, answers)) throw new Error("ASSESSMENT_INCOMPLETE");
   const copy = resultCopy[locale];
-  const reflections: RelationshipSoloReflection[] = definition.questions.map((question) => {
+  const reflections = definition.questions.flatMap<RelationshipSoloReflection>((question) => {
     const answer = answers[question.id];
-    if (!answer) throw new Error("ASSESSMENT_INCOMPLETE");
+    if (!answer) return [];
     const dimension = definition.dimensions.find(({ id }) => id === question.dimensionId);
     if (!dimension) throw new Error(`Unknown dimension ${question.dimensionId}`);
-    return { id: question.id, dimensionId: question.dimensionId, title: relationshipText(dimension.title, locale), expectation: copy.soloExpectation, clarify: copy.soloClarify, tryThis: copy.soloTry, priority: answer.importance, evidence: [evidence(question, answer)] };
+    return [{ id: question.id, dimensionId: question.dimensionId, title: relationshipText(dimension.title, locale), expectation: copy.soloExpectation, clarify: copy.soloClarify, tryThis: copy.soloTry, priority: answer.importance, evidence: [evidence(question, answer)] }];
   });
   const ranked = reflections.sort((a, b) => importanceRank[b.priority] - importanceRank[a.priority] || a.id.localeCompare(b.id)).slice(0, moduleId === "founder" ? 14 : 10);
   return { kind: "solo", moduleId, moduleVersion: definition.version, questionSetVersion: definition.questionSetVersion, interpretationVersion: definition.interpretationVersion, reflections: ranked };

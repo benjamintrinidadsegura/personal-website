@@ -352,24 +352,42 @@ export async function renderShareCardFile(element: HTMLElement, format: WritingS
     if (!context) throw new Error("The share card canvas is unavailable.");
     paintShareCard(context, exportCard.card, bounds, size);
     const blob = await canvasBlob(canvas);
-    const safeName = fileName.replace(/[^a-z0-9._-]+/giu, "-").replace(/-+/gu, "-").replace(/^-|-$/gu, "") || "bts-share-card";
-    return new File([blob], safeName.endsWith(".png") ? safeName : `${safeName}.png`, { type: "image/png", lastModified: Date.now() });
+    await validateShareCardPng(blob, size);
+    return new File([blob], shareCardFileName(fileName), { type: "image/png", lastModified: Date.now() });
   } finally {
     exportCard.dispose();
   }
 }
 
+export function shareCardFileName(fileName: string): string {
+  const name = fileName.replace(/[^a-z0-9._-]+/giu, "-").replace(/-+/gu, "-").replace(/^[.-]+|[.-]+$/gu, "") || "bts-share-card";
+  const portable = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(name) ? `bts-${name}` : name;
+  return /\.png$/iu.test(portable) ? portable : `${portable}.png`;
+}
+
+export async function validateShareCardPng(blob: Blob, size: { width: number; height: number }): Promise<void> {
+  const bytes = new Uint8Array(await blob.slice(0, 24).arrayBuffer());
+  const signature = [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82];
+  if (blob.type !== "image/png" || blob.size < 57 || bytes.length < 24 || !signature.every((value, index) => bytes[index] === value)) throw new Error("Invalid share card PNG.");
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (view.getUint32(16) !== size.width || view.getUint32(20) !== size.height) throw new Error("Invalid share card dimensions.");
+}
+
 export function downloadShareCardFile(file: File) {
-  const url = URL.createObjectURL(file);
   const link = document.createElement("a");
-  link.href = url;
-  link.download = file.name;
-  link.style.display = "none";
-  document.body.appendChild(link);
-  link.click();
-  // The browser may still be reading the blob after the click event returns.
-  // Revoking on the next tick cancels real downloads in Edge.
-  window.setTimeout(() => { link.remove(); URL.revokeObjectURL(url); }, 30_000);
+  const url = URL.createObjectURL(file);
+  try {
+    if (!("download" in link)) throw new Error("Browser download unavailable.");
+    link.href = url;
+    link.download = file.name;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+  } finally {
+    // Also release on a blocked/throwing click. Keep the existing grace period
+    // because the browser may read the blob after the activation handler returns.
+    window.setTimeout(() => { try { link.remove(); } finally { URL.revokeObjectURL(url); } }, 30_000);
+  }
 }
 
 export async function copyShareCardFile(file: File): Promise<void> {

@@ -98,6 +98,24 @@ test("solo reflection never fabricates a counterpart", () => {
   assert.doesNotMatch(JSON.stringify(result), /the other participant answered|you both|your compatibility/i);
 });
 
+test("solo reflection uses required answers and omits unanswered optional evidence", () => {
+  for (const moduleId of ["partner", "friendship", "founder"] as const) {
+    const definition = getRelationshipModule(moduleId);
+    const optional = definition.questions.filter((question) => question.optional);
+    assert.ok(optional.length > 0);
+    const input = answers(moduleId, 3, "low");
+    for (const question of optional) delete input[question.id];
+
+    const result = buildRelationshipSoloResult(moduleId, input);
+    assert.ok(result.reflections.length > 0);
+    assert.ok(result.reflections.every(({ id }) => !optional.some((question) => question.id === id)));
+
+    const answered = optional[0]!;
+    input[answered.id] = { value: 5, importance: "high" };
+    assert.equal(buildRelationshipSoloResult(moduleId, input).reflections[0]?.id, answered.id);
+  }
+});
+
 test("partial answers are accepted only for progress, never as completed assessment", () => {
   const definition = getRelationshipModule("founder");
   const partial = { [definition.questions[0]!.id]: { value: 3, importance: "high" } };

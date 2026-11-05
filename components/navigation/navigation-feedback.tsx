@@ -129,6 +129,13 @@ export function startNavigationFeedback() {
 }
 
 export function focusSectionDestination(section: HTMLElement) {
+  // A disclosure's summary is its keyboard control. Focusing its child heading
+  // instead races the result's own hash handler and loses the native toggle.
+  const summary = section.matches("details") ? section.querySelector<HTMLElement>(":scope > summary") : null;
+  if (summary) {
+    summary.focus({ preventScroll: true });
+    return;
+  }
   const destination = section.matches("h1, h2, h3, h4, h5, h6")
     ? section
     : [...section.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6")].find((heading) => heading.getClientRects().length > 0) ?? section;
@@ -143,6 +150,9 @@ export function focusSectionDestination(section: HTMLElement) {
 }
 
 function revealSection(section: HTMLElement, forceImmediate = false) {
+  // Open synchronously. A delayed focus callback must not reopen a disclosure
+  // that the person has already closed again.
+  if (section.matches("details")) (section as HTMLDetailsElement).open = true;
   revealHomeAnchor(section);
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const behavior = forceImmediate

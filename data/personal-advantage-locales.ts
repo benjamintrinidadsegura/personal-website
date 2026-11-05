@@ -108,6 +108,20 @@ const dictionaries: Record<Locale, PersonalAdvantageUiCopy> = {
   ru: localized({ tagline: "Найдите сочетание, которое делает вас необычно полезным.", privacyTitle: "Некоторые вопросы личные.", languageNotice: "Канонический контент V1 пока написан на английском. Элементы управления соответствуют выбранному языку; скрытый машинный перевод не используется.", start: "Составить карту преимущества", resumeTitle: "С возвращением.", continue: "Продолжить", startOver: "Начать заново", back: "Назад", next: "Продолжить", skip: "Пропустить вопрос", close: "Закрыть", share: "Поделиться преимуществом", screenshot: "Режим снимка", exitScreenshot: "Выйти из режима снимка" }),
 };
 
+const evidenceDisclosureLabels: Record<Locale, string> = {
+  de: "Wie wurde mein Ergebnis ermittelt?",
+  en: "How was my result determined?",
+  es: "¿Cómo se determinó mi resultado?",
+  tr: "Sonucum nasıl belirlendi?",
+  pl: "Jak ustalono mój wynik?",
+  el: "Πώς προέκυψε το αποτέλεσμά μου;",
+  ru: "Как был определён мой результат?",
+};
+
+export function getPersonalAdvantageEvidenceDisclosureLabel(locale: Locale): string {
+  return evidenceDisclosureLabels[locale];
+}
+
 export function getPersonalAdvantageUiCopy(locale: Locale): PersonalAdvantageUiCopy {
   if (locale !== "de") return dictionaries[locale];
   return {

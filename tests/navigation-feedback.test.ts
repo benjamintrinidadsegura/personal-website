@@ -86,6 +86,22 @@ test("shared home and skip-link destinations focus the visible mode heading inst
   assert.deepEqual(focused, ["discover-title", "hero-title"]);
 });
 
+test("section navigation focuses a disclosure control without overriding a subsequent manual close", () => {
+  const focused: string[] = [];
+  const disclosure = {
+    open: false,
+    matches: (selector: string) => selector === "details",
+    querySelector: (selector: string) => {
+      assert.equal(selector, ":scope > summary");
+      return { focus: (options: FocusOptions) => { assert.deepEqual(options, { preventScroll: true }); focused.push("summary"); } };
+    },
+    querySelectorAll: () => { throw new Error("Disclosure headings must not steal the toggle's focus"); },
+  };
+  focusSectionDestination(disclosure as unknown as HTMLElement);
+  assert.equal(disclosure.open, false);
+  assert.deepEqual(focused, ["summary"]);
+});
+
 test("feedback is layout-neutral, reduced-motion safe and covers full-document locale changes", () => {
   const css = readFileSync("app/globals.css", "utf8");
   const layout = readFileSync("app/layout.tsx", "utf8");

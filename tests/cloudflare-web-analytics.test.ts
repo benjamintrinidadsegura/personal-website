@@ -5,7 +5,7 @@ import { NextRequest } from "next/server";
 
 import { privacyReleaseCopy } from "../data/i18n/privacy-release";
 import { locales } from "../lib/i18n/config";
-import { cloudflareAnalyticsHeader, cloudflareBeaconData, cloudflareBeaconUrl, isCloudflareAnalyticsEnabled, isPublicAnalyticsPath, needsAnalyticsDocumentNavigation } from "../lib/cloudflare-web-analytics";
+import { cloudflareAnalyticsHeader, isPublicAnalyticsPath, needsAnalyticsDocumentNavigation } from "../lib/cloudflare-web-analytics";
 import { proxy } from "../proxy";
 
 const origin = "https://btshq.online";
@@ -13,28 +13,14 @@ const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.
 const publicPaths = ["/", "/writing", "/writing/versteh-mich-richtig", "/tools/money-profile", "/tools/personal-advantage", "/find-your-next-step", "/find-your-next-step/self", "/life-alignment", "/life-alignment/self", "/life-alignment/partner", "/life-alignment/career", "/newsletter", "/privacy"];
 const privatePaths = ["/admin", "/admin/login", "/admin/writing/qa-draft", "/account/login", "/api/newsletter/provider/brevo", "/_next/static/qa.js", "/life-alignment/invite/qa-secret", "/life-alignment/session/qa-session", "/life-alignment/sessions", "/life-alignment/partner/shared-device", "/newsletter/confirm", "/newsletter/unsubscribe"];
 
-test("only the exact supplied Cloudflare module/config is mounted once in the global shell", () => {
-  assert.equal(cloudflareBeaconUrl, "https://static.cloudflareinsights.com/beacon.min.js");
-  assert.equal(cloudflareBeaconData, '{"token": "cdbaf80825cc47feaf2b19079a380f04"}');
-  assert.deepEqual(Object.keys(JSON.parse(cloudflareBeaconData)), ["token"]);
-  const layout = source("app/layout.tsx");
-  assert.equal((layout.match(/<Script\s/gu) ?? []).length, 1);
-  assert.match(layout, /analyticsEnabled \? <Script id="cloudflare-web-analytics" type="module" src=\{cloudflareBeaconUrl\} data-cf-beacon=\{cloudflareBeaconData\} strategy="afterInteractive"/u);
-  assert.match(layout, /requestHeaders\.get\(cloudflareAnalyticsHeader\) === "1"/u);
-  assert.match(layout, /requestHeaders\.get\("x-forwarded-host"\) \|\| requestHeaders\.get\("host"\)/u);
-  assert.doesNotMatch(source("lib/cloudflare-web-analytics.ts"), /fetch\(|sendBeacon|XMLHttpRequest|localStorage|sessionStorage|cookies\(|CustomEvent|addEventListener/u);
-});
-
-test("analytics is enabled only on the production canonical btshq.online host", () => {
-  const valid = { siteOrigin: origin, requestHost: "btshq.online", nodeEnv: "production" };
-  assert.equal(isCloudflareAnalyticsEnabled(valid), true);
-  assert.equal(isCloudflareAnalyticsEnabled({ ...valid, vercelEnv: "production" }), true);
-  for (const patch of [{ nodeEnv: "development" }, { nodeEnv: "test" }, { vercelEnv: "preview" }, { vercelEnv: "development" }, { requestHost: "localhost:3000" }, { requestHost: "preview.vercel.app" }, { requestHost: "www.btshq.online" }, { requestHost: null }, { siteOrigin: "https://other.example" }, { siteOrigin: "http://btshq.online" }]) {
-    assert.equal(isCloudflareAnalyticsEnabled({ ...valid, ...patch }), false);
+test("the root layout and media choice do not activate the paused Cloudflare beacon", () => {
+  for (const file of ["app/layout.tsx", "lib/cloudflare-web-analytics.ts", "components/spotlight/privacy-video.tsx"]) {
+    assert.doesNotMatch(source(file), /cloudflareinsights\.com|data-cf-beacon|cloudflareBeacon|isCloudflareAnalyticsEnabled|\/cdn-cgi\/rum/u, file);
   }
+  assert.match(source("components/spotlight/privacy-video.tsx"), /youtube-nocookie\.com/u);
 });
 
-test("all supported locales measure public routes while excluding private and token-bearing routes", () => {
+test("all supported locales retain the public boundary around private and token-bearing routes", () => {
   for (const locale of locales) {
     for (const path of publicPaths) assert.equal(isPublicAnalyticsPath(`/${locale}${path === "/" ? "" : path}`), true, `${locale}/${path}`);
     for (const path of privatePaths) assert.equal(isPublicAnalyticsPath(`/${locale}${path}`), false, `${locale}/${path}`);
@@ -95,15 +81,15 @@ test("the framing CSP and existing private product event boundaries remain intac
   }
 });
 
-test("all seven Privacy disclosures reflect cookie-free Cloudflare analytics without changing private storage promises", () => {
+test("all seven Privacy disclosures identify Vercel and explain the paused analytics service", () => {
+  const paused = { de: "ist pausiert", en: "is paused", es: "está en pausa", tr: "duraklatıldı", pl: "jest wstrzymane", el: "έχει τεθεί σε παύση", ru: "приостановлен" };
   for (const locale of locales) {
+    assert.match(privacyReleaseCopy[locale].sections.hosting.body.join(" "), /Vercel/u);
     const copy = privacyReleaseCopy[locale].sections.storage.body.join(" ");
-    assert.match(copy, /Cloudflare Web Analytics/u);
-    assert.match(copy, /Cloudflare, Inc\./u);
+    assert.ok(copy.includes(`Cloudflare Web Analytics ${paused[locale]}`), locale);
     assert.match(copy, /FYNS/u);
     assert.match(copy, /Career/u);
     assert.match(copy, /Life Vision/u);
     assert.match(copy, /20/u);
-    assert.doesNotMatch(copy, /contains no analytics|enthält keine Webanalyse|No hay analítica|Analitik, reklam|Nie ma analityki|Δεν υπάρχουν analytics|Нет аналитики/u);
   }
 });

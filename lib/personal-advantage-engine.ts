@@ -268,13 +268,40 @@ function probeFor(candidate: AdvantageCandidate, archetype: AdvantageProbe["arch
   return { ...base, prompt: `If you had to lose one part of ${candidate.label}, which loss would change how you operate more?`, options: [{ id: "a", label: names[0], interaction: .3 }, { id: "b", label: names[1], interaction: .3 }, { id: "unsure", label: "Not sure.", interaction: 0 }] };
 }
 
-export function generateAdvantageProbes(answers: AdvantageAnswerSet): AdvantageProbe[] {
+export function generateAdvantageProbes(answers: AdvantageAnswerSet, probeAnswers: AdvantageProbeAnswers = {}): AdvantageProbe[] {
   const candidates = buildAdvantageCandidates(answers).slice(0, 6);
   if (!candidates.length) return [];
   const closeLeaders = candidates.length > 1 && Math.abs(candidates[0].evidenceStrength - candidates[1].evidenceStrength) < .8;
   const contradictions = buildAdvantageSignalProfiles(answers).filter(({ contradiction }) => contradiction > .4).length;
   const target = Math.min(15, 8 + (closeLeaders ? 2 : 0) + Math.min(3, contradictions));
-  return Array.from({ length: target }, (_, index) => probeFor(candidates[index % candidates.length], archetypes[index % archetypes.length], index));
+  const plan = Array.from({ length: target }, (_, index) => probeFor(candidates[index % candidates.length], archetypes[index % archetypes.length], index));
+  // Keep IDs and every answered probe intact, including legacy completed maps.
+  // Sequence/replacement only add another interaction score; no order is used
+  // by the result model. Retain them when the earlier relationship is uncertain.
+  const clarified = new Set<string>();
+  return plan.filter((probe) => {
+    const answer = probe.options.find(({ id }) => id === probeAnswers[probe.id]);
+    const family = ["pair-interaction", "sequence", "replacement-test"].includes(probe.archetype) ? "relationship"
+      : ["outcome-check", "bridge-test"].includes(probe.archetype) ? "outcome" : probe.archetype;
+    const key = `${probe.candidateId}:${family}`;
+    if (!answer && clarified.has(key)) return false;
+    const confirmsRelationship = probe.archetype === "pair-interaction" && ["helps", "together"].includes(answer?.id ?? "");
+    const confirmsOutcome = probe.archetype === "outcome-check" && ["often", "few"].includes(answer?.id ?? "");
+    // Negative/uncertain answers still deserve the later challenge. Never infer
+    // a combination from component-level preferences or manufacture an answer.
+    if (answer && (confirmsRelationship || confirmsOutcome || (family === probe.archetype && answer.id !== "unsure"))) clarified.add(key);
+    return true;
+  });
+}
+
+export function reconcileAdvantageProbeAnswers(answers: AdvantageAnswerSet, probeAnswers: AdvantageProbeAnswers): Record<string, string> {
+  return Object.fromEntries(generateAdvantageProbes(answers).flatMap((probe) =>
+    probe.options.some(({ id }) => id === probeAnswers[probe.id]) ? [[probe.id, probeAnswers[probe.id]]] : []));
+}
+
+export function nextUnansweredAdvantageProbe(probes: readonly AdvantageProbe[], answers: AdvantageProbeAnswers): number {
+  const index = probes.findIndex((probe) => !probe.options.some(({ id }) => id === answers[probe.id]));
+  return index < 0 ? probes.length : index;
 }
 
 function countEvidenceClasses(candidate: AdvantageCandidate): string {
