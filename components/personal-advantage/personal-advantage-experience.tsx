@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { ResultFeedback } from "@/components/feedback/result-feedback";
+import { AdvantageEvidence, revealAdvantageEvidence } from "@/components/personal-advantage/advantage-evidence";
 import { PersonalAdvantageShareDialog } from "@/components/personal-advantage/personal-advantage-share-dialog";
 import { getAdvantageChapterDisplay, getAdvantageSignalDisplay, localizeAdvantageCandidate, localizeAdvantageMap, localizeAdvantageProbes, localizeAdvantageQuestion } from "@/data/personal-advantage-content-locales";
-import { getPersonalAdvantageDisplayLabels, getPersonalAdvantageUiCopy } from "@/data/personal-advantage-locales";
+import { getPersonalAdvantageDisplayLabels, getPersonalAdvantageEvidenceDisclosureLabel, getPersonalAdvantageUiCopy } from "@/data/personal-advantage-locales";
 import { emitPersonalAdvantageEvent } from "@/lib/personal-advantage-analytics";
 import {
   buildAdvantageCandidates,
@@ -15,6 +16,8 @@ import {
   generateAdvantageProbes,
   getActiveAdvantageQuestions,
   reconcileAdvantageAnswers,
+  reconcileAdvantageProbeAnswers,
+  nextUnansweredAdvantageProbe,
 } from "@/lib/personal-advantage-engine";
 import {
   clearAdvantageState,
@@ -55,7 +58,7 @@ export function PersonalAdvantageExperience({ formToken, introPrimer, introTitle
   const activeQuestions = useMemo(() => getActiveAdvantageQuestions(answers), [answers]);
   const currentIndex = Math.max(0, activeQuestions.findIndex(({ id }) => id === currentQuestionId));
   const question = activeQuestions[currentIndex] ? localizeAdvantageQuestion(activeQuestions[currentIndex], locale) : undefined;
-  const probes = useMemo(() => generateAdvantageProbes(answers), [answers]);
+  const probes = useMemo(() => generateAdvantageProbes(answers, probeAnswers), [answers, probeAnswers]);
   const displayProbes = useMemo(() => localizeAdvantageProbes(probes, locale), [probes, locale]);
   const preliminaryCandidates = useMemo(() => buildAdvantageCandidates(answers, probes, probeAnswers).slice(0, 3).map((item) => localizeAdvantageCandidate(item, locale)), [answers, probeAnswers, probes, locale]);
   const map = useMemo(() => localizeAdvantageMap(buildPersonalAdvantageMap(answers, probes, probeAnswers, calibration), locale), [answers, calibration, probeAnswers, probes, locale]);
@@ -89,7 +92,10 @@ export function PersonalAdvantageExperience({ formToken, introPrimer, introTitle
   const resume = () => {
     if (!resumeState) return;
     const reconciled = reconcileAdvantageAnswers(resumeState.answers);
-    setAnswers(reconciled); setProbeAnswers(resumeState.probeAnswers); setCalibration(resumeState.calibration); setCurrentQuestionId(resumeState.questionId ?? getActiveAdvantageQuestions(reconciled)[0]?.id ?? "q1"); setProbeIndex(0); setPersistEnabled(true); setPhase(resumeState.phase);
+    const restoredProbeAnswers = reconcileAdvantageProbeAnswers(reconciled, resumeState.probeAnswers);
+    const restoredProbes = generateAdvantageProbes(reconciled, restoredProbeAnswers);
+    const nextProbe = nextUnansweredAdvantageProbe(restoredProbes, restoredProbeAnswers);
+    setAnswers(reconciled); setProbeAnswers(restoredProbeAnswers); setCalibration(resumeState.calibration); setCurrentQuestionId(resumeState.questionId ?? getActiveAdvantageQuestions(reconciled)[0]?.id ?? "q1"); setProbeIndex(Math.min(nextProbe, Math.max(0, restoredProbes.length - 1))); setPersistEnabled(true); setPhase(resumeState.phase === "probes" && nextProbe === restoredProbes.length ? "calibration" : resumeState.phase);
     emitPersonalAdvantageEvent("advantage_resumed");
   };
   const reset = () => { if (window.confirm(copy.resetConfirm)) startFresh(); };
@@ -104,10 +110,10 @@ export function PersonalAdvantageExperience({ formToken, introPrimer, introTitle
     if (next) {
       if (next.chapter !== question.chapter) emitPersonalAdvantageEvent("advantage_chapter_completed");
       setCurrentQuestionId(next.id);
-    } else { setProbeIndex(0); setPhase("probes"); }
+    } else { setProbeIndex(0); setPhase(probes.length ? "probes" : "calibration"); }
   }} onReset={reset} />;
   if (phase === "probes") return <ProbeView locale={locale} copy={copy} probes={displayProbes} answers={probeAnswers} index={Math.min(probeIndex, Math.max(0, probes.length - 1))} onBack={() => { if (probeIndex > 0) setProbeIndex((index) => index - 1); else { setPhase("questions"); setCurrentQuestionId(activeQuestions.at(-1)?.id ?? "q1"); } }} onAnswer={(probeId, answer) => setProbeAnswers((current) => ({ ...current, [probeId]: answer }))} onNext={() => { if (probeIndex < probes.length - 1) setProbeIndex((index) => index + 1); else setPhase("calibration"); }} onReset={reset} />;
-  if (phase === "calibration") return <CalibrationView locale={locale} candidates={preliminaryCandidates} calibration={calibration} copy={copy} onBack={() => { setPhase("probes"); setProbeIndex(Math.max(0, probes.length - 1)); }} onChange={(id, value) => setCalibration((current) => ({ ...current, [id]: value }))} onContinue={() => setPhase("reveal")} onReset={reset} />;
+  if (phase === "calibration") return <CalibrationView locale={locale} candidates={preliminaryCandidates} calibration={calibration} copy={copy} onBack={() => { if (probes.length) { setPhase("probes"); setProbeIndex(probes.length - 1); } else { setPhase("questions"); setCurrentQuestionId(activeQuestions.at(-1)?.id ?? "q1"); } }} onChange={(id, value) => setCalibration((current) => ({ ...current, [id]: value }))} onContinue={() => setPhase("reveal")} onReset={reset} />;
   if (phase === "reveal") return <RevealView copy={copy} onReveal={() => { setPhase("result"); emitPersonalAdvantageEvent("advantage_completed"); emitPersonalAdvantageEvent("advantage_result_viewed"); }} />;
   return <AdvantageResult copy={copy} formToken={formToken} locale={locale} map={map} selectedExperiment={selectedExperiment} onSelectExperiment={(index) => { setSelectedExperiment(index); emitPersonalAdvantageEvent("advantage_experiment_selected"); }} onRetake={reset} onShare={() => setShareOpen(true)} shareOpen={shareOpen} onShareClose={() => setShareOpen(false)} />;
 }
@@ -156,7 +162,7 @@ function ProbeView({ answers, copy, locale, index, onAnswer, onBack, onNext, onR
 }
 
 function CalibrationView({ calibration, candidates, copy, locale, onBack, onChange, onContinue, onReset }: { calibration: AdvantageCalibration; locale: Locale; candidates: readonly AdvantageCandidate[]; copy: ReturnType<typeof getPersonalAdvantageUiCopy>; onBack: () => void; onChange: (id: string, value: AdvantageCalibrationValue) => void; onContinue: () => void; onReset: () => void }) {
-  const complete = candidates.length > 0 && candidates.every(({ id }) => calibration[id]);
+  const complete = candidates.every(({ id }) => calibration[id]);
   return <article className="section-lines min-h-screen px-5 pb-24 pt-28 sm:px-8"><div className="mx-auto max-w-6xl"><JourneyHeader copy={copy} chapter={copy.calibrationEyebrow} progress={1} onReset={onReset} /><main className="py-14 sm:py-20"><h1 className="text-5xl font-black text-white sm:text-7xl">{copy.calibrationTitle}</h1><p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{copy.calibrationBody}</p><div className="mt-12 grid gap-6">{candidates.map((candidate, index) => <section key={candidate.id} className="rounded-[1.75rem] border border-white/10 bg-[#071824]/70 p-6 sm:p-8" lang={locale === "de" ? "de" : "en"}><p className="font-mono text-xs text-[#77e5b5]">0{index + 1}</p><h2 className="mt-4 text-3xl font-black text-white">{candidate.label}</h2><p className="mt-3 font-mono text-xs leading-6 text-slate-500">{candidate.signalIds.map((id) => getAdvantageSignalDisplay(id, locale).label ?? id).join(" × ")}</p><p className="mt-5 max-w-4xl leading-7 text-slate-300">{candidate.synthesis}</p><div className="mt-6 grid gap-2 sm:grid-cols-3">{(["very-true", "sometimes-true", "not-really"] as const).map((value) => <button key={value} role="radio" aria-checked={calibration[candidate.id] === value} onClick={() => onChange(candidate.id, value)} className={`min-h-12 rounded-full border px-4 font-bold ${calibration[candidate.id] === value ? "border-[#77e5b5] bg-[#77e5b5]/10 text-white" : "border-white/10 text-slate-300"}`}>{value === "very-true" ? copy.veryTrue : value === "sometimes-true" ? copy.sometimesTrue : copy.notReally}</button>)}</div></section>)}</div></main><footer className="flex gap-3 border-t border-white/15 pt-7"><button onClick={onBack} className="min-h-12 rounded-full border border-white/15 px-6 font-bold text-white">← {copy.back}</button><button onClick={onContinue} disabled={!complete} className="ml-auto min-h-12 rounded-full bg-[#77e5b5] px-7 font-black text-[#041018] disabled:opacity-35">{copy.connecting} →</button></footer></div></article>;
 }
 
@@ -171,7 +177,6 @@ function AdvantageResult({ copy, formToken, locale, map, onRetake, onSelectExper
     <ResultNavigation locale={locale} copy={copy} />
     <section className="grid gap-12 border-b border-white/15 py-20 lg:grid-cols-[.4fr_1fr]"><h2 className="text-4xl font-black text-white">{copy.recognize}</h2><ul className="space-y-5">{map.playbook.showsUp.map((item) => <li key={item} className="border-l-2 border-[#77e5b5] pl-6 text-lg leading-8 text-slate-300">{item}</li>)}</ul></section>
     <section id="advantage-stack" className="scroll-mt-28 border-b border-white/15 py-20"><p className="font-mono text-xs uppercase tracking-[.2em] text-[#35d0e5]">{copy.why}</p><h2 className="mt-5 text-5xl font-black text-white sm:text-7xl">{copy.stack}</h2><div className="mt-12 grid border-l border-t border-white/10 md:grid-cols-2 xl:grid-cols-3">{map.stack.map((item, index) => <article key={item.signalId} className="min-h-64 border-b border-r border-white/10 p-7"><span className="font-mono text-xs text-slate-600">0{index + 1}</span><p className="mt-8 font-mono text-[10px] uppercase tracking-[.18em] text-[#77e5b5]">{item.role === "core" ? copy.core : item.role === "amplifier" ? copy.amplifier : copy.supporting}</p><h3 className="mt-4 text-2xl font-black text-white">{item.label}</h3><p className="mt-4 leading-7 text-slate-400">{getAdvantageSignalDisplay(item.signalId, locale).definition}</p></article>)}</div></section>
-    <section id="advantage-evidence" className="scroll-mt-28 grid gap-12 border-b border-white/15 py-20 lg:grid-cols-[.4fr_1fr]"><div><p className="font-mono text-xs uppercase tracking-[.2em] text-[#b8a5ff]">{labels.transparency}</p><h2 className="mt-5 text-5xl font-black text-white">{copy.evidence}</h2></div><div className="space-y-5">{map.evidenceSummary.map((item) => <div key={item.label} className="rounded-2xl border border-white/10 p-6"><h3 className="font-black text-white">{item.label}</h3><p className="mt-3 leading-7 text-slate-400">{item.detail}</p></div>)}</div></section>
     {map.supportingAdvantages.length || map.emergingAdvantage ? <section className="border-b border-white/15 py-20"><h2 className="text-5xl font-black text-white">{copy.portfolio}</h2><div className="mt-10 grid gap-5 md:grid-cols-2">{map.supportingAdvantages.map((item) => <PortfolioCard locale={locale} key={item.id} copy={copy} candidate={item} />)}{map.emergingAdvantage ? <PortfolioCard locale={locale} copy={copy} candidate={map.emergingAdvantage} /> : null}</div></section> : null}
     {map.hiddenAdvantages.length ? <section className="border-b border-white/15 py-20"><p className="font-mono text-xs uppercase tracking-[.2em] text-[#ff9a3d]">{labels.hidden}</p><h2 className="mt-5 text-5xl font-black text-white">{copy.hidden}</h2>{map.hiddenAdvantages.map((item) => <div key={item.label} className="mt-10 max-w-4xl border-l-2 border-[#ff9a3d] pl-7"><h3 className="text-3xl font-black text-white">{item.label}</h3><p className="mt-4 leading-8 text-slate-300">{item.explanation}</p><p className="mt-5 font-bold text-[#ffbd7c]">{item.experiment}</p></div>)}</section> : null}
     <section id="advantage-environment" className="scroll-mt-28 border-b border-white/15 py-20"><div className="grid gap-10 lg:grid-cols-2"><div><h2 className="text-5xl font-black text-white">{copy.powerful}</h2><ul className="mt-8 flex flex-wrap gap-3">{map.amplifierEnvironments.map((item) => <li key={item} className="rounded-full border border-[#77e5b5]/35 px-4 py-2 font-bold text-[#b8f4d8]">{item}</li>)}</ul></div><div><h2 className="text-5xl font-black text-white">{copy.killers}</h2><ul className="mt-8 space-y-4">{map.killers.map((item) => <li key={item} className="border-l border-white/15 pl-5 leading-7 text-slate-300">{item}</li>)}</ul></div></div></section>
@@ -180,10 +185,17 @@ function AdvantageResult({ copy, formToken, locale, map, onRetake, onSelectExper
     <section className="border-b border-white/15 py-20"><p className="font-mono text-xs uppercase tracking-[.2em] text-[#77e5b5]">{labels.experiment}</p><h2 className="mt-5 text-5xl font-black text-white">{copy.experimentTitle}</h2><p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{copy.experimentBody}</p><div className="mt-10 grid gap-4">{map.experiments.map((experiment, index) => <button key={experiment} type="button" aria-pressed={selectedExperiment === index} onClick={() => onSelectExperiment(index)} className={`min-h-16 rounded-2xl border p-5 text-left font-bold leading-7 ${selectedExperiment === index ? "border-[#77e5b5] bg-[#77e5b5]/10 text-white" : "border-white/10 text-slate-300"}`}><span className="mr-4 font-mono text-xs text-[#77e5b5]">0{index + 1}</span>{experiment}</button>)}</div></section>
     <section id="advantage-onepager" className="scroll-mt-28 py-20"><OnePager copy={copy} map={map} onShare={onShare} /><p className="mx-auto mt-12 max-w-3xl text-center text-lg leading-8 text-slate-400">{copy.hypothesis}</p><div className="mt-8 flex flex-wrap justify-center gap-3"><button onClick={onRetake} className="min-h-12 rounded-full border border-white/15 px-6 font-bold text-white">{copy.retake}</button><Link href={localizeHref("/about/how-my-brain-works", locale)} className="inline-flex min-h-12 items-center rounded-full border border-[#b8a5ff]/40 px-6 font-bold text-white">{copy.exploreBrain} →</Link></div></section>
     <ResultFeedback formToken={formToken} locale={locale} product="personal-advantage" />
+    <AdvantageEvidence copy={copy} items={map.evidenceSummary} label={getPersonalAdvantageEvidenceDisclosureLabel(locale)} transparency={labels.transparency} />
   </div>{shareOpen ? <PersonalAdvantageShareDialog locale={locale} copy={copy} map={map} onClose={onShareClose} /> : null}</article>;
 }
 
-function ResultNavigation({ copy, locale }: { copy: ReturnType<typeof getPersonalAdvantageUiCopy>; locale: Locale }) { const labels = getPersonalAdvantageDisplayLabels(locale); const links = [["advantage-overview", labels.overview], ["advantage-stack", copy.stack], ["advantage-evidence", copy.evidence], ["advantage-environment", labels.environment], ["advantage-tradeoffs", labels.tradeOffs], ["advantage-playbook", copy.playbook], ["advantage-onepager", copy.onePager]]; return <nav aria-label={labels.navigation} className="sticky top-20 z-20 -mx-5 overflow-x-auto border-b border-white/10 bg-[#04111b]/92 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8"><ul className="mx-auto flex min-w-max max-w-[90rem] gap-1 py-2">{links.map(([id, label]) => <li key={id}><a href={`#${id}`} className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-bold text-slate-400 hover:bg-white/5 hover:text-white">{label}</a></li>)}</ul></nav>; }
+function ResultNavigation({ copy, locale }: { copy: ReturnType<typeof getPersonalAdvantageUiCopy>; locale: Locale }) {
+  const labels = getPersonalAdvantageDisplayLabels(locale);
+  const links = [["advantage-overview", labels.overview], ["advantage-stack", copy.stack], ["advantage-environment", labels.environment], ["advantage-tradeoffs", labels.tradeOffs], ["advantage-playbook", copy.playbook], ["advantage-onepager", copy.onePager], ["advantage-evidence", copy.evidence]];
+  return <nav aria-label={labels.navigation} className="sticky top-20 z-20 -mx-5 overflow-x-auto border-b border-white/10 bg-[#04111b]/92 px-5 backdrop-blur-xl sm:-mx-8 sm:px-8"><ul className="mx-auto flex min-w-max max-w-[90rem] gap-1 py-2">{links.map(([id, label]) => <li key={id}><a href={`#${id}`} onClick={id === "advantage-evidence" ? (event) => {
+    if (!event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) revealAdvantageEvidence();
+  } : undefined} className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-bold text-slate-400 hover:bg-white/5 hover:text-white">{label}</a></li>)}</ul></nav>;
+}
 function PortfolioCard({ candidate, copy, locale }: { candidate: AdvantageCandidate; locale: Locale; copy: ReturnType<typeof getPersonalAdvantageUiCopy> }) { return <article className="rounded-[1.5rem] border border-white/10 p-6"><p className="font-mono text-xs uppercase tracking-[.18em] text-[#b8a5ff]">{copy.confidence[candidate.confidence]}</p><h3 className="mt-4 text-3xl font-black text-white">{candidate.label}</h3><p className="mt-3 font-mono text-xs text-slate-500">{candidate.signalIds.map((id) => getAdvantageSignalDisplay(id, locale).label ?? id).join(" × ")}</p><p className="mt-5 leading-7 text-slate-300">{candidate.synthesis}</p></article>; }
 function ResultPanel({ accent, body, eyebrow }: { accent: string; body: string; eyebrow: string }) { return <article className="rounded-[1.5rem] border border-white/10 p-6" style={{ borderTopColor: accent, borderTopWidth: 2 }}><p className="font-mono text-xs uppercase tracking-[.18em]" style={{ color: accent }}>{eyebrow}</p><p className="mt-5 leading-7 text-slate-300">{body}</p></article>; }
 function PlaybookList({ items, title }: { items: readonly string[]; title: string }) { return <section><h3 className="text-2xl font-black text-white">{title}</h3><ul className="mt-5 space-y-3">{items.map((item) => <li key={item} className="border-l border-[#77e5b5]/50 pl-5 leading-7 text-slate-300">{item}</li>)}</ul></section>; }

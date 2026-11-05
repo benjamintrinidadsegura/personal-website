@@ -13,6 +13,7 @@ import {
   downloadShareCardFile,
   renderShareCardFile,
   shareCardFile,
+  shareCardPixelSize,
   supportsNativeFileShare,
 } from "@/lib/sharing/native-card-share";
 import type { WritingShareFormat } from "@/types/writing";
@@ -27,6 +28,7 @@ export function ShareFileActions({
   text,
   title,
   url,
+  imageFallback = false,
 }: {
   cardRef: RefObject<HTMLDivElement | null>;
   fileName: string;
@@ -35,6 +37,7 @@ export function ShareFileActions({
   text: string;
   title: string;
   url?: string | null;
+  imageFallback?: boolean;
 }) {
   const locale = useLocale();
   const canonicalSiteUrl = useCanonicalSiteUrl();
@@ -43,12 +46,14 @@ export function ShareFileActions({
   const [file, setFile] = useState<File | null>(null);
   const [preparing, setPreparing] = useState(true);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const canCopyImage = typeof ClipboardItem !== "undefined" && typeof navigator.clipboard?.write === "function";
   const canShareFile = file ? supportsNativeFileShare(navigator, file) : false;
   const webDestinations = webShareDestinations({ text, url }, canonicalSiteUrl);
 
   useEffect(() => {
     let cancelled = false;
+    let objectUrl: string | null = null;
     const card = cardRef.current?.querySelector<HTMLElement>(".writing-share-card");
     if (!card) {
       setPreparing(false);
@@ -56,11 +61,21 @@ export function ShareFileActions({
       return;
     }
     void renderShareCardFile(card, format, fileName)
-      .then((next) => { if (!cancelled) setFile(next); })
+      .then((next) => {
+        if (cancelled) return;
+        setFile(next);
+        if (imageFallback) {
+          try { objectUrl = URL.createObjectURL(next); setImageUrl(objectUrl); }
+          catch { /* Existing copy/screenshot guidance remains available. */ }
+        }
+      })
       .catch(() => { if (!cancelled) setFeedback("renderFailed"); })
       .finally(() => { if (!cancelled) setPreparing(false); });
-    return () => { cancelled = true; };
-  }, [cardRef, fileName, format, renderKey]);
+    return () => {
+      cancelled = true;
+      if (objectUrl) { const releasedUrl = objectUrl; window.setTimeout(() => URL.revokeObjectURL(releasedUrl), 30_000); }
+    };
+  }, [cardRef, fileName, format, renderKey, imageFallback]);
 
   const share = async () => {
     if (!file) return;
@@ -107,6 +122,14 @@ export function ShareFileActions({
         <button type="button" onClick={download} disabled={!file || preparing} className="writing-share-secondary">{preparing ? copy.preparing : copy.downloadImage}</button>
         {canCopyImage ? <button type="button" onClick={() => void copyImage()} disabled={!file || preparing} className="writing-share-secondary">{copy.copyImage}</button> : null}
       </div>
+      {imageFallback && file ? <div>
+        {imageUrl ? <details>
+          <summary className="writing-share-secondary cursor-pointer">{copy.openImage}</summary>
+          {/* eslint-disable-next-line @next/next/no-img-element -- This private, generated PNG must stay in this browser and support its native image menu. */}
+          <img src={imageUrl} alt={title} width={shareCardPixelSize[format].width} height={shareCardPixelSize[format].height} className="mt-3 h-auto w-full" />
+        </details> : null}
+        <p className="mt-2 text-xs leading-5 text-slate-400">{copy.saveHint}</p>
+      </div> : null}
       <p className="text-xs leading-5 text-slate-500">{canShareFile ? destinationsCopy.nativeHint : copy.fallbackHint}</p>
       {feedback ? <p role="status" className={`text-sm ${feedback === "renderFailed" || feedback === "actionFailed" ? "text-[#ffcfaa]" : "text-[#9debf4]"}`}>{feedback === "copied" ? copy.imageCopied : feedback === "downloaded" ? copy.imageDownloaded : feedback === "renderFailed" ? copy.imageFailed : copy.actionFailed}</p> : null}
     </div>
