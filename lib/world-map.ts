@@ -61,9 +61,10 @@ export function centerWorldMapPoint(
   zoom: number,
 ): WorldMapOffset {
   const boundedZoom = clampWorldMapZoom(zoom);
+  const fit = Math.min(viewport.width / geometry.width, viewport.height / geometry.height);
   return clampWorldMapOffset({
-    x: -(point.x / geometry.width - 0.5) * viewport.width * boundedZoom,
-    y: -(point.y / geometry.height - 0.5) * viewport.height * boundedZoom,
+    x: (geometry.width / 2 - point.x) * fit * boundedZoom,
+    y: (geometry.height / 2 - point.y) * fit * boundedZoom,
   }, viewport, boundedZoom);
 }
 

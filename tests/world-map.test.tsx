@@ -196,7 +196,8 @@ test("FOLLOW-UP map math keeps zoom bounded, pointer-centred and panning inside 
   assert.equal(clampWorldMapZoom(99), WORLD_MAP_MAX_ZOOM);
   assert.deepEqual(clampWorldMapOffset({ x: 900, y: -900 }, viewport, 2), { x: 544, y: -280 });
   assert.deepEqual(zoomWorldMapAt({ x: 0, y: 0 }, 1, 2, { x: 25, y: 75 }, viewport), { x: 250, y: -125 });
-  assert.deepEqual(centerWorldMapPoint({ x: 250, y: 127.5 }, { width: 1000, height: 510 }, viewport, 2), { x: 500, y: 250 });
+  assert.deepEqual(centerWorldMapPoint({ x: 250, y: 125 }, { width: 1000, height: 500 }, viewport, 2), { x: 500, y: 250 });
+  assert.deepEqual(centerWorldMapPoint({ x: 250, y: 125 }, { width: 1000, height: 500 }, { width: 320, height: 480 }, 2), { x: 160, y: 80 });
 });
 
 test("FINAL FIX 2: a non-passive listener gives active-map wheel input exclusive, pointer-centred zoom ownership", () => {
@@ -383,6 +384,8 @@ test("MAP-02/MAP-09/MAP-12/MAP-26/MAP-27 render geography, real filters and text
   assert.match(html, /World/u);
   assert.match(html, /Germany/u);
   assert.match(html, /Accessible map list/u);
+  assert.match(html, /href="#map-list-title"/u);
+  assert.match(html, /href="\/en\/people\/evgeny-vinokurov"/u);
   assert.match(html, /data-map-selection="empty"/u);
   assert.match(html, /data-map-interaction="passive"/u);
   assert.match(html, /data-map-interaction-toggle/u);
