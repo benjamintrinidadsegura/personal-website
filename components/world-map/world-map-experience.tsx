@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 
 import { useLocale, useLocalizedHref } from "@/components/i18n/locale-context";
 import { getWorldMapDictionary } from "@/data/i18n/world-map";
@@ -258,7 +258,7 @@ export function ContextCard({
   );
 }
 
-export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry }) {
+export function WorldMapExperience({ geometry, children }: { geometry: WorldMapGeometry; children?: ReactNode }) {
   const locale = useLocale();
   const href = useLocalizedHref();
   const copy = getWorldMapDictionary(locale);
@@ -353,13 +353,28 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
     setSelectedId(null);
   };
 
-  const openDetail = (connection: ProjectedWorldMapConnection, opener: HTMLElement) => {
+  const openDetail = useCallback((id: string, opener: HTMLElement) => {
+    const connection = matchingConnections.find((entry) => entry.id === id);
+    if (!connection) return;
     detailOpener.current = opener;
     selectConnection(connection, true, viewportSize() ?? undefined);
     window.requestAnimationFrame(() => {
-      const heading = mapViewport.current?.querySelector<HTMLElement>("#context-card-title");
-      heading?.focus();
+      const viewport = mapViewport.current;
+      const heading = viewport?.querySelector<HTMLElement>("#context-card-title");
+      if (!viewport || !heading) return;
+      if (!viewport.contains(opener)) {
+        viewport.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+          block: "center",
+        });
+      }
+      heading.focus({ preventScroll: true });
     });
+  }, [matchingConnections, selectConnection, viewportSize]);
+
+  const openPin = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    openDetail(event.currentTarget.value, event.currentTarget);
   };
 
   const progressStats = [
@@ -570,7 +585,7 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
                         const shortLabel = placeLabel(group[0].currentLocation, copy);
                         const callout = placeCalloutOffset[group[0].currentLocation.id] ?? { x: 0, y: 0 };
                         return (
-                          <button key={group[0].currentLocation.id} type="button" onClick={(event) => { event.stopPropagation(); openDetail(group[0], event.currentTarget); }} aria-controls={selected ? "world-map-context" : undefined} aria-pressed={selected?.currentLocation.id === group[0].currentLocation.id} aria-label={`${label}; ${group.length} ${copy.entriesAtLocation}`} className="world-map-pin world-map-pin-cluster" style={{ left: `calc(${(point.x / geometry.width) * 100}% + ${(callout.x * 0.35) / zoom}px)`, top: `calc(${(point.y / geometry.height) * 100}% + ${(callout.y * 0.35) / zoom}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
+                          <button key={group[0].currentLocation.id} type="button" value={group[0].id} onClick={openPin} aria-controls={selected ? "world-map-context" : undefined} aria-pressed={selected?.currentLocation.id === group[0].currentLocation.id} aria-label={`${label}; ${group.length} ${copy.entriesAtLocation}`} className="world-map-pin world-map-pin-cluster" style={{ left: `calc(${(point.x / geometry.width) * 100}% + ${(callout.x * 0.35) / zoom}px)`, top: `calc(${(point.y / geometry.height) * 100}% + ${(callout.y * 0.35) / zoom}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
                             <span aria-hidden="true">{group.length}</span>
                             <span className="world-map-pin-tooltip">{shortLabel}</span>
                           </button>
@@ -583,7 +598,7 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
                         const angle = (index / Math.max(group.length, 1)) * Math.PI * 2;
                         const spread = group.length > 1 ? 25 : 0;
                         return (
-                          <button key={connection.id} type="button" onClick={(event) => { event.stopPropagation(); openDetail(connection, event.currentTarget); }} aria-controls={selected ? "world-map-context" : undefined} aria-pressed={selected?.id === connection.id} aria-label={`${selected?.id === connection.id ? `${copy.selectedPin}: ` : ""}${copy.pinFor} ${connection.entity.name}, ${locationLabel(connection.currentLocation, copy)}; ${kinds.map((kind) => copy.categories[kind].label).join(", ")}`} className={`world-map-pin ${categoryTone[primary]} ${primary === "interviewed" || primary === "advertising-partner" ? "rounded-full" : primary === "partner" ? "rotate-45 rounded-[0.3rem]" : primary === "team-up" ? "rounded-xl" : "rounded-[0.1rem]"}`} style={{ left: `calc(${(connection.point.x / geometry.width) * 100}% + ${Math.cos(angle) * spread}px)`, top: `calc(${(connection.point.y / geometry.height) * 100}% + ${Math.sin(angle) * spread}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
+                          <button key={connection.id} type="button" value={connection.id} onClick={openPin} aria-controls={selected ? "world-map-context" : undefined} aria-pressed={selected?.id === connection.id} aria-label={`${selected?.id === connection.id ? `${copy.selectedPin}: ` : ""}${copy.pinFor} ${connection.entity.name}, ${locationLabel(connection.currentLocation, copy)}; ${kinds.map((kind) => copy.categories[kind].label).join(", ")}`} className={`world-map-pin ${categoryTone[primary]} ${primary === "interviewed" || primary === "advertising-partner" ? "rounded-full" : primary === "partner" ? "rotate-45 rounded-[0.3rem]" : primary === "team-up" ? "rounded-xl" : "rounded-[0.1rem]"}`} style={{ left: `calc(${(connection.point.x / geometry.width) * 100}% + ${Math.cos(angle) * spread}px)`, top: `calc(${(connection.point.y / geometry.height) * 100}% + ${Math.sin(angle) * spread}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
                             <span className={primary === "partner" ? "-rotate-45" : ""}>{selected?.id === connection.id ? "✓" : categoryGlyph[primary]}</span>
                             <span className={`world-map-pin-tooltip ${primary === "partner" ? "-rotate-45" : ""}`}>{connection.entity.name}</span>
                           </button>
@@ -625,15 +640,17 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
             <div><h2 id="map-list-title" tabIndex={-1} className="mt-5 text-4xl font-black text-white sm:text-5xl">{copy.list.title}</h2><p className="mt-5 leading-7 text-slate-400">{copy.list.description}</p></div>
             <div>
               {matchingConnections.length === 0 ? <p role="status" className="mb-5 rounded-xl border border-[#ff9a3d]/30 bg-[#ff9a3d]/[0.04] p-5 text-sm font-bold text-slate-200">{copy.list.empty}</p> : null}
-              <ul className="border-t border-white/15">{geometry.connections.map((connection) => { const active = matchesWorldMapFilter(connection, filter); const kinds = relationshipKinds(connection); return <li key={connection.id} className={`grid gap-4 border-b border-white/10 py-5 transition sm:grid-cols-[1fr_auto] sm:items-center motion-reduce:transition-none ${active ? "" : "bg-white/[0.025]"}`}><div><p className="text-xl font-black text-white">{connection.entity.name}</p><p className="mt-1 text-sm text-slate-400">{locationLabel(connection.currentLocation, copy)}</p>{connection.origin ? <p className="mt-1 text-xs living-muted">{copy.context.origin}: {locationLabel(connection.origin, copy)}</p> : null}<div className="mt-3 flex flex-wrap gap-2">{kinds.map((kind) => <span key={kind} className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-[0.12em] ${categoryOutline[kind]}`}><FilterIcon kind={kind} />{copy.categories[kind].short}</span>)}</div></div><button type="button" disabled={!active} onClick={(event) => openDetail(connection, event.currentTarget)} className="min-h-11 rounded-full border border-white/15 px-5 text-sm font-black text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] disabled:cursor-not-allowed">{active ? copy.list.open : copy.list.receded}</button><Link className="living-link sm:col-span-2" href={href(connection.entity.sourceHref)}>{copy.context.openStory}<span aria-hidden="true">↗</span></Link></li>; })}</ul>
+              <ul className="border-t border-white/15">{geometry.connections.map((connection) => { const active = matchesWorldMapFilter(connection, filter); const kinds = relationshipKinds(connection); return <li key={connection.id} className={`grid gap-4 border-b border-white/10 py-5 transition sm:grid-cols-[1fr_auto] sm:items-center motion-reduce:transition-none ${active ? "" : "bg-white/[0.025]"}`}><div><p className="text-xl font-black text-white">{connection.entity.name}</p><p className="mt-1 text-sm text-slate-400">{locationLabel(connection.currentLocation, copy)}</p>{connection.origin ? <p className="mt-1 text-xs living-muted">{copy.context.origin}: {locationLabel(connection.origin, copy)}</p> : null}<div className="mt-3 flex flex-wrap gap-2">{kinds.map((kind) => <span key={kind} className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-[0.12em] ${categoryOutline[kind]}`}><FilterIcon kind={kind} />{copy.categories[kind].short}</span>)}</div></div><button type="button" disabled={!active} onClick={(event) => openDetail(connection.id, event.currentTarget)} className="min-h-11 rounded-full border border-white/15 px-5 text-sm font-black text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] disabled:cursor-not-allowed">{active ? copy.list.open : copy.list.receded}</button><Link className="living-link sm:col-span-2" href={href(connection.entity.sourceHref)}>{copy.context.openStory}<span aria-hidden="true">↗</span></Link></li>; })}</ul>
             </div>
           </div>
         </section>
 
+        {children}
+
         <section aria-labelledby="map-cta-title" className="living-panel p-7 sm:p-12 lg:p-16">
           <div className="grid min-w-0 grid-cols-1 gap-10 lg:grid-cols-[1fr_0.78fr] lg:items-end">
             <div><p className="font-mono text-xs font-black uppercase tracking-[0.22em] text-[#ff9a3d]">{copy.cta.eyebrow}</p><h2 id="map-cta-title" className="mt-5 max-w-4xl text-4xl font-black leading-none text-white sm:text-6xl">{copy.cta.title}</h2><p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{copy.cta.description}</p><p className="mt-5 max-w-3xl text-sm leading-6 living-muted">{copy.cta.boundary}</p></div>
-            <div><p className="font-mono text-[10px] uppercase tracking-[0.17em] living-muted">{copy.cta.pathwaysLabel}</p><div className="mt-4 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">{[copy.cta.interview, copy.cta.collaborate, copy.cta.build, copy.cta.partner].map((label) => <Link key={label} href={href("/#contact")} className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-white/10 px-4 text-sm font-black text-slate-200 hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5]"><span>{label}</span><span aria-hidden="true" className="text-[#35d0e5]">→</span></Link>)}<Link href={href("/#contact")} className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-[#ff9a3d]/50 bg-[#ff9a3d]/[0.05] px-4 text-sm font-black text-white hover:border-[#ff9a3d] focus-visible:outline-2 focus-visible:outline-[#ff9a3d] min-[420px]:col-span-2"><span><strong>{copy.cta.somethingElse}</strong><small className="mt-1 block font-normal leading-5 text-slate-400">{copy.cta.somethingElseHint}</small></span><span aria-hidden="true" className="text-[#ff9a3d]">→</span></Link></div><Link href={href("/#contact")} className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#35d0e5] px-6 py-3 font-black text-[#041018] hover:bg-[#73e3f1] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5]">{copy.cta.action} →</Link></div>
+            <div><p className="font-mono text-[10px] uppercase tracking-[0.17em] living-muted">{copy.cta.pathwaysLabel}</p><div className="mt-4 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">{[copy.cta.interview, copy.cta.collaborate, copy.cta.build, copy.cta.partner].map((label) => <Link key={label} href={href("/#contact")} className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-white/10 px-4 text-sm font-black text-slate-200 hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5]"><span>{label}</span><span aria-hidden="true" className="text-[#35d0e5]">→</span></Link>)}<Link href={href("/#contact")} className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-[#ff9a3d]/50 bg-[#ff9a3d]/[0.05] px-4 text-sm font-black text-white hover:border-[#ff9a3d] focus-visible:outline-2 focus-visible:outline-[#ff9a3d] min-[420px]:col-span-2"><span><strong>{copy.cta.somethingElse}</strong><small className="mt-1 block font-normal leading-5 text-slate-400">{copy.cta.somethingElseHint}</small></span><span aria-hidden="true" className="text-[#ff9a3d]">→</span></Link></div><Link href={href("/#contact")} className="living-action mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#35d0e5] px-6 py-3 font-black text-[#041018] hover:bg-[#73e3f1] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5]">{copy.cta.action} →</Link></div>
           </div>
         </section>
       </div>

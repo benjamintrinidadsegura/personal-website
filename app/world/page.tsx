@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { WorldMapLayers } from "@/components/world-map/world-map-layers";
 import { WorldMapExperience } from "@/components/world-map/world-map-experience";
 import { getLocalizedPublishedSpotlights } from "@/data/i18n/people";
 import { getWorldMapDictionary } from "@/data/i18n/world-map";
@@ -23,5 +24,5 @@ export default async function WorldMapPage() {
   const locale = await getLocale();
   const connections = createWorldMapConnections(getLocalizedPublishedSpotlights(locale));
   const geometry = createWorldMapGeometry(connections);
-  return <WorldMapExperience geometry={geometry} />;
+  return <WorldMapExperience geometry={geometry}><WorldMapLayers locale={locale} /></WorldMapExperience>;
 }
