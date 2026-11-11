@@ -21,6 +21,7 @@ export type EchoField =
   | "displayName"
   | "message"
   | "category"
+  | "countryCode"
   | "email"
   | "consent";
 
@@ -29,6 +30,8 @@ export type EchoSubmission = {
   message: string;
   category: EchoCategory | null;
   email: string | null;
+  countryCode?: string;
+  includeInCommunityMap?: boolean;
 };
 
 export type PublicEcho = {
@@ -37,12 +40,14 @@ export type PublicEcho = {
   message: string;
   category: EchoCategory | null;
   publishedAt: string;
+  countryCode?: string;
+  includeInCommunityMap?: boolean;
 };
 
 export type PublicEchoQueryResult =
-  | { status: "data"; echoes: PublicEcho[] }
-  | { status: "empty"; echoes: [] }
-  | { status: "unavailable"; echoes: [] };
+  | { status: "data"; echoes: PublicEcho[]; countryContextAvailable?: boolean }
+  | { status: "empty"; echoes: []; countryContextAvailable?: boolean }
+  | { status: "unavailable"; echoes: []; countryContextAvailable?: boolean };
 
 export type SubmitEchoErrorCode =
   | "INVALID_INPUT"
@@ -72,6 +77,8 @@ export type RawEchoSubmission = {
   message: unknown;
   category: unknown;
   email: unknown;
+  countryCode?: unknown;
+  includeInCommunityMap?: unknown;
   consent: unknown;
   website: unknown;
   formToken: unknown;

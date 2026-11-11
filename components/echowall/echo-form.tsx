@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 
 import { submitEchoAction } from "@/app/echowall/actions";
 import { useLocalizedHref } from "@/components/i18n/locale-context";
+import type { livingWorldCopy } from "@/data/i18n/living-world";
 import type { EchoDictionary } from "@/data/i18n/echowall";
 import type { EchoActionState, EchoField } from "@/types/echowall";
 
@@ -12,18 +13,31 @@ const initialState: EchoActionState = null;
 type EchoFormProps = {
   formToken: string | null;
   copy: EchoDictionary["form"];
+  countryOptions?: { code: string; label: string }[];
+  countryCopy?: (typeof livingWorldCopy)["en"];
 };
 
-export function EchoForm({ formToken, copy }: EchoFormProps) {
+export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoFormProps) {
   const href = useLocalizedHref();
   const [state, formAction, isPending] = useActionState(submitEchoAction, initialState);
-  const [messageLength, setMessageLength] = useState(0);
+  const [displayName, setDisplayName] = useState("");
+  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState("");
+  const [category, setCategory] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [countryCode, setCountryCode] = useState("");
+  const [includeInCommunityMap, setIncludeInCommunityMap] = useState(false);
+  const successRef = useRef<HTMLHeadingElement>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const formRef = useRef<HTMLFormElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!state || state.ok) return;
+    if (!state) return;
+    if (state.ok) {
+      successRef.current?.focus();
+      return;
+    }
     const invalidField = formRef.current?.querySelector<HTMLElement>("[aria-invalid='true']");
     (invalidField ?? errorRef.current)?.focus();
   }, [state]);
@@ -52,7 +66,7 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
     return (
       <div className="border border-[#35d0e5]/35 bg-[#35d0e5]/[0.055] p-6 sm:p-10" role="status">
         <p className="font-mono text-xs font-bold uppercase tracking-[0.22em] text-[#35d0e5]">{copy.receivedLabel}</p>
-        <h3 className="mt-5 text-3xl font-black text-white sm:text-4xl">{copy.receivedTitle}</h3>
+        <h3 ref={successRef} tabIndex={-1} className="mt-5 text-3xl font-black text-white sm:text-4xl">{copy.receivedTitle}</h3>
         <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
           {copy.receivedBody}
         </p>
@@ -91,11 +105,19 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
     );
   }
 
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    // Keep the native action for progressive enhancement and preserve the draft in the hydrated form.
+    event.preventDefault();
+    if (isPending) return;
+    const data = new FormData(event.currentTarget);
+    startTransition(() => formAction(data));
+  };
+
   const fieldError = (field: EchoField) =>
     state && !state.ok ? state.fieldErrors?.[field] : undefined;
 
   return (
-    <form ref={formRef} action={formAction} noValidate className="space-y-8">
+    <form ref={formRef} action={formAction} onSubmit={submit} noValidate className="living-echo-form space-y-8">
       <input type="hidden" name="formToken" value={formToken} />
 
       <div
@@ -116,6 +138,8 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
           <input
             id="echo-display-name"
             name="displayName"
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
             type="text"
             required
             minLength={2}
@@ -137,7 +161,8 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
             aria-describedby={`category-help${fieldError("category") ? " category-error" : ""}`}
             aria-invalid={fieldError("category") ? true : undefined}
             className="mt-3 min-h-12 w-full border border-white/15 bg-[#07192b] px-4 py-3 text-white outline-none transition focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
-            defaultValue=""
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
           >
             <option value="">{copy.noCategory}</option>
             <option value="thought">{copy.categories.thought}</option>
@@ -152,7 +177,7 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
       <div>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <label htmlFor="echo-message" className="font-bold text-white">{copy.message} <span className="text-[#ff9a3d]">({copy.required})</span></label>
-          <span id="message-counter" className="font-mono text-xs text-slate-500" aria-live="off">{messageLength} / 500</span>
+          <span id="message-counter" className="font-mono text-xs text-slate-500" aria-live="off">{Array.from(message).length} / 500</span>
         </div>
         <p id="message-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.messageHelp}</p>
         <textarea
@@ -162,7 +187,8 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
           minLength={10}
           maxLength={500}
           rows={7}
-          onChange={(event) => setMessageLength(Array.from(event.target.value).length)}
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
           aria-describedby={`message-help message-counter${fieldError("message") ? " message-error" : ""}`}
           aria-invalid={fieldError("message") ? true : undefined}
           className="mt-3 w-full resize-y border border-white/15 bg-[#07192b] px-4 py-3 leading-7 text-white outline-none transition placeholder:text-slate-600 focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
@@ -176,6 +202,8 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
         <input
           id="echo-email"
           name="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
           type="email"
           maxLength={254}
           autoComplete="email"
@@ -186,6 +214,33 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
         {fieldError("email") && <p id="email-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("email")}</p>}
       </div>
 
+      {countryOptions && countryCopy ? (
+        <div className="living-panel space-y-3 p-4 sm:p-6">
+          <label htmlFor="echo-country" className="block font-bold text-white">
+            {countryCopy.country} <span className="font-normal text-slate-300">({copy.optional})</span>
+          </label>
+          <p id="echo-country-help" className="text-sm leading-6 text-slate-300">{countryCopy.countryHelp}</p>
+          <select id="echo-country" name="countryCode" value={countryCode}
+            onChange={(event) => {
+              setCountryCode(event.target.value);
+              if (!event.target.value) setIncludeInCommunityMap(false);
+            }}
+            aria-describedby={fieldError("countryCode") ? "echo-country-help echo-country-error" : "echo-country-help"}
+            aria-invalid={fieldError("countryCode") ? true : undefined}
+            className="min-h-12 w-full rounded-lg border border-white/25 bg-[#241922] px-3 text-white">
+            <option value="">{countryCopy.countryOmit}</option>
+            {countryOptions.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}
+          </select>
+          {fieldError("countryCode") ? <p id="echo-country-error" className="text-sm text-[#ffad63]">{fieldError("countryCode")}</p> : null}
+          <label className="flex min-h-11 items-center gap-3 text-sm text-slate-200 has-[:disabled]:text-slate-400">
+            <input type="checkbox" name="includeInCommunityMap" value="true" checked={includeInCommunityMap}
+              disabled={!countryCode} onChange={(event) => setIncludeInCommunityMap(event.target.checked)}
+              className="size-5 shrink-0 accent-[#f5c894]" />
+            {countryCopy.countryConsent}
+          </label>
+        </div>
+      ) : null}
+
       <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
         <input id="echo-website" name="website" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" />
       </div>
@@ -195,6 +250,8 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
           <input
             id="echo-consent"
             name="consent"
+            checked={consent}
+            onChange={(event) => setConsent(event.target.checked)}
             type="checkbox"
             value="true"
             required
@@ -215,7 +272,7 @@ export function EchoForm({ formToken, copy }: EchoFormProps) {
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex min-h-12 items-center rounded-full bg-[#35d0e5] px-7 py-3 font-black text-[#041018] transition hover:-translate-y-0.5 hover:bg-[#73e3f1] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5] disabled:cursor-wait disabled:opacity-60 motion-reduce:transform-none"
+        className="living-action inline-flex min-h-12 items-center rounded-full bg-[#35d0e5] px-7 py-3 font-black text-[#041018] transition hover:-translate-y-0.5 hover:bg-[#73e3f1] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5] disabled:cursor-wait disabled:opacity-60 motion-reduce:transform-none"
       >
         {isPending ? copy.submitting : copy.submit}
       </button>

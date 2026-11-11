@@ -5,6 +5,8 @@ import { EchoForm } from "@/components/echowall/echo-form";
 import { EchoList } from "@/components/echowall/echo-list";
 import { issueEchoFormToken } from "@/app/echowall/actions";
 import { getApprovedEchoes } from "@/lib/echowall/queries";
+import { livingWorldCopy } from "@/data/i18n/living-world";
+import { echoCountryOptions } from "@/lib/echowall/countries";
 import { getEchoDictionary } from "@/data/i18n/echowall";
 import { getGlobalDictionary } from "@/data/i18n/global";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
@@ -20,7 +22,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EchoWallPage() {
   const [echoResult, formToken, locale] = await Promise.all([
-    getApprovedEchoes(50),
+    getApprovedEchoes(50, true),
     issueEchoFormToken(),
     getLocale(),
   ]);
@@ -29,8 +31,7 @@ export default async function EchoWallPage() {
   const [firstTitle, secondTitle] = copy.title.split("\n");
 
   return (
-    <article className="relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36">
-      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[52rem] bg-[radial-gradient(circle_at_72%_18%,rgba(53,208,229,0.14),transparent_25rem),radial-gradient(circle_at_16%_34%,rgba(255,122,0,0.07),transparent_22rem)]" />
+    <article className="living-world living-echo relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36">
       <div className="relative mx-auto max-w-[90rem]">
         <nav aria-label={globalCopy.breadcrumbNavigation} className="font-mono text-xs text-slate-400">
           <ol className="flex flex-wrap items-center gap-2">
@@ -40,13 +41,14 @@ export default async function EchoWallPage() {
           </ol>
         </nav>
 
-        <header className="grid min-h-[68svh] items-center gap-12 border-b border-white/15 py-16 lg:grid-cols-[1.15fr_0.85fr] lg:py-24">
+        <header className="living-echo-intro grid items-center gap-9 border-b border-white/15 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.3em] text-[#35d0e5]">{copy.eyebrow}</p>
-            <h1 className="mt-7 text-[clamp(3.5rem,10vw,8.5rem)] font-black leading-[0.86] tracking-[-0.055em] text-white">{firstTitle}<br />{secondTitle}</h1>
-            <p className="mt-8 max-w-3xl text-xl font-black leading-snug text-white sm:text-3xl">{copy.intro}</p>
+            <h1 className="living-title mt-7 text-[clamp(3rem,8vw,7.4rem)] tracking-[-0.055em]">{firstTitle}<br />{secondTitle}</h1>
+            <p className="mt-6 max-w-3xl text-xl leading-snug text-white sm:text-2xl">{copy.intro}</p>
+            <a className="living-link mt-5" href="#leave-an-echo">{copy.formTitle}<span aria-hidden="true">↓</span></a>
           </div>
-          <aside className="border-l border-[#ff9a3d] pl-7">
+          <aside className="living-panel p-6 sm:p-8">
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-[#ff9a3d]">{copy.moderationLabel}</p>
             <p className="mt-6 text-2xl font-black leading-snug text-white sm:text-3xl">{copy.moderationTitle}</p>
             <p className="mt-6 leading-7 text-slate-400">{copy.moderationBody}</p>
@@ -62,15 +64,15 @@ export default async function EchoWallPage() {
           {echoResult.status === "data" ? (
             <div className="mt-14"><EchoList echoes={echoResult.echoes} /></div>
           ) : echoResult.status === "empty" ? (
-            <div className="mt-14 border-l-2 border-[#35d0e5] bg-white/[0.025] p-7 sm:p-10">
+            <div className="living-panel mt-9 p-7 sm:p-10">
               <h3 className="text-3xl font-black text-white">{copy.emptyTitle}</h3>
               <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-300">{copy.emptyBody}</p>
               <a href="#leave-an-echo" className="mt-7 inline-flex min-h-11 items-center rounded-full border border-[#35d0e5]/50 px-5 py-3 font-black text-white transition hover:border-[#35d0e5] hover:text-[#35d0e5] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5]">{copy.first} <span aria-hidden="true" className="ml-2">↓</span></a>
             </div>
           ) : (
-            <div className="mt-14 border-l-2 border-[#ff9a3d] bg-[#ff9a3d]/[0.035] p-7 sm:p-10" role="status">
+            <div className="living-panel mt-9 p-7 sm:p-10" role="status">
               <h3 className="text-3xl font-black text-white">{copy.unavailableTitle}</h3>
-              <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-300">{copy.unavailableBody}</p>
+              <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-300">{formToken ? copy.unavailableBody : getEchoDictionary(locale).form.unavailableBody}</p>
             </div>
           )}
         </section>
@@ -81,7 +83,11 @@ export default async function EchoWallPage() {
             <div>
               <h2 id="form-title" className="text-4xl font-black text-white sm:text-6xl">{copy.formTitle}</h2>
               <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">{copy.formBody}</p>
-              <div className="mt-12"><EchoForm formToken={formToken} copy={getEchoDictionary(locale).form} /></div>
+              <div className="living-panel mt-9 p-5 sm:p-8">
+                <EchoForm formToken={formToken} copy={getEchoDictionary(locale).form}
+                  countryOptions={echoResult.countryContextAvailable && formToken ? echoCountryOptions(locale) : undefined}
+                  countryCopy={livingWorldCopy[locale]} />
+              </div>
             </div>
           </div>
         </section>
@@ -91,7 +97,7 @@ export default async function EchoWallPage() {
           <div><h2 id="privacy-note-title" className="text-2xl font-black text-white">{copy.privacyTitle}</h2><p className="mt-4 max-w-3xl leading-7 text-slate-300">{copy.privacyBody}</p></div>
         </section>
 
-        <div className="mt-12">
+        <div className="mt-12 flex flex-wrap gap-x-6">
           <Link href={localizeHref("/", locale)} className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 py-3 font-bold text-slate-200 transition hover:border-[#35d0e5]/50 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5]">← {copy.back}</Link>
         </div>
       </div>

@@ -96,3 +96,27 @@
 @media (prefers-reduced-motion: reduce) {
   .living-map .world-map-pin-tooltip { transition: none; }
 }
+
+.living-echo .living-echo-intro { padding-block: clamp(2.5rem, 7vw, 6rem); }
+.living-echo .living-echo-message {
+  margin-block: 1.1rem .2rem;
+  font: 400 clamp(1.3rem, 2.8vw, 2.15rem)/1.44 var(--world-serif);
+  color: var(--world-paper);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.living-echo-list { display: grid; gap: 1rem; }
+@media (min-width: 52rem) {
+  .living-echo-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .living-echo-list > li:first-child { grid-column: 1 / -1; }
+  .living-echo-list > li:first-child .living-echo-message { max-width: 54ch; }
+}
+.living-echo .living-echo-form :is(input:not([type="checkbox"]), textarea, select) {
+  background: #211820;
+  border-radius: .4rem;
+}
+.living-world .living-action {
+  color: #261a18;
+  background: var(--world-light);
+}
+.living-world .living-action:hover { background: var(--world-paper); }
