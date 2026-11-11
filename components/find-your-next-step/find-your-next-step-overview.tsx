@@ -29,7 +29,7 @@ function JourneyCard({ journey, index, locale }: { journey: NextStepJourney; ind
           "--journey-accent": journey.accent,
           background: `linear-gradient(135deg, ${journey.accent}12, rgba(255,255,255,0.012) 60%)`,
         } as CSSProperties}
-        className={`group relative overflow-hidden rounded-[1.75rem] border border-white/10 p-7 outline-none transition-[border-color,transform,background-color] motion-safe:duration-300 motion-safe:hover:-translate-y-0.5 motion-reduce:transform-none sm:p-9 lg:p-11 ${journeyLayouts[index]} hover:border-[var(--journey-accent)]/55 focus-visible:border-[var(--journey-accent)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--journey-accent)]`}
+        className={`journey-card group relative overflow-hidden rounded-[1.75rem] border border-white/10 p-7 sm:p-9 lg:p-11 ${journeyLayouts[index]} hover:border-[var(--journey-accent)]/55 focus-visible:border-[var(--journey-accent)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--journey-accent)]`}
       >
         <span
           aria-hidden="true"
@@ -54,7 +54,7 @@ function JourneyCard({ journey, index, locale }: { journey: NextStepJourney; ind
               </p>
             </div>
             <span className="inline-flex min-h-11 shrink-0 items-center font-mono text-[10px] font-black uppercase tracking-[0.18em] text-[var(--journey-accent)]">
-              {journey.status === "Beta" ? copy.openJourney : copy.viewPath} <span aria-hidden="true" className="ml-2 transition-transform motion-safe:group-hover:translate-x-1">→</span>
+              {journey.status === "Beta" ? copy.openJourney : copy.viewPath} <span aria-hidden="true" className="ml-2 motion-arrow">→</span>
             </span>
           </div>
         </div>

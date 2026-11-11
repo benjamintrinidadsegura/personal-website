@@ -49,7 +49,7 @@ export function DiscoverHome({ locale, publishedWritingResult, dateKey }: {
               <Link className="discover-writing-link" href={localizeHref(`/writing/${article.slug}`, article.language)}>
                 <h2 lang={article.language}>{article.title}</h2>
                 <p className="discover-writing-introduction" lang={article.language}>{article.deck || article.excerpt}</p>
-                <span className="discover-text-link">{writing.page.readArticle}<span aria-hidden="true"> ↗</span></span>
+                <span className="discover-text-link">{writing.page.readArticle}<span className="motion-arrow" aria-hidden="true">↗</span></span>
               </Link>
               <div className="discover-writing-details">
                 <time dateTime={article.publishedAt}>{new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Berlin" }).format(new Date(article.publishedAt))}</time>
@@ -65,7 +65,7 @@ export function DiscoverHome({ locale, publishedWritingResult, dateKey }: {
                 <h2>{publishedWritingResult.status === "unavailable" ? copy.unavailableTitle : copy.emptyTitle}</h2>
                 <p className="discover-writing-introduction">{publishedWritingResult.status === "unavailable" ? copy.unavailableBody : copy.emptyBody}</p>
               </div>
-              <Link className="discover-text-link" href={localizeHref("/writing", locale)}>{copy.writingLink}<span aria-hidden="true"> ↗</span></Link>
+              <Link className="discover-text-link" href={localizeHref("/writing", locale)}>{copy.writingLink}<span className="motion-arrow" aria-hidden="true">↗</span></Link>
             </div>
           )}
           <div className="discover-daily">
@@ -82,7 +82,7 @@ export function DiscoverHome({ locale, publishedWritingResult, dateKey }: {
         <div className="discover-human-copy">
           <p>{homeViewsCopy[locale].introduction}</p>
           <p className="discover-human-principle">{about.positioning.alternative}</p>
-          <Link className="discover-text-link" href={localizeHref("/about", locale)}>{copy.aboutLink}<span aria-hidden="true"> ↗</span></Link>
+          <Link className="discover-text-link" href={localizeHref("/about", locale)}>{copy.aboutLink}<span className="motion-arrow" aria-hidden="true">↗</span></Link>
         </div>
       </section>
 
@@ -94,7 +94,7 @@ export function DiscoverHome({ locale, publishedWritingResult, dateKey }: {
               <Link href={localizeHref(path.href, locale)}>
                 <span className="discover-path-label"><span aria-hidden="true">0{index + 1} / </span>{path.copy[0]}</span>
                 <span className="discover-path-title">{path.copy[1]}</span>
-                <span className="discover-path-arrow" aria-hidden="true">↗</span>
+                <span className="discover-path-arrow motion-arrow" aria-hidden="true">↗</span>
               </Link>
             </li>
           ))}
@@ -111,8 +111,8 @@ export function DiscoverHome({ locale, publishedWritingResult, dateKey }: {
               <h3>{connection.entity.name}</h3>
               <p>{connection.entity.description}</p>
               <div className="discover-connection-links">
-                <Link className="discover-text-link" href={localizeHref(connection.entity.sourceHref, locale)}>{copy.conversationLink}<span aria-hidden="true"> ↗</span></Link>
-                <Link className="discover-text-link" href={localizeHref("/world", locale)}>{copy.mapLink}<span aria-hidden="true"> ↗</span></Link>
+                <Link className="discover-text-link" href={localizeHref(connection.entity.sourceHref, locale)}>{copy.conversationLink}<span className="motion-arrow" aria-hidden="true">↗</span></Link>
+                <Link className="discover-text-link" href={localizeHref("/world", locale)}>{copy.mapLink}<span className="motion-arrow" aria-hidden="true">↗</span></Link>
               </div>
             </div>
           </div>

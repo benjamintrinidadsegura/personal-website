@@ -151,6 +151,8 @@ test("compact presentation preserves the full daily quote identity, text, attrib
     assert.ok(full.includes(`data-quote-id="${quotes.selectQuote({ ...props.context, locale }).id}"`));
     assert.match(compact, /<blockquote>[\s\S]*<cite>btshq.online<\/cite>/u);
     assert.equal((compact.match(/<button /gu) ?? []).length, 2);
+    assert.match(compact, /aria-live="polite" aria-atomic="true"><blockquote>/u);
+    assert.doesNotMatch(compact, /data-quote-revealed/u, "the first quote is visible without an entrance animation");
   }
 });
 
@@ -164,6 +166,11 @@ test("compact quote shuffle and sharing execute the existing handlers with the c
     (nodes.find(({ type }) => type === "button")!.props.onClick as () => void)();
     nodes = elements(render());
     assert.notEqual(nodes[0].props["data-quote-id"], firstId);
+    const announcement = nodes.find(({ props }) => props["aria-live"] === "polite")!;
+    assert.equal(announcement.props["aria-atomic"], "true");
+    const update = elements(announcement);
+    assert.equal(update.find(({ type }) => type === "blockquote")?.props["data-quote-revealed"], "");
+    assert.ok(update.every(({ type }) => type !== "button"), "announce the quote without remounting controls");
     const share = nodes.find(({ type, props }) => type === "button" && String(props.className).includes("quote-experience-share"))!;
     (share.props.onClick as () => void)();
     nodes = elements(render());

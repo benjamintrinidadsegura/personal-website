@@ -41,10 +41,12 @@ export function QuoteExperience({ context, description, safeSharePath = "/", tit
         {surfaceDescription ? <p className="quote-experience-description">{surfaceDescription}</p> : null}
       </div>
       <div className="quote-experience-quote">
-        <blockquote>
-          <p>“{current.text}”</p>
-          <footer><cite>{current.attribution}</cite><span aria-hidden="true"> · </span><span>{copy.original}</span></footer>
-        </blockquote>
+        <div aria-live="polite" aria-atomic="true">
+          <blockquote key={current.id} data-quote-revealed={variant === "daily" && history.length > 1 ? "" : undefined}>
+            <p>“{current.text}”</p>
+            <footer><cite>{current.attribution}</cite><span aria-hidden="true"> · </span><span>{copy.original}</span></footer>
+          </blockquote>
+        </div>
         <div className="quote-experience-actions">
           <button type="button" onClick={another}>{copy.another}</button>
           {current.shareEligible ? <button type="button" onClick={() => setShareOpen(true)} className="bts-share-action quote-experience-share"><ShareIcon /><span>{copy.share}</span></button> : null}

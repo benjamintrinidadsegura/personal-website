@@ -143,7 +143,7 @@ export function Header({ accountState }: { accountState: AccountState }) {
   }, [closeDropdown, openDropdown]);
 
   return (
-    <header data-scroll-lock-compensate className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#04111b]/88 backdrop-blur-xl">
+    <header data-scroll-lock-compensate className="site-header fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#04111b]/96">
       <div className="mx-auto flex h-20 max-w-[90rem] items-center gap-2 px-5 sm:px-8 lg:grid lg:grid-cols-[auto_minmax(8rem,20rem)_auto_auto_auto] lg:gap-2 xl:gap-4">
         <Link href={localizedHref("/#home")} className="mr-auto flex shrink-0 items-center gap-3 text-lg font-black tracking-tight lg:mr-0" aria-label={copy.homeLabel}>
           <span className="grid h-8 w-8 place-items-center rounded-full border border-[#35d0e5]/40 text-[10px] tracking-widest text-[#35d0e5]">BTS</span>
@@ -159,7 +159,7 @@ export function Header({ accountState }: { accountState: AccountState }) {
                     <button
                       ref={(node) => { dropdownButtons.current[item.id] = node; }}
                       type="button"
-                      className="flex items-center gap-1 rounded-full px-2.5 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5] xl:px-3 xl:text-sm"
+                      className="flex items-center gap-1 rounded-full px-2.5 py-2 text-xs font-semibold text-slate-300 motion-colors hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5] xl:px-3 xl:text-sm"
                       aria-expanded={openDropdown === item.id}
                       aria-controls={`desktop-${item.id}-menu`}
                       onClick={() => {
@@ -177,17 +177,17 @@ export function Header({ accountState }: { accountState: AccountState }) {
                       }}
                     >
                       {item.label}
-                      <span aria-hidden="true" className={`text-[10px] transition-transform ${openDropdown === item.id ? "rotate-180" : ""}`}>⌄</span>
+                      <span aria-hidden="true" className={`text-[10px] site-nav-chevron ${openDropdown === item.id ? "rotate-180" : ""}`}>⌄</span>
                     </button>
                     <ul
                       id={`desktop-${item.id}-menu`}
                       hidden={openDropdown !== item.id}
-                      className="absolute left-0 top-full mt-2 min-w-52 rounded-2xl border border-white/10 bg-[#071824]/95 p-2 shadow-2xl backdrop-blur-xl"
+                      className="site-nav-dropdown absolute left-0 top-full mt-2 min-w-52 rounded-2xl border p-2"
                     >
                       {item.children.map((child) => (
                         <li key={child.id}>
                           <Link
-                            className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5]"
+                            className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-300 motion-colors hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5]"
                             href={child.href}
                             onClick={() => closeDropdown()}
                           >
@@ -198,7 +198,7 @@ export function Header({ accountState }: { accountState: AccountState }) {
                     </ul>
                   </>
                 ) : (
-                  <Link className="rounded-full px-2.5 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5] xl:px-3 xl:text-sm" href={item.href} onClick={() => closeDropdown()}>{item.label}</Link>
+                  <Link className="rounded-full px-2.5 py-2 text-xs font-semibold text-slate-300 motion-colors hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5] xl:px-3 xl:text-sm" href={item.href} onClick={() => closeDropdown()}>{item.label}</Link>
                 )}
               </li>
             ))}
@@ -211,11 +211,11 @@ export function Header({ accountState }: { accountState: AccountState }) {
           setOpen={setAccountOpen}
           onOpening={() => setOpenDropdown(null)}
         />
-        <button ref={menuButton} type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5] lg:hidden" aria-controls="mobile-navigation" aria-expanded={open} aria-label={open ? copy.menuClose : copy.menuOpen} onClick={() => open ? closeMenu() : setOpen(true)}>
+        <button ref={menuButton} type="button" className="site-menu-toggle grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#35d0e5] lg:hidden" aria-controls="mobile-navigation" aria-expanded={open} aria-label={open ? copy.menuClose : copy.menuOpen} onClick={() => open ? closeMenu() : setOpen(true)}>
           <span aria-hidden="true" className="text-xl leading-none">{open ? "×" : "≡"}</span>
         </button>
       </div>
-      <nav ref={mobileMenu} id="mobile-navigation" aria-label={copy.mobileNavigation} hidden={!open} className="h-[calc(100svh-5rem)] overflow-y-auto border-t border-white/10 bg-[#04111b] px-5 py-6 lg:hidden">
+      <nav ref={mobileMenu} id="mobile-navigation" aria-label={copy.mobileNavigation} hidden={!open} className="site-nav-mobile h-[calc(100svh-5rem)] overflow-y-auto border-t border-white/10 bg-[#04111b] px-5 py-6 lg:hidden">
         <p className="mb-5 text-xs font-black uppercase tracking-[0.3em] text-[#35d0e5]">{copy.hqNavigation}</p>
         <ul className="grid gap-2">
           {navigation.map((item, index) => (
@@ -229,13 +229,13 @@ export function Header({ accountState }: { accountState: AccountState }) {
                   <ul className="ml-8 grid gap-1 border-l border-[#35d0e5]/30 pl-3">
                     {item.children.map((child) => (
                       <li key={child.id}>
-                        <Link className="flex min-h-11 items-center rounded-xl px-3 py-2 font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5]" href={child.href} onClick={closeMenu}>{child.label}</Link>
+                        <Link className="flex min-h-11 items-center rounded-xl px-3 py-2 font-semibold text-slate-300 motion-colors hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5]" href={child.href} onClick={closeMenu}>{child.label}</Link>
                       </li>
                     ))}
                   </ul>
                 </div>
               ) : (
-                <Link className="flex min-h-12 items-center gap-4 rounded-xl px-4 py-3 text-lg font-bold text-slate-200 transition hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5]" href={item.href} onClick={closeMenu}>
+                <Link className="flex min-h-12 items-center gap-4 rounded-xl px-4 py-3 text-lg font-bold text-slate-200 motion-colors hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-[#35d0e5]" href={item.href} onClick={closeMenu}>
                   <span className="font-mono text-xs text-slate-500">{String(index + 1).padStart(2, "0")}</span>
                   {item.label}
                 </Link>

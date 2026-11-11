@@ -13,7 +13,7 @@ export async function About() {
     <section id="about" aria-labelledby="about-title" className="border-t border-white/10 bg-[#081a28] px-5 py-24 sm:px-8 sm:py-32">
       <Reveal className="mx-auto max-w-[90rem]">
         <div className="grid min-w-0 grid-cols-1 gap-12 lg:grid-cols-[0.45fr_1.1fr]">
-          <header><p className="text-xs font-black uppercase tracking-[0.34em] text-[#35d0e5]">{copy.eyebrow}</p><h2 id="about-title" className="mt-5 text-5xl font-black tracking-tight text-white sm:text-6xl">{copy.title}</h2></header>
+          <header><p className="text-xs font-black uppercase tracking-[0.34em] text-[#35d0e5]">{copy.eyebrow}</p><h2 id="about-title" className="mt-5 text-[clamp(2.25rem,11vw,3rem)] font-black tracking-tight text-white [overflow-wrap:anywhere] sm:text-6xl">{copy.title}</h2></header>
           <div className="space-y-6 text-lg leading-9 text-slate-200">
             <p className="text-2xl font-black leading-snug text-white">{positioning.primary}</p>
             <p>{positioning.explanation}</p>
