@@ -13,6 +13,7 @@ import { Writing } from "@/components/sections/writing";
 import { getPublishedWritingResult } from "@/lib/writing/queries";
 import { getLocale } from "@/lib/i18n/server";
 import { homeViewBootstrap } from "@/lib/home-view";
+import "./home-experience.css";
 
 export const revalidate = 300;
 

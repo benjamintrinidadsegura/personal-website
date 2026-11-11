@@ -36,6 +36,7 @@ async function home(locale: Locale, result: PublishedWritingReadResult) {
     "@/components/home/home-views": { HomeViews: () => null },
     "@/components/home/discover-home": { DiscoverHome: () => null },
     "@/lib/home-view": homeView,
+    "./home-experience.css": {},
     "@/lib/i18n/server": { getLocale: async () => locale },
     "@/lib/writing/queries": { getPublishedWritingResult: async (requested: Locale) => { assert.equal(requested, locale); return result; } },
   };

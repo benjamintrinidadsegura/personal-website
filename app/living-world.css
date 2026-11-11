@@ -1,0 +1,64 @@
+/* Shared surfaces for public discovery. The rest of the site keeps its own palette. */
+.home-views, .living-world {
+  --world-ink: #181214;
+  --world-paper: #fff1dd;
+  --world-light: #f5c894;
+  --world-rule: #63494a;
+  --world-serif: Georgia, "Times New Roman", serif;
+  --world-surface: #302127;
+}
+
+.living-world {
+  background:
+    radial-gradient(ellipse 48rem 36rem at 84% 0, #59372f 0, transparent 76%),
+    linear-gradient(180deg, #2b1d24, var(--world-ink) 58rem);
+}
+
+.living-world .living-title {
+  color: var(--world-paper);
+  font-family: var(--world-serif);
+  font-weight: 400;
+  line-height: .98;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.living-world .living-panel {
+  border: 1px solid var(--world-rule);
+  border-radius: .35rem 1.85rem .35rem .35rem;
+  background: linear-gradient(145deg, #372629, var(--world-surface) 77%);
+}
+
+.living-world .living-panel h2, .living-world .living-panel h3 {
+  font-family: var(--world-serif);
+  font-weight: 400;
+}
+
+.living-world :is(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--world-light);
+  outline-offset: 3px;
+}
+
+.living-world .living-meta { color: #ddbaaa; }
+.living-world .living-muted { color: #c8b5b6; }
+
+.living-world .living-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  gap: .6rem;
+  color: var(--world-light);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: .24em;
+}
+.living-world .living-link:hover { color: var(--world-paper); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .living-world .living-enter { animation: living-enter var(--motion-enter) var(--motion-ease); }
+}
+
+@keyframes living-enter {
+  from { transform: translateY(5px); }
+  to { transform: translateY(0); }
+}

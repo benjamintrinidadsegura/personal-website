@@ -48,13 +48,13 @@ function elements(node: React.ReactNode): React.ReactElement<Record<string, unkn
   return [node, ...elements(node.props.children as React.ReactNode)];
 }
 
-test("Discover leads with the latest public snapshot, then the same daily quote, human, four paths and a verified continuation", () => {
+test("Discover leads with the latest public snapshot, then the same daily quote, four paths, human and a verified continuation", () => {
   const DiscoverHome = discoverComponent();
   for (const locale of config.locales) {
     const tree = DiscoverHome({ locale, dateKey: "2026-10-26", publishedWritingResult: { status: "data", data: [latest, { ...latest, id: "older", slug: "older", title: "Older writing" }] } });
     const nodes = elements(tree);
     const sections = nodes.filter(({ type }) => type === "section" || type === "nav").map(({ props }) => props.id);
-    assert.deepEqual(sections, ["discover-featured", "discover-human", "discover-paths", "discover-continue"]);
+    assert.deepEqual(sections, ["discover-featured", "discover-paths", "discover-human", "discover-continue"]);
     const articles = nodes.filter(({ type }) => type === "article");
     assert.equal(articles.length, 1);
     assert.equal(articles[0].props["data-discover-writing"], latest.id);
@@ -66,9 +66,11 @@ test("Discover leads with the latest public snapshot, then the same daily quote,
     assert.ok(nodes.indexOf(articles[0]) < nodes.indexOf(quote), "mobile DOM order must lead with Writing");
     const nav = nodes.find(({ type }) => type === "nav")!;
     const pathLinks = elements(nav).filter(({ props }) => typeof props.href === "string");
-    assert.deepEqual(pathLinks.map(({ props }) => props.href), ["/#building", "/writing", "/people", nextStep.findYourNextStep.href].map((href) => routing.localizeHref(href, locale)));
+    assert.deepEqual(pathLinks.map(({ props }) => props.href), ["/#building", "/writing", "/people", "/world", nextStep.findYourNextStep.href].map((href) => routing.localizeHref(href, locale)));
     const html = renderToStaticMarkup(tree);
     assert.ok(html.includes(discoverCopy[locale].featured));
+    const jump = nodes.find(({ props }) => props.href === "#discover-paths");
+    assert.ok(jump, "the first screen links directly to the four paths");
     assert.ok(html.includes(about.getAboutContent(locale).positioning.name));
     assert.ok(html.includes(routing.localizeHref("/about", locale)));
     assert.ok(!html.includes("Older writing"));
@@ -124,7 +126,11 @@ test("continuation uses canonical published Spotlight/map evidence and disappear
     assert.deepEqual(elements(continuation).flatMap(({ props }) => typeof props.href === "string" ? [props.href] : []), [connection.entity.sourceHref, "/world"].map((href) => routing.localizeHref(href, locale)));
     const image = elements(continuation).find(({ props }) => props.src);
     assert.equal(image?.props.src, connection.entity.image?.src);
-    if (image) assert.ok(readFileSync(`public${image.props.src}`).length > 0, "only an existing content image may be used");
+    if (image) {
+      assert.ok(readFileSync(`public${image.props.src}`).length > 0, "only an existing content image may be used");
+      const story = elements(continuation).find(({ props }) => props.href === routing.localizeHref(connection.entity.sourceHref, locale));
+      assert.ok(elements(story).includes(image), "the portrait opens the same story as its text");
+    }
   }
   const DiscoverHome = discoverComponent({ ...people, getLocalizedPublishedSpotlights: () => [] });
   assert.ok(!elements(DiscoverHome({ locale: "en", dateKey: "2026-10-26", publishedWritingResult: { status: "data", data: [] } })).some(({ props }) => props.id === "discover-continue"));
