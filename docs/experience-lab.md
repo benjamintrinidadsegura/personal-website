@@ -1,47 +1,31 @@
-# Experience Lab 1.0
+# Experience Lab 2.0 · Mini Universe
 
-The route /experience-lab is a removable, local prototype based on the Living World candidate d2e259e2b5307bd5e549f053e34ca5d7e26d1298. Its components, CSS Module, catalog, copy, search and tests are separate additions. The existing homepage, navigation, search, World Map, EchoWall and publication readers keep their implementations.
+This local experiment extends the protected Lab 1.0 commit 46623286966e099561fed8df1ef36cc3618fec14 in an isolated worktree. It does not replace the homepage. No deployment or remote push is authorized in this iteration.
+
+## The experience
+
+Search is the center of a bounded spatial composition. At most six content islands surround it, connected by fine curved paths. The active island has a brighter connection and surface. Query changes recompute the actual ranked set, category counts and positions. Two results flank the search on desktop; larger sets occupy outer positions. Compact screens use two islands above the search and the remaining islands below it. The stage height stays fixed during refinement so the field and document do not jump while typing.
+
+Category capsules show actual counts for the current query before category filtering. Empty categories remain usable and have a calm empty-state recovery. The original catalog and ranking engine are unchanged: eight public destinations, three clearly labelled demo concepts without public article links; German/English synonyms, all-concept matching and weighted relevance. No live Writing article is asserted. Content languages remain explicit.
+
+Every result is reachable. Previous/next and Left/Right/Home/End change selection and bring its group into view. A horizontal drag or swipe on the room or an island also changes selection; vertical touch scrolling remains native. A completed drag suppresses the follow-up click so it cannot replace the new selection. Selecting an island changes its connection and the detail section. The detail anchor and existing contextual connections provide onward navigation.
 
 ## Design decisions
 
-The blue palette comes from the existing background #061521, surface #0a2031, primary #35d0e5 and hover #73e3f1. Typography inherits the existing Inter stack. A bounded horizontal deck uses slight perspective and different materials to make selection visible. The first screen centers Personal Advantage with adjacent projects, the map, a published Spotlight and EchoWall. Mobile preserves one readable card and previews its neighbours. Categories remain explicit and search stays above the deck.
+Navy, ocean blue, cyan and ice highlights remain the brand palette. The primary glass material is concentrated on the central search lens. Smaller translucent islands use asymmetrical corners, restrained rotation and fine surface highlights. Position transitions and a short arrival/connection reveal follow intentional actions. There are no infinite animation loops, particles that track the visitor, autoplay, WebGL or new dependencies.
 
-The founder references informed spatial selection, visual browsing and controlled transitions. No code or assets were taken from Osmo, Cosmos, Lusion or Instrument. Cosmos could not be fetched during the reference check. The cover image comes from the existing published Spotlight.
+Reduced motion removes transitions and reveal animations. Results retain semantic list/button structure, selected state, keyboard navigation and polite status feedback. Decorative paths and atmospheric elements are hidden from assistive technology. Source links disable prefetch. Search input remains in component state and is not stored or serialized into URLs.
 
-## Catalog and ranking
+## Isolation and safeguards
 
-The replaceable catalog adapter returns 11 records. Eight link to existing BTSHQ destinations. Three are explicitly labelled demo concepts with no public article destination. No live Writing article is asserted. Existing German content and English translations keep an explicit source-language label.
+The route, noindex metadata and pre-render Production HTTP 404 guard from Lab 1.0 are preserved. No shared CSS, homepage, global search, content reader, World Map, EchoWall, assessment, sitemap, auth, analytics or provider configuration is changed.
 
-The pure search engine has no service dependencies. It normalizes case, Unicode accents, punctuation and German sharp s. Term equivalence groups cover German and English topics. Every query concept must match an indexed field. Title, topics, keywords, description and kind have separate weights. Exact title and title phrase matches receive extra weight. Prefix matches and single edits, including adjacent transposition in words of at least five characters, have lower weight. Ties retain catalog order. Results never fill missing concepts with unrelated category items.
+The server uses the existing static adapter; there are no new API requests, Supabase reads or mutations. Local build checks intentionally have no Supabase configuration. VERCEL_ENV=development permits a local production-build server; Production and unknown deployed environments stay blocked by the existing guard.
 
-Typing changes the actual ranked card set and selected detail. Category selection intersects the query. Reset restores the initial catalog order and selection. Related items require shared topic evidence and are limited to two. Their selection deliberately clears the previous refinement and brings the linked concept into the original deck.
+## Verification and limits
 
-Search input is limited to 160 characters. Queries stay in React state. They are not placed in URLs or persisted. Lab destination links disable prefetch to avoid fetching a content page merely because the visitor tries a different term.
+Local evidence belongs outside Git under .bts-engineering/adaptive-lab-2/evidence. Browser checks cover actual spatial composition, category counts, search reflow, no-result/reset, bounded navigation, related selection, mouse/touch and reduced motion. Seven UI locales are preserved; catalog language fallback remains German/English.
 
-## Interaction and accessibility
+The room is a curated prototype with eleven records, not a live general recommendation system. Search relevance is deterministic, without AI intent interpretation. Six visible items require a group change for remaining matches. Compact layouts deliberately require vertical scrolling. The inherited streaming/footer layout shift remains outside this experiment. Real iOS Safari, actual screenreader use, hosted acceptance and the founder's subjective experience are separate checks.
 
-The deck uses native horizontal scrolling and touch swiping. Desktop mouse dragging adjusts scroll position without a React update per pointer move. The settled position determines the selected card. Previous and next buttons provide a drag alternative. Arrow keys, Home and End work on card buttons, and Enter or Space selects a card. Bounds disable the appropriate explicit control.
-
-Buttons expose the selected state and link their controls to the detail section. Search and selected-card updates have separate polite status messages. Refinement preserves input focus. Related-item buttons never open a modal or trap focus. Reduced motion uses the same controls without smooth scrolling, entry animation or perspective transitions. Decorative visuals are hidden from the accessibility tree.
-
-## Isolation and release boundaries
-
-The route explicitly declares noindex, nofollow, noarchive, nosnippet and noimageindex. The Next.js proxy rejects the lab path and descendants with an uncached HTTP 404 before rendering in Production and unknown deployed environments. Preview and development are allowed; local production-build checks must explicitly set VERCEL_ENV=development. The page retains a defensive notFound check. This avoids the inherited streaming boundary turning a page-level notFound into HTTP 200. No public navigation, discovery index, sitemap or shared style file is changed. The new CSS is imported only by the new component. A protected Preview push is separately authorized; Production deployment remains prohibited.
-
-The root layout still performs its existing account and public-content setup. This prototype adds no Supabase query, mutation, analytics, external script or dependency. The inherited streamed loading boundary and its occasional footer shift still exist. Disabling JavaScript entirely inherits that boundary limitation.
-
-## Local verification
-
-Chromium checks cover all seven locales at 320, 390, 768 and 1440 pixels, bilingual search, empty results, reset, categories, mouse dragging, native touch swiping, keyboard navigation, related-item selection and source links. Axe checks cover initial, filtered and empty states at 320 and 1440 pixels. Search terms are checked against observed requests and URL/storage state. Existing homepage modes and global search, Writing, tools, World Map, EchoWall and SEO receive regression checks.
-
-The full-suite baseline has eleven existing failures. Retain their identities in the release evidence rather than treating the suite as passing. Real iOS Safari, an actual screenreader and hosted Preview acceptance are separate verification tasks. The founder must judge whether the interaction is enjoyable and premium.
-
-## Later approved integration
-
-1. Review the protected prototype with the founder and choose the useful interaction patterns.
-2. Replace createLabCatalog with an adapter to the authorized public discovery snapshot. Published and withdrawn content must follow the same availability and publication checks as the live application.
-3. Keep the pure search interface while comparing relevance against the current engine on a labelled test set. Do not replace global ranking without that review.
-4. Translate or remove demo concepts and verify canonical destinations. No fixture should become a published record by default.
-5. Any move into homepage composition requires an independent integration candidate with hydration, mobile performance, privacy and accessibility acceptance.
-
-The prototype can be removed by reverting its single commit. No schema or external state is involved.
+A later protected Preview needs explicit release approval and a SITE_URL entry for its own verified branch alias. Do not reuse another branch's value or copy Production credentials. Human Experience approval must come from the founder before any integration proposal.

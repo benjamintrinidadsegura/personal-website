@@ -11,6 +11,7 @@ import { createLabSearch, normalizeLabQuery, relatedLabItems, type LabItem } fro
 import * as config from "../lib/i18n/config";
 import * as routing from "../lib/i18n/routing";
 import * as engine from "../lib/experience-lab/search";
+import * as spaceEngine from "../lib/experience-lab/space";
 import { hookHarness } from "./helpers/hook-harness";
 import { loadSource } from "./helpers/load-source";
 import { NextRequest } from "next/server";
@@ -18,6 +19,30 @@ import { proxy } from "../proxy";
 
 const catalog = createLabCatalog("en");
 const search = createLabSearch(catalog);
+
+test("spatial windows keep every result reachable and never fill the room with unrelated content", () => {
+  for (let count = 0; count <= catalog.length; count++) {
+    const matches = search("").slice(0, count);
+    const visited = new Set<string>();
+    for (const match of matches) {
+      const room = spaceEngine.composeLabSpace(matches, match.item.id);
+      assert.ok(room.nodes.length <= 6);
+      assert.ok(room.nodes.some(node => node.item.id === match.item.id));
+      for (const node of room.nodes) {
+        visited.add(node.item.id);
+        for (const point of [node.desktop, node.compact]) {
+          assert.ok(point.x >= 15 && point.x <= 85 && point.y >= 11 && point.y <= 86);
+          assert.doesNotMatch(spaceEngine.labConnection(point), /NaN|undefined/);
+        }
+      }
+    }
+    assert.equal(visited.size, count);
+  }
+  const ai = spaceEngine.composeLabSpace(search("AI"), "ai-notes-demo");
+  const career = spaceEngine.composeLabSpace(search("Karriere"), "career");
+  assert.notDeepEqual(ai.nodes.map(node => node.desktop), career.nodes.map(node => node.desktop));
+  assert.equal(spaceEngine.composeLabSpace([], "").nodes.length, 0);
+});
 
 test("the real proxy rejects lab documents and Flight requests before streaming in every locale", async () => {
   const saved = { ...process.env };
@@ -115,6 +140,7 @@ test("all locales expose clear demo attribution, existing public paths and no pr
       if (item.image) assert.ok(existsSync("public" + item.image.src));
     }
     assert.ok(labCopy[locale].demo && labCopy[locale].privacy && labCopy[locale].emptyTitle);
+    assert.ok(Object.values(labCopy[locale]).filter(value => typeof value === "string").every(value => value.trim().length > 0), locale);
   }
 });
 
@@ -126,8 +152,9 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
       "next/image": { __esModule: true, default: "img" }, "next/link": { __esModule: true, default: "a" },
       "@/data/experience-lab/copy": { labCopy },
       "@/lib/experience-lab/search": engine, "@/lib/i18n/config": config, "@/lib/i18n/routing": routing,
+      "@/lib/experience-lab/space": spaceEngine,
       "./experience-lab.module.css": { __esModule: true, default: new Proxy({}, { get: (_obj, key) => String(key) }) },
-    }).ExperienceLab;
+    }, { requestAnimationFrame: () => 0 }).ExperienceLab;
     const render = () => hooks.render(() => Lab({ catalog: createLabCatalog(locale), locale }));
     const nodes = (value: React.ReactNode): React.ReactElement<Record<string, unknown>>[] => {
       if (Array.isArray(value)) return value.flatMap(nodes);
@@ -136,7 +163,7 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     };
     let tree = render();
     let cards = nodes(tree).filter(node => node.props["data-lab-card"]);
-    assert.equal(cards.length, catalog.length);
+    assert.equal(cards.length, spaceEngine.labWindowSize);
     const input = nodes(tree).find(node => node.props.id === "lab-search")!;
     (input.props.onChange as (event: { target: { value: string } }) => void)({ target: { value: "Gaming" } });
     tree = render();
@@ -148,7 +175,26 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     assert.equal(nodes(tree).find(node => node.props.id === "lab-search")?.props.value, "Gaming");
     const clear = nodes(tree).find(node => node.props["aria-label"] === labCopy[locale].clear)!;
     (clear.props.onClick as () => void)();
-    assert.equal(nodes(render()).filter(node => node.props["data-lab-card"]).length, catalog.length);
+    assert.equal(nodes(render()).filter(node => node.props["data-lab-card"]).length, spaceEngine.labWindowSize);
+    const initialNode = nodes(render()).find(node => node.props["aria-controls"] === "lab-detail")!;
+    (initialNode.props.onKeyDown as (event: { key: string; preventDefault: () => void }) => void)({ key: "End", preventDefault() {} });
+    tree = render();
+    assert.equal(nodes(tree).filter(node => node.props["data-lab-card"]).length, catalog.length - spaceEngine.labWindowSize);
+    assert.equal(nodes(tree).find(node => node.props.id === "lab-detail-title")?.props.children, createLabCatalog(locale).at(-1)?.title);
+    const reset = nodes(tree).find(node => node.type === "button" && Array.isArray(node.props.children) && node.props.children[0] === labCopy[locale].reset)!;
+    (reset.props.onClick as () => void)();
+    tree = render();
+    const room = nodes(tree).find(node => node.props["data-count"] === 6)!;
+    const target = { closest: () => ({ hasAttribute: () => true }) };
+    const currentTarget = { setPointerCapture() {}, hasPointerCapture: () => false, style: { setProperty() {}, removeProperty() {} } };
+    const event = { button: 0, pointerId: 1, clientX: 200, clientY: 100, target, currentTarget };
+    (room.props.onPointerDown as (event: unknown) => void)(event);
+    (room.props.onPointerMove as (event: unknown) => void)({ ...event, clientX: 100 });
+    (room.props.onPointerUp as (event: unknown) => void)({ ...event, clientX: 100 });
+    let suppressed = false;
+    (room.props.onClickCapture as (event: unknown) => void)({ detail: 1, preventDefault() { suppressed = true; }, stopPropagation() {} });
+    assert.equal(suppressed, true, "dragging on a node must suppress its follow-up selection click");
+    assert.equal(nodes(render()).find(node => node.props.id === "lab-detail-title")?.props.children, createLabCatalog(locale)[3].title);
     hooks.unmount();
   }
 });
