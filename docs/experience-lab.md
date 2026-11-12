@@ -1,3 +1,39 @@
+# Experience Lab 5.2 — Centered magic correction
+
+Direct parent: Lab 5.0, `ea132fee0f20848ca713887a1f972ae64db1d93a`. Lab 5.1 (`e13ec9ad9327198a9683bc462ee5c20b59594bc7`) is reference only; its commit was not cherry-picked. Worktree: `.bts-engineering/lab-52/checkout`, branch `codex/btshq-experience-lab-52`.
+
+The owner explicitly clarified that the lens must be geometrically centered, rather than retaining 5.0's 78% desktop anchor. The lens is centered horizontally in the content viewport and vertically in the initial visible stage. It has the same document/scene anchor through queries, Focus, Back and Reset; it does not follow scrolling like a fixed toolbar. Only an offscreen field is revealed when necessary on Focus entry. At narrow sizes content reserves space below the measured control zone. This necessary clearance changes some object positions; it is not a claim of pixel-identical 5.0 layout.
+
+Retained from 5.0: Cinematic Atlas imagery, typography, composition language, native caption structure, existing Focus reading layout, catalog, ranking, contextual relationships, destinations and all seven locale copies. The existing alternative studies are preserved, not expanded. No public homepage, real search, Writing, sitemap, tools, assessment, provider configuration or dependency changes occur.
+
+Selectively adapted from 5.1: inline title focus (a visible 2px underline, not an oversized outline), a finite 340ms critically damped response, and the principle of preserving an image anchor through interruption. Here the original 5.0 image elements stay in place; their world anchor interpolates from the actual previous frame, with parent caption scaling cancelled for the large artwork. Focus depth is limited to 1.8%. No 5.1 shared-stage rewrite, top search arrangement, mobile grid, hidden visual H2, or new variant is imported.
+
+Verification on the optimized local Webpack server:
+- 55 focused tests pass; full suite has 1,153 tests: 1,142 pass and eleven fail. Their normalized failing identities exactly match unchanged 5.0 (no new failures); no test was suppressed or weakened. The extra regression checks continuity of the sampled world anchor across interrupted queries.
+- `npm run typecheck` passes; `npm run lint` has zero errors and the same three unrelated warnings. `npm run build` and `npm run build -- --webpack` pass.
+- Seven locales × 320/390/768/1440px × initial, AI, Community, no-match, Focus, return and reset pass geometric assertions: field midpoint is within 1px of the horizontal content center and 2px of the vertical viewport center in the tested visible states.
+- Normal/reduced-motion keyboard return, native touch swipe/mouse drag, rapid interruption, category/refinement/full-list contracts and real/demo destinations pass. Axe finds zero WCAG A/AA/2.1 AA violations in the scoped Lab Explore/Focus/empty cases at 320/1440px.
+- Home seven-locale Discover/Explore, real global search, Writing, tools, World Map, EchoWall, privacy and canonical smoke pass. No unexpected external requests or POSTs occur in instrumented journeys. Sharing allowlist regressions pass. No homepage, search-engine, sitemap, security, catalog, data or dependency source changes are included.
+- Fresh local navigation observes zero pre-input layout shift at all four widths; LCP observations are 468/164/212/212ms. This uses a warm local server and is not field INP/CLS, real-device or universal 60fps evidence.
+- Equivalent screenshots cover 5.0/5.1/5.2 initial, AI, Focus and return at 1440×1050 and 390×900. Timestamp-preserving H.264 clips of 5.2 were fully decoded successfully. All visual judgments remain for the founder.
+- Diff/whitespace and source secret-signature checks pass. The full test suite remains FAIL on known baseline debt, not a blanket quality PASS.
+
+Exact source delta:
+- components/experience-lab/experience-lab.tsx
+- components/experience-lab/experience-lab.module.css
+- lib/experience-lab/motion.ts
+- lib/experience-lab/space.ts
+- tests/experience-lab-motion.test.ts
+- docs/experience-lab.md
+
+Evidence is local and ignored at `.bts-engineering/lab-52/evidence`, including equivalent 5.0/5.1/5.2 captures at 1440×1050 and 390×900, real browser recordings, and preservation hashes. Founder approval of feel remains open. Real iOS, physical-device GPU and actual screenreader use remain unverified. Technical checks do not prove subjective enjoyment.
+
+Review: http://127.0.0.1:3420/en/experience-lab. No push, merge, deployment, analytics activation, database or external configuration changes occur. Rollback is returning to the unchanged 5.0 worktree; a later revert of the single local 5.2 commit removes this delta without a data/configuration rollback. Never reset another worktree.
+
+---
+
+## Archived 5.0 report
+
 # Experience Lab 5.0 â€” Cinematic Discovery
 
 This is a local, isolated visual experiment based on Lab 4.0 (`daf9d17c1ddaf63789949b8f58a8acb98ce41d3b`). It changes no public homepage, real search, content records, assessment, authentication, analytics, Supabase, or provider configuration. No push or deployment is part of this task.

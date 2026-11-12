@@ -199,3 +199,22 @@
  .node::after{transition:background 150ms ease}
  .searchSurface{transition:border-color 120ms ease}
 }
+
+/* 5.2: content-sized keyboard focus; no replacement selection frame. */
+.lab .node:focus-visible{outline:0}
+.node:focus-visible>strong>span{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:#b9ffff}
+.node:focus-visible .nodeFoot>span:last-child{color:#06283e;background:#c8fbff;border-radius:50%;width:28px;height:28px;text-align:center}
+.focusSurface:focus-visible{outline:0}
+.focusSurface:focus-visible .focusHeader h2{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:#b9ffff}
+
+/* One scene anchor: middle of the visible stage, never a Focus toolbar. */
+.lab[data-direction=atlas] .center{left:50%;top:calc(50svh - 222px);max-width:none;width:min(360px,calc(100% - 32px))}
+.lab[data-direction=atlas] .focusSurface{grid-template-rows:var(--focus-start,550px) auto auto}
+.lab[data-direction=atlas] .art{transform:translate(-50%,-50%) translate3d(var(--art-x),var(--art-y),0) scale(calc(1 / var(--live-scale)))}
+.lab[data-direction=atlas] .nodePosition[data-role=feature][data-kind=person] .art{transform:translateY(-50%)}
+.lab[data-direction=atlas] .space[data-focus=true] .nodePosition[data-selected=true] .artContent{transform:scale(1.018)}
+@media(max-width:1199px){
+ .lab[data-direction=atlas] .center{width:min(600px,calc(100% - 48px));top:calc(50svh - 222px)}
+ .lab[data-direction=atlas] .focusSurface{padding-top:var(--focus-start,500px)}
+}
+@media(max-width:599px){.lab[data-direction=atlas] .center{width:calc(100% - 32px);top:calc(50svh - 202px)}}

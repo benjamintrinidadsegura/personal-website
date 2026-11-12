@@ -12,9 +12,9 @@ export type MotionPoint = SpacePoint & { opacity: number; scale: number; turn: n
 type Slot = SpacePoint & { scale: number };
 const slots: Record<LabDirection, { wide: readonly Slot[]; compact: readonly Slot[] }> = {
   atlas: {
-    wide: [{x:35,y:590,scale:1},{x:79,y:570,scale:1},{x:79,y:740,scale:1},
+    wide: [{x:35,y:720,scale:1},{x:79,y:650,scale:1},{x:79,y:820,scale:1},
       {x:18,y:980,scale:1},{x:50,y:980,scale:1},{x:82,y:980,scale:1}],
-    compact: [{x:50,y:300,scale:1},{x:50,y:910,scale:1},{x:50,y:1090,scale:1},
+    compact: [{x:50,y:600,scale:1},{x:50,y:910,scale:1},{x:50,y:1090,scale:1},
       {x:50,y:1270,scale:1},{x:50,y:1450,scale:1},{x:50,y:1630,scale:1}],
   },
   editorial: {
@@ -55,8 +55,8 @@ export function composeLabSpace(matches: readonly LabMatch[], selectedId: string
       const relation = relations.findIndex(item => item.id === match.item.id);
       const desktop = slots[direction].wide[order], compact = slots[direction].compact[order];
       const adaptedDesktop = direction === "atlas" && !focus
-        ? isSelected && leadKind === "writing" ? { ...desktop, x:35, y:530 }
-          : isSelected && leadKind === "world" ? { ...desktop, x:32, y:610 }
+        ? isSelected && leadKind === "writing" ? { ...desktop, x:35, y:700 }
+          : isSelected && leadKind === "world" ? { ...desktop, x:32, y:720 }
           : order === 1 && displayed.length <= 2 ? { ...desktop, y:760 } : desktop
         : desktop;
       const strength = match.score ? Math.max(.35, match.score / strongest) : .7;

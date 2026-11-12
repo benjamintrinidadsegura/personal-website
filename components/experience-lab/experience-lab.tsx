@@ -55,7 +55,10 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
         if (!button) return;
         if (getComputedStyle(button).visibility === "visible") {
           button.focus({ preventScroll: target === "@detail" });
-          if (target === "@detail") space.current?.scrollIntoView?.({ block: "start", behavior: "instant" });
+          if (target === "@detail" && typeof innerHeight === "number") {
+            const field = document.getElementById("lab-search"), bounds = field?.getBoundingClientRect();
+            if (bounds && (bounds.top < 85 || bounds.bottom > innerHeight - 8)) field?.scrollIntoView({ block:"center", behavior:"instant" });
+          }
           if (target !== "@detail" && document.activeElement === button && typeof innerHeight === "number") {
             const bounds = button.getBoundingClientRect();
             if (bounds.top < 85 || bounds.bottom > innerHeight - 8) button.scrollIntoView({ block: "center", behavior: "instant" });
@@ -111,7 +114,7 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
   return <article className={styles.lab} data-direction={direction} data-locale={locale} data-focused={focused} aria-labelledby="lab-title"
     onKeyDown={event => { if (focused && event.key === "Escape" && !event.defaultPrevented) { event.preventDefault(); leaveFocus(); } }}>
     <div className={styles.topline}>
-      <span className={styles.prototype}><span className={styles.srOnly}>{copy.prototype}</span>LAB 5.0</span>
+      <span className={styles.prototype}><span className={styles.srOnly}>{copy.prototype}</span>LAB 5.2</span>
       <label className={styles.directionLabel}><span className={styles.srOnly}>{copy.prototype}</span>
         <select id="lab-direction" value={direction} onChange={event => {
           const next = labDirections.find(value => value.id === event.target.value);
@@ -186,7 +189,7 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
                 aria-label={copy.select + " · " + item.title + " · " + (item.source === "demo" ? copy.demo : copy.kinds[item.kind])}
                 className={styles.node} onClick={() => enterFocus(item.id)} onKeyDown={event => onNodeKey(event, node?.index ?? 0)}>
                 <span className={styles.cardKind}>{item.source === "demo" ? copy.demo : copy.kinds[item.kind]}</span>
-                <strong lang={item.language}>{item.title}</strong>
+                <strong lang={item.language}><span>{item.title}</span></strong>
                 <span className={styles.nodeFoot}><span>{node?.role === "feature" && active && sharedLabTopics(active,item).length ? focusCopy[locale].shared + " · " + sharedLabTopics(active,item).slice(0,2).join(" · ") : selected ? copy.details : copy.select}</span><span aria-hidden="true">↗</span></span>
               </button>
               {focused && node?.relation && active ? <span className={styles.connectionCaption}>{sharedLabTopics(active, item).slice(0, 2).join(" · ")}</span> : null}

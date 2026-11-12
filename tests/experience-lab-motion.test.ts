@@ -185,3 +185,16 @@ test("an interrupted caption-to-headline change preserves painted size before it
  motion.release();f.tick(1000);assert.equal(f.memory.get(record.id)!.scale,1);
  assert.equal(f.frames.size,0);motion.stop();
 });
+
+
+test("the image anchor continues from the last sampled frame through an interrupted query",()=>{
+ const f=fixture();
+ f.motionModule.startLabMotion(f.root,composeLabSpace(f.search(""),"personal-advantage"),f.memory).stop();
+ const first=f.motionModule.startLabMotion(f.root,composeLabSpace(f.search("AI"),"ai-notes-demo"),f.memory);
+ f.tick(120);const before={...f.memory.get("@world")!};first.stop();
+ const scene=composeLabSpace(f.search("People"),"person-evgeny-vinokurov");
+ const next=f.motionModule.startLabMotion(f.root,scene,f.memory);
+ assert.deepEqual(f.memory.get("@world"),before);
+ f.tick(1000);assert.equal(f.memory.get("@world")!.x,scene.world.wide.x*12);
+ assert.equal(f.memory.get("@world")!.y,scene.world.wide.y);assert.equal(f.frames.size,0);next.stop();
+});
