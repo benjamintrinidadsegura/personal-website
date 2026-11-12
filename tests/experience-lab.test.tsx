@@ -12,6 +12,7 @@ import * as config from "../lib/i18n/config";
 import * as routing from "../lib/i18n/routing";
 import * as engine from "../lib/experience-lab/search";
 import * as spaceEngine from "../lib/experience-lab/space";
+import * as motionEngine from "../lib/experience-lab/motion";
 import { hookHarness } from "./helpers/hook-harness";
 import { loadSource } from "./helpers/load-source";
 import { NextRequest } from "next/server";
@@ -31,8 +32,8 @@ test("spatial windows keep every result reachable and never fill the room with u
       for (const node of room.nodes) {
         visited.add(node.item.id);
         for (const point of [node.desktop, node.compact]) {
-          assert.ok(point.x >= 15 && point.x <= 85 && point.y >= 11 && point.y <= 86);
-          assert.doesNotMatch(spaceEngine.labConnection(point), /NaN|undefined/);
+          assert.ok(point.x >= 15 && point.x <= 85 && point.y >= 50 && point.y <= 800);
+          assert.doesNotMatch(spaceEngine.labConnection({ x: 500, y: 250 }, point), /NaN|undefined/);
         }
       }
     }
@@ -147,13 +148,24 @@ test("all locales expose clear demo attribution, existing public paths and no pr
 test("the UI reshapes real card content, preserves input focus and reveals accurate details", () => {
   for (const locale of config.locales) {
     const hooks = hookHarness();
+    const css = { __esModule: true, default: new Proxy({}, { get: (_obj, key) => String(key) }) };
+    const ImageMock = (props: Record<string, unknown>) => {
+      const imageProps = { ...props }; delete imageProps.fill;
+      return React.createElement("img", imageProps);
+    };
+    const visuals = loadSource("components/experience-lab/island-visual.tsx", {
+      "react/jsx-runtime": jsxRuntime, "next/image": { __esModule: true, default: ImageMock },
+      "./experience-lab.module.css": css,
+    });
     const Lab = loadSource<{ ExperienceLab: (props: { catalog: readonly LabItem[]; locale: config.Locale }) => React.ReactElement }>("components/experience-lab/experience-lab.tsx", {
-      "react": hooks.hooks, "react/jsx-runtime": jsxRuntime,
+      "react": { ...hooks.hooks, useLayoutEffect: hooks.hooks.useEffect }, "react/jsx-runtime": jsxRuntime,
       "next/image": { __esModule: true, default: "img" }, "next/link": { __esModule: true, default: "a" },
       "@/data/experience-lab/copy": { labCopy },
       "@/lib/experience-lab/search": engine, "@/lib/i18n/config": config, "@/lib/i18n/routing": routing,
       "@/lib/experience-lab/space": spaceEngine,
-      "./experience-lab.module.css": { __esModule: true, default: new Proxy({}, { get: (_obj, key) => String(key) }) },
+      "@/lib/experience-lab/motion": motionEngine,
+      "./island-visual": visuals,
+      "./experience-lab.module.css": css,
     }, { requestAnimationFrame: () => 0 }).ExperienceLab;
     const render = () => hooks.render(() => Lab({ catalog: createLabCatalog(locale), locale }));
     const nodes = (value: React.ReactNode): React.ReactElement<Record<string, unknown>>[] => {
@@ -169,6 +181,9 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     tree = render();
     cards = nodes(tree).filter(node => node.props["data-lab-card"]);
     assert.deepEqual(cards.map(node => node.props["data-lab-card"]), ["gaming-demo"]);
+    const objects = nodes(tree).filter(node => node.props["data-lab-object"]);
+    assert.equal(objects.length, catalog.length, "query changes retain object identity slots");
+    assert.ok(objects.filter(node => !node.props["data-lab-card"]).every(node => node.props.inert === true && node.props["aria-hidden"] === true));
     const html = renderToStaticMarkup(tree);
     assert.ok(html.includes(labCopy[locale].demo));
     assert.ok(!nodes(tree).some(node => node.props.className === "open"));
@@ -220,4 +235,54 @@ test("the lab route fails closed on Vercel Production before reading any catalog
     "react/jsx-runtime": jsxRuntime,
   }, { process: { env: { VERCEL_ENV: "production" } } });
   await assert.rejects(page.default(), /LAB_NOT_FOUND/u);
+});
+
+test("keyboard focus waits for a newly active object to become visible and cancels cleanly", () => {
+  const hooks = hookHarness(), frames = new Map<number, () => void>();
+  let nextFrame = 0, injectedRoot = false, visible = false, finished = 0;
+  const documentStub: { activeElement: unknown } = { activeElement: null };
+  const button = { focus() { documentStub.activeElement = button; } };
+  const root = { querySelector: () => button };
+  const react = {
+    ...hooks.hooks,
+    useLayoutEffect: hooks.hooks.useEffect,
+    useRef: <T,>(initial: T) => {
+      const ref = hooks.hooks.useRef(initial);
+      if (!injectedRoot && initial === null) { (ref as { current: unknown }).current = root; injectedRoot = true; }
+      return ref;
+    },
+  };
+  const Lab = loadSource<{ ExperienceLab: (props: { catalog: readonly LabItem[]; locale: config.Locale }) => React.ReactElement }>("components/experience-lab/experience-lab.tsx", {
+    "react": react, "react/jsx-runtime": jsxRuntime,
+    "next/link": { __esModule: true, default: "a" },
+    "@/data/experience-lab/copy": { labCopy }, "@/lib/experience-lab/search": engine,
+    "@/lib/experience-lab/space": spaceEngine,
+    "@/lib/experience-lab/motion": { startLabMotion: () => ({ stop() {}, finish() { finished++; } }) },
+    "@/lib/i18n/config": config, "@/lib/i18n/routing": routing, "./island-visual": { IslandVisual: () => null },
+    "./experience-lab.module.css": { __esModule: true, default: new Proxy({}, { get: (_obj,key) => String(key) }) },
+  }, {
+    requestAnimationFrame: (callback: () => void) => { frames.set(++nextFrame,callback); return nextFrame; },
+    cancelAnimationFrame: (id: number) => frames.delete(id),
+    getComputedStyle: () => ({ visibility: visible ? "visible" : "hidden" }),
+    document: documentStub,
+  }).ExperienceLab;
+  const render = () => hooks.render(() => Lab({ catalog, locale: "en" }));
+  const nodes = (value: React.ReactNode): React.ReactElement<Record<string,unknown>>[] => {
+    if (Array.isArray(value)) return value.flatMap(nodes);
+    if (!React.isValidElement<Record<string,unknown>>(value)) return [];
+    return [value,...nodes(value.props.children as React.ReactNode)];
+  };
+  const first = nodes(render()).find(node => node.props["data-space-node"])!;
+  (first.props.onKeyDown as (event: unknown) => void)({ key: "End", preventDefault() {} });
+  render();
+  const flush = () => { const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback()); };
+  flush();
+  assert.equal(documentStub.activeElement,null,"hidden descendants must not receive a premature focus call");
+  assert.equal(frames.size,1,"visibility must be checked again rather than losing keyboard focus");
+  visible = true;
+  flush();
+  assert.equal(documentStub.activeElement,button);
+  assert.equal(finished,1,"the keyboard destination settles before focus");
+  assert.equal(frames.size,0);
+  hooks.unmount();
 });

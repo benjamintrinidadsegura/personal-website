@@ -2,24 +2,25 @@ import type { LabMatch } from "./search";
 
 export const labWindowSize = 6;
 export type SpacePoint = { x: number; y: number };
-const desktop: Record<number, readonly SpacePoint[]> = {
-  1: [{ x: 50, y: 80 }],
-  2: [{ x: 18, y: 44 }, { x: 82, y: 47 }],
-  3: [{ x: 18, y: 25 }, { x: 82, y: 29 }, { x: 50, y: 82 }],
-  4: [{ x: 18, y: 24 }, { x: 82, y: 24 }, { x: 19, y: 73 }, { x: 81, y: 75 }],
-  5: [{ x: 18, y: 23 }, { x: 82, y: 22 }, { x: 15, y: 65 }, { x: 85, y: 67 }, { x: 50, y: 85 }],
-  6: [{ x: 18, y: 22 }, { x: 82, y: 22 }, { x: 15, y: 64 }, { x: 85, y: 64 }, { x: 37, y: 86 }, { x: 63, y: 86 }],
+export type MotionPoint = SpacePoint & { opacity: number; scale: number; turn: number };
+const wide: Record<number, readonly SpacePoint[]> = {
+  1: [{ x: 50, y: 535 }],
+  2: [{ x: 17, y: 290 }, { x: 83, y: 310 }],
+  3: [{ x: 17, y: 135 }, { x: 83, y: 135 }, { x: 50, y: 505 }],
+  4: [{ x: 17, y: 100 }, { x: 83, y: 100 }, { x: 20, y: 465 }, { x: 80, y: 465 }],
+  5: [{ x: 17, y: 100 }, { x: 83, y: 100 }, { x: 17, y: 420 }, { x: 83, y: 420 }, { x: 50, y: 560 }],
+  6: [{ x: 17, y: 100 }, { x: 83, y: 100 }, { x: 16, y: 420 }, { x: 84, y: 420 }, { x: 39, y: 570 }, { x: 66, y: 565 }],
 };
 const compact: Record<number, readonly SpacePoint[]> = {
-  1: [{ x: 50, y: 67 }],
-  2: [{ x: 25, y: 65 }, { x: 75, y: 65 }],
-  3: [{ x: 50, y: 11 }, { x: 25, y: 65 }, { x: 75, y: 65 }],
-  4: [{ x: 25, y: 11 }, { x: 75, y: 11 }, { x: 25, y: 65 }, { x: 75, y: 65 }],
-  5: [{ x: 25, y: 11 }, { x: 75, y: 11 }, { x: 25, y: 62 }, { x: 75, y: 62 }, { x: 50, y: 86 }],
-  6: [{ x: 25, y: 11 }, { x: 75, y: 11 }, { x: 25, y: 62 }, { x: 75, y: 62 }, { x: 25, y: 86 }, { x: 75, y: 86 }],
+  1: [{ x: 50, y: 560 }],
+  2: [{ x: 25, y: 550 }, { x: 75, y: 550 }],
+  3: [{ x: 50, y: 65 }, { x: 25, y: 550 }, { x: 75, y: 550 }],
+  4: [{ x: 25, y: 65 }, { x: 75, y: 65 }, { x: 25, y: 550 }, { x: 75, y: 550 }],
+  5: [{ x: 25, y: 65 }, { x: 75, y: 65 }, { x: 25, y: 550 }, { x: 75, y: 550 }, { x: 50, y: 760 }],
+  6: [{ x: 25, y: 65 }, { x: 75, y: 65 }, { x: 25, y: 550 }, { x: 75, y: 550 }, { x: 25, y: 760 }, { x: 75, y: 760 }],
 };
 
-/** Bounded, deterministic compositions; all matches remain reachable through selection. */
+/** Deterministic compositions. Y is a pixel offset, keeping the search anchor stable. */
 export function composeLabSpace(matches: readonly LabMatch[], selectedId: string) {
   const selectedIndex = Math.max(0, matches.findIndex(({ item }) => item.id === selectedId));
   const start = Math.floor(selectedIndex / labWindowSize) * labWindowSize;
@@ -29,16 +30,32 @@ export function composeLabSpace(matches: readonly LabMatch[], selectedId: string
     selectedIndex, start, end: start + window.length,
     nodes: window.map((match, index) => ({
       ...match, index: start + index,
-      desktop: desktop[window.length][index],
-      compact: compact[window.length][index],
+      desktop: wide[window.length][index], compact: compact[window.length][index],
       strength: match.score ? Math.max(.35, match.score / strongest) : .7,
-      turn: [-3, 3, -2, 2, -2, 2][index],
+      turn: [-3, 2, -2, 3, -2, 2][index],
     })),
   };
 }
+export type LabScene = ReturnType<typeof composeLabSpace>;
 
-export function labConnection(point: SpacePoint, compact = false): string {
-  const origin = compact ? 350 : 440;
-  const x = point.x * 10, y = point.y * 10;
-  return "M 500 " + origin + " C 500 " + (origin + (y - origin) * .5) + ", " + x + " " + (origin + (y - origin) * .65) + ", " + x + " " + y;
+export function mixMotion(from: MotionPoint, to: MotionPoint, progress: number): MotionPoint {
+  const t = Math.max(0, Math.min(1, progress));
+  const value = (key: keyof MotionPoint) => from[key] + (to[key] - from[key]) * t;
+  return { x: value("x"), y: value("y"), opacity: value("opacity"), scale: value("scale"), turn: value("turn") };
+}
+/** One edge calculation for every frame, including rotation and entry scaling. */
+export function edgeAnchor(from: SpacePoint, center: SpacePoint, width: number, height: number, turn = 0): SpacePoint {
+  const angle = -turn * Math.PI / 180;
+  const dx = from.x - center.x, dy = from.y - center.y;
+  const x = dx * Math.cos(angle) - dy * Math.sin(angle);
+  const y = dx * Math.sin(angle) + dy * Math.cos(angle);
+  const ratio = 1 / (Math.hypot(x / Math.max(1,width / 2), y / Math.max(1,height / 2)) || 1);
+  return { x: center.x + dx * ratio, y: center.y + dy * ratio };
+}
+export function labConnection(from: SpacePoint, to: SpacePoint): string {
+  const dx = to.x - from.x, dy = to.y - from.y;
+  return "M " + from.x.toFixed(2) + " " + from.y.toFixed(2)
+    + " C " + (from.x + dx * .28).toFixed(2) + " " + (from.y + dy * .68).toFixed(2)
+    + ", " + (to.x - dx * .24).toFixed(2) + " " + (to.y - dy * .1).toFixed(2)
+    + ", " + to.x.toFixed(2) + " " + to.y.toFixed(2);
 }

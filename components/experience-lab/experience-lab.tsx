@@ -1,13 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { labCopy } from "@/data/experience-lab/copy";
 import { createLabSearch, labKinds, relatedLabItems, type LabKind, type LabItem } from "@/lib/experience-lab/search";
-import { composeLabSpace, labConnection } from "@/lib/experience-lab/space";
+import { composeLabSpace, type MotionPoint } from "@/lib/experience-lab/space";
 import { localeDetails, type Locale } from "@/lib/i18n/config";
 import { localizeHref } from "@/lib/i18n/routing";
+import { startLabMotion, type LabMotion } from "@/lib/experience-lab/motion";
+import { IslandVisual } from "./island-visual";
 import styles from "./experience-lab.module.css";
 
 type Perspective = { query: string; kind: LabKind | "all"; selectedId: string };
@@ -20,18 +21,41 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
   const unfiltered = useMemo(() => search(perspective.query), [search, perspective.query]);
   const matches = useMemo(() => unfiltered.filter(({ item }) => perspective.kind === "all" || item.kind === perspective.kind), [unfiltered, perspective.kind]);
   const active = matches.find(({ item }) => item.id === perspective.selectedId)?.item ?? matches[0]?.item;
-  const scene = composeLabSpace(matches, active?.id ?? "");
+  const scene = useMemo(() => composeLabSpace(matches, active?.id ?? ""), [matches, active?.id]);
   const related = active ? relatedLabItems(active, catalog) : [];
   const space = useRef<HTMLDivElement>(null);
   const gesture = useRef<{ id: number; x: number; y: number; captured: boolean } | null>(null);
   const didDrag = useRef(false);
-  const resultKey = scene.nodes.map(({ item }) => item.id).join("|");
+  const motion = useRef<LabMotion | null>(null);
+  const positions = useRef(new Map<string, MotionPoint>());
+  const pendingFocus = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (!space.current) return;
+    const currentMotion = startLabMotion(space.current, scene, positions.current);
+    motion.current = currentMotion;
+    let focusFrame = 0;
+    const target = pendingFocus.current;
+    pendingFocus.current = null;
+    if (target && scene.nodes.some(node => node.item.id === target && node.index === scene.selectedIndex)) {
+      currentMotion.finish();
+      // Let the browser finish retiring the old inert focus target first.
+      let attempts = 0;
+      const focusVisibleTarget = () => {
+        const button = space.current?.querySelector<HTMLButtonElement>('[data-lab-card="' + target + '"] button');
+        if (!button) return;
+        if (getComputedStyle(button).visibility === "visible") button.focus();
+        if (document.activeElement !== button && ++attempts < 4) focusFrame = requestAnimationFrame(focusVisibleTarget);
+      };
+      focusFrame = requestAnimationFrame(focusVisibleTarget);
+    }
+    return () => { cancelAnimationFrame(focusFrame); currentMotion.stop(); };
+  }, [scene]);
   const select = (id: string) => setPerspective(current => ({ ...current, selectedId: id }));
   const move = (index: number, focus = false) => {
     const item = matches[index]?.item;
     if (!item) return;
+    if (focus && item.id !== active?.id) pendingFocus.current = item.id;
     select(item.id);
-    if (focus) requestAnimationFrame(() => space.current?.querySelector<HTMLButtonElement>('[data-lab-card="' + item.id + '"] button')?.focus());
   };
   const onNodeKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const next = event.key === "ArrowRight" ? index + 1 : event.key === "ArrowLeft" ? index - 1 : event.key === "Home" ? 0 : event.key === "End" ? matches.length - 1 : null;
@@ -54,12 +78,12 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
       didDrag.current = true;
       event.currentTarget.setPointerCapture(event.pointerId);
     }
-    if (start.captured) event.currentTarget.style.setProperty("--gesture", Math.max(-24, Math.min(24, dx * .15)) + "px");
+    if (start.captured) motion.current?.pan(Math.max(-32, Math.min(32, dx * .2)));
   };
   const endGesture = (event: PointerEvent<HTMLDivElement>, cancelled = false) => {
     const start = gesture.current;
     gesture.current = null;
-    event.currentTarget.style.removeProperty("--gesture");
+    motion.current?.release();
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     if (!cancelled && start?.captured && Math.abs(event.clientX - start.x) > 45) move(scene.selectedIndex + (event.clientX < start.x ? 1 : -1));
   };
@@ -67,35 +91,41 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
   return (
     <article className={styles.lab} aria-labelledby="lab-title">
       <div className={styles.topline}>
-        <span className={styles.prototype}>{copy.prototype} <span>02</span></span>
+        <span className={styles.prototype}>{copy.prototype} <span>2.5</span></span>
         <Link href={localizeHref("/", locale)} prefetch={false}>BTSHQ <span aria-hidden="true">↗</span></Link>
       </div>
       <header className={styles.intro}>
-        <p className={styles.eyebrow}>BTSHQ · Mini Universe</p>
+        <p className={styles.eyebrow}>BTSHQ · Liquid Constellations</p>
         <h1 id="lab-title">{copy.title.replace("\n", " ")}</h1>
         <p>{copy.subtitle}</p>
       </header>
       <div className={styles.resultBar}>
+        <details className={styles.resultList}>
+          <summary>{copy.list} · {matches.length}</summary>
+          <ul>{matches.map(({ item }) => <li key={item.id}><button type="button" onClick={() => {
+            select(item.id);
+            requestAnimationFrame(() => document.getElementById("lab-detail")?.focus());
+          }}><span lang={item.language}>{item.title}</span><small>{item.source === "demo" ? copy.demo : copy.kinds[item.kind]}</small></button></li>)}</ul>
+        </details>
         <p id="lab-results-status" role="status">{matches.length} {copy.results}</p>
         <button type="button" onClick={() => setPerspective(initial)}>{copy.reset} <span aria-hidden="true">↺</span></button>
       </div>
-      <div ref={space} className={styles.space} data-count={scene.nodes.length} data-searching={Boolean(perspective.query.trim())}
+      <div ref={space} className={styles.space} data-count={scene.nodes.length} data-solo={scene.nodes.length === 1} data-searching={Boolean(perspective.query.trim())}
         onClickCapture={event => {
           if (didDrag.current && event.detail > 0) { event.preventDefault(); event.stopPropagation(); }
           didDrag.current = false;
         }}
         onPointerDown={startGesture} onPointerMove={dragGesture} onPointerUp={event => endGesture(event)} onPointerCancel={event => endGesture(event, true)}>
         <div className={styles.atmosphere} aria-hidden="true"><i /><i /><i /></div>
-        <svg className={styles.connections} viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true" key={"wide-" + resultKey}>
-          {scene.nodes.map(node => <path key={node.item.id} d={labConnection(node.desktop)} data-active={node.item.id === active?.id} />)}
-        </svg>
-        <svg className={styles.compactConnections} viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true" key={"compact-" + resultKey}>
-          {scene.nodes.map(node => <path key={node.item.id} d={labConnection(node.compact, true)} data-active={node.item.id === active?.id} />)}
+        <div className={styles.selectionLight} aria-hidden="true" />
+        <svg className={styles.connections} data-space-strings aria-hidden="true">
+          {catalog.map(item => <path key={item.id} data-connection={item.id} data-active={item.id === active?.id}
+            style={{ strokeOpacity: item.id === active?.id ? 1 : Math.max(.45,scene.nodes.find(node => node.item.id === item.id)?.strength ?? .45) }} />)}
         </svg>
         <section className={styles.center} aria-label={copy.search}>
           <div className={styles.core} aria-hidden="true"><span /><span /></div>
           <label htmlFor="lab-search" className={styles.searchLabel}>{copy.search}</label>
-          <div className={styles.searchSurface}>
+          <div className={styles.searchSurface} data-search-lens>
             <span className={styles.searchIcon} aria-hidden="true">⌕</span>
             <input id="lab-search" type="search" maxLength={160} autoComplete="off" spellCheck={false}
               placeholder={copy.placeholder} value={perspective.query} aria-describedby="lab-results-status"
@@ -114,29 +144,28 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
           </div>
           <p className={styles.sceneHint}>{copy.browse}</p>
         </section>
-        {scene.nodes.length ? (
-          <ul className={styles.nodes} aria-label={copy.results}>
-            {scene.nodes.map(node => {
-              const { item } = node, selected = item.id === active?.id;
-              return <li data-lab-card={item.id} data-selected={selected} className={styles.nodePosition} key={item.id}
-                style={{ "--dx": node.desktop.x - 50, "--dy": node.desktop.y - 44, "--mx": node.compact.x - 50, "--my": node.compact.y - 35, "--turn": node.turn + "deg", "--strength": node.strength } as CSSProperties}>
-                <button type="button" data-space-node aria-pressed={selected} aria-controls="lab-detail"
-                  aria-label={copy.select + " · " + item.title + " · " + (item.source === "demo" ? copy.demo : copy.kinds[item.kind])}
-                  className={styles.node} data-kind={item.kind} onClick={() => select(item.id)} onKeyDown={event => onNodeKey(event, node.index)}>
-                  <span className={styles.nodeTop}>
-                    <span className={styles.nodeGlyph} aria-hidden="true">
-                      {item.image ? <Image src={item.image.src} alt="" fill sizes="48px" /> : item.kind === "world" ? "◎" : item.kind === "writing" ? "Aa" : item.kind === "community" ? "◌" : item.kind === "project" ? "G" : item.kind === "idea" ? "✦" : "↟"}
-                    </span>
-                    <span className={styles.cardKind}>{item.source === "demo" ? copy.demo : copy.kinds[item.kind]}</span>
-                    <span className={styles.nodeLight} aria-hidden="true" />
-                  </span>
-                  <strong lang={item.language}>{item.title}</strong>
-                  <span className={styles.nodeFoot}><span>{selected ? copy.details : copy.select}</span><span aria-hidden="true">{selected ? "↓" : "+"}</span></span>
-                </button>
-              </li>;
-            })}
-          </ul>
-        ) : <div className={styles.empty}><h2>{copy.emptyTitle}</h2><p>{copy.emptyBody}</p><button type="button" onClick={() => setPerspective(initial)}>{copy.reset} ↗</button></div>}
+        <ul className={styles.nodes} aria-label={copy.results}>
+          {catalog.map(item => {
+            const node = scene.nodes.find(node => node.item.id === item.id);
+            const selected = item.id === active?.id, visible = Boolean(node);
+            return <li data-lab-object={item.id} data-lab-card={visible ? item.id : undefined} data-visible={visible} data-selected={selected}
+              data-kind={item.kind} inert={!visible} aria-hidden={!visible} className={styles.nodePosition} key={item.id}
+              style={{ visibility: visible ? "visible" : undefined, "--x": node?.desktop.x ?? 50, "--y": node?.desktop.y ?? 0, "--mx": node?.compact.x ?? 50, "--my": node?.compact.y ?? 0, "--turn": (node?.turn ?? 0) + "deg", "--strength": node?.strength ?? 0 } as CSSProperties}>
+              <button type="button" data-space-node aria-pressed={selected} aria-controls={visible ? "lab-detail" : undefined} tabIndex={visible ? 0 : -1}
+                aria-label={copy.select + " · " + item.title + " · " + (item.source === "demo" ? copy.demo : copy.kinds[item.kind])}
+                className={styles.node} data-kind={item.kind} onClick={() => {
+                  if (selected) requestAnimationFrame(() => document.getElementById("lab-detail")?.focus());
+                  else select(item.id);
+                }} onKeyDown={event => onNodeKey(event, node?.index ?? 0)}>
+                <span className={styles.cardKind}>{item.source === "demo" ? copy.demo : copy.kinds[item.kind]}</span>
+                <IslandVisual item={item} />
+                <strong lang={item.language}>{item.title}</strong>
+                <span className={styles.nodeFoot}><span>{selected ? copy.details : copy.select}</span><span aria-hidden="true">{selected ? "↘" : "+"}</span></span>
+              </button>
+            </li>;
+          })}
+        </ul>
+        {!scene.nodes.length ? <div className={styles.empty}><h2>{copy.emptyTitle}</h2><p>{copy.emptyBody}</p><button type="button" onClick={() => setPerspective(initial)}>{copy.reset} ↗</button></div> : null}
       </div>
       {active ? <div className={styles.spaceControls}>
         <button type="button" aria-label={copy.previous} disabled={scene.selectedIndex <= 0} onClick={() => move(scene.selectedIndex - 1)}>←</button>

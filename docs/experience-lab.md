@@ -1,31 +1,47 @@
-# Experience Lab 2.0 · Mini Universe
+# Experience Lab 2.5 · Liquid Constellations
 
-This local experiment extends the protected Lab 1.0 commit 46623286966e099561fed8df1ef36cc3618fec14 in an isolated worktree. It does not replace the homepage. No deployment or remote push is authorized in this iteration.
+Local isolated development starts at the preserved Lab 2.0 reference commit 3319e2711be27922a08685d1553679effbb6ee80. The 2.0 branch remains the comparison reference. No remote push, deployment, provider configuration, database change or analytics activation belongs to this iteration.
 
-## The experience
+## Content worlds
 
-Search is the center of a bounded spatial composition. At most six content islands surround it, connected by fine curved paths. The active island has a brighter connection and surface. Query changes recompute the actual ranked set, category counts and positions. Two results flank the search on desktop; larger sets occupy outer positions. Compact screens use two islands above the search and the remaining islands below it. The stage height stays fixed during refinement so the field and document do not jump while typing.
+The same eleven-record adapter and search engine are unchanged. Eight records lead to existing public BTSHQ destinations; three demo concepts remain explicitly labelled and have no article URL. No live published article is inferred.
 
-Category capsules show actual counts for the current query before category filtering. Empty categories remain usable and have a calm empty-state recovery. The original catalog and ranking engine are unchanged: eight public destinations, three clearly labelled demo concepts without public article links; German/English synonyms, all-concept matching and weighted relevance. No live Writing article is asserted. Content languages remain explicit.
+The visual layer interprets these references differently: GOATRECRUTAINER uses its actual name and GR monogram rather than a fabricated product screenshot. The published Spotlight cover supplies the portrait through a CSS crop. The globe is a schematic diagram, not a claim about new geographic connections. Tool diagrams distinguish reflection and relationship concepts; Career reuses the existing repository context image. Editorial fragments use light material and serif type. EchoWall uses a typographic speech motif without invented contributions or quotes.
 
-Every result is reachable. Previous/next and Left/Right/Home/End change selection and bring its group into view. A horizontal drag or swipe on the room or an island also changes selection; vertical touch scrolling remains native. A completed drag suppresses the follow-up click so it cannot replace the new selection. Selecting an island changes its connection and the detail section. The detail anchor and existing contextual connections provide onward navigation.
+There are no new external images, assets from third-party sites, or fixture records in a database.
 
-## Design decisions
+## Spatial system
 
-Navy, ocean blue, cyan and ice highlights remain the brand palette. The primary glass material is concentrated on the central search lens. Smaller translucent islands use asymmetrical corners, restrained rotation and fine surface highlights. Position transitions and a short arrival/connection reveal follow intentional actions. There are no infinite animation loops, particles that track the visitor, autoplay, WebGL or new dependencies.
+Deterministic compositions cover zero, one, two, three/four and five-plus matches. Six objects are visible at most. Category counts reflect the current query before category refinement. Selection, resetting and every canonical destination retain the previous contracts. Activating an already selected object focuses its full detail section.
 
-Reduced motion removes transitions and reveal animations. Results retain semantic list/button structure, selected state, keyboard navigation and polite status feedback. Decorative paths and atmospheric elements are hidden from assistive technology. Source links disable prefetch. Search input remains in component state and is not stored or serialized into URLs.
+Single matches grow through uniform transform scaling rather than a sudden CSS width/height change. The search lens stays anchored while room height adapts to the result count. The compact scene uses its own coordinates and content dimensions, not a scaled desktop canvas. The full layout requires a viewport of at least 1200px.
 
-## Isolation and safeguards
+The native disclosure at the top offers every actual match as a ranked text list. Its buttons select the matching detail directly and focus the detail section. Spatial DOM identity and Tab order remain stable; arrow controls follow result rank and expose every window. Keyboard destinations settle before focus. A bounded render-frame check waits for actual browser visibility after inert changes, then focuses the active control. Pointer/touch dragging works on the room and its objects; dragging suppresses the follow-up click. Vertical touch scrolling remains native.
 
-The route, noindex metadata and pre-render Production HTTP 404 guard from Lab 1.0 are preserved. No shared CSS, homepage, global search, content reader, World Map, EchoWall, assessment, sitemap, auth, analytics or provider configuration is changed.
+## Material and atmosphere
 
-The server uses the existing static adapter; there are no new API requests, Supabase reads or mutations. Local build checks intentionally have no Supabase configuration. VERCEL_ENV=development permits a local production-build server; Production and unknown deployed environments stay blocked by the existing guard.
+The palette remains navy, ocean blue, cyan and ice. The main backdrop-filter belongs to the search lens. Other objects use opaque fallback materials, translucent gradients, edge reflections, and depth-aware shadows without a blur layer on every node. Stronger query relevance influences the subtle edge and connection treatment. Selection highlights the material and its relation to search; the local light follows the selected object. Search focus produces a finite light response.
 
-## Verification and limits
+There is no pointer-tracking background, autoplay, heavy rendering engine or infinite animation.
 
-Local evidence belongs outside Git under .bts-engineering/adaptive-lab-2/evidence. Browser checks cover actual spatial composition, category counts, search reflow, no-result/reset, bounded navigation, related selection, mouse/touch and reduced motion. Seven UI locales are preserved; catalog language fallback remains German/English.
+## Continuous motion
 
-The room is a curated prototype with eleven records, not a live general recommendation system. Search relevance is deterministic, without AI intent interpretation. Six visible items require a group change for remaining matches. Compact layouts deliberately require vertical scrolling. The inherited streaming/footer layout shift remains outside this experiment. Real iOS Safari, actual screenreader use, hosted acceptance and the founder's subjective experience are separate checks.
+All eleven object wrappers and their paths retain stable keys through query changes. Unmatched objects become inert and aria-hidden immediately while fading out. Newly matched objects enter without delaying search results.
 
-A later protected Preview needs explicit release approval and a SITE_URL entry for its own verified branch alias. Do not reuse another branch's value or copy Production credentials. Human Experience approval must come from the founder before any integration proposal.
+A small finite requestAnimationFrame controller writes both object transforms and SVG edge endpoints from one coordinate map. Object/lens dimensions are read together on intent changes and resize, never in the drawing loop. Connections meet rotated/scaled object boundaries. New input cancels the previous frame request and starts from the last actual position. There are no React state updates per animation frame. Resize observers and media listeners are cleaned up.
+
+The initial hydrated scene keeps the server-rendered positions rather than hiding the objects to replay an entry effect. Reduced motion settles immediately without scheduled animation. Touch dragging updates object and line positions together; release returns them to the bounded composition.
+
+## Boundaries and verification
+
+The existing Production HTTP 404 guard, noindex metadata, sitemap exclusion and lack of public navigation entries remain intact. Homepage, global search, World Map, EchoWall, assessments, auth, publication readers, privacy and external configuration are unchanged. Search terms remain local component state and are neither persisted nor serialized into URLs.
+
+Tests cover scene reachability, relevance, all seven locales, inert exit behavior, interruption continuity, dragging, reduced motion, finite idle behavior and publication/destination boundaries. Browser evidence includes real animated frame sampling and an actual interaction recording; static screenshots alone do not establish motion quality. Local timings and frame intervals include browser/driver overhead and are not device or field-performance guarantees.
+
+Evidence is intentionally outside Git at .bts-engineering/lab-25/evidence. The full-suite baseline's eleven failures remain separately documented. Existing streamed loading/footer layout shifts remain outside this isolated change. Real iOS Safari, actual screenreader use, hosted acceptance and subjective founder approval remain separate verification tasks.
+
+Local verification: 38 focused tests pass. The full suite has 1,136 tests: 1,125 pass and the same eleven failure identities occur on the preserved 2.0 reference. TypeScript and both build paths pass; ESLint has no errors and three existing warnings. Browser checks cover seven locales, 320/390/768/1440px, mouse and touch manipulation, keyboard/list navigation, reduced motion and scoped Axe checks.
+
+The paired local cold-load sample adds 2,456 transferred JavaScript bytes and 1,731 CSS bytes. Input-to-two-render-frame samples are 33–89ms, including browser/driver overhead; these are not pure search-engine timings. One paired animation run recorded a 250ms frame interval. Two subsequent paired runs and four fresh-browser filter comparisons stayed near 17ms maximum. The outlier's cause remains unresolved, so neither universal 60fps nor device-level performance is established. Motion sampling found retained object identity, synchronized endpoints in the geometry model, and no idle writes after settling. No application requests to external origins were observed in the local checks.
+
+A later protected Preview needs explicit release authorization and its own verified SITE_URL. Do not reuse another branch alias or copy Production credentials. The scoped commit can be reverted without database or external-state rollback.

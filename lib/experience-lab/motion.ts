@@ -1,0 +1,107 @@
+import { edgeAnchor, labConnection, mixMotion, type LabScene, type MotionPoint } from "./space";
+
+export type LabMotion = { stop: () => void; pan: (x: number) => void; release: () => void; finish: () => void };
+/** Finite, interruptible motion: shared coordinates drive transforms and paths. No frame-time layout reads. */
+export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<string, MotionPoint>): LabMotion {
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const compact = matchMedia("(max-width: 1199px)");
+  const initial = memory.size === 0;
+  const elements = [...root.querySelectorAll<HTMLElement>("[data-lab-object]")].map(element => ({
+    id: element.dataset.labObject!, element,
+    button: element.querySelector<HTMLButtonElement>("button")!,
+    path: root.querySelector<SVGPathElement>('[data-connection="' + element.dataset.labObject + '"]')!,
+    width: 0, height: 0,
+  }));
+  const lens = root.querySelector<HTMLElement>("[data-search-lens]")!;
+  const svg = root.querySelector<SVGSVGElement>("svg[data-space-strings]")!;
+  const targets = new Map<string, MotionPoint>();
+  let origin = { x: 0, y: 0 }, lensWidth = 0, lensHeight = 0;
+  let frame = 0, stopped = false, panX = 0, geometry = "";
+
+  const draw = () => {
+    for (const record of elements) {
+      const point = memory.get(record.id);
+      if (!point) continue;
+      record.element.style.transform = "translate3d(" + point.x + "px," + point.y + "px,0) translate(-50%,-50%) rotate(" + point.turn + "deg) scale(" + point.scale + ")";
+      record.element.style.opacity = String(point.opacity);
+      record.element.style.visibility = point.opacity > .005 || targets.get(record.id)?.opacity === 1 ? "visible" : "hidden";
+      const end = edgeAnchor(origin, point, record.width * point.scale, record.height * point.scale, point.turn);
+      const start = edgeAnchor(point, origin, lensWidth, lensHeight);
+      record.path.setAttribute("d", labConnection(start, end));
+      record.path.style.opacity = String(point.opacity);
+      if (record.id === scene.nodes.find(node => node.index === scene.selectedIndex)?.item.id) {
+        root.style.setProperty("--light-x", point.x + "px");
+        root.style.setProperty("--light-y", point.y + "px");
+      }
+    }
+  };
+  const animate = (instant = false) => {
+    cancelAnimationFrame(frame);
+    const from = new Map(memory);
+    const changed = [...targets].some(([id,target]) => {
+      const point = memory.get(id);
+      return !point || Object.keys(target).some(key => Math.abs(target[key as keyof MotionPoint] - point[key as keyof MotionPoint]) > .001);
+    });
+    const began = performance.now(), duration = instant || reduced.matches || !changed ? 0 : 460;
+    const step = (now: number) => {
+      if (stopped) return;
+      const elapsed = duration ? Math.min(1, (now - began) / duration) : 1;
+      const eased = 1 - Math.pow(1 - elapsed, 3);
+      for (const [id, target] of targets) memory.set(id, mixMotion(from.get(id) ?? target, target, eased));
+      draw();
+      if (elapsed < 1) frame = requestAnimationFrame(step);
+    };
+    step(began);
+  };
+  const measure = (force = false) => {
+    if (stopped) return;
+    // All geometry is read together, only on a scene change or resize.
+    const bounds = root.getBoundingClientRect(), input = lens.getBoundingClientRect();
+    const signature = [bounds.width,bounds.height,input.left-bounds.left,input.top-bounds.top,input.width,input.height,compact.matches].join("|");
+    if (!force && signature === geometry) return;
+    geometry = signature;
+    origin = { x: input.left - bounds.left + input.width / 2, y: input.top - bounds.top + input.height / 2 };
+    lensWidth = input.width; lensHeight = input.height;
+    for (const record of elements) { record.width = record.button.offsetWidth; record.height = record.button.offsetHeight; }
+    svg.setAttribute("viewBox", "0 0 " + bounds.width + " " + bounds.height);
+    for (const record of elements) {
+      const node = scene.nodes.find(node => node.item.id === record.id);
+      const previous = memory.get(record.id);
+      if (node) {
+        const position = compact.matches ? node.compact : node.desktop;
+        const scale = scene.nodes.length === 1 ? bounds.width < 600 ? 1.5 : 1.18 : 1;
+        const target = { x: bounds.width * position.x / 100, y: position.y, opacity: 1, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
+        targets.set(record.id, target);
+        if (!previous || previous.opacity < .01) memory.set(record.id, initial ? target : { ...target, x: origin.x + (target.x - origin.x) * .88, y: origin.y + (target.y - origin.y) * .88, opacity: 0, scale: .92 });
+      } else {
+        const base = previous ?? { ...origin, scale: .92, turn: 0, opacity: 0 };
+        const target = { ...base, opacity: 0, scale: .92 };
+        if (base.opacity > .01) { target.x = origin.x + (base.x - origin.x) * 1.04; target.y = Math.min(bounds.height-35,origin.y + (base.y-origin.y)*1.04); }
+        targets.set(record.id,target);
+        if (!previous) memory.set(record.id,target);
+      }
+    }
+    animate();
+  };
+  const observer = new ResizeObserver(() => measure());
+  observer.observe(root);
+  observer.observe(lens);
+  const onPreference = () => measure(true);
+  reduced.addEventListener("change", onPreference);
+  compact.addEventListener("change", onPreference);
+  measure(true);
+  return {
+    stop() {
+      stopped = true; cancelAnimationFrame(frame); observer.disconnect();
+      reduced.removeEventListener("change", onPreference); compact.removeEventListener("change", onPreference);
+    },
+    pan(x) {
+      cancelAnimationFrame(frame);
+      const delta = x - panX; panX = x;
+      for (const [id, point] of memory) memory.set(id, { ...point, x: point.x + delta });
+      draw();
+    },
+    release() { panX = 0; animate(); },
+    finish() { animate(true); },
+  };
+}

@@ -4,6 +4,7 @@ import type { LabKind } from "@/lib/experience-lab/search";
 type LabCopy = {
   categories: string;
   prototype: string;
+  list: string;
   title: string;
   subtitle: string;
   search: string;
@@ -32,6 +33,7 @@ export const labCopy: Record<Locale, LabCopy> = {
   en: {
     categories: "Content types",
     prototype: "Experience Lab · Prototype",
+    list: "Results as a list",
     title: "Follow your curiosity.",
     subtitle: "Follow a thought. Meet a perspective. Find what moves you.",
     search: "Search this universe",
@@ -59,6 +61,7 @@ export const labCopy: Record<Locale, LabCopy> = {
   de: {
     categories: "Inhaltstypen",
     prototype: "Experience Lab · Prototyp",
+    list: "Ergebnisse als Liste",
     title: "Folge deiner Neugier.",
     subtitle: "Folge einem Gedanken. Entdecke eine Perspektive. Finde, was dich bewegt.",
     search: "Dieses Universum durchsuchen",
@@ -86,6 +89,7 @@ export const labCopy: Record<Locale, LabCopy> = {
   es: {
     categories: "Tipos de contenido",
     prototype: "Experience Lab · Prototipo",
+    list: "Resultados en lista",
     title: "Sigue tu curiosidad.",
     subtitle: "Sigue una idea. Descubre una perspectiva. Encuentra lo que te mueve.",
     search: "Buscar en este universo",
@@ -113,6 +117,7 @@ export const labCopy: Record<Locale, LabCopy> = {
   tr: {
     categories: "İçerik türleri",
     prototype: "Experience Lab · Prototip",
+    list: "Liste olarak sonuçlar",
     title: "Merakının peşinden git.",
     subtitle: "Bir düşüncenin izini sür. Bir bakış açısı keşfet. Sana ilham vereni bul.",
     search: "Bu evrende ara",
@@ -140,6 +145,7 @@ export const labCopy: Record<Locale, LabCopy> = {
   pl: {
     categories: "Rodzaje treści",
     prototype: "Experience Lab · Prototyp",
+    list: "Wyniki jako lista",
     title: "Podążaj za ciekawością.",
     subtitle: "Podążaj za myślą. Poznaj perspektywę. Odkryj, co Cię porusza.",
     search: "Przeszukaj ten wszechświat",
@@ -167,6 +173,7 @@ export const labCopy: Record<Locale, LabCopy> = {
   el: {
     categories: "Τύποι περιεχομένου",
     prototype: "Experience Lab · Πρωτότυπο",
+    list: "Αποτελέσματα σε λίστα",
     title: "Ακολούθησε την περιέργειά σου.",
     subtitle: "Ακολούθησε μια σκέψη. Γνώρισε μια οπτική. Βρες ό,τι σε εμπνέει.",
     search: "Αναζήτηση σε αυτό το σύμπαν",
@@ -194,6 +201,7 @@ export const labCopy: Record<Locale, LabCopy> = {
   ru: {
     categories: "Типы материалов",
     prototype: "Experience Lab · Прототип",
+    list: "Результаты списком",
     title: "Следуй за любопытством.",
     subtitle: "Следуй за мыслью. Открой новую точку зрения. Найди то, что вдохновляет.",
     search: "Поиск в этой вселенной",
