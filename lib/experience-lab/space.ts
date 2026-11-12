@@ -4,22 +4,21 @@ export const labWindowSize = 6;
 export type SpacePoint = { x: number; y: number };
 export type MotionPoint = SpacePoint & { opacity: number; scale: number; turn: number };
 const wide: Record<number, readonly SpacePoint[]> = {
-  1: [{ x: 50, y: 535 }],
-  2: [{ x: 17, y: 290 }, { x: 83, y: 310 }],
-  3: [{ x: 17, y: 135 }, { x: 83, y: 135 }, { x: 50, y: 505 }],
-  4: [{ x: 17, y: 100 }, { x: 83, y: 100 }, { x: 20, y: 465 }, { x: 80, y: 465 }],
-  5: [{ x: 17, y: 100 }, { x: 83, y: 100 }, { x: 17, y: 420 }, { x: 83, y: 420 }, { x: 50, y: 560 }],
-  6: [{ x: 17, y: 100 }, { x: 83, y: 100 }, { x: 16, y: 420 }, { x: 84, y: 420 }, { x: 39, y: 570 }, { x: 66, y: 565 }],
+  1:[{x:50,y:585}],2:[{x:16,y:310},{x:84,y:320}],
+  3:[{x:16,y:105},{x:84,y:105},{x:50,y:535}],
+  4:[{x:16,y:105},{x:84,y:105},{x:16,y:470},{x:84,y:470}],
+  5:[{x:16,y:105},{x:84,y:105},{x:15,y:400},{x:85,y:400},{x:50,y:555}],
+  6:[{x:16,y:105},{x:84,y:105},{x:15,y:390},{x:85,y:405},{x:39,y:555},{x:65,y:555}],
 };
 const compact: Record<number, readonly SpacePoint[]> = {
-  1: [{ x: 50, y: 560 }],
-  2: [{ x: 25, y: 550 }, { x: 75, y: 550 }],
-  3: [{ x: 50, y: 65 }, { x: 25, y: 550 }, { x: 75, y: 550 }],
-  4: [{ x: 25, y: 65 }, { x: 75, y: 65 }, { x: 25, y: 550 }, { x: 75, y: 550 }],
-  5: [{ x: 25, y: 65 }, { x: 75, y: 65 }, { x: 25, y: 550 }, { x: 75, y: 550 }, { x: 50, y: 760 }],
-  6: [{ x: 25, y: 65 }, { x: 75, y: 65 }, { x: 25, y: 550 }, { x: 75, y: 550 }, { x: 25, y: 760 }, { x: 75, y: 760 }],
+  1:[{x:50,y:480}],2:[{x:25,y:490},{x:75,y:510}],
+  3:[{x:50,y:110},{x:25,y:660},{x:75,y:660}],
+  4:[{x:25,y:110},{x:75,y:110},{x:25,y:660},{x:75,y:660}],
+  5:[{x:25,y:110},{x:75,y:110},{x:25,y:660},{x:75,y:660},{x:50,y:940}],
+  6:[{x:25,y:110},{x:75,y:110},{x:25,y:660},{x:75,y:660},{x:25,y:940},{x:75,y:940}],
 };
-
+const wideHeight=[540,760,650,690,690,690,690];
+const compactHeight=[520,680,680,820,820,1100,1100];
 /** Deterministic compositions. Y is a pixel offset, keeping the search anchor stable. */
 export function composeLabSpace(matches: readonly LabMatch[], selectedId: string, focus = false) {
   const selectedIndex = Math.max(0, matches.findIndex(({ item }) => item.id === selectedId));
@@ -27,16 +26,16 @@ export function composeLabSpace(matches: readonly LabMatch[], selectedId: string
   const window = matches.slice(start, start + labWindowSize);
   const strongest = matches[0]?.score || 1;
   return {
-    focus, selectedIndex, start, end: start + window.length,
+    height:{wide:focus?900:wideHeight[window.length],compact:focus?620:compactHeight[window.length]}, focus, selectedIndex, start, end: start + window.length,
     nodes: window.map((match, index) => {
       const selected=match.item.id===selectedId;
-      const satellite=index-(index>selectedIndex-start ? 1 : 0);
+
       return {
       ...match, index: start + index,
-      desktop: focus ? selected ? {x:24,y:460} : {x:8+satellite*9,y:650} : wide[window.length][index],
-      compact: focus ? selected ? {x:50,y:390} : {x:12+satellite*19,y:570} : compact[window.length][index],
-      depth: focus && !selected ? .38 : 1,
-      focusScale: focus ? selected ? 1.08 : .42 : 1,
+      desktop: focus && selected ? {x:26,y:500} : wide[window.length][index],
+      compact: focus && selected ? {x:50,y:430} : compact[window.length][index],
+      depth: focus && !selected ? 0 : 1,
+      focusScale: focus ? selected ? 1.8 : .9 : 1, focusCompactScale: focus ? selected ? 1.22 : .9 : 1,
       strength: match.score ? Math.max(.35, match.score / strongest) : .7,
       turn: [-3, 2, -2, 3, -2, 2][index],
     }; }),

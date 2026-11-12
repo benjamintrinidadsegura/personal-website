@@ -5,7 +5,7 @@ import styles from "./experience-lab.module.css";
 /** Presentation only: existing approved assets or diagrams, never invented publications/contributions. */
 export function IslandVisual({ item }: { item: LabItem }) {
   if (item.kind === "person" && item.image) return <span className={styles.portraitWindow} aria-hidden="true">
-    <Image src={item.image.src} alt="" width={1280} height={720} sizes="640px" className={styles.portrait} />
+    <Image src={item.image.src} alt="" width={1280} height={720} unoptimized className={styles.portrait} />
   </span>;
   if (item.kind === "project") return <span className={styles.projectMark} aria-hidden="true">GOAT<span>RECRUTAINER</span><i>GR</i></span>;
   if (item.kind === "world") return <span className={styles.globe} aria-hidden="true">

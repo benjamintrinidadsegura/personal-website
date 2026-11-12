@@ -47,7 +47,14 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
       const focusVisibleTarget = () => {
         const button = target==="@detail" ? document.getElementById("lab-detail") : target==="@search" ? document.getElementById("lab-search") : space.current?.querySelector<HTMLButtonElement>('[data-lab-card="' + target.replace("@restore:","") + '"] button');
         if (!button) return;
-        if (getComputedStyle(button).visibility === "visible") button.focus({preventScroll:target==="@detail" && matchMedia("(min-width: 1200px)").matches});
+        if (getComputedStyle(button).visibility === "visible") {
+          button.focus({preventScroll:target==="@detail"});
+          if(target==="@detail" && matchMedia("(max-width: 1199px)").matches)space.current?.scrollIntoView?.({block:"start",behavior:"instant"});
+          if(target!=="@detail" && document.activeElement===button && typeof innerHeight==="number"){
+            const bounds=button.getBoundingClientRect();
+            if(bounds.top<85 || bounds.bottom>innerHeight-8)button.scrollIntoView({block:"center",behavior:"instant"});
+          }
+        }
         if (document.activeElement !== button && ++attempts < 4) focusFrame = requestAnimationFrame(focusVisibleTarget);
       };
       focusFrame = requestAnimationFrame(focusVisibleTarget);
@@ -102,11 +109,11 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
   return (
     <article className={styles.lab} aria-labelledby="lab-title" onKeyDown={event=>{if(focused && event.key==="Escape" && !event.defaultPrevented){event.preventDefault();leaveFocus();}}}>
       <div className={styles.topline}>
-        <span className={styles.prototype}>{copy.prototype} <span>3.0</span></span>
+        <span className={styles.prototype}>{copy.prototype} <span>3.5 A</span></span>
         <Link href={localizeHref("/", locale)} prefetch={false}>BTSHQ <span aria-hidden="true">↗</span></Link>
       </div>
       <header className={styles.intro}>
-        <p className={styles.eyebrow}>BTSHQ · Magic Interaction</p>
+        <p className={styles.eyebrow}>BTSHQ · Premium Spatial Glass</p>
         <h1 id="lab-title">{copy.title.replace("\n", " ")}</h1>
         <p>{copy.subtitle}</p>
       </header>
@@ -121,8 +128,8 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
         <p id="lab-results-status" role="status">{matches.length} {copy.results}</p>
         <button type="button" onClick={reset}>{copy.reset} <span aria-hidden="true">↺</span></button>
       </div>
-      <div className={styles.experience} data-focused={focused}>
-      <div ref={space} className={styles.space} data-focus={focused} data-kind={perspective.kind} data-count={scene.nodes.length} data-solo={scene.nodes.length === 1} data-searching={Boolean(perspective.query.trim())}
+      <div className={styles.experience} data-focused={focused} data-world={active?.kind}>
+      <div ref={space} className={styles.space} style={{"--scene-wide":scene.height.wide+"px","--scene-compact":scene.height.compact+"px"} as CSSProperties} data-focus={focused} data-kind={perspective.kind} data-count={scene.nodes.length} data-solo={scene.nodes.length === 1} data-searching={Boolean(perspective.query.trim())}
         onClickCapture={event => {
           if (didDrag.current && event.detail > 0) { event.preventDefault(); event.stopPropagation(); }
           didDrag.current = false;
@@ -159,7 +166,7 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
         <ul className={styles.nodes} aria-label={copy.results}>
           {catalog.map(item => {
             const node = scene.nodes.find(node => node.item.id === item.id);
-            const selected = item.id === active?.id, visible = Boolean(node);
+            const selected = item.id === active?.id, visible = Boolean(node) && (!focused || selected);
             return <li data-lab-object={item.id} data-lab-card={visible ? item.id : undefined} data-visible={visible} data-selected={selected}
               data-kind={item.kind} data-related={Boolean(focused && active && item.id!==active.id && sharedLabTopics(active,item).length)} inert={!visible} aria-hidden={!visible} className={styles.nodePosition} key={item.id}
               style={{ visibility: visible ? "visible" : undefined, "--x": node?.desktop.x ?? 50, "--y": node?.desktop.y ?? 0, "--mx": node?.compact.x ?? 50, "--my": node?.compact.y ?? 0, "--turn": (node?.turn ?? 0) + "deg", "--strength": node?.strength ?? 0 } as CSSProperties}>

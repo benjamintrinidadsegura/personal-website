@@ -65,6 +65,14 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       else for (const [id, target] of targets) memory.set(id, mixMotion(from.get(id) ?? target, target, eased));
       draw();
       if (elapsed < 1) frame = requestAnimationFrame(step);
+      else if(typeof document!=="undefined" && typeof innerHeight==="number"){
+        const selected=elements.find(record=>record.id===activeId && document.activeElement===record.button);
+        if(selected){
+          // One completion-time read keeps a transformed keyboard target visible.
+          const bounds=selected.button.getBoundingClientRect();
+          if(bounds.top<85 || bounds.bottom>innerHeight-8)selected.button.scrollIntoView({block:"center",behavior:"instant"});
+        }
+      }
     };
     step(began);
   };
@@ -77,6 +85,15 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     const signature = [bounds.width,bounds.height,input.left-bounds.left,input.top-bounds.top,input.width,input.height,compact.matches].join("|");
     if (!force && signature === geometry) {center.style.transform=previousTransform;return;}
     geometry = signature;
+    // A focus world can collapse the introduction. Rebase the existing frame in
+    // document coordinates so the surviving object and lens do not teleport.
+    const location={x:bounds.left+(typeof scrollX==="number"?scrollX:0),y:bounds.top+(typeof scrollY==="number"?scrollY:0)};
+    const previousRoom=memory.get("@room");
+    if(previousRoom){
+      const dx=previousRoom.x-location.x,dy=previousRoom.y-location.y;
+      if(Math.abs(dx)>.01||Math.abs(dy)>.01)for(const[id,point]of memory)if(id!=="@room")memory.set(id,{...point,x:point.x+dx,y:point.y+dy});
+    }
+    memory.set("@room",{...location,opacity:1,scale:1,turn:0});
     room={width:bounds.width,height:bounds.height};
     origin = { x: input.left - bounds.left + input.width / 2, y: input.top - bounds.top + input.height / 2 };
     const previousOrigin=memory.get("@lens")??origin;
@@ -90,7 +107,7 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       const previous = memory.get(record.id);
       if (node) {
         const position = compact.matches ? node.compact : node.desktop;
-        const scale = scene.focus ? node.focusScale : scene.nodes.length === 1 ? bounds.width < 600 ? 1.5 : 1.18 : 1;
+        const scale = scene.focus ? compact.matches ? node.focusCompactScale : node.focusScale : scene.nodes.length === 1 ? bounds.width < 600 ? 1.12 : 1.08 : 1;
         const target = { x: bounds.width * position.x / 100, y: position.y, opacity: node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
         targets.set(record.id, target);
         if (!previous || previous.opacity < .01) memory.set(record.id, initial ? target : { ...target, x: origin.x + (target.x - origin.x) * .88, y: origin.y + (target.y - origin.y) * .88, opacity: 0, scale: .92 });
@@ -119,7 +136,7 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     pan(x) {
       cancelAnimationFrame(frame);
       const delta = x - panX; panX = x;
-      for (const [id, point] of memory) if(id!=="@lens")memory.set(id, { ...point, x: point.x + delta });
+      for (const [id, point] of memory) if(!id.startsWith("@"))memory.set(id, { ...point, x: point.x + delta });
       draw();
     },
     release() { panX = 0; animate(); },

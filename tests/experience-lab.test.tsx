@@ -33,8 +33,8 @@ test("spatial windows keep every result reachable and never fill the room with u
       assert.ok(room.nodes.some(node => node.item.id === match.item.id));
       for (const node of room.nodes) {
         visited.add(node.item.id);
-        for (const point of [node.desktop, node.compact]) {
-          assert.ok(point.x >= 15 && point.x <= 85 && point.y >= 50 && point.y <= 800);
+        for (const [point,height] of [[node.desktop,room.height.wide],[node.compact,room.height.compact]] as const) {
+          assert.ok(point.x >= 15 && point.x <= 85 && point.y >= 50 && point.y <= height);
           assert.doesNotMatch(spaceEngine.labConnection({ x: 500, y: 250 }, point), /NaN|undefined/);
         }
       }
@@ -152,7 +152,7 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     const hooks = hookHarness();
     const css = { __esModule: true, default: new Proxy({}, { get: (_obj, key) => String(key) }) };
     const ImageMock = (props: Record<string, unknown>) => {
-      const imageProps = { ...props }; delete imageProps.fill;
+      const imageProps = { ...props }; delete imageProps.fill;delete imageProps.unoptimized;
       return React.createElement("img", imageProps);
     };
     const visuals = loadSource("components/experience-lab/island-visual.tsx", {
@@ -203,6 +203,8 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     (demoButton.props.onClick as ()=>void)();tree=render();
     assert.equal(nodes(tree).find(node=>node.props.id==="lab-search")?.props.value,"Gaming");
     assert.equal(nodes(tree).find(node=>node.props.id==="lab-detail-title")?.props.children,createLabCatalog(locale).find(item=>item.id==="gaming-demo")?.title);
+    assert.equal(nodes(tree).filter(node=>node.props["data-lab-card"]).length,1,"Focus promotes the original object instead of adding a second visual card");
+    assert.equal(nodes(tree).filter(node=>node.props["data-lab-object"]).length,catalog.length,"Focus cannot remount the content identity slots");
     const returnButton=nodes(tree).find(node=>node.type==="button" && Array.isArray(node.props.children) && node.props.children.includes(focusCopy[locale].back))!;
     (returnButton.props.onClick as ()=>void)();tree=render();
     assert.equal(nodes(tree).find(node=>node.props.id==="lab-search")?.props.value,"Gaming","returning cannot clear the visitor's query");

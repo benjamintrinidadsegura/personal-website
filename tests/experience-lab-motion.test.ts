@@ -10,16 +10,18 @@ import * as choreography from "../lib/experience-lab/choreography";
 
 function fixture(reduce = false) {
   const catalog = createLabCatalog("en"), search = createLabSearch(catalog);
-  let time = 0, next = 0, disconnected = 0;
+  let time = 0, next = 0, disconnected = 0,roomTop=0,reveals=0;
+  const documentStub:{activeElement:unknown}={activeElement:null};
   const frames = new Map<number, FrameRequestCallback>();
   const records = catalog.map(item => ({
     id: item.id, style: {} as Record<string,string>, attrs: {} as Record<string,string>,
+    button:{offsetWidth:220,offsetHeight:160,getBoundingClientRect:()=>({top:950,bottom:1110}),scrollIntoView(){reveals++;}},
     path: { style: {}, setAttribute(key: string,value: string) { records.find(record => record.path === this)!.attrs[key] = value; } },
   }));
-  const lens = { getBoundingClientRect: () => ({ left: 400, top: 200, width: 400, height: 76 }) };
+  const lens = { getBoundingClientRect: () => ({ left: 400, top: 200+roomTop, width: 400, height: 76 }) };
   const root = {
-    style: { setProperty() {} }, getBoundingClientRect: () => ({ left: 0, top: 0, width: 1200, height: 680 }),
-    querySelectorAll: () => records.map(record => ({ dataset: { labObject: record.id }, style: record.style, querySelector: () => ({ offsetWidth: 220, offsetHeight: 160 }) })),
+    style: { setProperty() {} }, getBoundingClientRect: () => ({ left: 0, top: roomTop, width: 1200, height: 680 }),
+    querySelectorAll: () => records.map(record => ({ dataset: { labObject: record.id }, style: record.style, querySelector: () => record.button })),
     querySelector: (selector: string) => selector.includes("data-search-lens") ? lens
       : selector.includes("data-search-center") ? {style:{},getBoundingClientRect:lens.getBoundingClientRect}
       : selector.includes("data-space-strings") ? { setAttribute() {} }
@@ -34,10 +36,11 @@ function fixture(reduce = false) {
     performance: { now: () => time },
     requestAnimationFrame: (callback: FrameRequestCallback) => { frames.set(++next,callback); return next; },
     cancelAnimationFrame: (id: number) => frames.delete(id),
+    document:documentStub,innerHeight:900,
   });
   const memory = new Map<string,MotionPoint>();
   const tick = (now: number) => { time = now; const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback(now)); };
-  return { root,search,records,memory,tick,frames,motionModule,disconnected: () => disconnected };
+  return { root,search,records,memory,tick,frames,motionModule,setRoomTop:(top:number)=>{roomTop=top;},setActive:(id:string)=>{documentStub.activeElement=records.find(record=>record.id===id)!.button;},reveals:()=>reveals,disconnected: () => disconnected };
 }
 
 test("interrupted constellation motion starts at the actual previous frame and becomes idle", () => {
@@ -97,4 +100,29 @@ test("connection endpoints remain on rotated object boundaries rather than passi
     const x=dx*Math.cos(a)-dy*Math.sin(a),y=dx*Math.sin(a)+dy*Math.cos(a);
     assert.ok(Math.abs((x/100)**2+(y/60)**2-1)<.00001);
   }
+});
+
+test("entering a full focus world preserves document-space coordinates when the intro collapses",()=>{
+  const f=fixture(),scene=composeLabSpace(f.search(""),"personal-advantage");
+  f.motionModule.startLabMotion(f.root,scene,f.memory).stop();
+  const before={...f.memory.get("personal-advantage")!},lens={...f.memory.get("@lens")!};
+  f.setRoomTop(-140);
+  const motion=f.motionModule.startLabMotion(f.root,scene,f.memory);
+  assert.equal(f.memory.get("personal-advantage")!.y-140,before.y);
+  assert.equal(f.memory.get("@lens")!.y-140,lens.y);
+  motion.pan(20);motion.release();motion.finish();
+  assert.equal(f.memory.get("@room")!.x,0,"dragging cannot alter the document origin");
+  assert.equal(f.memory.get("personal-advantage")!.y,scene.nodes.find(node=>node.item.id==="personal-advantage")!.desktop.y);
+  motion.stop();assert.equal(f.frames.size,0);
+});
+
+test("completion reveals only the selected keyboard target and performs no idle work",()=>{
+  const f=fixture(),matches=f.search("");
+  f.motionModule.startLabMotion(f.root,composeLabSpace(matches,"world-map"),f.memory).stop();
+  f.setActive("world-map");
+  const motion=f.motionModule.startLabMotion(f.root,composeLabSpace(matches,"world-map",true),f.memory);
+  assert.equal(f.reveals(),0,"input and motion cannot wait for a scroll timer");
+  f.tick(1000);assert.equal(f.reveals(),1);
+  assert.equal(f.frames.size,0);f.tick(2000);assert.equal(f.reveals(),1);
+  motion.stop();
 });

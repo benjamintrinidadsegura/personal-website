@@ -4,7 +4,6 @@ import { labCopy } from "@/data/experience-lab/copy";
 import { labContext,sharedLabTopics } from "@/lib/experience-lab/context";
 import type { LabItem,LabKind,LabMatch } from "@/lib/experience-lab/search";
 import { localeDetails,type Locale } from "@/lib/i18n/config";
-import { IslandVisual } from "./island-visual";
 import styles from "./experience-lab.module.css";
 
 export function FocusSurface({match,query,kind,locale,related,onBack,onRefine,onSelect}:{
@@ -15,7 +14,6 @@ export function FocusSurface({match,query,kind,locale,related,onBack,onRefine,on
  return <section id="lab-detail" tabIndex={-1} aria-labelledby="lab-detail-title" className={styles.focusSurface} onKeyDown={event=>{if(event.key==="Escape"){event.preventDefault();onBack();}}}>
    <div className={styles.focusToolbar}><button type="button" onClick={onBack}>← {focus.back}</button><button type="button" onClick={onRefine}>{focus.changeSearch} ↗</button></div>
    <div className={styles.focusHeader}>
-    <div className={styles.focusEmblem} data-kind={item.kind} aria-hidden="true"><IslandVisual item={item}/></div>
     <p className={styles.eyebrow}>{focus.focus} / {item.source==="demo"?copy.demo:copy.kinds[item.kind]}</p>
     <h2 id="lab-detail-title" lang={item.language}>{item.title}</h2>
    </div>
