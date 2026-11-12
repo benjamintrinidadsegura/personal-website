@@ -113,7 +113,9 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
   return <article className={styles.lab} data-direction={direction} data-locale={locale} data-focused={focused} aria-labelledby="lab-title"
     onKeyDown={event => { if (focused && event.key === "Escape" && !event.defaultPrevented) { event.preventDefault(); leaveFocus(); } }}>
     <div className={styles.topline}>
-      <span className={styles.prototype}><span className={styles.srOnly}>{copy.prototype}</span>HUMAN LIQUID UNIVERSE</span>
+      <div className={styles.roomHeading}><span className={styles.prototype}>BTSHQ<span className={styles.srOnly}> · {copy.prototype}</span></span>
+        <h1 id="lab-title">{copy.title.replace("\n", " ")}</h1>
+      </div>
       <Link href={localizeHref("/", locale)} prefetch={false}>BTSHQ ↗</Link>
     </div>
     <div className={styles.experience} data-focused={focused} data-world={active?.kind} data-searching={Boolean(perspective.query.trim())}>
@@ -126,11 +128,7 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
             style={{ strokeOpacity: item.id === active?.id ? 1 : .45 }} />)}
         </svg>
         <div className={styles.controlColumn}>
-          <header className={styles.intro}>
-            <p className={styles.eyebrow}>BTSHQ / HUMAN LIQUID UNIVERSE</p>
-            <h1 id="lab-title">{copy.title.replace("\n", " ")}</h1>
-            <p>{copy.subtitle}</p>
-          </header>
+          <p className={styles.srOnly}>{copy.subtitle}</p>
           <section className={styles.center} data-search-center aria-label={copy.search}>
             <label htmlFor="lab-search" className={styles.searchLabel}>{copy.search}</label>
             <div className={styles.searchSurface} data-search-lens>

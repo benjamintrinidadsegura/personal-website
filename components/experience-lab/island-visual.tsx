@@ -10,9 +10,10 @@ export function IslandVisual({ item, featured = false }: { item: LabItem; featur
       <svg viewBox="164 78 254 258" preserveAspectRatio="xMidYMid slice"><image href={item.image.src} x="0" y="0" width="1280" height="720" /></svg>
     </span>;
   } else if (item.kind === "project") {
-    visual = <span className={styles.projectArt}><i /><i /><span className={styles.wordmark}>
-      {item.title === "GOATRECRUTAINER" ? <>GOAT<small>RECRUTAINER</small></> : item.title}
-    </span></span>;
+    visual = <span className={styles.projectArt} data-project-context>
+      <span className={styles.projectTopics}>{item.topics.slice(0, 2).join(" · ")}</span>
+      <span className={styles.projectDescription} lang={item.language}>{item.summary}</span>
+    </span>;
   } else if (item.kind === "world") {
     visual = <span className={styles.worldArt}><Image src="/images/experience-lab/world-atlas.svg" alt="" fill unoptimized loading={featured ? "eager" : "lazy"} /></span>;
   } else if (item.kind === "community") {

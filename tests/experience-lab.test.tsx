@@ -200,6 +200,9 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
       return [value, ...nodes(value.props.children as React.ReactNode)];
     };
     let tree = render();
+    const heading = nodes(tree).find(node => node.type === "h1" && node.props.id === "lab-title")!;
+    assert.equal(heading.props.children, labCopy[locale].title.replace("\n", " "));
+    assert.notEqual(heading.props.className, "srOnly");
     let cards = nodes(tree).filter(node => node.props["data-lab-card"]);
     assert.equal(cards.length, spaceEngine.labWindowSize);
     const input = nodes(tree).find(node => node.props.id === "lab-search")!;
@@ -340,4 +343,24 @@ test("keyboard focus waits for a newly active object to become visible and cance
   assert.equal(documentStub.activeElement,button);
   assert.equal(finished,1,"returning restores focus without teleporting the composition");
   hooks.unmount();
+});
+
+test("project artwork uses existing project context without inventing a GOAT wordmark", () => {
+  const Visual = loadSource<{ IslandVisual: (props: { item: LabItem; featured?: boolean }) => React.ReactElement }>("components/experience-lab/island-visual.tsx", {
+    "react/jsx-runtime": jsxRuntime,
+    "next/image": { __esModule: true, default: () => null },
+    "./experience-lab.module.css": { __esModule: true, default: new Proxy({}, { get: (_object, key) => String(key) }) },
+  }).IslandVisual;
+  for (const locale of config.locales) {
+    const project = createLabCatalog(locale).find(item => item.kind === "project")!;
+    const before = JSON.stringify(project);
+    for (const featured of [false, true]) {
+      const html = renderToStaticMarkup(Visual({ item: project, featured }));
+      assert.match(html, /data-project-context/);
+      assert.ok(html.includes(project.summary.replaceAll("&", "&amp;")));
+      assert.ok(html.includes(project.topics.slice(0, 2).join(" · ")));
+      assert.doesNotMatch(html, /wordmark|GOAT<|<small>RECRUTAINER/);
+      assert.equal(JSON.stringify(project), before, "presentation cannot replace approved project data");
+    }
+  }
 });
