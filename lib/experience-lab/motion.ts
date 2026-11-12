@@ -19,11 +19,22 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
   const targets = new Map<string, MotionPoint>();
   let origin = { x: 0, y: 0 }, liveOrigin={x:0,y:0},lensWidth = 0, lensHeight = 0;
   let frame = 0, stopped = false, panX = 0, geometry = "";
+  let anchorFrom: MotionPoint | undefined, extentFrom: MotionPoint | undefined, connectionProgress = 1;
   let room={width:0,height:0},obstacle:Obstacle={x:0,y:0,width:0,height:0};
   const activeId=scene.nodes.find(node=>node.index===scene.selectedIndex)?.item.id;
 
   const draw = () => {
     center.style.transform="translateX(-50%) translate3d("+(liveOrigin.x-origin.x)+"px,"+(liveOrigin.y-origin.y)+"px,0)";
+    const selected = scene.focus ? memory.get(activeId ?? "") : undefined;
+    const selectedRecord = selected ? elements.find(record => record.id === activeId) : undefined;
+    const anchorTarget = selected ?? { ...liveOrigin, opacity:1, scale:1, turn:0 };
+    const extentTarget = { x:selectedRecord ? selectedRecord.width * selected!.scale : lensWidth,
+      y:selectedRecord ? selectedRecord.height * selected!.scale : lensHeight, opacity:1, scale:1, turn:0 };
+    // A connection's source migrates with the same finite flight as its objects.
+    // Preserve its actual intermediate geometry when Focus or a query interrupts it.
+    const anchor = mixMotion(anchorFrom ?? anchorTarget, anchorTarget, connectionProgress);
+    const extent = mixMotion(extentFrom ?? extentTarget, extentTarget, connectionProgress);
+    memory.set("@anchor",anchor); memory.set("@extent",extent);
     for (const record of elements) {
       const point = memory.get(record.id);
       if (!point) continue;
@@ -31,8 +42,10 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       record.element.style.opacity = String(point.opacity);
       record.element.style.pointerEvents = point.opacity < .2 ? "none" : "";
       record.element.style.visibility = point.opacity > .005 || targets.get(record.id)?.opacity === 1 ? "visible" : "hidden";
-      const end = edgeAnchor(liveOrigin, point, record.width * point.scale, record.height * point.scale, point.turn);
-      const start = edgeAnchor(point, liveOrigin, lensWidth, lensHeight);
+      const migrating = record.id !== activeId;
+      const source = migrating ? anchor : liveOrigin;
+      const end = edgeAnchor(source, point, record.width * point.scale, record.height * point.scale, point.turn);
+      const start = edgeAnchor(point, source, migrating ? extent.x : lensWidth, migrating ? extent.y : lensHeight, migrating ? anchor.turn : 0);
       record.path.setAttribute("d", labConnection(start, end));
       record.path.style.opacity = String(point.opacity);
       if (record.id === activeId) {
@@ -45,6 +58,8 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     cancelAnimationFrame(frame);
     const from = new Map(memory);
     const fromOrigin=memory.get("@lens")??{...origin,opacity:1,scale:1,turn:0};
+    anchorFrom = memory.get("@anchor") ?? fromOrigin;
+    extentFrom = memory.get("@extent");
     const changed = [...targets].some(([id,target]) => {
       const point = memory.get(id);
       return !point || Object.keys(target).some(key => Math.abs(target[key as keyof MotionPoint] - point[key as keyof MotionPoint]) > .001);
@@ -59,6 +74,7 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       if (stopped) return;
       const elapsed = duration ? Math.min(1, (now - began) / duration) : 1;
       const eased = 1 - Math.pow(1 - elapsed, 3);
+      connectionProgress = eased;
       const lensPoint=mixMotion(fromOrigin,{...origin,opacity:1,scale:1,turn:0},eased);
       memory.set("@lens",lensPoint);liveOrigin=lensPoint;
       if(duration) for(const flight of flights)memory.set(flight.id,sampleFlight(flight,eased));
@@ -91,7 +107,7 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     const previousRoom=memory.get("@room");
     if(previousRoom){
       const dx=previousRoom.x-location.x,dy=previousRoom.y-location.y;
-      if(Math.abs(dx)>.01||Math.abs(dy)>.01)for(const[id,point]of memory)if(id!=="@room")memory.set(id,{...point,x:point.x+dx,y:point.y+dy});
+      if(Math.abs(dx)>.01||Math.abs(dy)>.01)for(const[id,point]of memory)if(id!=="@room" && id!=="@extent")memory.set(id,{...point,x:point.x+dx,y:point.y+dy});
     }
     memory.set("@room",{...location,opacity:1,scale:1,turn:0});
     room={width:bounds.width,height:bounds.height};
@@ -107,7 +123,7 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       const previous = memory.get(record.id);
       if (node) {
         const position = compact.matches ? node.compact : node.desktop;
-        const scale = scene.focus ? compact.matches ? node.focusCompactScale : node.focusScale : scene.nodes.length === 1 ? bounds.width < 600 ? 1.12 : 1.08 : 1;
+        const scale = scene.focus ? compact.matches ? node.focusCompactScale : node.focusScale : scene.nodes.length === 1 ? bounds.width < 600 ? 1.12 : 1.08 : node.scale;
         const target = { x: bounds.width * position.x / 100, y: position.y, opacity: node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
         targets.set(record.id, target);
         if (!previous || previous.opacity < .01) memory.set(record.id, initial ? target : { ...target, x: origin.x + (target.x - origin.x) * .88, y: origin.y + (target.y - origin.y) * .88, opacity: 0, scale: .92 });

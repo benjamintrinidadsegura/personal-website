@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { createLabCatalog } from "../data/experience-lab/catalog";
 import { labCopy } from "../data/experience-lab/copy";
+import { getErrorDictionary } from "../data/i18n/errors";
 import { createLabSearch, normalizeLabQuery, relatedLabItems, type LabItem } from "../lib/experience-lab/search";
 import * as config from "../lib/i18n/config";
 import * as routing from "../lib/i18n/routing";
@@ -22,6 +23,20 @@ import { proxy } from "../proxy";
 
 const catalog = createLabCatalog("en");
 const search = createLabSearch(catalog);
+
+test("streaming the Lab keeps the existing seven-locale loading announcement without decorative motion", async () => {
+  for (const locale of config.locales) {
+    const Loading = loadSource<{ default: () => Promise<React.ReactElement> }>("app/experience-lab/loading.tsx", {
+      "react/jsx-runtime": jsxRuntime,
+      "@/data/i18n/errors": { getErrorDictionary },
+      "@/lib/i18n/server": { getLocale: async () => locale },
+    }).default;
+    const html = renderToStaticMarkup(await Loading());
+    assert.match(html, /role="status" data-navigation-loading/u);
+    assert.ok(html.includes(getErrorDictionary(locale).loading));
+    assert.doesNotMatch(html, /animate-|autofocus|<script|<input/iu);
+  }
+});
 
 test("spatial windows keep every result reachable and never fill the room with unrelated content", () => {
   for (let count = 0; count <= catalog.length; count++) {

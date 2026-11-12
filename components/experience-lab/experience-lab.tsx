@@ -7,7 +7,7 @@ import { createLabSearch, labKinds, relatedLabItems, type LabKind, type LabItem 
 import { composeLabSpace, type MotionPoint } from "@/lib/experience-lab/space";
 import { type Locale } from "@/lib/i18n/config";
 import { focusCopy } from "@/data/experience-lab/focus-copy";
-import { sharedLabTopics } from "@/lib/experience-lab/context";
+import { labContext, sharedLabTopics } from "@/lib/experience-lab/context";
 import { localizeHref } from "@/lib/i18n/routing";
 import { startLabMotion, type LabMotion } from "@/lib/experience-lab/motion";
 import { IslandVisual } from "./island-visual";
@@ -27,6 +27,8 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
   const active = matches.find(({ item }) => item.id === perspective.selectedId)?.item ?? matches[0]?.item;
   const scene = useMemo(() => composeLabSpace(matches, active?.id ?? "",focused), [matches, active?.id,focused]);
   const related = active ? relatedLabItems(active, matches.map(match=>match.item)) : [];
+  const activeMatch = matches.find(match => match.item.id === active?.id);
+  const evidence = activeMatch ? labContext(activeMatch, perspective.query) : null;
   const space = useRef<HTMLDivElement>(null);
   const gesture = useRef<{ id: number; x: number; y: number; captured: boolean } | null>(null);
   const didDrag = useRef(false);
@@ -109,11 +111,11 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
   return (
     <article className={styles.lab} aria-labelledby="lab-title" onKeyDown={event=>{if(focused && event.key==="Escape" && !event.defaultPrevented){event.preventDefault();leaveFocus();}}}>
       <div className={styles.topline}>
-        <span className={styles.prototype}>{copy.prototype} <span>3.5 A</span></span>
+        <span className={styles.prototype}>{copy.prototype} <span>4.0</span></span>
         <Link href={localizeHref("/", locale)} prefetch={false}>BTSHQ <span aria-hidden="true">↗</span></Link>
       </div>
       <header className={styles.intro}>
-        <p className={styles.eyebrow}>BTSHQ · Premium Spatial Glass</p>
+        <p className={styles.eyebrow}>BTSHQ · Adaptive Liquid Universe</p>
         <h1 id="lab-title">{copy.title.replace("\n", " ")}</h1>
         <p>{copy.subtitle}</p>
       </header>
@@ -128,7 +130,7 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
         <p id="lab-results-status" role="status">{matches.length} {copy.results}</p>
         <button type="button" onClick={reset}>{copy.reset} <span aria-hidden="true">↺</span></button>
       </div>
-      <div className={styles.experience} data-focused={focused} data-world={active?.kind}>
+      <div className={styles.experience} data-focused={focused} data-world={active?.kind} data-searching={Boolean(perspective.query.trim())}>
       <div ref={space} className={styles.space} style={{"--scene-wide":scene.height.wide+"px","--scene-compact":scene.height.compact+"px"} as CSSProperties} data-focus={focused} data-kind={perspective.kind} data-count={scene.nodes.length} data-solo={scene.nodes.length === 1} data-searching={Boolean(perspective.query.trim())}
         onClickCapture={event => {
           if (didDrag.current && event.detail > 0) { event.preventDefault(); event.stopPropagation(); }
@@ -151,6 +153,8 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
               onChange={event => {setFocused(false);setPerspective(current => ({ ...current, query: event.target.value, selectedId: "" }));}} />
             {perspective.query ? <button type="button" onClick={() => {setFocused(false);setPerspective(current => ({ ...current, query: "", selectedId: initial.selectedId }));}} aria-label={copy.clear}>×</button> : <span className={styles.inputStar} aria-hidden="true">✦</span>}
           </div>
+          <details className={styles.categoryDisclosure} open={!focused}>
+          <summary>{copy.categories}</summary>
           <div className={styles.categories} role="group" aria-label={copy.categories}>
             {(["all", ...labKinds] as const).map(kind => {
               const count = kind === "all" ? unfiltered.length : unfiltered.filter(({ item }) => item.kind === kind).length;
@@ -161,14 +165,15 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
               </button>;
             })}
           </div>
-          <p className={styles.sceneHint}>{copy.browse}</p>
+          </details>
+          <p className={styles.sceneHint}>{evidence?.topics.length && !focused ? <><span>{focusCopy[locale].topics}</span> · {evidence.topics.slice(0,2).join(" · ")}</> : copy.browse}</p>
         </section>
         <ul className={styles.nodes} aria-label={copy.results}>
           {catalog.map(item => {
             const node = scene.nodes.find(node => node.item.id === item.id);
-            const selected = item.id === active?.id, visible = Boolean(node) && (!focused || selected);
+            const selected = item.id === active?.id, visible = Boolean(node);
             return <li data-lab-object={item.id} data-lab-card={visible ? item.id : undefined} data-visible={visible} data-selected={selected}
-              data-kind={item.kind} data-related={Boolean(focused && active && item.id!==active.id && sharedLabTopics(active,item).length)} inert={!visible} aria-hidden={!visible} className={styles.nodePosition} key={item.id}
+              data-kind={item.kind} data-related={Boolean(node?.relation)} inert={!visible} aria-hidden={!visible} className={styles.nodePosition} key={item.id}
               style={{ visibility: visible ? "visible" : undefined, "--x": node?.desktop.x ?? 50, "--y": node?.desktop.y ?? 0, "--mx": node?.compact.x ?? 50, "--my": node?.compact.y ?? 0, "--turn": (node?.turn ?? 0) + "deg", "--strength": node?.strength ?? 0 } as CSSProperties}>
               <button type="button" data-space-node aria-pressed={selected} aria-controls={visible && focused ? "lab-detail" : undefined} tabIndex={visible ? 0 : -1}
                 aria-label={copy.select + " · " + item.title + " · " + (item.source === "demo" ? copy.demo : copy.kinds[item.kind])}
@@ -178,6 +183,7 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
                 <strong lang={item.language}>{item.title}</strong>
                 <span className={styles.nodeFoot}><span>{selected ? copy.details : copy.select}</span><span aria-hidden="true">{selected ? "↘" : "+"}</span></span>
               </button>
+              {focused && node?.relation && active ? <span className={styles.connectionCaption}>{sharedLabTopics(active,item).slice(0,2).join(" · ")}</span> : null}
             </li>;
           })}
         </ul>

@@ -11,6 +11,41 @@ import * as context from "../lib/experience-lab/context";
 import * as config from "../lib/i18n/config";
 import {loadSource} from "./helpers/load-source";
 import {planFlights,sampleFlight,type Flight} from "../lib/experience-lab/choreography";
+import {composeLabSpace} from "../lib/experience-lab/space";
+import {relatedLabItems} from "../lib/experience-lab/search";
+
+test("Focus keeps only the original selection and at most two actual related matches, restoring the ranked constellation on return",()=>{
+ for(const locale of config.locales){
+  const search=createLabSearch(createLabCatalog(locale));
+  for(const query of ["","AI","Community","Karriere","KI Recruiting"]){
+   const matches=search(query),order=matches.map(match=>match.item.id);
+   for(const match of matches){
+    const before=composeLabSpace(matches,match.item.id);
+    const scene=composeLabSpace(matches,match.item.id,true);
+    const related=relatedLabItems(match.item,matches.map(value=>value.item));
+    assert.deepEqual(new Set(scene.nodes.map(node=>node.item.id)),new Set([match.item.id,...related.map(item=>item.id)]));
+    assert.equal(scene.nodes.filter(node=>node.relation).length,related.length);
+    assert.ok(scene.nodes.length<=3);
+    for(const node of scene.nodes.filter(node=>node.relation)){
+     assert.ok(context.sharedLabTopics(match.item,node.item).length>0);
+     assert.ok(node.depth>0 && node.depth<1,"related objects recede without being removed");
+     assert.ok(node.focusScale<scene.nodes.find(node=>!node.relation)!.focusScale);
+    }
+    assert.deepEqual(composeLabSpace(matches,match.item.id),before);
+    assert.deepEqual(matches.map(value=>value.item.id),order,"visual composition never re-ranks the index");
+   }
+  }
+ }
+});
+
+test("actual match scores determine visual hierarchy without inventing matches or changing ranking",()=>{
+ const matches=createLabSearch(createLabCatalog("en"))("Karriere");
+ const scene=composeLabSpace(matches,matches[0].item.id);
+ assert.equal(scene.nodes[0].scale,1);
+ assert.ok(scene.nodes.some(node=>node.scale<scene.nodes[0].scale));
+ assert.deepEqual(scene.nodes.map(node=>node.item.id),matches.map(match=>match.item.id));
+ assert.ok(scene.nodes.every(node=>node.scale>=.88 && node.scale<=1));
+});
 
 test("context explains only actual index topics and exact shared catalog metadata",()=>{
  const catalog=createLabCatalog("en"),search=createLabSearch(catalog);

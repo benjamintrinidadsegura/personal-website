@@ -16,6 +16,7 @@ export function IslandVisual({ item }: { item: LabItem }) {
   if (item.kind === "writing") return <span className={styles.editorialMark} aria-hidden="true">Aa<span>—</span></span>;
   if (item.kind === "idea") return <span className={styles.ideaMark} aria-hidden="true"><i /><i /><span>✦</span></span>;
   if (item.id === "career") return <span className={styles.toolScene} aria-hidden="true"><Image src="/images/find-your-next-step/context-scenes/career-exploration.webp" alt="" fill sizes="240px" /><span>↗</span></span>;
+  if (item.id === "personal-advantage") return <span className={styles.reflectionScene} aria-hidden="true"><Image src="/images/find-your-next-step/context-scenes/self-reflection.webp" alt="" fill sizes="(min-width: 1200px) 420px, 260px" /><i /><i /></span>;
   return <span className={styles.toolVisual} aria-hidden="true">
     <svg viewBox="0 0 120 80">{item.id === "relationship"
       ? <><circle cx="43" cy="40" r="26" /><circle cx="77" cy="40" r="26" /><path d="M53 19Q80 40 53 61" /></>

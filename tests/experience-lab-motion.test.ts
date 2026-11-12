@@ -126,3 +126,30 @@ test("completion reveals only the selected keyboard target and performs no idle 
   assert.equal(f.frames.size,0);f.tick(2000);assert.equal(f.reveals(),1);
   motion.stop();
 });
+
+test("Focus connections track the selected object and its evidenced satellites during motion and direct manipulation",()=>{
+ const f=fixture(),matches=f.search("Community"),id=matches[0].item.id;
+ f.motionModule.startLabMotion(f.root,composeLabSpace(matches,id),f.memory).stop();
+ const scene=composeLabSpace(matches,id,true),motion=f.motionModule.startLabMotion(f.root,scene,f.memory);
+ const verify=()=>{
+  for(const node of scene.nodes.filter(node=>node.relation)){
+   const active=f.memory.get("@anchor")!,extent=f.memory.get("@extent")!,point=f.memory.get(node.item.id)!;
+   const end=edgeAnchor(active,point,220*point.scale,160*point.scale,point.turn);
+   const start=edgeAnchor(point,active,extent.x,extent.y,active.turn);
+   assert.equal(f.records.find(record=>record.id===node.item.id)!.attrs.d,geometry.labConnection(start,end));
+  }
+ };
+ f.tick(180);verify();motion.pan(17);verify();motion.release();f.tick(1000);verify();
+ assert.equal(f.frames.size,0);motion.stop();
+});
+
+test("entering Focus cannot teleport an existing connection origin",()=>{
+ const f=fixture(),matches=f.search("Community"),id=matches[0].item.id;
+ f.motionModule.startLabMotion(f.root,composeLabSpace(matches,id),f.memory).stop();
+ const related=composeLabSpace(matches,id,true).nodes.find(node=>node.relation)!;
+ const record=f.records.find(record=>record.id===related.item.id)!;
+ const before=record.attrs.d;
+ const motion=f.motionModule.startLabMotion(f.root,composeLabSpace(matches,id,true),f.memory);
+ assert.equal(record.attrs.d,before,"the first frame must retain the previous connection, including its source");
+ f.tick(1000);assert.notEqual(record.attrs.d,before);motion.stop();
+});

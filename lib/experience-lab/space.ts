@@ -1,42 +1,51 @@
-import type { LabMatch } from "./search";
+import { relatedLabItems, type LabMatch } from "./search";
 
 export const labWindowSize = 6;
 export type SpacePoint = { x: number; y: number };
 export type MotionPoint = SpacePoint & { opacity: number; scale: number; turn: number };
 const wide: Record<number, readonly SpacePoint[]> = {
-  1:[{x:50,y:585}],2:[{x:16,y:310},{x:84,y:320}],
-  3:[{x:16,y:105},{x:84,y:105},{x:50,y:535}],
-  4:[{x:16,y:105},{x:84,y:105},{x:16,y:470},{x:84,y:470}],
-  5:[{x:16,y:105},{x:84,y:105},{x:15,y:400},{x:85,y:400},{x:50,y:555}],
-  6:[{x:16,y:105},{x:84,y:105},{x:15,y:390},{x:85,y:405},{x:39,y:555},{x:65,y:555}],
+  1:[{x:50,y:570}],2:[{x:19,y:240},{x:81,y:255}],
+  3:[{x:17,y:120},{x:83,y:125},{x:50,y:565}],
+  4:[{x:17,y:115},{x:83,y:125},{x:19,y:475},{x:82,y:505}],
+  5:[{x:17,y:115},{x:83,y:125},{x:18,y:440},{x:83,y:450},{x:50,y:590}],
+  6:[{x:17,y:115},{x:83,y:125},{x:17,y:410},{x:83,y:430},{x:40,y:560},{x:65,y:590}],
 };
 const compact: Record<number, readonly SpacePoint[]> = {
-  1:[{x:50,y:480}],2:[{x:25,y:490},{x:75,y:510}],
-  3:[{x:50,y:110},{x:25,y:660},{x:75,y:660}],
-  4:[{x:25,y:110},{x:75,y:110},{x:25,y:660},{x:75,y:660}],
-  5:[{x:25,y:110},{x:75,y:110},{x:25,y:660},{x:75,y:660},{x:50,y:940}],
-  6:[{x:25,y:110},{x:75,y:110},{x:25,y:660},{x:75,y:660},{x:25,y:940},{x:75,y:940}],
+  1:[{x:50,y:500}],2:[{x:25,y:500},{x:75,y:520}],
+  3:[{x:50,y:120},{x:25,y:700},{x:75,y:700}],
+  4:[{x:25,y:120},{x:75,y:130},{x:25,y:710},{x:75,y:710}],
+  5:[{x:25,y:120},{x:75,y:130},{x:25,y:710},{x:75,y:710},{x:50,y:1000}],
+  6:[{x:25,y:120},{x:75,y:130},{x:25,y:710},{x:75,y:710},{x:25,y:1000},{x:75,y:1000}],
 };
-const wideHeight=[540,760,650,690,690,690,690];
-const compactHeight=[520,680,680,820,820,1100,1100];
+const wideHeight=[540,770,660,710,740,750,750];
+const compactHeight=[540,710,710,850,870,1130,1130];
 /** Deterministic compositions. Y is a pixel offset, keeping the search anchor stable. */
 export function composeLabSpace(matches: readonly LabMatch[], selectedId: string, focus = false) {
   const selectedIndex = Math.max(0, matches.findIndex(({ item }) => item.id === selectedId));
   const start = Math.floor(selectedIndex / labWindowSize) * labWindowSize;
   const window = matches.slice(start, start + labWindowSize);
   const strongest = matches[0]?.score || 1;
+  const selected = matches[selectedIndex];
+  // Focus is a world of the selected object and at most two evidenced relations.
+  // Search ranking and the complete result window remain authoritative on return.
+  const relations = focus && selected ? relatedLabItems(selected.item, matches.map(match => match.item)) : [];
+  const focusItems = new Set([selected?.item.id, ...relations.map(item => item.id)]);
+  const displayed = focus ? matches.filter(match => focusItems.has(match.item.id)) : window;
   return {
-    height:{wide:focus?900:wideHeight[window.length],compact:focus?620:compactHeight[window.length]}, focus, selectedIndex, start, end: start + window.length,
-    nodes: window.map((match, index) => {
+    height:{wide:focus?900:wideHeight[window.length],compact:focus?900:compactHeight[window.length]}, focus, selectedIndex, start, end: start + window.length,
+    nodes: displayed.map((match, index) => {
       const selected=match.item.id===selectedId;
-
+      const relation = relations.findIndex(item => item.id === match.item.id);
+      const strength = match.score ? Math.max(.35, match.score / strongest) : .7;
+      // Evidence changes visual hierarchy, never the underlying match order.
+      const scale = match.score ? .88 + .12 * strength : index < 2 ? 1 : .94;
       return {
-      ...match, index: start + index,
-      desktop: focus && selected ? {x:26,y:500} : wide[window.length][index],
-      compact: focus && selected ? {x:50,y:430} : compact[window.length][index],
-      depth: focus && !selected ? 0 : 1,
-      focusScale: focus ? selected ? 1.8 : .9 : 1, focusCompactScale: focus ? selected ? 1.22 : .9 : 1,
-      strength: match.score ? Math.max(.35, match.score / strongest) : .7,
+      ...match, index: focus ? matches.indexOf(match) : start + index, relation: focus && !selected,
+      desktop: focus ? selected ? {x:50,y:565} : {x:relation === 0 ? 17 : 83,y:610} : wide[window.length][index],
+      compact: focus ? selected ? {x:50,y:510} : {x:relation === 0 ? 25 : 75,y:785} : compact[window.length][index],
+      depth: focus && !selected ? .78 : 1, scale,
+      focusScale: focus ? selected ? 1.65 : .72 : scale, focusCompactScale: focus ? selected ? 1.4 : .8 : scale,
+      strength,
       turn: [-3, 2, -2, 3, -2, 2][index],
     }; }),
   };
