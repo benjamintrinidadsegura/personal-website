@@ -13,6 +13,8 @@ import * as routing from "../lib/i18n/routing";
 import * as engine from "../lib/experience-lab/search";
 import * as spaceEngine from "../lib/experience-lab/space";
 import * as motionEngine from "../lib/experience-lab/motion";
+import { focusCopy } from "../data/experience-lab/focus-copy";
+import * as contextEngine from "../lib/experience-lab/context";
 import { hookHarness } from "./helpers/hook-harness";
 import { loadSource } from "./helpers/load-source";
 import { NextRequest } from "next/server";
@@ -157,6 +159,12 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
       "react/jsx-runtime": jsxRuntime, "next/image": { __esModule: true, default: ImageMock },
       "./experience-lab.module.css": css,
     });
+    const focusSurface=loadSource("components/experience-lab/focus-surface.tsx",{
+      "react/jsx-runtime":jsxRuntime,"next/link":{__esModule:true,default:(props:Record<string,unknown>)=>{const safe={...props};delete safe.prefetch;return React.createElement("a",safe);}},
+      "@/data/experience-lab/focus-copy":{focusCopy},"@/data/experience-lab/copy":{labCopy},
+      "@/lib/experience-lab/context":contextEngine,"@/lib/i18n/config":config,
+      "./island-visual":visuals,"./experience-lab.module.css":css,
+    });
     const Lab = loadSource<{ ExperienceLab: (props: { catalog: readonly LabItem[]; locale: config.Locale }) => React.ReactElement }>("components/experience-lab/experience-lab.tsx", {
       "react": { ...hooks.hooks, useLayoutEffect: hooks.hooks.useEffect }, "react/jsx-runtime": jsxRuntime,
       "next/image": { __esModule: true, default: "img" }, "next/link": { __esModule: true, default: "a" },
@@ -164,6 +172,8 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
       "@/lib/experience-lab/search": engine, "@/lib/i18n/config": config, "@/lib/i18n/routing": routing,
       "@/lib/experience-lab/space": spaceEngine,
       "@/lib/experience-lab/motion": motionEngine,
+      "@/data/experience-lab/focus-copy":{focusCopy},"@/lib/experience-lab/context":contextEngine,
+      "./focus-surface":focusSurface,
       "./island-visual": visuals,
       "./experience-lab.module.css": css,
     }, { requestAnimationFrame: () => 0 }).ExperienceLab;
@@ -171,6 +181,7 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     const nodes = (value: React.ReactNode): React.ReactElement<Record<string, unknown>>[] => {
       if (Array.isArray(value)) return value.flatMap(nodes);
       if (!React.isValidElement<Record<string, unknown>>(value)) return [];
+      if(typeof value.type==="function")return [value,...nodes((value.type as (props:Record<string,unknown>)=>React.ReactNode)(value.props))];
       return [value, ...nodes(value.props.children as React.ReactNode)];
     };
     let tree = render();
@@ -188,14 +199,29 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     assert.ok(html.includes(labCopy[locale].demo));
     assert.ok(!nodes(tree).some(node => node.props.className === "open"));
     assert.equal(nodes(tree).find(node => node.props.id === "lab-search")?.props.value, "Gaming");
+    const demoButton=nodes(tree).find(node=>node.props["data-space-node"] && node.props["aria-pressed"]===true)!;
+    (demoButton.props.onClick as ()=>void)();tree=render();
+    assert.equal(nodes(tree).find(node=>node.props.id==="lab-search")?.props.value,"Gaming");
+    assert.equal(nodes(tree).find(node=>node.props.id==="lab-detail-title")?.props.children,createLabCatalog(locale).find(item=>item.id==="gaming-demo")?.title);
+    const returnButton=nodes(tree).find(node=>node.type==="button" && Array.isArray(node.props.children) && node.props.children.includes(focusCopy[locale].back))!;
+    (returnButton.props.onClick as ()=>void)();tree=render();
+    assert.equal(nodes(tree).find(node=>node.props.id==="lab-search")?.props.value,"Gaming","returning cannot clear the visitor's query");
     const clear = nodes(tree).find(node => node.props["aria-label"] === labCopy[locale].clear)!;
     (clear.props.onClick as () => void)();
     assert.equal(nodes(render()).filter(node => node.props["data-lab-card"]).length, spaceEngine.labWindowSize);
-    const initialNode = nodes(render()).find(node => node.props["aria-controls"] === "lab-detail")!;
+    const initialNode = nodes(render()).find(node => node.props["data-space-node"])!;
     (initialNode.props.onKeyDown as (event: { key: string; preventDefault: () => void }) => void)({ key: "End", preventDefault() {} });
     tree = render();
     assert.equal(nodes(tree).filter(node => node.props["data-lab-card"]).length, catalog.length - spaceEngine.labWindowSize);
-    assert.equal(nodes(tree).find(node => node.props.id === "lab-detail-title")?.props.children, createLabCatalog(locale).at(-1)?.title);
+    assert.ok(nodes(tree).find(node => node.props["aria-pressed"]===true && String(node.props["aria-label"]).includes(createLabCatalog(locale).at(-1)!.title)));
+    assert.equal(nodes(tree).some(node=>node.props.id==="lab-detail"),false,"arrow navigation explores without opening Focus");
+    const selected=nodes(tree).find(node=>node.props["data-space-node"] && node.props["aria-pressed"]===true)!;
+    (selected.props.onClick as ()=>void)();tree=render();
+    assert.equal(nodes(tree).find(node=>node.props.id==="lab-detail-title")?.props.children,createLabCatalog(locale).at(-1)?.title);
+    const back=nodes(tree).find(node=>node.type==="button" && Array.isArray(node.props.children) && node.props.children.includes(focusCopy[locale].back))!;
+    (back.props.onClick as ()=>void)();tree=render();
+    assert.equal(nodes(tree).some(node=>node.props.id==="lab-detail"),false);
+    assert.equal(nodes(tree).find(node=>node.props.id==="lab-search")?.props.value,"");
     const reset = nodes(tree).find(node => node.type === "button" && Array.isArray(node.props.children) && node.props.children[0] === labCopy[locale].reset)!;
     (reset.props.onClick as () => void)();
     tree = render();
@@ -209,7 +235,7 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     let suppressed = false;
     (room.props.onClickCapture as (event: unknown) => void)({ detail: 1, preventDefault() { suppressed = true; }, stopPropagation() {} });
     assert.equal(suppressed, true, "dragging on a node must suppress its follow-up selection click");
-    assert.equal(nodes(render()).find(node => node.props.id === "lab-detail-title")?.props.children, createLabCatalog(locale)[3].title);
+    assert.ok(nodes(render()).find(node=>node.props["data-space-node"] && node.props["aria-pressed"]===true && String(node.props["aria-label"]).includes(createLabCatalog(locale)[3].title)));
     hooks.unmount();
   }
 });
@@ -240,8 +266,9 @@ test("the lab route fails closed on Vercel Production before reading any catalog
 test("keyboard focus waits for a newly active object to become visible and cancels cleanly", () => {
   const hooks = hookHarness(), frames = new Map<number, () => void>();
   let nextFrame = 0, injectedRoot = false, visible = false, finished = 0;
-  const documentStub: { activeElement: unknown } = { activeElement: null };
+  const documentStub: { activeElement: unknown;getElementById:(id:string)=>unknown } = { activeElement: null,getElementById:()=>detail };
   const button = { focus() { documentStub.activeElement = button; } };
+  const detail = { focus() { documentStub.activeElement = detail; } };
   const root = { querySelector: () => button };
   const react = {
     ...hooks.hooks,
@@ -256,6 +283,8 @@ test("keyboard focus waits for a newly active object to become visible and cance
     "react": react, "react/jsx-runtime": jsxRuntime,
     "next/link": { __esModule: true, default: "a" },
     "@/data/experience-lab/copy": { labCopy }, "@/lib/experience-lab/search": engine,
+    "@/data/experience-lab/focus-copy":{focusCopy},"@/lib/experience-lab/context":contextEngine,
+    "./focus-surface":{FocusSurface:()=>null},
     "@/lib/experience-lab/space": spaceEngine,
     "@/lib/experience-lab/motion": { startLabMotion: () => ({ stop() {}, finish() { finished++; } }) },
     "@/lib/i18n/config": config, "@/lib/i18n/routing": routing, "./island-visual": { IslandVisual: () => null },
@@ -264,6 +293,7 @@ test("keyboard focus waits for a newly active object to become visible and cance
     requestAnimationFrame: (callback: () => void) => { frames.set(++nextFrame,callback); return nextFrame; },
     cancelAnimationFrame: (id: number) => frames.delete(id),
     getComputedStyle: () => ({ visibility: visible ? "visible" : "hidden" }),
+    matchMedia:()=>({matches:true}),
     document: documentStub,
   }).ExperienceLab;
   const render = () => hooks.render(() => Lab({ catalog, locale: "en" }));
@@ -284,5 +314,13 @@ test("keyboard focus waits for a newly active object to become visible and cance
   assert.equal(documentStub.activeElement,button);
   assert.equal(finished,1,"the keyboard destination settles before focus");
   assert.equal(frames.size,0);
+  const selected=nodes(render()).find(node=>node.props["data-space-node"] && node.props["aria-pressed"]===true)!;
+  (selected.props.onClick as ()=>void)();const focusedTree=render();flush();
+  assert.equal(documentStub.activeElement,detail);
+  assert.equal(finished,1,"entering Focus must not skip motion");
+  (focusedTree.props as {onKeyDown:(event:unknown)=>void}).onKeyDown({key:"Escape",defaultPrevented:false,preventDefault(){}});
+  render();flush();
+  assert.equal(documentStub.activeElement,button);
+  assert.equal(finished,1,"returning restores focus without teleporting the composition");
   hooks.unmount();
 });

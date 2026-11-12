@@ -21,19 +21,25 @@ const compact: Record<number, readonly SpacePoint[]> = {
 };
 
 /** Deterministic compositions. Y is a pixel offset, keeping the search anchor stable. */
-export function composeLabSpace(matches: readonly LabMatch[], selectedId: string) {
+export function composeLabSpace(matches: readonly LabMatch[], selectedId: string, focus = false) {
   const selectedIndex = Math.max(0, matches.findIndex(({ item }) => item.id === selectedId));
   const start = Math.floor(selectedIndex / labWindowSize) * labWindowSize;
   const window = matches.slice(start, start + labWindowSize);
   const strongest = matches[0]?.score || 1;
   return {
-    selectedIndex, start, end: start + window.length,
-    nodes: window.map((match, index) => ({
+    focus, selectedIndex, start, end: start + window.length,
+    nodes: window.map((match, index) => {
+      const selected=match.item.id===selectedId;
+      const satellite=index-(index>selectedIndex-start ? 1 : 0);
+      return {
       ...match, index: start + index,
-      desktop: wide[window.length][index], compact: compact[window.length][index],
+      desktop: focus ? selected ? {x:24,y:460} : {x:8+satellite*9,y:650} : wide[window.length][index],
+      compact: focus ? selected ? {x:50,y:390} : {x:12+satellite*19,y:570} : compact[window.length][index],
+      depth: focus && !selected ? .38 : 1,
+      focusScale: focus ? selected ? 1.08 : .42 : 1,
       strength: match.score ? Math.max(.35, match.score / strongest) : .7,
       turn: [-3, 2, -2, 3, -2, 2][index],
-    })),
+    }; }),
   };
 }
 export type LabScene = ReturnType<typeof composeLabSpace>;

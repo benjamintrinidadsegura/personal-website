@@ -6,6 +6,7 @@ import { composeLabSpace, edgeAnchor, type MotionPoint } from "../lib/experience
 import type { LabMotion } from "../lib/experience-lab/motion";
 import { loadSource } from "./helpers/load-source";
 import * as geometry from "../lib/experience-lab/space";
+import * as choreography from "../lib/experience-lab/choreography";
 
 function fixture(reduce = false) {
   const catalog = createLabCatalog("en"), search = createLabSearch(catalog);
@@ -20,11 +21,13 @@ function fixture(reduce = false) {
     style: { setProperty() {} }, getBoundingClientRect: () => ({ left: 0, top: 0, width: 1200, height: 680 }),
     querySelectorAll: () => records.map(record => ({ dataset: { labObject: record.id }, style: record.style, querySelector: () => ({ offsetWidth: 220, offsetHeight: 160 }) })),
     querySelector: (selector: string) => selector.includes("data-search-lens") ? lens
+      : selector.includes("data-search-center") ? {style:{},getBoundingClientRect:lens.getBoundingClientRect}
       : selector.includes("data-space-strings") ? { setAttribute() {} }
       : records.find(record => selector.includes('"' + record.id + '"'))!.path,
   };
   const motionModule = loadSource<{startLabMotion: (root: unknown, scene: ReturnType<typeof composeLabSpace>, memory: Map<string,MotionPoint>) => LabMotion}>("lib/experience-lab/motion.ts", {
     "./space": geometry,
+    "./choreography": choreography,
   }, {
     matchMedia: (query: string) => ({ matches: query.includes("reduced") && reduce, addEventListener() {}, removeEventListener() {} }),
     ResizeObserver: class { observe() {} disconnect() { disconnected++; } },
