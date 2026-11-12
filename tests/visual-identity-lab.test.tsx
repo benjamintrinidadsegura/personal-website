@@ -65,3 +65,11 @@ test("static studies cannot import adaptive search, motion, persistence or track
  assert.match(readFileSync(files[2],"utf8"),/index:false,follow:false/);
  for(const file of ["app/sitemap.ts","components/layout/header.tsx","data/discovery-index.ts"])assert.doesNotMatch(readFileSync(file,"utf8"),/experience-lab/);
 });
+
+
+test("content imagery cannot acquire grayscale, color mixing or destructive image filters in the static study",()=>{
+ const css=readFileSync("components/visual-identity-lab/visual-identity-lab.module.css","utf8");
+ assert.doesNotMatch(css,/grayscale\(|saturate\(|mix-blend-mode/);
+ assert.doesNotMatch(css,/(?:^|[;{])filter:/m);
+ assert.doesNotMatch(css,/\.toolImage::after/);
+});

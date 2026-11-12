@@ -8,7 +8,7 @@ import styles from "./visual-identity-lab.module.css";
 export function VisualIdentityLab({locale,direction}:{locale:Locale;direction:IdentityDirection}){
  const copy=identityCopy[locale],content=identityContent(locale),index=identityDirections.findIndex(item=>item.id===direction);
  return <article className={styles.lab} data-identity={direction} aria-labelledby="identity-title">
-  <header className={styles.reviewBar}><span className={styles.edition}>BTSHQ <span>/ VISUAL IDENTITY 6.0</span></span>
+  <header className={styles.reviewBar}><span className={styles.edition}>BTSHQ <span>/ VISUAL IDENTITY 6.1</span></span>
    <nav aria-label={copy.directions}>{identityDirections.map(item=><Link key={item.id} prefetch={false} href={localizeHref("/experience-lab/identity?direction="+item.id,locale)} aria-current={item.id===direction?"page":undefined}><b>{item.id.toUpperCase()}</b><span>{item.name}</span></Link>)}</nav>
   </header>
   <section className={styles.scene} data-identity-scene aria-label={identityDirections[index].name}>
