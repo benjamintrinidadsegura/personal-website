@@ -26,7 +26,7 @@ Buttons expose the selected state and link their controls to the detail section.
 
 ## Isolation and release boundaries
 
-The route explicitly declares noindex, nofollow, noarchive, nosnippet and noimageindex. On Vercel Production it calls notFound before reading the catalog. A local Production-mode HTTP check confirms that the lab is absent and noindex is present; the inherited streamed response still has HTTP 200 rather than a transport-level 404. No public navigation, discovery index, sitemap or shared style file is changed. The new CSS is imported only by the new component. The branch is not authorized for a remote push or deployment.
+The route explicitly declares noindex, nofollow, noarchive, nosnippet and noimageindex. The Next.js proxy rejects the lab path and descendants with an uncached HTTP 404 before rendering in Production and unknown deployed environments. Preview and development are allowed; local production-build checks must explicitly set VERCEL_ENV=development. The page retains a defensive notFound check. This avoids the inherited streaming boundary turning a page-level notFound into HTTP 200. No public navigation, discovery index, sitemap or shared style file is changed. The new CSS is imported only by the new component. A protected Preview push is separately authorized; Production deployment remains prohibited.
 
 The root layout still performs its existing account and public-content setup. This prototype adds no Supabase query, mutation, analytics, external script or dependency. The inherited streamed loading boundary and its occasional footer shift still exist. Disabling JavaScript entirely inherits that boundary limitation.
 

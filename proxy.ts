@@ -49,6 +49,16 @@ export async function proxy(request: NextRequest) {
     && pathnameRouting.locale !== defaultLocale
     && isLocaleAwarePublicPath(pathnameRouting.internalPathname);
   const securityPathname = localeRouting.internalPathname;
+  // Reject the isolated prototype before streaming or authentication can begin.
+  const labAllowed = process.env.VERCEL_ENV
+    ? ["preview", "development"].includes(process.env.VERCEL_ENV)
+    : process.env.NODE_ENV !== "production";
+  if (!labAllowed && (securityPathname === "/experience-lab" || securityPathname.startsWith("/experience-lab/"))) {
+    return new NextResponse("Not Found", {
+      status: 404,
+      headers: { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow", "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
   if (localeRouting.canonicalRedirect) {
     const destination = request.nextUrl.clone();
     destination.pathname = localeRouting.canonicalRedirect;

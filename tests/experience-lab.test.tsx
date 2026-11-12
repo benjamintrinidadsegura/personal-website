@@ -13,9 +13,47 @@ import * as routing from "../lib/i18n/routing";
 import * as engine from "../lib/experience-lab/search";
 import { hookHarness } from "./helpers/hook-harness";
 import { loadSource } from "./helpers/load-source";
+import { NextRequest } from "next/server";
+import { proxy } from "../proxy";
 
 const catalog = createLabCatalog("en");
 const search = createLabSearch(catalog);
+
+test("the real proxy rejects lab documents and Flight requests before streaming in every locale", async () => {
+  const saved = { ...process.env };
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_PUBLISHABLE_KEY;
+  try {
+    for (const environment of ["production", "unknown", undefined]) {
+      Object.assign(process.env, { NODE_ENV: "production" });
+      if (environment) process.env.VERCEL_ENV = environment; else delete process.env.VERCEL_ENV;
+      for (const locale of config.locales) for (const suffix of ["", "/", "/nested"]) for (const flight of [false, true]) {
+        const response = await proxy(new NextRequest(`https://lab.invalid/${locale}/experience-lab${suffix}`, {
+          headers: flight ? { rsc: "1", referer: "https://lab.invalid/" } : {},
+        }));
+        assert.equal(response.status, 404);
+        assert.equal(response.headers.get("cache-control"), "private, no-store");
+        assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow");
+        assert.equal(await response.text(), "Not Found");
+      }
+    }
+    for (const environment of ["preview", "development"]) {
+      process.env.VERCEL_ENV = environment;
+      const response = await proxy(new NextRequest("https://lab.invalid/en/experience-lab"));
+      assert.notEqual(response.status, 404);
+    }
+    delete process.env.VERCEL_ENV;
+    Object.assign(process.env, { NODE_ENV: "development" });
+    assert.notEqual((await proxy(new NextRequest("https://lab.invalid/experience-lab"))).status, 404);
+    process.env.VERCEL_ENV = "production";
+    for (const path of ["/en", "/en/writing", "/en/world", "/en/experience-lab-not-a-route"]) {
+      assert.notEqual((await proxy(new NextRequest("https://lab.invalid" + path))).status, 404);
+    }
+  } finally {
+    for (const name of Object.keys(process.env)) if (!(name in saved)) delete process.env[name];
+    Object.assign(process.env, saved);
+  }
+});
 
 test("normalization handles accents, German spelling, punctuation and bounded input", () => {
   assert.equal(normalizeLabQuery("  KÜNSTLICHE  INTELLIGENZ!? "), "kunstliche intelligenz");

@@ -19,7 +19,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ExperienceLabPage() {
-  if (process.env.VERCEL_ENV === "production") notFound();
+  const labAllowed = process.env.VERCEL_ENV
+    ? ["preview", "development"].includes(process.env.VERCEL_ENV)
+    : process.env.NODE_ENV !== "production";
+  if (!labAllowed) notFound();
   const locale = await getLocale();
   return <ExperienceLab catalog={createLabCatalog(locale)} locale={locale} />;
 }
