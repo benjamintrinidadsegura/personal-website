@@ -18,6 +18,9 @@ function fixture(reduce = false) {
     button:{offsetWidth:220,offsetHeight:160,getBoundingClientRect:()=>({top:950,bottom:1110}),scrollIntoView(){reveals++;}},
     path: { style: {}, setAttribute(key: string,value: string) { records.find(record => record.path === this)!.attrs[key] = value; } },
   }));
+  for (const record of records) Object.defineProperty(record.style, "setProperty", {
+    value: (key: string, value: string) => { record.style[key] = value; },
+  });
   const lens = { getBoundingClientRect: () => ({ left: 400, top: 200+roomTop, width: 400, height: 76 }) };
   const root = {
     style: { setProperty() {} }, getBoundingClientRect: () => ({ left: 0, top: roomTop, width: 1200, height: 680 }),
@@ -152,4 +155,33 @@ test("entering Focus cannot teleport an existing connection origin",()=>{
  const motion=f.motionModule.startLabMotion(f.root,composeLabSpace(matches,id,true),f.memory);
  assert.equal(record.attrs.d,before,"the first frame must retain the previous connection, including its source");
  f.tick(1000);assert.notEqual(record.attrs.d,before);motion.stop();
+});
+
+test("the cinematic plane stays aligned while caption targets move, without frame-time geometry reads",()=>{
+ const f=fixture(),scene=composeLabSpace(f.search("Community"),"goatrecrutainer");
+ const motion=f.motionModule.startLabMotion(f.root,scene,f.memory);
+ f.root.getBoundingClientRect=()=>{throw new Error("A render frame must not measure the room");};
+ const verify=()=>{
+  for(const node of scene.nodes){
+   const record=f.records.find(value=>value.id===node.item.id)!,point=f.memory.get(node.item.id)!;
+   assert.ok(Math.abs(point.x+Number.parseFloat(record.style["--art-dx"])*point.scale-1200*scene.world.wide.x/100)<.001);
+   assert.ok(Math.abs(point.y+Number.parseFloat(record.style["--art-dy"])*point.scale-scene.world.wide.y)<.001);
+  }
+ };
+ f.tick(180);verify();motion.pan(24);verify();motion.release();f.tick(1000);verify();
+ assert.equal(f.frames.size,0);motion.stop();
+});
+
+test("an interrupted caption-to-headline change preserves painted size before its finite flight",()=>{
+ const f=fixture(),matches=f.search("");
+ f.motionModule.startLabMotion(f.root,composeLabSpace(matches,"personal-advantage"),f.memory).stop();
+ const record=f.records.find(value=>value.id==="goatrecrutainer")!,before={...f.memory.get(record.id)!};
+ record.button.offsetWidth=550;record.button.offsetHeight=400;
+ const motion=f.motionModule.startLabMotion(f.root,composeLabSpace(matches,record.id),f.memory);
+ assert.equal(f.memory.get(record.id)!.scale*550,before.scale*220);
+ assert.equal(f.memory.get(record.id)!.scale*400,before.scale*160);
+ const dimensions={...f.memory.get("@size:"+record.id)!};
+ motion.pan(20);assert.deepEqual(f.memory.get("@size:"+record.id),dimensions);
+ motion.release();f.tick(1000);assert.equal(f.memory.get(record.id)!.scale,1);
+ assert.equal(f.frames.size,0);motion.stop();
 });

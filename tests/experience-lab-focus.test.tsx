@@ -47,6 +47,35 @@ test("actual match scores determine visual hierarchy without inventing matches o
  assert.ok(scene.nodes.every(node=>node.scale>=.88 && node.scale<=1));
 });
 
+test("three art directions keep the same ranked identities and genuine contextual priorities",()=>{
+ for(const locale of config.locales){
+  const search=createLabSearch(createLabCatalog(locale));
+  for(const query of ["","AI","Karriere","People","Community","zxqv"]){
+   const matches=search(query),id=matches.find(match=>match.item.id==="personal-advantage")?.item.id??matches[0]?.item.id??"";
+   const scenes=(["atlas","editorial","gallery"] as const).map(direction=>composeLabSpace(matches,id,false,direction));
+   assert.ok(scenes.every(scene=>JSON.stringify(scene.nodes.map(node=>node.item.id))===JSON.stringify(scenes[0].nodes.map(node=>node.item.id))));
+   if(matches.length){
+    assert.notDeepEqual(scenes[0].nodes.map(node=>node.desktop),scenes[1].nodes.map(node=>node.desktop));
+    assert.notDeepEqual(scenes[0].nodes.map(node=>node.desktop),scenes[2].nodes.map(node=>node.desktop));
+    const active=matches.find(match=>match.item.id===id)!.item;
+    const related=relatedLabItems(active,scenes[0].nodes.map(node=>node.item));
+    assert.ok(related.every(item=>scenes[0].nodes.find(node=>node.item.id===item.id)?.role==="feature"));
+   }
+   assert.deepEqual(matches.map(match=>match.item.id),search(query).map(match=>match.item.id),"art direction cannot mutate the authoritative index");
+  }
+ }
+});
+
+test("Atlas composition responds to actual content types even with unfamiliar IDs",()=>{
+ const first=createLabCatalog("en")[0];
+ const writing={item:{...first,id:"unfamiliar-editorial",kind:"writing" as const},score:12,matchedTopics:[]};
+ const tool={item:{...first,id:"unfamiliar-tool",kind:"tool" as const},score:12,matchedTopics:[]};
+ const a=composeLabSpace([writing],writing.item.id),b=composeLabSpace([tool],tool.item.id);
+ assert.notDeepEqual(a.nodes[0].desktop,b.nodes[0].desktop);
+ assert.notDeepEqual(a.world.wide,b.world.wide);
+ assert.equal(a.nodes[0].item,writing.item);assert.equal(b.nodes[0].item,tool.item);
+});
+
 test("context explains only actual index topics and exact shared catalog metadata",()=>{
  const catalog=createLabCatalog("en"),search=createLabSearch(catalog);
  for(const query of ["AI","Karriere","KI Recruiting","Map","reflection",""])for(const match of search(query)){

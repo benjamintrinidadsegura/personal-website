@@ -40,6 +40,10 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       if (!point) continue;
       record.element.style.transform = "translate3d(" + point.x + "px," + point.y + "px,0) translate(-50%,-50%) rotate(" + point.turn + "deg) scale(" + point.scale + ")";
       record.element.style.opacity = String(point.opacity);
+      record.element.style.setProperty("--live-scale", String(point.scale));
+      const world = compact.matches ? scene.world.compact : scene.world.wide;
+      record.element.style.setProperty("--art-dx", ((room.width * world.x / 100 - point.x) / point.scale) + "px");
+      record.element.style.setProperty("--art-dy", ((world.y - point.y) / point.scale) + "px");
       record.element.style.pointerEvents = point.opacity < .2 ? "none" : "";
       record.element.style.visibility = point.opacity > .005 || targets.get(record.id)?.opacity === 1 ? "visible" : "hidden";
       const migrating = record.id !== activeId;
@@ -107,7 +111,7 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     const previousRoom=memory.get("@room");
     if(previousRoom){
       const dx=previousRoom.x-location.x,dy=previousRoom.y-location.y;
-      if(Math.abs(dx)>.01||Math.abs(dy)>.01)for(const[id,point]of memory)if(id!=="@room" && id!=="@extent")memory.set(id,{...point,x:point.x+dx,y:point.y+dy});
+      if(Math.abs(dx)>.01||Math.abs(dy)>.01)for(const[id,point]of memory)if(id!=="@room" && id!=="@extent" && !id.startsWith("@size:"))memory.set(id,{...point,x:point.x+dx,y:point.y+dy});
     }
     memory.set("@room",{...location,opacity:1,scale:1,turn:0});
     room={width:bounds.width,height:bounds.height};
@@ -116,14 +120,24 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     obstacle={x:search.left-bounds.left,y:search.top-bounds.top,width:search.width,height:search.height,
       fromX:search.left-bounds.left+previousOrigin.x-origin.x,fromY:search.top-bounds.top+previousOrigin.y-origin.y};
     lensWidth = input.width; lensHeight = input.height;
-    for (const record of elements) { record.width = record.button.offsetWidth; record.height = record.button.offsetHeight; }
+    for (const record of elements) {
+      record.width = record.button.offsetWidth; record.height = record.button.offsetHeight;
+      const previousSize = memory.get("@size:" + record.id), point = memory.get(record.id);
+      // A caption can become the headline during an interrupted search. Preserve
+      // its painted size before planning the flight with the new CSS dimensions.
+      if (previousSize && point && point.opacity > .01 && record.width && record.height) {
+        const ratio = Math.min(previousSize.x / record.width, previousSize.y / record.height);
+        if (Math.abs(ratio - 1) > .001) memory.set(record.id, { ...point, scale: point.scale * ratio });
+      }
+      memory.set("@size:" + record.id, { x:record.width, y:record.height, opacity:1, scale:1, turn:0 });
+    }
     svg.setAttribute("viewBox", "0 0 " + bounds.width + " " + bounds.height);
     for (const record of elements) {
       const node = scene.nodes.find(node => node.item.id === record.id);
       const previous = memory.get(record.id);
       if (node) {
         const position = compact.matches ? node.compact : node.desktop;
-        const scale = scene.focus ? compact.matches ? node.focusCompactScale : node.focusScale : scene.nodes.length === 1 ? bounds.width < 600 ? 1.12 : 1.08 : node.scale;
+        const scale = scene.focus ? compact.matches ? node.focusCompactScale : node.focusScale : compact.matches ? node.compactScale : node.scale;
         const target = { x: bounds.width * position.x / 100, y: position.y, opacity: node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
         targets.set(record.id, target);
         if (!previous || previous.opacity < .01) memory.set(record.id, initial ? target : { ...target, x: origin.x + (target.x - origin.x) * .88, y: origin.y + (target.y - origin.y) * .88, opacity: 0, scale: .92 });
