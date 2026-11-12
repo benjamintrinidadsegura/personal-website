@@ -1,144 +1,77 @@
-# Experience Lab 5.2 — Centered magic correction
+# Human Liquid Universe — consolidated Experience Lab
 
-Direct parent: Lab 5.0, `ea132fee0f20848ca713887a1f972ae64db1d93a`. Lab 5.1 (`e13ec9ad9327198a9683bc462ee5c20b59594bc7`) is reference only; its commit was not cherry-picked. Worktree: `.bts-engineering/lab-52/checkout`, branch `codex/btshq-experience-lab-52`.
+Base: Lab 6.1 Natural Color, `2613faa44a561adbf61967bc8b29d79ad205f5db`.
+Branch: `codex/btshq-human-liquid-universe`.
+Worktree: `.bts-engineering/human-liquid/checkout`.
+Local review: http://127.0.0.1:3480/en/experience-lab.
 
-The owner explicitly clarified that the lens must be geometrically centered, rather than retaining 5.0's 78% desktop anchor. The lens is centered horizontally in the content viewport and vertically in the initial visible stage. It has the same document/scene anchor through queries, Focus, Back and Reset; it does not follow scrolling like a fixed toolbar. Only an offscreen field is revealed when necessary on Focus entry. At narrow sizes content reserves space below the measured control zone. This necessary clearance changes some object positions; it is not a claim of pixel-identical 5.0 layout.
+## One visual language
 
-Retained from 5.0: Cinematic Atlas imagery, typography, composition language, native caption structure, existing Focus reading layout, catalog, ranking, contextual relationships, destinations and all seven locale copies. The existing alternative studies are preserved, not expanded. No public homepage, real search, Writing, sitemap, tools, assessment, provider configuration or dependency changes occur.
+The navy reading field and attached ice-blue material borrow their editorial contrast from 6.1 B. Distinct content silhouettes and genuine topic connections borrow their discovery purpose from 6.1 C. This is an authored composition, not concatenated CSS. The existing static identity studies remain at the identity route for comparison.
 
-Selectively adapted from 5.1: inline title focus (a visible 2px underline, not an oversized outline), a finite 340ms critically damped response, and the principle of preserving an image anchor through interruption. Here the original 5.0 image elements stay in place; their world anchor interpolates from the actual previous frame, with parent caption scaling cancelled for the large artwork. Focus depth is limited to 1.8%. No 5.1 shared-stage rewrite, top search arrangement, mobile grid, hidden visual H2, or new variant is imported.
+Desktop has one natural image-led work, two supporting works and three quiet text pathways. Mobile has a separate composition: selected work above the central search, two supporting works below it, further matches through the native list and previous/next/Home/End navigation. There is no orbit, random collage, decorative ribbon or grid of uniform cards.
 
-Verification on the optimized local Webpack server:
-- 55 focused tests pass; full suite has 1,153 tests: 1,142 pass and eleven fail. Their normalized failing identities exactly match unchanged 5.0 (no new failures); no test was suppressed or weakened. The extra regression checks continuity of the sampled world anchor across interrupted queries.
-- `npm run typecheck` passes; `npm run lint` has zero errors and the same three unrelated warnings. `npm run build` and `npm run build -- --webpack` pass.
-- Seven locales × 320/390/768/1440px × initial, AI, Community, no-match, Focus, return and reset pass geometric assertions: field midpoint is within 1px of the horizontal content center and 2px of the vertical viewport center in the tested visible states.
-- Normal/reduced-motion keyboard return, native touch swipe/mouse drag, rapid interruption, category/refinement/full-list contracts and real/demo destinations pass. Axe finds zero WCAG A/AA/2.1 AA violations in the scoped Lab Explore/Focus/empty cases at 320/1440px.
-- Home seven-locale Discover/Explore, real global search, Writing, tools, World Map, EchoWall, privacy and canonical smoke pass. No unexpected external requests or POSTs occur in instrumented journeys. Sharing allowlist regressions pass. No homepage, search-engine, sitemap, security, catalog, data or dependency source changes are included.
-- Fresh local navigation observes zero pre-input layout shift at all four widths; LCP observations are 468/164/212/212ms. This uses a warm local server and is not field INP/CLS, real-device or universal 60fps evidence.
-- Equivalent screenshots cover 5.0/5.1/5.2 initial, AI, Focus and return at 1440×1050 and 390×900. Timestamp-preserving H.264 clips of 5.2 were fully decoded successfully. All visual judgments remain for the founder.
-- Diff/whitespace and source secret-signature checks pass. The full test suite remains FAIL on known baseline debt, not a blanket quality PASS.
+All content imagery uses existing local assets without recoloring, image filters or blend modes. Evgeny is a single crop of the approved Spotlight photograph; source resolution limits its size/quality. Tool illustrations remain actual illustrations. World Map retains the existing attributed atlas. GOATRECRUTAINER uses original typography rather than an invented product screenshot. Writing demonstration concepts retain their demo labels and have no published destination.
 
-Exact source delta:
-- components/experience-lab/experience-lab.tsx
-- components/experience-lab/experience-lab.module.css
-- lib/experience-lab/motion.ts
-- lib/experience-lab/space.ts
-- tests/experience-lab-motion.test.ts
-- docs/experience-lab.md
+Only the search lens has a bounded 6px backdrop treatment, layered edge light and material contrast, with an opaque unsupported-browser fallback. No new dependency, ambient animation or full-scene blur is introduced.
 
-Evidence is local and ignored at `.bts-engineering/lab-52/evidence`, including equivalent 5.0/5.1/5.2 captures at 1440×1050 and 390×900, real browser recordings, and preservation hashes. Founder approval of feel remains open. Real iOS, physical-device GPU and actual screenreader use remain unverified. Technical checks do not prove subjective enjoyment.
+## Functional contracts
 
-Review: http://127.0.0.1:3420/en/experience-lab. No push, merge, deployment, analytics activation, database or external configuration changes occur. Rollback is returning to the unchanged 5.0 worktree; a later revert of the single local 5.2 commit removes this delta without a data/configuration rollback. Never reset another worktree.
+Git blobs are identical to Lab 5.2 `a13d69ffc721c286658afc609296095cbd124f79` for `lib/experience-lab/search.ts`, `data/experience-lab/catalog.ts`, `lib/experience-lab/context.ts`, `lib/experience-lab/choreography.ts`, `data/experience-lab/copy.ts` and `data/experience-lab/focus-copy.ts`.
 
----
+Ranking, synonyms, categories, seven-locale copy, validation, real destinations and actual shared-topic relationships are unchanged. Selection changes a visual role, not the ranked list. All eleven identity wrappers stay mounted. Complete-list disclosure and sequential navigation retain access to every match. Only genuine shared topics receive connection labels. Search terms stay in page memory; no added persistence, server request, query logging or external service.
 
-## Archived 5.0 report
+The lens is geometrically centered in the fixed primary core scene (minimum 780px desktop / 660px compact), not the changing Focus reading height or a sticky viewport toolbar. Queries, filters, Focus, return and reset retain that anchor. Longer Focus reading may scroll beneath it.
 
-# Experience Lab 5.0 â€” Cinematic Discovery
+Focus retains the selected artwork/title, removes its duplicate interactive button from the accessibility tree, and supplies a real H2 and reading links. Context and related destinations use an initially collapsed localized native disclosure. Mobile Back/Refine controls sit in the light reading flow, avoiding long labels over the portrait. Keyboard return uses an inline title underline, never a large rectangular frame. Transparent native-button hit areas include the actual artwork, without adding a visible container or a second interactive element. Supporting captions use CSS flow rather than a post-hydration measured offset, avoiding the initial context-line layout shift.
 
-This is a local, isolated visual experiment based on Lab 4.0 (`daf9d17c1ddaf63789949b8f58a8acb98ce41d3b`). It changes no public homepage, real search, content records, assessment, authentication, analytics, Supabase, or provider configuration. No push or deployment is part of this task.
+The finite interruptible controller is adapted to normalized scene dimensions. It selectively uses already exercised controller-family geometry refinements from the later functional lab work (title-size continuity and measured controls), without importing that lab's rejected visual layout. Geometry is read on scene/size changes, not each frame. Existing choreography responds immediately, within 340ms; initial/reduced-motion states settle instantly. Retiring nodes keep their presentation-only silhouette during fade, without changing search membership. No frame loop runs while idle.
 
-## Visual-first process and the three studies
+## Verification and evidence
 
-The initial split-hero Atlas and three-card Gallery drafts were rejected before motion integration: they retained too much of an ordinary website/carousel. The second static pass separates a non-interactive environmental artwork from native caption targets. Three identical 1440Ã—1050 and 390Ã—900 captures and an explicit critique were completed with the scene controller disabled. That temporary study flag was then removed.
+Scripts, logs, actual captures, timestamped browser screencasts and preservation evidence are ignored local artifacts at `.bts-engineering/human-liquid/evidence`, outside committed source.
 
-- **Cinematic Atlas:** a full-bleed, type-specific content world, large actual selected title, quiet introduction, off-center search, and two evidence-based margin pathways. Image and title lead on mobile; search is still in the first viewport.
-- **Living Editorial:** a large serif content headline, offset image field, real portrait/dance-source diptych and image-led margin stories. Mobile deliberately puts search before the editorial work.
-- **Liquid Spatial Gallery:** one angled exhibition work, an optical rim, a backing surface and a low-perspective floor. It is not an orbit of three rectangular cards. Mobile keeps one layered work beneath search.
+- TypeScript passes. ESLint has zero errors and three unchanged unrelated warnings.
+- Focused Lab/static-identity/sharing/home-mode/analytics regressions: 67 pass, zero fail/skip/todo.
+- Full suite: 1,165 tests, 1,154 pass, eleven fail. Their normalized identities exactly match a fresh unchanged-6.1 run (1,159 tests, 1,148 pass, eleven fail). This remains a full-suite FAIL on baseline debt; no tests are suppressed or weakened.
+- Both production build commands pass; their final logs are `turbopack.log` and `webpack.log`. A Windows EPERM output-directory error required the same local Webpack build to be retried with appropriate filesystem rights; no configuration workaround was introduced.
+- Seven locales at 320/390/768/1440px cover zero through six visible matches, Focus, return, reset and all results. Core search midpoint tolerance is 1px horizontal / 2px vertical, with no horizontal overflow or caption/control collisions in sampled states.
+- Normal/reduced-motion keyboard, native CDP touch, mouse drag, rapid search interruption, filters, native disclosures and real/demo URL boundaries are exercised. Frame sampling checks connector endpoints, retained identities, search clearance and finite idle behavior.
+- Scoped Axe covers Explore/Focus/empty at 320/1440px. Additional pixel/background contrast sampling covers seven locales; it identified mobile headings/toolbar issues missed by Axe and informed targeted corrections.
+- Public-app smoke covers seven home locales, Discover/Explore, global search, Writing unavailable, tools, World Map, EchoWall, privacy and canonical metadata. Instrumented journeys record/reject unexpected external origins and non-GET/HEAD requests; none were observed in the instrumented journeys.
+- Local Production-mode simulation retains seven Lab 404/private/no-store/noindex responses. Ordinary home remains successful; unavailable Writing makes sitemap fail deliberately instead of emitting partial URLs.
+- Matching 1440x1050 / 390x900 captures compare 6.1 B, 6.1 C, 5.2 and this prototype; search, Focus and reduced-motion captures compare functional implementations. Actual browser recordings preserve frame timing.
 
-Atlas is the provisional implementation foundation because it makes the strongest compositional break while keeping content and search understandable. Editorial favors slower reading; Gallery risks letting its exhibit frame dominate the content. None is a subjective winner established by automated tests. Founder creative approval remains open.
+## Exact source inventory
 
-The other two studies remain functional through the native concept selector. They share catalog, state and search but use distinct compositions; their endpoints snap rather than adopting Atlas's full flight choreography. Concept names are design names; all functional controls retain the existing seven-locale copy. Selection remains in page memory and is not stored or sent anywhere.
+- `components/experience-lab/experience-lab.tsx`
+- `components/experience-lab/experience-lab.module.css`
+- `components/experience-lab/focus-surface.tsx`
+- `components/experience-lab/island-visual.tsx`
+- `lib/experience-lab/space.ts`
+- `lib/experience-lab/motion.ts`
+- `tests/experience-lab-focus.test.tsx`
+- `tests/experience-lab-motion.test.ts`
+- `docs/experience-lab.md`
 
-## Authentic visual sources
+## Measured performance and accessibility limits
 
-Existing local tool illustrations are identified here as illustrations, not portraits or testimonials. The actual Spotlight cover supplies two crops of its approved portrait/dance photography. Its limited source resolution constrains large portrait quality. No suitable verified project screenshot was available, so original CSS ribbon geometry accompanies the actual project wordmark; it does not pretend to be a product screenshot.
+Three paired local traces per implementation at 1440 and 390px use fresh Chrome contexts against warm optimized servers. In all twelve traces the p95 frame interval is 16.8ms and no main-thread long task is observed. The candidate still has an isolated 66.6ms mobile frame (desktop maximum 33.3ms); these results are not a universal 60fps or real-device claim. Synthetic input to two animation frames is 17.2–33.8ms desktop / 18.7–33.7ms compact, not field INP. The observed median script time is 111.1/106.2ms across each roughly three-second desktop/compact journey, versus 93.3/101.3ms on 5.2; style time is lower at 144.0/110.6ms versus 277.7/310.4ms. Small three-run samples do not establish causation or statistical performance guarantees.
 
-Writing uses original paper/quotation geometry with actual catalog topics. Demonstration concepts keep their existing labels and have no published destination. EchoWall uses original type and echo geometry rather than fabricated contributions.
+Fresh-browser pre-input layout shift is 0 at all four sizes after correcting the context-line offset; local LCP observations are 724/468/192/472ms at 320/390/768/1440px. This is a warm local server/image cache, not a cold mobile network. The initial post-hydration 0.00035 context-line shift was reproduced, traced to measured title height and removed with CSS flow.
 
-`public/images/experience-lab/world-atlas.svg` is a static, 81,660-byte cartographic artwork derived from the already installed `world-atlas/land-110m.json`, generated locally with existing tools. Its embedded ISC attribution to Michael Bostock is retained. It contains no markers, claimed content locations, scripts or external references. No cartographic library or new dependency is added to the client. All named content, people, destinations and relationships still come from the existing catalog.
+Resource observations for the tested trace show 420,285 encoded JS bytes / 42,001 CSS bytes, versus 420,507 / 44,079 on 5.2. The img-initiated encoded resource subset is 58,729 bytes desktop / 47,385 compact versus 118,835 / 75,167. These are the sampled resource subset, not a complete site-transfer budget. Existing image sizes hints were tightened to the actual artwork size.
 
-## Search, composition and Focus contracts
+Axe reports zero scoped WCAG A/AA/2.1 AA violations in six Explore/Focus/empty cases. Supplemental 56-state pixel/background sampling across seven locales measures 1,907 text runs with minimum ratio 5.37:1 and no sampled contrast failure. 165 hidden/antialiased text fragments, punctuation or small numbers were not reliably measurable with that method; this is not complete contrast certification. All seven locales at all four widths pass native Focus-control/portrait clearance. Native upper-artwork mouse/touch selection and animated artwork/search clearance also pass at all four widths.
 
-The Lab search engine, catalog, synonyms, ranking, AND matching, publication checks and real Production search are unchanged. The scene is composed from the actual matches, selected item, content type and genuine shared topics, not from hardcoded query responses. Writing, people and map selections change the environment and headline placement. Only actually related matches receive contextual captions; unrelated matches retain ordinary selection labels.
+Actual timestamp-preserving H.264 clips and fully decoded originals are `human-liquid-1440.mp4` and `human-liquid-390.mp4`. `comparison-1440.png` / `comparison-390.png` show matched 6.1 B, 6.1 C, 5.2 and consolidated initial views; `states-1440.png` / `states-390.png` compare 5.2 and this prototype in initial, AI search, Evgeny Focus and reduced-motion states. Individual full-size captures remain alongside the sheets. Founder visual/interaction review is still required.
 
-All eleven identity wrappers remain mounted. At most six ranked matches occupy the current scene window. Native complete-list disclosure and previous/next/Home/End navigation preserve access to every result. Spatial role priority does not mutate result ranking or the complete-list order. Categories have real counts, retain empty states and use native disclosure semantics.
+## Limits and release boundary
 
-The selected caption and its artwork remain the same identities through Focus. Focus occupies the existing world rather than a modal or adjacent generic panel. Existing source, explanation, valid public action and genuine related-content controls remain intact. Demonstration concepts never acquire a public link.
+The public homepage, content, dependencies, provider configuration, analytics, authentication and assessments are unchanged. Production 404/noindex protection remains. No remote push or deployment occurs.
 
-On compact screens, the existing in-flow related controls replace duplicate spatial related captions; this prevents overlap and an artificial reading gap. Desktop retains spatial contextual targets. Entering Focus reveals the start of the scene at every width; Escape/Back restores the actual selected caption and query, while Refine returns to search. The full H1 remains in the accessibility tree during Focus.
+A desktop Chrome viewport is not real iOS Safari, physical-device GPU, field INP/CLS, full screenreader or Founder Experience PASS. Performance observations retain their actual local sample limits. The existing Next streamed shell's JavaScript-disabled limitation is not redesigned here. Local Writing/Supabase is intentionally unavailable; smoke checks do not establish new Production reliability.
 
-Atlas motion is finite, interruptible and driven by input, selection, filters, Focus and native dragging/swiping. Reduced motion snaps to stable endpoints. There are no ambient loops, loading choreography, scroll reveals or delayed content entrances. Scene measurement is batched on scene/resize changes. Caption dimensions are retained across role changes so a newly enlarged headline cannot jump into another caption before its flight. Artwork offsets share the same sampled coordinates; no geometry is measured during animation frames. The selected initial illustration loads eagerly; unselected image loading remains lazy.
+All 23 pre-existing worktrees, 37 original branch refs and byte hashes of 64 pre-existing dirty/untracked source files are checked against the pre-task snapshot, including the original .codex/config.toml. Build/media/diagnostic artifacts stay outside the commit.
 
-## Local verification
-
-Commands use existing dependencies and process-only local configuration with Supabase credentials/URLs absent. No live data or private credentials are used. Browser evidence uses installed desktop Chrome through the existing cached Playwright runtime; it is not real iOS Safari coverage. Synthetic queries are the only input data.
-
-- `npm run typecheck`
-- `npm run lint` (the same three unrelated warnings; no errors)
-- `tsx --test tests/experience-lab.test.tsx tests/experience-lab-motion.test.ts tests/experience-lab-focus.test.tsx tests/cloudflare-web-analytics.test.ts tests/share-url-security.test.ts tests/home-view.test.ts` â€” 54 pass, zero fail
-- `tsx --test 'tests/*.test.ts' 'tests/*.test.tsx'` â€” 1,152 tests: 1,141 pass, eleven fail
-- `npm run build`
-- `npm run build -- --webpack`
-- `git diff --check`
-
-The eleven normalized failing test identities match the unchanged Lab 4.0 baseline exactly. Existing debt concerns runner/tracking fixtures, older context-card link contracts, provider checksum/Self characterization, a missing ignored brand-rename module and four absent Writing-promotion artifacts, plus a Comments timing assertion. No test is skipped, weakened or disabled. This is not a full-suite PASS. Four new tests cover three-direction identity/ranking preservation across locales, adaptation to unfamiliar content IDs, artwork/frame synchronization, and interrupted headline-size continuity.
-
-Browser and performance results are recorded alongside scripts, source-baseline preservation hashes and real screenshots/videos in the ignored local evidence directory `.bts-engineering/lab-5/evidence` in the main checkout. The initial static critique and captures are kept separately from final optimized-build captures. Evidence is intentionally not committed as source.
-
-Final optimized-build browser coverage passes:
-
-- Nine query/cardinality states Ã— seven locales Ã— 320/390/768/1440px; no horizontal overflow or caption/search/empty-state overlap.
-- Focus, real related destinations and return Ã— seven locales Ã— four widths Ã— normal/reduced motion. The heading is visible on entry; compact related controls remain in the reading flow.
-- Both retained alternatives Ã— seven locales Ã— four widths Ã— three query states and public Focus actions.
-- Keyboard and visible return focus at 320/1440px with both motion preferences; native category/list disclosures, filters, refinement, reset and all eleven results.
-- Axe WCAG A/AA/2.1 AA: zero violations in the Lab scope for Explore, Focus and empty at 320/1440px. This is not a full assistive-technology certification.
-- Native CDP touch swipe at 390px and native mouse drag at 1440px; interruption, identity retention, real/demo destination boundaries and finite idle behavior.
-- Animated frame sampling at 390/1440px: no solid-caption or search collisions; model connector-boundary error below 0.014px; all eleven identity wrappers retained and zero idle style/path mutations.
-- Public-app smoke: seven home locales, Discover/Explore, global Ctrl+K search, Writing, tools, World Map, EchoWall, privacy and canonical metadata. Network harnesses record/reject unexpected external origins and non-GET/HEAD requests; none occur.
-- Local Production-mode simulation: seven Lab routes return 404/private/no-store/noindex; public home remains HTTP 200. With Writing unavailable, the sitemap returns HTTP 500, never a partial HTTP 200. No live Production request or mutation is used as proof.
-- Matching Lab 4.0/5.0 before/after captures and final three-concept sheets at 1440Ã—1050 / 390Ã—900. Actual browser screencasts are H.264, 10.00s desktop and 9.67s mobile, validated by complete decoding.
-
-Quiet paired Webpack measurements use three fresh browser contexts per version at 1440px and 390px, identical synthetic input/Focus sequences, and explicit assertions that search really updates the result set. They are local observations without CPU/network throttling, not a performance ranking of the designs:
-
-| Observation | Lab 4.0 | Lab 5.0 |
-| --- | --- | --- |
-| Synthetic input to two frames, desktop | 19.9–43.7ms | 22.0–33.8ms |
-| Synthetic input to two frames, mobile viewport | 19.9–52.7ms | 17.9–34.8ms |
-| Worst trial frame p95, desktop / mobile | 33.2 / 33.4ms | 16.8 / 16.8ms |
-| Worst frame, desktop / mobile | 66.7 / 66.6ms | 50.1 / 33.4ms |
-| Observed long tasks | 0 | 0 |
-| Loaded JS / CSS bodies | 419,885 / 44,357 bytes | 420,050 / 43,843 bytes |
-| Loaded image bodies, desktop / mobile | 121,480 / 110,926 bytes | 118,820 / 75,152 bytes |
-| Median trace style work, desktop / mobile | 0.218 / 0.194s | 0.338 / 0.415s |
-| Median trace layout work, desktop / mobile | 0.033 / 0.037s | 0.059 / 0.075s |
-
-These traces expose a real trade-off: synchronized environmental/caption styles increase style and layout work over the roughly three-second sequence even though sampled responsiveness and resource transfer remain bounded. One desktop frame reached 50.1ms. No claim of universal 60fps or field INP follows from this sample. Input-driven layout-shift entries are preserved in the traces; script-dispatched input does not carry reliable recent-input flags, so those entries are not presented as field CLS.
-
-Separate fresh-navigation checks at 320/390/768/1440px observe zero pre-input layout shift and local LCP observations of 476/272/212/476ms. These use a warm local server and are not a cold CDN/mobile-network or real-device benchmark.
-
-The first unprivileged Webpack invocation failed with Windows EPERM while creating a generated `.next` directory. No source/configuration workaround was introduced; the authorized local build was retried with expanded filesystem access.
-
-## Scope and limitations
-
-Founder gates A (static art direction), B (interaction enjoyment) and C (perceived search intelligence) remain open for actual founder review. Automated testing proves behavior within its coverage, not emotional appeal. Existing illustration style, limited portrait resolution and the reading length of Focus remain design-review topics.
-
-Real mobile GPU behavior, real iOS Safari, assistive-technology user testing and protected hosted Preview acceptance are NOT VERIFIED. Local frame timing is not field INP or a universal 60fps claim. Layout-shift entries observed after script-dispatched input are not reported as field CLS. Local empty/unavailable Writing or sitemap behavior is not Production publication/withdrawal evidence.
-
-## Exact source delta from Lab 4.0
-
-- components/experience-lab/experience-lab.module.css
-- components/experience-lab/experience-lab.tsx
-- components/experience-lab/island-visual.tsx
-- lib/experience-lab/motion.ts
-- lib/experience-lab/space.ts
-- public/images/experience-lab/world-atlas.svg
-- tests/experience-lab-focus.test.tsx
-- tests/experience-lab-motion.test.ts
-- docs/experience-lab.md
-
-## Review and rollback
-
-Local review: http://127.0.0.1:3400/en/experience-lab. All existing locale prefixes work. Choose all three concepts using the top selector. Compare with the preserved Lab 4.0 checkout/server at port 3390 using the same viewport/query and motion setting. Use AI, Karriere, People, Community and World Map, then Focus, Refine, Back, keyboard and the complete list. Evaluate static quality before judging motion.
-
-A later protected Preview requires separate push/deployment approval and fresh branch/project/configuration verification. Production continues to return 404 for the Lab and remains outside this experiment's release scope. To abandon the experiment, use the unchanged Lab 4.0 worktree. A future revert of the single Lab 5.0 commit removes only this local source delta; no data, provider, credential or environment rollback is required. Do not reset or overwrite another worktree.
+Preview readiness requires separately authorized protected deployment. Founder judgment of quality and enjoyment remains open; Production remains guarded off. Local rollback is using the unchanged 6.1/5.2 worktree, or later reverting the single isolated prototype commit. No data/configuration rollback is necessary. Never reset another worktree.

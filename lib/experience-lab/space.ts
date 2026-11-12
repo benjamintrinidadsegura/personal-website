@@ -12,10 +12,10 @@ export type MotionPoint = SpacePoint & { opacity: number; scale: number; turn: n
 type Slot = SpacePoint & { scale: number };
 const slots: Record<LabDirection, { wide: readonly Slot[]; compact: readonly Slot[] }> = {
   atlas: {
-    wide: [{x:35,y:720,scale:1},{x:79,y:650,scale:1},{x:79,y:820,scale:1},
-      {x:18,y:980,scale:1},{x:50,y:980,scale:1},{x:82,y:980,scale:1}],
-    compact: [{x:50,y:600,scale:1},{x:50,y:910,scale:1},{x:50,y:1090,scale:1},
-      {x:50,y:1270,scale:1},{x:50,y:1450,scale:1},{x:50,y:1630,scale:1}],
+    wide: [{x:20,y:320,scale:1},{x:79,y:190,scale:1},{x:79,y:570,scale:1},
+      {x:17,y:700,scale:1},{x:57,y:710,scale:1},{x:81,y:710,scale:1}],
+    compact: [{x:50,y:105,scale:1},{x:25,y:595,scale:1},{x:75,y:595,scale:1},
+      {x:25,y:595,scale:1},{x:50,y:595,scale:1},{x:75,y:595,scale:1}],
   },
   editorial: {
     wide: [{x:38,y:320,scale:1},{x:79,y:590,scale:1},{x:79,y:920,scale:1},
@@ -47,25 +47,26 @@ export function composeLabSpace(matches: readonly LabMatch[], selectedId: string
   const worldX = direction === "editorial" ? 34 : leadKind === "person" ? 64 : leadKind === "writing" ? 68 : 50;
   return {
     direction, focus, selectedIndex, start, end: start + window.length,
-    height: { wide: focus ? 1150 : direction === "atlas" ? 1100 : 1330, compact: focus ? 900 : !displayed.length ? 1200 : Math.max(900, slots[direction].compact[displayed.length - 1].y + 160) },
+    canvas: direction === "atlas",
+    height: direction === "atlas" ? {wide:760,compact:640} : {wide:1330,compact:2000},
     world: { wide: {x:worldX,y:direction === "editorial" ? 630 : leadKind === "writing" ? 300 : 350}, compact:{x:50,y:direction === "atlas" ? 230 : 490} },
     nodes: displayed.map((match) => {
       const isSelected = match.item.id === selected?.item.id;
       const order = visualOrder.indexOf(match.item.id);
       const relation = relations.findIndex(item => item.id === match.item.id);
       const desktop = slots[direction].wide[order], compact = slots[direction].compact[order];
-      const adaptedDesktop = direction === "atlas" && !focus
-        ? isSelected && leadKind === "writing" ? { ...desktop, x:35, y:700 }
-          : isSelected && leadKind === "world" ? { ...desktop, x:32, y:720 }
-          : order === 1 && displayed.length <= 2 ? { ...desktop, y:760 } : desktop
+      const adaptedDesktop = direction === "atlas"
+        ? isSelected && leadKind === "writing" ? {...desktop,x:19,y:320}
+          : isSelected && leadKind === "world" ? {...desktop,x:19,y:315}
+          : order === 1 && displayed.length === 2 ? {...desktop,y:380} : desktop
         : desktop;
       const strength = match.score ? Math.max(.35, match.score / strongest) : .7;
       const weight = isSelected ? 1 : match.score ? .97 + .03 * strength : 1;
       return {
         ...match, index: matches.indexOf(match), relation: focus && !isSelected,
         role: isSelected ? "lead" : focus || order < 3 ? "feature" : "note",
-        desktop: focus ? isSelected ? { x: 32, y: 520 } : { x: 79, y: relation === 0 ? 760 : 950 } : adaptedDesktop,
-        compact: focus ? isSelected ? { x: 50, y: 420 } : { x: 50, y: relation === 0 ? 980 : 1160 } : compact,
+        desktop: direction === "atlas" ? adaptedDesktop : focus ? isSelected ? {x:32,y:520} : {x:79,y:relation===0?760:950} : desktop,
+        compact: direction === "atlas" ? compact : focus ? isSelected ? {x:50,y:420} : {x:50,y:relation===0?980:1160} : compact,
         depth: focus && !isSelected ? .86 : 1, scale: desktop.scale * weight, compactScale: compact.scale * weight,
         focusScale: focus ? isSelected ? 1 : .96 : desktop.scale,
         focusCompactScale: focus ? isSelected ? 1 : .96 : compact.scale,

@@ -21,7 +21,7 @@ export function FocusSurface({match,query,kind,locale,related,onBack,onRefine,on
    <p lang={item.language} className={styles.summary}>{item.summary}</p>
    <p className={styles.source}>{item.source==="demo"?copy.demo:copy.public} · {copy.source} {localeDetails[item.language].languageName}</p>
    {item.source==="public"?<Link className={styles.open} href={item.href} prefetch={false}>{copy.open}<span aria-hidden="true">↗</span></Link>:null}
-   <div className={styles.focusNotes}>
+   <details className={styles.focusNotes}><summary>{focus.why}</summary>
    <div className={styles.context} aria-labelledby="lab-context-title">
     <h3 id="lab-context-title">{focus.why}</h3>
     <p>{evidence.searched?focus.search:focus.neutral}</p>
@@ -33,7 +33,7 @@ export function FocusSurface({match,query,kind,locale,related,onBack,onRefine,on
      <span><small>{focus.shared} · {sharedLabTopics(item,other).join(" · ")}</small><strong lang={other.language}>{other.title}</strong></span><span aria-hidden="true">↗</span>
     </button>)}
    </aside>:null}
-   </div>
+   </details>
    <p className={styles.focusHint}>{focus.hint}</p>
    </div>
  </section>;

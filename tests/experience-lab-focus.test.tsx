@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
 import {test} from "node:test";
 import * as React from "react";
 import * as jsxRuntime from "react/jsx-runtime";
@@ -99,9 +100,11 @@ test("the inline focus surface keeps seven-locale controls, accurate evidence an
   }).FocusSurface;
   for(const match of [...matches,createLabSearch(createLabCatalog(locale))("")[0]]){
    let backs=0,refinements=0;
-   const tree=Surface({match,query:"AI",kind:"all",locale,related:[],onBack:()=>backs++,onRefine:()=>refinements++,onSelect:()=>{}});
+   const tree=Surface({match,query:"AI",kind:"all",locale,related:relatedLabItems(match.item,createLabCatalog(locale)),onBack:()=>backs++,onRefine:()=>refinements++,onSelect:()=>{}});
    const html=renderToStaticMarkup(tree);
    assert.ok(html.includes(focusCopy[locale].back));assert.ok(html.includes(focusCopy[locale].why));
+   assert.match(html,/<details class="focusNotes"><summary>/);assert.doesNotMatch(html,/<details[^>]* open/);
+   for(const other of relatedLabItems(match.item,createLabCatalog(locale)))assert.ok(html.includes(other.title.replaceAll("&","&amp;")),"collapsed context retains every real related destination");
    assert.match(html,/id="lab-detail" tabindex="-1"/);assert.doesNotMatch(html,/role="dialog"|aria-modal|autofocus/i);
    if(match.item.source==="demo")assert.doesNotMatch(html,/<a /);else assert.ok(html.includes('href="'+match.item.href+'"'));
    (tree.props as {onKeyDown:(e:unknown)=>void}).onKeyDown({key:"Escape",preventDefault(){}});assert.equal(backs,1);
@@ -150,4 +153,35 @@ test("a moving search envelope stays clear of solid surfaces during Focus and re
    if(p.opacity>.6)assert.ok(!(p.x+122>x+8 && p.x-122<x+o.width-8 && p.y+80>y+8 && p.y-80<y+o.height-8));
   }
  }
+});
+
+
+test("Human Liquid Universe keeps sparse and dense ranked collections intact and the selected artwork anchored through Focus",()=>{
+ for(const locale of config.locales){
+  const search=createLabSearch(createLabCatalog(locale));
+  for(const [query,count] of [["zxqv",0],["KI Recruiting",1],["AI",2],["Tools",3],["Community",4],["Karriere",5],["",11]] as const){
+   const matches=search(query),original=JSON.stringify(matches);
+   assert.equal(matches.length,count);
+   for(const id of count?matches.map(match=>match.item.id):[""]){
+    const explore=composeLabSpace(matches,id),focus=composeLabSpace(matches,id,true);
+    assert.equal(explore.canvas,true);assert.deepEqual(explore.height,{wide:760,compact:640});
+    assert.ok(explore.nodes.length<=6);
+    assert.deepEqual(explore.nodes.map(node=>node.item.id),matches.slice(explore.start,explore.end).map(match=>match.item.id));
+    if(count){
+     const before=explore.nodes.find(node=>node.item.id===id)!,after=focus.nodes.find(node=>node.item.id===id)!;
+     assert.deepEqual(after.desktop,before.desktop);assert.deepEqual(after.compact,before.compact);
+     assert.equal(after.item,before.item,"Focus retains the original approved content object");
+     assert.equal(explore.nodes.filter(node=>node.role!=="note").length,Math.min(3,explore.nodes.length));
+    }else assert.equal(focus.nodes.length,0);
+   }
+   assert.equal(JSON.stringify(matches),original,"sparse composition and Focus cannot mutate ranking or catalog data");
+  }
+ }
+});
+
+
+test("the consolidated content visuals cannot acquire grayscale, color-blend filters or a background-photo scene",()=>{
+ const css=readFileSync("components/experience-lab/experience-lab.module.css","utf8");
+ assert.doesNotMatch(css,/grayscale\(|saturate\(|mix-blend-mode|(?:^|[;{])filter:/m);
+ assert.doesNotMatch(readFileSync("components/experience-lab/experience-lab.tsx","utf8"),/className=\{styles.landscape\}/);
 });

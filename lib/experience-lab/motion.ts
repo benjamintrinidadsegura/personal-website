@@ -96,8 +96,8 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
         const selected=elements.find(record=>record.id===activeId && document.activeElement===record.button);
         if(selected){
           // One completion-time read keeps a transformed keyboard target visible.
-          const bounds=selected.button.getBoundingClientRect();
-          if(bounds.top<85 || bounds.bottom>innerHeight-8)selected.button.scrollIntoView({block:"center",behavior:"instant"});
+          const visible=selected.button.querySelector?.("strong")??selected.button,bounds=visible.getBoundingClientRect();
+          if(bounds.top<85 || bounds.bottom>innerHeight-8)visible.scrollIntoView({block:"nearest",behavior:"instant"});
         }
       }
     };
@@ -106,15 +106,22 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
   const measure = (force = false) => {
     if (stopped) return;
     // All geometry is read together, only on a scene change or resize.
+    // Keep an exiting object's last silhouette while React retires its search role.
+    // These presentation-only attributes never change search membership or ranking.
+    for(const record of elements){
+      const node=scene.nodes.find(node=>node.item.id===record.id);
+      if(node){record.element.dataset.motionRole=node.role;record.element.dataset.motionSurface=node.desktop.x>=50?"paper":"navy";}
+    }
     const previousTransform=center.style.transform;
     center.style.transform="translateX(-50%)";
     const bounds = root.getBoundingClientRect();
     if (scene.direction === "atlas" && typeof innerHeight === "number" && typeof lens.offsetTop === "number") {
-      const pageTop = bounds.top + (typeof scrollY === "number" ? scrollY : 0);
-      center.style.top = Math.max(160, innerHeight / 2 - pageTop - lens.offsetTop - lens.offsetHeight / 2) + "px";
+      const before=lens.getBoundingClientRect(),controls=center.getBoundingClientRect();
+      center.style.top = Math.max(150, bounds.height / 2 - (before.top-controls.top) - before.height/2) + "px";
     }
     const input = lens.getBoundingClientRect(),search=center.getBoundingClientRect();
-    const signature = [bounds.width,bounds.height,input.left-bounds.left,input.top-bounds.top,input.width,input.height,search.height,compact.matches].join("|");
+    const measuredTitle=elements.find(record=>record.id===activeId)?.button.querySelector?.("strong");
+    const signature = [measuredTitle?.offsetHeight,measuredTitle?.offsetTop,bounds.width,bounds.height,input.left-bounds.left,input.top-bounds.top,input.width,input.height,search.height,compact.matches].join("|");
     if (!force && signature === geometry) {center.style.transform=previousTransform;return;}
     geometry = signature;
     // A focus world can collapse the introduction. Rebase the existing frame in
@@ -123,16 +130,10 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     const previousRoom=memory.get("@room");
     if(previousRoom){
       const dx=previousRoom.x-location.x,dy=previousRoom.y-location.y;
-      if(Math.abs(dx)>.01||Math.abs(dy)>.01)for(const[id,point]of memory)if(id!=="@room" && id!=="@extent" && id!=="@world" && !id.startsWith("@size:"))memory.set(id,{...point,x:point.x+dx,y:point.y+dy});
+      if(Math.abs(dx)>.01||Math.abs(dy)>.01)for(const[id,point]of memory)if(id!=="@room" && id!=="@extent" && id!=="@world" && !id.startsWith("@size:") && !id.startsWith("@title:"))memory.set(id,{...point,x:point.x+dx,y:point.y+dy});
     }
     memory.set("@room",{...location,opacity:1,scale:1,turn:0});
     room={width:bounds.width,height:bounds.height};
-    const clearance = scene.direction === "atlas" && compact.matches && !scene.focus
-      ? Math.max(0, search.top - bounds.top + search.height + (bounds.width < 600 ? 110 : 130) + 20 - 600) : 0;
-    if (scene.direction === "atlas") {
-      root.style.setProperty("--scene-compact", (scene.height.compact + clearance) + "px");
-      root.parentElement?.style.setProperty("--focus-start", (search.top - bounds.top + search.height + 40) + "px");
-    }
     origin = { x: input.left - bounds.left + input.width / 2, y: input.top - bounds.top + input.height / 2 };
     const previousOrigin=memory.get("@lens")??origin;
     obstacle={x:search.left-bounds.left,y:search.top-bounds.top,width:search.width,height:search.height,
@@ -140,23 +141,36 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     lensWidth = input.width; lensHeight = input.height;
     for (const record of elements) {
       record.width = record.button.offsetWidth; record.height = record.button.offsetHeight;
+      const title = record.button.querySelector?.("strong");
+      if (title) record.element.style.setProperty("--title-height", title.offsetHeight + "px");
       const previousSize = memory.get("@size:" + record.id), point = memory.get(record.id);
       // A caption can become the headline during an interrupted search. Preserve
       // its painted size before planning the flight with the new CSS dimensions.
       if (previousSize && point && point.opacity > .01 && record.width && record.height) {
-        const ratio = Math.min(previousSize.x / record.width, previousSize.y / record.height);
-        if (Math.abs(ratio - 1) > .001) memory.set(record.id, { ...point, scale: point.scale * ratio });
+        const ratio = Math.min(previousSize.x / record.width, previousSize.y / record.height), scale=point.scale * ratio;
+        const oldTitle=memory.get("@title:"+record.id), offset=title?{x:title.offsetLeft-record.width/2,y:title.offsetTop-record.height/2}:null;
+        memory.set(record.id,{...point,scale,x:point.x+(oldTitle&&offset?oldTitle.x*point.scale-offset.x*scale:0),y:point.y+(oldTitle&&offset?oldTitle.y*point.scale-offset.y*scale:0)});
       }
+      if(title)memory.set("@title:"+record.id,{x:title.offsetLeft-record.width/2,y:title.offsetTop-record.height/2,opacity:1,scale:1,turn:0});
       memory.set("@size:" + record.id, { x:record.width, y:record.height, opacity:1, scale:1, turn:0 });
+    }
+    const selectedNode=scene.nodes.find(node=>node.item.id===activeId),selectedRecord=elements.find(record=>record.id===activeId);
+    const selectedTitle=selectedRecord?.button.querySelector?.("strong");
+    if(selectedNode&&selectedRecord&&selectedTitle){
+      const position=compact.matches?selectedNode.compact:selectedNode.desktop;
+      const top=position.y*bounds.height/(compact.matches?640:760)-selectedRecord.height/2+selectedTitle.offsetTop;
+      root.parentElement?.style.setProperty("--focus-copy-y",(top+selectedTitle.offsetHeight+24)+"px");
+      root.parentElement?.style.setProperty("--compact-focus-y",(search.top-bounds.top+search.height+24)+"px");
     }
     svg.setAttribute("viewBox", "0 0 " + bounds.width + " " + bounds.height);
     for (const record of elements) {
       const node = scene.nodes.find(node => node.item.id === record.id);
       const previous = memory.get(record.id);
+      record.element.inert = !node || compact.matches && (node.role === "note" || scene.focus && node.relation);
       if (node) {
         const position = compact.matches ? node.compact : node.desktop;
         const scale = scene.focus ? compact.matches ? node.focusCompactScale : node.focusScale : compact.matches ? node.compactScale : node.scale;
-        const target = { x: bounds.width * position.x / 100, y: position.y + clearance, opacity: node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
+        const target = { x: bounds.width * position.x / 100, y: scene.canvas ? position.y * bounds.height / (compact.matches ? 640 : 760) : position.y, opacity: compact.matches && (node.role === "note" || scene.focus && node.relation) ? 0 : node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
         targets.set(record.id, target);
         if (!previous || previous.opacity < .01) memory.set(record.id, initial ? target : { ...target, x: origin.x + (target.x - origin.x) * .88, y: origin.y + (target.y - origin.y) * .88, opacity: 0, scale: .92 });
       } else {
@@ -173,6 +187,8 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
   observer.observe(root);
   observer.observe(lens);
   observer.observe(center);
+  const title=elements.find(record=>record.id===activeId)?.button.querySelector?.("strong");
+  if(title)observer.observe(title);
   const onPreference = () => measure(true);
   reduced.addEventListener("change", onPreference);
   compact.addEventListener("change", onPreference);

@@ -8,9 +8,10 @@ import { loadSource } from "./helpers/load-source";
 import * as geometry from "../lib/experience-lab/space";
 import * as choreography from "../lib/experience-lab/choreography";
 
-function fixture(reduce = false) {
+function fixture(reduce = false, compact = false, height = 760) {
   const catalog = createLabCatalog("en"), search = createLabSearch(catalog);
   let time = 0, next = 0, disconnected = 0,roomTop=0,reveals=0;
+  let resizeHandler=()=>{};
   const documentStub:{activeElement:unknown}={activeElement:null};
   const frames = new Map<number, FrameRequestCallback>();
   const records = catalog.map(item => ({
@@ -21,12 +22,13 @@ function fixture(reduce = false) {
   for (const record of records) Object.defineProperty(record.style, "setProperty", {
     value: (key: string, value: string) => { record.style[key] = value; },
   });
+  const centerStyle: Record<string,string> = {};
   const lens = { getBoundingClientRect: () => ({ left: 400, top: 200+roomTop, width: 400, height: 76 }) };
   const root = {
-    style: { setProperty() {} }, getBoundingClientRect: () => ({ left: 0, top: roomTop, width: 1200, height: 680 }),
+    style: { setProperty() {} }, getBoundingClientRect: () => ({ left: 0, top: roomTop, width: 1200, height }),
     querySelectorAll: () => records.map(record => ({ dataset: { labObject: record.id }, style: record.style, querySelector: () => record.button })),
     querySelector: (selector: string) => selector.includes("data-search-lens") ? lens
-      : selector.includes("data-search-center") ? {style:{},getBoundingClientRect:lens.getBoundingClientRect}
+      : selector.includes("data-search-center") ? {style:centerStyle,getBoundingClientRect:lens.getBoundingClientRect}
       : selector.includes("data-space-strings") ? { setAttribute() {} }
       : records.find(record => selector.includes('"' + record.id + '"'))!.path,
   };
@@ -34,16 +36,18 @@ function fixture(reduce = false) {
     "./space": geometry,
     "./choreography": choreography,
   }, {
-    matchMedia: (query: string) => ({ matches: query.includes("reduced") && reduce, addEventListener() {}, removeEventListener() {} }),
-    ResizeObserver: class { observe() {} disconnect() { disconnected++; } },
+    matchMedia: (query: string) => ({ matches: query.includes("reduced") ? reduce : compact, addEventListener() {}, removeEventListener() {} }),
+    ResizeObserver: class { constructor(callback:()=>void){resizeHandler=callback;} observe() {} disconnect() { disconnected++; } },
     performance: { now: () => time },
     requestAnimationFrame: (callback: FrameRequestCallback) => { frames.set(++next,callback); return next; },
     cancelAnimationFrame: (id: number) => frames.delete(id),
     document:documentStub,innerHeight:900,
   });
+  const nativeElements = records.map(record => ({dataset:{labObject:record.id},style:record.style,inert:false,querySelector:()=>record.button}));
+  root.querySelectorAll=()=>nativeElements;
   const memory = new Map<string,MotionPoint>();
   const tick = (now: number) => { time = now; const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback(now)); };
-  return { root,search,records,memory,tick,frames,motionModule,setRoomTop:(top:number)=>{roomTop=top;},setActive:(id:string)=>{documentStub.activeElement=records.find(record=>record.id===id)!.button;},reveals:()=>reveals,disconnected: () => disconnected };
+  return { resize:()=>resizeHandler(),root,search,records,nativeElements,centerStyle,lens,memory,tick,frames,motionModule,setRoomTop:(top:number)=>{roomTop=top;},setActive:(id:string)=>{documentStub.activeElement=records.find(record=>record.id===id)!.button;},reveals:()=>reveals,disconnected: () => disconnected };
 }
 
 test("interrupted constellation motion starts at the actual previous frame and becomes idle", () => {
@@ -197,4 +201,56 @@ test("the image anchor continues from the last sampled frame through an interrup
  assert.deepEqual(f.memory.get("@world"),before);
  f.tick(1000);assert.equal(f.memory.get("@world")!.x,scene.world.wide.x*12);
  assert.equal(f.memory.get("@world")!.y,scene.world.wide.y);assert.equal(f.frames.size,0);next.stop();
+});
+
+
+test("compact canvas scales to the actual scene and removes hidden notes from keyboard access without losing matches",()=>{
+ const f=fixture(true,true,600),matches=f.search("");
+ const scene=composeLabSpace(matches,matches[0].item.id),motion=f.motionModule.startLabMotion(f.root,scene,f.memory);
+ for(const node of scene.nodes){
+  assert.equal(f.memory.get(node.item.id)!.y,node.compact.y*600/640);
+  assert.equal(f.nativeElements.find(el=>el.dataset.labObject===node.item.id)!.inert,node.role==="note");
+  assert.equal(f.memory.get(node.item.id)!.opacity,node.role==="note"?0:1);
+ }
+ assert.equal(matches.length,11,"compact presentation is not a search filter");
+ assert.equal(f.frames.size,0);motion.stop();
+ const focused=composeLabSpace(matches,matches[0].item.id,true),next=f.motionModule.startLabMotion(f.root,focused,f.memory);
+ for(const node of focused.nodes)assert.equal(f.nativeElements.find(el=>el.dataset.labObject===node.item.id)!.inert,node.relation);
+ next.stop();
+});
+
+test("the lens is geometrically centered on each scene measurement independently of disclosure height",()=>{
+ const f=fixture(true,false,760);
+ Object.defineProperty(f.lens,"offsetTop",{value:20});
+ f.lens.getBoundingClientRect=()=>({left:400,top:Number.parseFloat(f.centerStyle.top||"0")+20,width:400,height:76});
+ const query=f.root.querySelector;
+ f.root.querySelector=(selector:string)=>selector.includes("data-search-center")?{style:f.centerStyle,getBoundingClientRect:()=>({left:400,top:Number.parseFloat(f.centerStyle.top||"0"),width:400,height:230})}:query(selector);
+ for(const [query,focus]of[["",false],["AI",false],["AI",true],["zxqv",false],["",false]] as const){
+  const matches=f.search(query),motion=f.motionModule.startLabMotion(f.root,composeLabSpace(matches,matches[0]?.item.id??"",focus),f.memory);
+  assert.equal(f.lens.getBoundingClientRect().top+38,380);
+  assert.equal(f.frames.size,0);motion.stop();
+ }
+});
+
+
+test("Focus annotations follow a changed headline height even when scene and lens dimensions are unchanged",()=>{
+ const f=fixture(true),matches=f.search("People"),id=matches[0].item.id;
+ const title={offsetHeight:60,offsetWidth:220,offsetTop:30,offsetLeft:0};
+ Object.defineProperty(f.records.find(r=>r.id===id)!.button,"querySelector",{value:()=>title});
+ const variables:Record<string,string>={};Object.defineProperty(f.root,"parentElement",{value:{style:{setProperty:(key:string,value:string)=>{variables[key]=value;}}}});
+ const m=f.motionModule.startLabMotion(f.root,composeLabSpace(matches,id,true),f.memory);
+ const before=parseFloat(variables["--focus-copy-y"]);title.offsetHeight=100;f.resize();
+ assert.equal(parseFloat(variables["--focus-copy-y"]),before+40);assert.equal(f.frames.size,0);m.stop();
+});
+
+
+test("retiring objects retain their last presentation role without changing search membership",()=>{
+ const f=fixture(true),all=f.search("");f.motionModule.startLabMotion(f.root,composeLabSpace(all,"personal-advantage"),f.memory).stop();
+ const before=new Map(f.nativeElements.map(e=>[e.dataset.labObject,{...(e.dataset as Record<string,string>)}]));
+ const ai=f.search("AI"),m=f.motionModule.startLabMotion(f.root,composeLabSpace(ai,ai[0].item.id),f.memory);
+ for(const e of f.nativeElements)if(!ai.some(match=>match.item.id===e.dataset.labObject)){
+  assert.equal((e.dataset as Record<string,string>).motionRole,before.get(e.dataset.labObject)?.motionRole);
+  assert.equal(e.inert,true);
+ }
+ assert.equal(ai.length,2);assert.equal(f.frames.size,0);m.stop();
 });
