@@ -1,9 +1,10 @@
-import { edgeAnchor, labConnection, mixMotion, type LabScene, type MotionPoint } from "./space";
+import { composeLabSpace, dragStride, edgeAnchor, labConnection, mixMotion, type LabScene, type MotionPoint } from "./space";
 import { planFlights, sampleFlight, type Obstacle } from "./choreography";
 
 export type LabMotion = { stop: () => void; pan: (x: number) => void; release: () => void; finish: () => void };
 /** Finite, interruptible motion: shared coordinates drive transforms and paths. No frame-time layout reads. */
 export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<string, MotionPoint>): LabMotion {
+  if(root.dataset)root.dataset.dragging="false";
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const compact = matchMedia("(max-width: 1199px)");
   const initial = memory.size === 0;
@@ -18,7 +19,9 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
   const center = root.querySelector<HTMLElement>("[data-search-center]") ?? lens;
   const targets = new Map<string, MotionPoint>();
   let origin = { x: 0, y: 0 }, liveOrigin={x:0,y:0},lensWidth = 0, lensHeight = 0;
-  let frame = 0, stopped = false, panX = 0, geometry = "";
+  let frame = 0, stopped = false, geometry = "", detailBottom = 0;
+  let dragFrom: Map<string,MotionPoint> | undefined;
+  const dragRoutes = new Map<number,ReturnType<typeof planFlights>>();
   let anchorFrom: MotionPoint | undefined, extentFrom: MotionPoint | undefined, connectionProgress = 1;
   let room={width:0,height:0},obstacle:Obstacle={x:0,y:0,width:0,height:0};
   const activeId=scene.nodes.find(node=>node.index===scene.selectedIndex)?.item.id;
@@ -35,6 +38,16 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     const anchor = mixMotion(anchorFrom ?? anchorTarget, anchorTarget, connectionProgress);
     const extent = mixMotion(extentFrom ?? extentTarget, extentTarget, connectionProgress);
     memory.set("@anchor",anchor); memory.set("@extent",extent);
+    const selectedPoint = memory.get(activeId ?? ""), selectedTarget = targets.get(activeId ?? "");
+    if (scene.focus && selectedPoint && selectedTarget && !compact.matches && scene.nodes.length > 1) {
+      root.parentElement?.style.setProperty("--detail-dx", (selectedPoint.x-selectedTarget.x)+"px");
+      root.parentElement?.style.setProperty("--detail-dy", (selectedPoint.y-selectedTarget.y)+"px");
+      root.parentElement?.style.setProperty("--detail-opacity", String(selectedPoint.opacity));
+    } else {
+      root.parentElement?.style.setProperty("--detail-dx", "0px");
+      root.parentElement?.style.setProperty("--detail-dy", "0px");
+      root.parentElement?.style.setProperty("--detail-opacity", "1");
+    }
     for (const record of elements) {
       const point = memory.get(record.id);
       if (!point) continue;
@@ -73,6 +86,7 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       return !point || Object.keys(target).some(key => Math.abs(target[key as keyof MotionPoint] - point[key as keyof MotionPoint]) > .001);
     });
     const animated = !instant && !reduced.matches && changed;
+    if(root.dataset)root.dataset.motionState=animated?"moving":"idle";
     const flights=animated ? planFlights([...targets].map(([id,to])=>{
       const record=elements.find(record=>record.id===id)!;
       return {id,from:from.get(id)??to,to,width:record.width,height:record.height};
@@ -96,13 +110,16 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       else for (const [id, target] of targets) memory.set(id, mixMotion(from.get(id) ?? target, target, eased));
       draw();
       if (elapsed < 1) frame = requestAnimationFrame(step);
-      else if(typeof document!=="undefined" && typeof innerHeight==="number"){
+      else {
+       if(root.dataset)root.dataset.motionState="idle";
+       if(typeof document!=="undefined" && typeof innerHeight==="number"){
         const selected=elements.find(record=>record.id===activeId && document.activeElement===record.button);
         if(selected){
           // One completion-time read keeps a transformed keyboard target visible.
           const visible=selected.button.querySelector?.("strong")??selected.button,bounds=visible.getBoundingClientRect();
           if(bounds.top<85 || bounds.bottom>innerHeight-8)visible.scrollIntoView({block:"nearest",behavior:"instant"});
         }
+       }
       }
     };
     step(began);
@@ -125,7 +142,8 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     }
     const input = lens.getBoundingClientRect(),search=center.getBoundingClientRect();
     const measuredTitle=elements.find(record=>record.id===activeId)?.button.querySelector?.("strong");
-    const signature = [measuredTitle?.offsetHeight,measuredTitle?.offsetTop,bounds.width,bounds.height,input.left-bounds.left,input.top-bounds.top,input.width,input.height,search.height,compact.matches].join("|");
+    const measuredDetail=root.parentElement?.querySelector?.<HTMLElement>("[data-focus-body]");
+    const signature = [measuredDetail?.offsetHeight,measuredTitle?.offsetHeight,measuredTitle?.offsetTop,bounds.width,bounds.height,input.left-bounds.left,input.top-bounds.top,input.width,input.height,search.height,compact.matches].join("|");
     if (!force && signature === geometry) {center.style.transform=previousTransform;return;}
     geometry = signature;
     // A focus world can collapse the introduction. Rebase the existing frame in
@@ -137,8 +155,11 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       if(Math.abs(dx)>.01||Math.abs(dy)>.01)for(const[id,point]of memory)if(id!=="@room" && id!=="@extent" && id!=="@world" && !id.startsWith("@size:") && !id.startsWith("@title:"))memory.set(id,{...point,x:point.x+dx,y:point.y+dy});
     }
     memory.set("@room",{...location,opacity:1,scale:1,turn:0});
+    const resized=room.width>0 && (room.width!==bounds.width || room.height!==bounds.height);
     room={width:bounds.width,height:bounds.height};
     origin = { x: input.left - bounds.left + input.width / 2, y: input.top - bounds.top + input.height / 2 };
+    // Search is the fixed anchor, including during viewport changes. Only content travels.
+    if(resized)memory.set("@lens",{...origin,opacity:1,scale:1,turn:0});
     const previousOrigin=memory.get("@lens")??origin;
     obstacle={x:search.left-bounds.left,y:search.top-bounds.top,width:search.width,height:search.height,
       fromX:search.left-bounds.left+previousOrigin.x-origin.x,fromY:search.top-bounds.top+previousOrigin.y-origin.y};
@@ -161,20 +182,29 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
     const selectedNode=scene.nodes.find(node=>node.item.id===activeId),selectedRecord=elements.find(record=>record.id===activeId);
     const selectedTitle=selectedRecord?.button.querySelector?.("strong");
     if(selectedNode&&selectedRecord&&selectedTitle){
-      const position=compact.matches?selectedNode.compact:selectedNode.desktop;
-      const top=position.y*bounds.height/(compact.matches?640:760)-selectedRecord.height/2+selectedTitle.offsetTop;
-      root.parentElement?.style.setProperty("--focus-copy-y",(top+selectedTitle.offsetHeight+24)+"px");
-      root.parentElement?.style.setProperty("--compact-focus-y",(search.top-bounds.top+search.height+24)+"px");
+      const standalone=scene.nodes.length===1;
+      const scale=selectedNode.focusScale;
+      const left=bounds.width*selectedNode.desktop.x/100-selectedRecord.width*scale/2;
+      const width=standalone ? Math.min(560,bounds.width-40) : Math.max(200,Math.min(320,obstacle.x-24-left));
+      const titleBottom=selectedNode.desktop.y*bounds.height/760+(selectedTitle.offsetTop+selectedTitle.offsetHeight-selectedRecord.height/2)*scale;
+      const copyY=compact.matches || standalone ? search.top-bounds.top+search.height+20 : titleBottom+20;
+      const parent=root.parentElement;
+      parent?.style.setProperty("--focus-copy-y",copyY+"px");
+      parent?.style.setProperty("--focus-x",(standalone?(bounds.width-width)/2:left)+"px");
+      parent?.style.setProperty("--focus-width",width+"px");
+      parent?.style.setProperty("--focus-tail",compact.matches && scene.nodes.some(node=>node.relation)?"220px":"26px");
+      const detail=parent?.querySelector?.<HTMLElement>("[data-focus-body]");
+      detailBottom=copyY+(detail?.offsetHeight??280)+(compact.matches?64:0);
     }
     svg.setAttribute("viewBox", "0 0 " + bounds.width + " " + bounds.height);
     for (const record of elements) {
       const node = scene.nodes.find(node => node.item.id === record.id);
       const previous = memory.get(record.id);
-      record.element.inert = !node || compact.matches && (node.role === "note" || scene.focus && node.relation);
+      record.element.inert = !node || compact.matches && node.role === "note";
       if (node) {
         const position = compact.matches ? node.compact : node.desktop;
         const scale = scene.focus ? compact.matches ? node.focusCompactScale : node.focusScale : compact.matches ? node.compactScale : node.scale;
-        const target = { x: bounds.width * position.x / 100, y: scene.canvas ? position.y * bounds.height / (compact.matches ? 640 : 760) : position.y, opacity: compact.matches && (node.role === "note" || scene.focus && node.relation) ? 0 : node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
+        const target = { x: bounds.width * position.x / 100, y: compact.matches && scene.focus && node.relation ? detailBottom+100 : scene.canvas ? position.y * bounds.height / (compact.matches ? 640 : 760) : position.y, opacity: compact.matches && node.role === "note" ? 0 : node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
         targets.set(record.id, target);
         if (!previous || previous.opacity < .01) memory.set(record.id, initial ? target : { ...target, x: origin.x + (target.x - origin.x) * .88, y: origin.y + (target.y - origin.y) * .88, opacity: 0, scale: .92 });
       } else {
@@ -193,6 +223,8 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
   observer.observe(center);
   const title=elements.find(record=>record.id===activeId)?.button.querySelector?.("strong");
   if(title)observer.observe(title);
+  const detail=root.parentElement?.querySelector?.<HTMLElement>("[data-focus-body]");
+  if(detail)observer.observe(detail);
   const onPreference = () => measure(true);
   reduced.addEventListener("change", onPreference);
   compact.addEventListener("change", onPreference);
@@ -200,15 +232,45 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
   return {
     stop() {
       stopped = true; cancelAnimationFrame(frame); observer.disconnect();
+      if(root.dataset)root.dataset.dragging="false";
+      if(root.dataset)root.dataset.motionState="idle";
       reduced.removeEventListener("change", onPreference); compact.removeEventListener("change", onPreference);
     },
     pan(x) {
+      if(scene.focus)return;
       cancelAnimationFrame(frame);
-      const delta = x - panX; panX = x;
-      for (const [id, point] of memory) if(!id.startsWith("@"))memory.set(id, { ...point, x: point.x + delta });
+      if(!dragFrom)dragFrom=new Map(memory);
+      if(root.dataset)root.dataset.dragging="true";
+      if(root.dataset)root.dataset.motionState="direct";
+      const sign=x<0?1:-1, next=scene.matches[scene.selectedIndex+sign];
+      const progress=Math.min(1,Math.abs(x)/dragStride(room.width));
+      root.style.setProperty("--glass-x",(50+Math.max(-36,Math.min(36,x/dragStride(room.width)*36)))+"%");
+      if(next){
+        if(!dragRoutes.has(sign)){
+          const preview=composeLabSpace(scene.matches,next.item.id,false,scene.direction);
+          const flights=elements.map(record=>{
+            const from=dragFrom!.get(record.id)??{...origin,opacity:0,scale:.5,turn:0};
+            const node=preview.nodes.find(node=>node.item.id===record.id),p=compact.matches?node?.compact:node?.desktop;
+            const to=node&&p?{x:room.width*p.x/100,y:p.y*room.height/(compact.matches?640:760),
+              scale:compact.matches?node.compactScale:node.scale,opacity:compact.matches&&node.role==="note"?0:node.depth,turn:0}:{...from,opacity:0};
+            return {id:record.id,from,to,width:record.width,height:record.height};
+          });
+          dragRoutes.set(sign,planFlights(flights.sort((a,b)=>Number(b.id===next.item.id)-Number(a.id===next.item.id)),obstacle,room));
+        }
+        for(const flight of dragRoutes.get(sign)!)memory.set(flight.id,sampleFlight(flight,progress));
+      }else{
+        const edge=Math.sign(x)*Math.min(14,Math.abs(x)*.08);
+        for(const [id,point]of dragFrom)if(!id.startsWith("@"))memory.set(id,{...point,x:point.x+edge});
+      }
+      connectionProgress=1;anchorFrom=undefined;extentFrom=undefined;
       draw();
     },
-    release() { panX = 0; animate(); },
+    release() {
+      dragFrom=undefined;dragRoutes.clear();
+      if(root.dataset)root.dataset.dragging="false";
+      root.style.setProperty("--glass-x","24%");
+      animate();
+    },
     finish() { animate(true); },
   };
 }

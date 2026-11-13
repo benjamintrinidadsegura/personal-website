@@ -258,6 +258,26 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     (room.props.onClickCapture as (event: unknown) => void)({ detail: 1, preventDefault() { suppressed = true; }, stopPropagation() {} });
     assert.equal(suppressed, true, "dragging on a node must suppress its follow-up selection click");
     assert.ok(nodes(render()).find(node=>node.props["data-space-node"] && node.props["aria-pressed"]===true && String(node.props["aria-label"]).includes(createLabCatalog(locale)[3].title)));
+    // Returning from a supporting object restores the pre-Focus composition.
+    (reset.props.onClick as () => void)();tree=render();
+    const supporter=nodes(tree).find(node=>node.props["data-space-node"] && String(node.props["aria-label"]).includes("Evgeny"))!;
+    (supporter.props.onClick as ()=>void)();tree=render();
+    const returnFromSupport=nodes(tree).find(node=>node.type==="button" && Array.isArray(node.props.children) && node.props.children.includes(focusCopy[locale].back))!;
+    (returnFromSupport.props.onClick as ()=>void)();tree=render();
+    assert.ok(nodes(tree).find(node=>node.props["data-space-node"] && node.props["aria-pressed"]===true && String(node.props["aria-label"]).includes("Personal Advantage")));
+    const gestureRoom=nodes(tree).find(node=>node.props["data-count"]===6)!;
+    const beforeId=nodes(tree).find(node=>node.props["data-lab-card"] && node.props["data-selected"]===true)!.props["data-lab-card"];
+    const call=(name:string,e:unknown)=>(gestureRoom.props[name] as (e:unknown)=>void)(e);
+    call("onPointerDown",event);
+    call("onPointerMove",{...event,clientY:160});
+    call("onPointerMove",{...event,clientX:0,clientY:165});
+    call("onPointerUp",{...event,clientX:0,clientY:165});
+    assert.equal(nodes(render()).find(node=>node.props["data-selected"]===true)!.props["data-lab-card"],beforeId,"native vertical intent cannot turn into a horizontal selection");
+    call("onPointerDown",event);call("onPointerMove",{...event,clientX:0});
+    call("onPointerMove",{...event,clientX:220});call("onPointerUp",{...event,clientX:220});
+    assert.equal(nodes(render()).find(node=>node.props["data-selected"]===true)!.props["data-lab-card"],beforeId,"release uses the reversed final displacement, not an earlier threshold crossing");
+    call("onPointerDown",event);call("onPointerMove",{...event,clientX:0});call("onPointerCancel",{...event,clientX:0});
+    assert.equal(nodes(render()).find(node=>node.props["data-selected"]===true)!.props["data-lab-card"],beforeId,"cancellation never commits a new selection");
     hooks.unmount();
   }
 });
@@ -287,6 +307,8 @@ test("the lab route fails closed on Vercel Production before reading any catalog
 
 test("keyboard focus waits for a newly active object to become visible and cancels cleanly", () => {
   const hooks = hookHarness(), frames = new Map<number, () => void>();
+  const restoredViewports: unknown[] = [];
+  const viewport = { scrollX: 0, scrollY: 137, scrollTo(options: unknown) { restoredViewports.push(options); } };
   let nextFrame = 0, injectedRoot = false, visible = false, finished = 0;
   const documentStub: { activeElement: unknown;getElementById:(id:string)=>unknown } = { activeElement: null,getElementById:()=>detail };
   const button = { focus() { documentStub.activeElement = button; } };
@@ -316,6 +338,7 @@ test("keyboard focus waits for a newly active object to become visible and cance
     cancelAnimationFrame: (id: number) => frames.delete(id),
     getComputedStyle: () => ({ visibility: visible ? "visible" : "hidden" }),
     matchMedia:()=>({matches:true}),
+    window: viewport,
     document: documentStub,
   }).ExperienceLab;
   const render = () => hooks.render(() => Lab({ catalog, locale: "en" }));
@@ -340,10 +363,12 @@ test("keyboard focus waits for a newly active object to become visible and cance
   (selected.props.onClick as ()=>void)();const focusedTree=render();flush();
   assert.equal(documentStub.activeElement,detail);
   assert.equal(finished,1,"entering Focus must not skip motion");
+  viewport.scrollY = 999;
   (focusedTree.props as {onKeyDown:(event:unknown)=>void}).onKeyDown({key:"Escape",defaultPrevented:false,preventDefault(){}});
   render();flush();
   assert.equal(documentStub.activeElement,button);
   assert.equal(finished,1,"returning restores focus without teleporting the composition");
+  assert.deepEqual(JSON.parse(JSON.stringify(restoredViewports)), [{ left: 0, top: 137, behavior: "instant" }], "reading Focus details must restore the visitor's original viewport on return");
   hooks.unmount();
 });
 

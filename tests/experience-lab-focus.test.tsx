@@ -45,7 +45,7 @@ test("actual match scores determine visual hierarchy without inventing matches o
  assert.equal(scene.nodes[0].scale,1);
  assert.ok(scene.nodes.some(node=>node.scale<scene.nodes[0].scale));
  assert.deepEqual(scene.nodes.map(node=>node.item.id),matches.map(match=>match.item.id));
- assert.ok(scene.nodes.every(node=>node.scale>=.88 && node.scale<=1));
+ assert.ok(scene.nodes.every(node=>node.scale>=.5 && node.scale<=1));
 });
 
 test("three art directions keep the same ranked identities and genuine contextual priorities",()=>{
@@ -156,7 +156,7 @@ test("a moving search envelope stays clear of solid surfaces during Focus and re
 });
 
 
-test("Human Liquid Universe keeps sparse and dense ranked collections intact and the selected artwork anchored through Focus",()=>{
+test("Human Liquid Universe keeps sparse and dense ranked collections intact and the same image identity through a deeper Focus",()=>{
  for(const locale of config.locales){
   const search=createLabSearch(createLabCatalog(locale));
   for(const [query,count] of [["zxqv",0],["KI Recruiting",1],["AI",2],["Tools",3],["Community",4],["Karriere",5],["",11]] as const){
@@ -169,7 +169,8 @@ test("Human Liquid Universe keeps sparse and dense ranked collections intact and
     assert.deepEqual(explore.nodes.map(node=>node.item.id),matches.slice(explore.start,explore.end).map(match=>match.item.id));
     if(count){
      const before=explore.nodes.find(node=>node.item.id===id)!,after=focus.nodes.find(node=>node.item.id===id)!;
-     assert.deepEqual(after.desktop,before.desktop);assert.deepEqual(after.compact,before.compact);
+     assert.ok(after.focusScale>before.scale);
+     assert.deepEqual(composeLabSpace(matches,id).nodes.find(node=>node.item.id===id)!.desktop,before.desktop,"return restores the exact exploration destination");
      assert.equal(after.item,before.item,"Focus retains the original approved content object");
      assert.equal(explore.nodes.filter(node=>node.role!=="note").length,Math.min(3,explore.nodes.length));
     }else assert.equal(focus.nodes.length,0);

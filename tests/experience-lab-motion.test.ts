@@ -78,10 +78,14 @@ test("manual dragging and explicit completion move both the object and its conne
   c.finish();
   const record=f.records.find(record=>record.id==="ai-notes-demo")!;
   const x=f.memory.get(record.id)!.x, path=record.attrs.d;
-  c.pan(25);
-  assert.equal(f.memory.get(record.id)!.x,x+25);
+  c.pan(-100);
+  const advanced={...f.memory.get(record.id)!};
+  assert.notEqual(advanced.x,x,"the content follows the gesture before release");
   assert.notEqual(record.attrs.d,path);
-  assert.ok(record.style.transform.includes((x+25)+"px"));
+  assert.ok(record.style.transform.includes(advanced.x+"px"));
+  c.pan(-50);
+  assert.ok(Math.abs(f.memory.get(record.id)!.x-x)<Math.abs(advanced.x-x),"reverse drag retraces its path");
+  c.pan(0);assert.equal(f.memory.get(record.id)!.x,x);
   c.release();c.finish();
   assert.equal(f.memory.get(record.id)!.x,x);
   assert.equal(f.frames.size,0);
@@ -94,7 +98,7 @@ test("reduced motion gives immediate stable endpoints without scheduling animati
   assert.equal(f.frames.size,0);
   for(const node of scene.nodes){
     const point=f.memory.get(node.item.id)!;
-    assert.equal(point.opacity,1);assert.equal(point.scale,1);
+    assert.equal(point.opacity,node.depth);assert.equal(point.scale,node.scale);
     assert.equal(point.x,node.desktop.x*12);assert.equal(point.y,node.desktop.y);
   }
   c.stop();
@@ -182,11 +186,11 @@ test("an interrupted caption-to-headline change preserves painted size before it
  const record=f.records.find(value=>value.id==="goatrecrutainer")!,before={...f.memory.get(record.id)!};
  record.button.offsetWidth=550;record.button.offsetHeight=400;
  const motion=f.motionModule.startLabMotion(f.root,composeLabSpace(matches,record.id),f.memory);
- assert.equal(f.memory.get(record.id)!.scale*550,before.scale*220);
- assert.equal(f.memory.get(record.id)!.scale*400,before.scale*160);
+ assert.ok(Math.abs(f.memory.get(record.id)!.scale*550-before.scale*220)<1e-7);
+ assert.ok(Math.abs(f.memory.get(record.id)!.scale*400-before.scale*160)<1e-7);
  const dimensions={...f.memory.get("@size:"+record.id)!};
  motion.pan(20);assert.deepEqual(f.memory.get("@size:"+record.id),dimensions);
- motion.release();f.tick(1000);assert.equal(f.memory.get(record.id)!.scale,1);
+ motion.release();f.tick(1000);assert.equal(f.memory.get(record.id)!.scale,composeLabSpace(matches,record.id).nodes.find(n=>n.item.id===record.id)!.scale);
  assert.equal(f.frames.size,0);motion.stop();
 });
 
@@ -215,7 +219,7 @@ test("compact canvas scales to the actual scene and removes hidden notes from ke
  assert.equal(matches.length,11,"compact presentation is not a search filter");
  assert.equal(f.frames.size,0);motion.stop();
  const focused=composeLabSpace(matches,matches[0].item.id,true),next=f.motionModule.startLabMotion(f.root,focused,f.memory);
- for(const node of focused.nodes)assert.equal(f.nativeElements.find(el=>el.dataset.labObject===node.item.id)!.inert,node.relation);
+ for(const node of focused.nodes)assert.equal(f.nativeElements.find(el=>el.dataset.labObject===node.item.id)!.inert,false,"evidenced neighbors remain reachable in compact Focus");
  next.stop();
 });
 
@@ -234,13 +238,13 @@ test("the lens is geometrically centered on each scene measurement independently
 
 
 test("Focus annotations follow a changed headline height even when scene and lens dimensions are unchanged",()=>{
- const f=fixture(true),matches=f.search("People"),id=matches[0].item.id;
+ const f=fixture(true),matches=f.search("Community"),id=matches[0].item.id;
  const title={offsetHeight:60,offsetWidth:220,offsetTop:30,offsetLeft:0};
  Object.defineProperty(f.records.find(r=>r.id===id)!.button,"querySelector",{value:()=>title});
  const variables:Record<string,string>={};Object.defineProperty(f.root,"parentElement",{value:{style:{setProperty:(key:string,value:string)=>{variables[key]=value;}}}});
  const m=f.motionModule.startLabMotion(f.root,composeLabSpace(matches,id,true),f.memory);
  const before=parseFloat(variables["--focus-copy-y"]);title.offsetHeight=100;f.resize();
- assert.equal(parseFloat(variables["--focus-copy-y"]),before+40);assert.equal(f.frames.size,0);m.stop();
+ assert.ok(Math.abs(parseFloat(variables["--focus-copy-y"])-before-40*composeLabSpace(matches,id,true).nodes[0].focusScale)<1e-7);assert.equal(f.frames.size,0);m.stop();
 });
 
 
@@ -282,4 +286,17 @@ test("repeated interrupted intents release all media listeners, observers and pe
     assert.ok(f.memory.size<=createLabCatalog("en").length*3+5,"identity memory stays bounded to the catalogue");
   }
   assert.equal(f.disconnected(),40);
+});
+
+
+test("viewport changes keep the search lens centered from the first measured frame",()=>{
+ const f=fixture(),scene=composeLabSpace(f.search(""),"personal-advantage");
+ const motion=f.motionModule.startLabMotion(f.root,scene,f.memory);
+ f.tick(1000);
+ f.root.getBoundingClientRect=()=>({left:0,top:0,width:390,height:650});
+ f.lens.getBoundingClientRect=()=>({left:20,top:291,width:350,height:68});
+ f.resize();
+ assert.deepEqual(f.memory.get("@lens"),{x:195,y:325,opacity:1,scale:1,turn:0});
+ assert.equal(f.centerStyle.transform,"translateX(-50%) translate3d(0px,0px,0)");
+ f.tick(2000);motion.stop();
 });

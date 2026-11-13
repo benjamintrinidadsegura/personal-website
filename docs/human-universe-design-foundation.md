@@ -91,3 +91,40 @@ Local QA measurement/proxy scripts live only in engineering evidence. They are
 not application routes or release files. The controlled reduced-motion fixture
 sets both the JS preference and disables no-preference CSS solely in that proxy;
 it is explicitly distinct from a physical device or OS-level media preference.
+## Reference-driven spatial experience
+
+The founder's original 199.765-second video, annotated Osmo document, supplied
+screenshot and README define the direction. Prior Lab recordings are comparison
+evidence only. Osmo informs direct control; Cosmos informs a protected central
+search; Lusion informs coherent environmental light; Apple informs selective
+functional glass; Instrument/Pentagram inform genuine content identity and context.
+These are transferable qualities, not copied artwork or third-party source code.
+
+Atlas now has deterministic sparse/dense compositions. A stable object canvas
+keeps the original image and DOM identity through changing roles. Scores only
+weight presentation; the index, catalog, categories, membership and order remain
+unchanged. The main title and search have separate clearances at 1280px. Mobile
+has one lead and two nearby supporting objects rather than a scaled desktop room.
+
+A horizontal gesture continuously samples a bounded route to the neighboring
+valid selection. Routes are planned once per direction and reused while reversing.
+The pointer displacement is the progress; there is no velocity/inertia integration.
+Release uses final displacement and clamps to the existing result range. A vertical
+intent is relinquished before capture. Controls, search, multi-pointer interruption,
+cancellation and explicit keyboard alternatives retain their own behavior.
+
+The lens retains 6px blur. A limited transmission layer and directional edge light
+respond locally; text remains on a separate stable layer. No global distortion,
+ambient animation, scroll reveal, new asset, dependency, service or tracking.
+
+Focus reuses the same object and actual previous coordinates, increases visual
+scale, and shows one relationship explanation only from shared catalog topics.
+Return restores the pre-Focus perspective and the viewport saved before reading;
+keyboard focus returns to a visible original object. Compact Focus keeps related destinations reachable below its
+flowing details. Its environment and centered lens stay independent of detail height.
+
+Verification artifacts, local-only instrumentation, recordings and baseline
+comparisons live outside the checkout in the ignored engineering evidence folder.
+Synthetic pointer fixtures explicitly do not claim native touch-device testing.
+Frame measurements are bounded local samples, not a guaranteed frame rate.
+Founder judgement and physical Safari/touch remain separate acceptance questions.

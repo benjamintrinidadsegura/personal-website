@@ -10,6 +10,21 @@ export const labWindowSize = 6;
 export type SpacePoint = { x: number; y: number };
 export type MotionPoint = SpacePoint & { opacity: number; scale: number; turn: number };
 type Slot = SpacePoint & { scale: number };
+/** Finite, reversible scrubbing. Neither velocity nor elapsed time can change selection. */
+export const dragStride = (width: number) => Math.max(180, Math.min(300, width * .22));
+export function dragSelection(dx: number, width: number, index: number, count: number) {
+  return Math.abs(dx) < dragStride(width) * .32 ? index
+    : Math.max(0, Math.min(count - 1, index + (dx < 0 ? 1 : -1)));
+}
+
+function atlasSlots(count: number): { wide: readonly Slot[]; compact: readonly Slot[] } {
+  const wide = count === 1 ? [{x:50,y:145,scale:1}]
+    : count === 2 ? [{x:24,y:165,scale:1},{x:76,y:185,scale:.86}]
+    : [{x:24,y:165,scale:1},{x:77,y:165,scale:.8},{x:79,y:465,scale:.76},
+      {x:24,y:565,scale:.68},{x:50,y:660,scale:.64},{x:78,y:685,scale:.62}];
+  return {wide, compact:[{x:50,y:128,scale:.94},{x:25,y:575,scale:.54},{x:75,y:575,scale:.54},
+    {x:25,y:575,scale:.54},{x:50,y:575,scale:.54},{x:75,y:575,scale:.54}]};
+}
 const slots: Record<LabDirection, { wide: readonly Slot[]; compact: readonly Slot[] }> = {
   atlas: {
     wide: [{x:22,y:300,scale:1},{x:78,y:555,scale:1},{x:78,y:235,scale:1},
@@ -46,7 +61,7 @@ export function composeLabSpace(matches: readonly LabMatch[], selectedId: string
   const leadKind = selected?.item.kind;
   const worldX = direction === "editorial" ? 34 : leadKind === "person" ? 64 : leadKind === "writing" ? 68 : 50;
   return {
-    direction, focus, selectedIndex, start, end: start + window.length,
+    direction, focus, matches, selectedIndex, start, end: start + window.length,
     canvas: direction === "atlas",
     height: direction === "atlas" ? {wide:760,compact:640} : {wide:1330,compact:2000},
     world: { wide: {x:worldX,y:direction === "editorial" ? 630 : leadKind === "writing" ? 300 : 350}, compact:{x:50,y:direction === "atlas" ? 230 : 490} },
@@ -54,22 +69,24 @@ export function composeLabSpace(matches: readonly LabMatch[], selectedId: string
       const isSelected = match.item.id === selected?.item.id;
       const order = visualOrder.indexOf(match.item.id);
       const relation = relations.findIndex(item => item.id === match.item.id);
-      const desktop = slots[direction].wide[order], compact = slots[direction].compact[order];
+      // A query changes the composition, never the authoritative ordering or membership.
+      const arrangement = direction === "atlas" ? atlasSlots(displayed.length) : slots[direction];
+      const desktop = arrangement.wide[order], compact = arrangement.compact[order];
       const adaptedDesktop = direction === "atlas"
-        ? isSelected && leadKind === "writing" ? {...desktop,x:19,y:320}
-          : isSelected && leadKind === "world" ? {...desktop,x:19,y:315}
-          : order === 1 && displayed.length === 2 ? {...desktop,y:380} : desktop
+        ? isSelected && leadKind === "writing" ? {...desktop,y:desktop.y+12}
+          : isSelected && leadKind === "world" ? {...desktop,y:desktop.y-8} : desktop
         : desktop;
       const strength = match.score ? Math.max(.35, match.score / strongest) : .7;
-      const weight = isSelected ? 1 : match.score ? .97 + .03 * strength : 1;
+      const weight = isSelected ? 1 : match.score ? .9 + .1 * strength : 1;
       return {
         ...match, index: matches.indexOf(match), relation: focus && !isSelected,
         role: isSelected ? "lead" : focus || order < 3 ? "feature" : "note",
         desktop: direction === "atlas" ? adaptedDesktop : focus ? isSelected ? {x:32,y:520} : {x:79,y:relation===0?760:950} : desktop,
         compact: direction === "atlas" ? compact : focus ? isSelected ? {x:50,y:420} : {x:50,y:relation===0?980:1160} : compact,
-        depth: focus && !isSelected ? .86 : 1, scale: desktop.scale * weight, compactScale: compact.scale * weight,
-        focusScale: focus ? isSelected ? 1 : .96 : desktop.scale,
-        focusCompactScale: focus ? isSelected ? 1 : .96 : compact.scale,
+        depth: focus && !isSelected ? .86 : 1,
+        scale: desktop.scale * weight, compactScale: compact.scale * weight,
+        focusScale: focus ? isSelected ? 1.08 : .72 * weight : desktop.scale * weight,
+        focusCompactScale: focus ? isSelected ? .98 : .54 * weight : compact.scale * weight,
         strength, turn: 0,
       };
     }),

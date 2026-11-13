@@ -5,7 +5,7 @@ import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Ke
 import { labCopy } from "@/data/experience-lab/copy";
 import { focusCopy } from "@/data/experience-lab/focus-copy";
 import { createLabSearch, labKinds, relatedLabItems, type LabKind, type LabItem } from "@/lib/experience-lab/search";
-import { composeLabSpace, type LabDirection, type MotionPoint } from "@/lib/experience-lab/space";
+import { composeLabSpace, dragSelection, type LabDirection, type MotionPoint } from "@/lib/experience-lab/space";
 import { labContext, sharedLabTopics } from "@/lib/experience-lab/context";
 import { startLabMotion, type LabMotion } from "@/lib/experience-lab/motion";
 import { type Locale } from "@/lib/i18n/config";
@@ -36,6 +36,8 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
   const motion = useRef<LabMotion | null>(null);
   const positions = useRef(new Map<string, MotionPoint>());
   const pendingFocus = useRef<string | null>(null);
+  const returnPerspective = useRef<Perspective | null>(null);
+  const returnViewport = useRef<{ x: number; y: number } | null>(null);
 
   useLayoutEffect(() => {
     if (!space.current) return;
@@ -45,6 +47,11 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
     const target = pendingFocus.current;
     pendingFocus.current = null;
     if (target) {
+      if (target.startsWith("@restore:") && returnViewport.current && typeof window !== "undefined") {
+        const { x, y } = returnViewport.current;
+        window.scrollTo({ left: x, top: y, behavior: "instant" });
+        returnViewport.current = null;
+      }
       if (target !== "@detail" && target !== "@search" && !target.startsWith("@restore:")) currentMotion.finish();
       let attempts = 0;
       const focusVisibleTarget = () => {
@@ -73,11 +80,24 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
   const select = (id: string) => setPerspective(current => ({ ...current, selectedId: id }));
   const enterFocus = (id: string) => {
     if (focused && active?.id === id) { document.getElementById("lab-detail")?.focus(); return; }
+    if (!focused) {
+      returnPerspective.current = scene.nodes.some(node => node.item.id === id)
+        ? { ...perspective } : { ...perspective, selectedId: id };
+      if (typeof window !== "undefined") returnViewport.current = { x: window.scrollX, y: window.scrollY };
+    }
     pendingFocus.current = "@detail"; select(id); setFocused(true);
   };
-  const leaveFocus = () => { pendingFocus.current = active ? "@restore:" + active.id : "@search"; setFocused(false); };
-  const refine = () => { pendingFocus.current = "@search"; setFocused(false); };
-  const reset = () => { setFocused(false); setPerspective(initial); };
+  const leaveFocus = () => {
+    const previous = returnPerspective.current;
+    const restored = previous ? composeLabSpace(matches, previous.selectedId) : scene;
+    const destination = restored.nodes.some(node => node.item.id === active?.id) ? active?.id
+      : restored.nodes.find(node => node.index === restored.selectedIndex)?.item.id;
+    pendingFocus.current = destination ? "@restore:" + destination : "@search";
+    if (previous) setPerspective(previous);
+    returnPerspective.current = null; setFocused(false);
+  };
+  const refine = () => { returnViewport.current = null; pendingFocus.current = "@search"; setFocused(false); };
+  const reset = () => { returnViewport.current = null; setFocused(false); setPerspective(initial); };
   const move = (index: number, focus = false) => {
     const item = matches[index]?.item;
     if (!item) return;
@@ -90,24 +110,30 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
     event.preventDefault(); move(next, true);
   };
   const startGesture = (event: PointerEvent<HTMLDivElement>) => {
+    if (gesture.current) return;
     didDrag.current = false;
     const control = (event.target as Element).closest("button,a,input,label,select,summary");
-    if (event.button !== 0 || (control && !control.hasAttribute("data-space-node"))) return;
+    if (focused || event.button !== 0 || (control && !control.hasAttribute("data-space-node"))) return;
     gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, captured: false };
   };
   const dragGesture = (event: PointerEvent<HTMLDivElement>) => {
     const start = gesture.current;
     if (!start || start.id !== event.pointerId) return;
     const dx = event.clientX - start.x, dy = event.clientY - start.y;
+    if (!start.captured && Math.abs(dy) > 16 && Math.abs(dy) > Math.abs(dx)) { gesture.current = null; return; }
     if (!start.captured && Math.abs(dx) > 16 && Math.abs(dx) > Math.abs(dy) * 1.3) {
       start.captured = true; didDrag.current = true; event.currentTarget.setPointerCapture(event.pointerId);
     }
-    if (start.captured) motion.current?.pan(Math.max(-32, Math.min(32, dx * .2)));
+    if (start.captured) motion.current?.pan(dx);
   };
   const endGesture = (event: PointerEvent<HTMLDivElement>, cancelled = false) => {
-    const start = gesture.current; gesture.current = null; motion.current?.release();
+    const start = gesture.current;
+    if (!start || start.id !== event.pointerId) return;
+    gesture.current = null;
+    const next = !cancelled && start.captured ? dragSelection(event.clientX-start.x,space.current?.clientWidth ?? 1200,scene.selectedIndex,matches.length) : scene.selectedIndex;
+    motion.current?.release();
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    if (!cancelled && start?.captured && Math.abs(event.clientX - start.x) > 45) move(scene.selectedIndex + (event.clientX < start.x ? 1 : -1));
+    if (next !== scene.selectedIndex) move(next);
   };
 
   return <article className={styles.lab} data-direction={direction} data-locale={locale} data-focused={focused} aria-labelledby="lab-title"
@@ -122,7 +148,7 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
       <div ref={space} className={styles.space} style={{ "--scene-wide": scene.height.wide + "px", "--scene-compact": scene.height.compact + "px", "--world-x":scene.world.wide.x, "--world-y":scene.world.wide.y, "--compact-world-x":scene.world.compact.x, "--compact-world-y":scene.world.compact.y } as CSSProperties}
         data-focus={focused} data-kind={perspective.kind} data-count={scene.nodes.length} data-searching={Boolean(perspective.query.trim())}
         onClickCapture={event => { if (didDrag.current && event.detail > 0) { event.preventDefault(); event.stopPropagation(); } didDrag.current = false; }}
-        onPointerDown={startGesture} onPointerMove={dragGesture} onPointerUp={event => endGesture(event)} onPointerCancel={event => endGesture(event, true)}>
+        onPointerDown={startGesture} onPointerMove={dragGesture} onPointerUp={event => endGesture(event)} onPointerCancel={event => endGesture(event, true)} onLostPointerCapture={event => endGesture(event, true)}>
         <svg className={styles.connections} data-space-strings aria-hidden="true">
           {catalog.map(item => <path key={item.id} data-connection={item.id} data-active={item.id === active?.id} data-related={related.some(other=>other.id===item.id)}
             data-relevant={Boolean(perspective.query.trim()) && matches.some(match => match.item.id === item.id)} />)}

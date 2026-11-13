@@ -17,9 +17,12 @@ export function FocusSurface({match,query,kind,locale,related,onBack,onRefine,on
     <p className={styles.eyebrow}>{focus.focus} / {item.source==="demo"?copy.demo:copy.kinds[item.kind]}</p>
     <h2 id="lab-detail-title" lang={item.language}>{item.title}</h2>
    </div>
-   <div className={styles.focusBody}>
+   <div className={styles.focusBody} data-focus-body>
    <p lang={item.language} className={styles.summary}>{item.summary}</p>
    <p className={styles.source}>{item.source==="demo"?copy.demo:copy.public} · {copy.source} {localeDetails[item.language].languageName}</p>
+   {related[0] && sharedLabTopics(item,related[0]).length ? <p className={styles.relationHint}>
+    {focus.shared} · {sharedLabTopics(item,related[0]).join(" · ")} <span aria-hidden="true">↔</span> <span lang={related[0].language}>{related[0].title}</span>
+   </p>:null}
    {item.source==="public"?<Link className={styles.open} href={item.href} prefetch={false}>{copy.open}<span aria-hidden="true">↗</span></Link>:null}
    <details className={styles.focusNotes}><summary>{focus.why}</summary>
    <div className={styles.context} aria-labelledby="lab-context-title">
