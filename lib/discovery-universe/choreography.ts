@@ -1,7 +1,7 @@
 import { mixMotion, type MotionPoint, type SpacePoint } from "./space";
 
 export type Obstacle = { x: number; y: number; width: number; height: number; fromX?:number;fromY?:number };
-export type Flight = { id: string; from: MotionPoint; to: MotionPoint; width: number; height: number };
+export type Flight = { id: string; from: MotionPoint; to: MotionPoint; width: number; height: number; offsetY?: number };
 type Route = Flight & { points: SpacePoint[]; lengths: number[]; distance: number; recess: number[] };
 const steps = 32;
 const between = (a: number, b: number, t: number) => a + (b-a)*t;
@@ -50,14 +50,15 @@ function occupied(a: Route,b: Route,t: number): boolean {
   if(p.opacity<.4 || q.opacity<.4)return false;
   // Conservative rectangular envelopes include slight rotation and a small clearance.
   return Math.abs(p.x-q.x)<(a.width*p.scale+b.width*q.scale)*.54+5
-    && Math.abs(p.y-q.y)<(a.height*p.scale+b.height*q.scale)*.54+5;
+    && Math.abs(p.y+(a.offsetY??0)*p.scale-q.y-(b.offsetY??0)*q.scale)<(a.height*p.scale+b.height*q.scale)*.54+5;
 }
 function searchOccupied(route:Route,obstacle:Obstacle,t:number):boolean {
   const p=at(route,t);if(p.opacity<.4)return false;
+  const contentY=p.y+(route.offsetY??0)*p.scale;
   const x=between(obstacle.fromX??obstacle.x,obstacle.x,t),y=between(obstacle.fromY??obstacle.y,obstacle.y,t);
   // Clearance also covers the small width change of the moving focus lens.
   const rx=route.width*p.scale*.56+30,ry=route.height*p.scale*.56+12;
-  return p.x+rx>x && p.x-rx<x+obstacle.width && p.y+ry>y && p.y-ry<y+obstacle.height;
+  return p.x+rx>x && p.x-rx<x+obstacle.width && contentY+ry>y && contentY-ry<y+obstacle.height;
 }
 /** Bounded planning on intent changes, never during a render frame. */
 export function planFlights(flights: readonly Flight[], obstacle: Obstacle, room: {width:number;height:number}): Route[] {
@@ -66,16 +67,21 @@ export function planFlights(flights: readonly Flight[], obstacle: Obstacle, room
     const {from,to}=flight;
     if(to.opacity===0) { planned.push(routeOf(flight,[from,{...from}]));continue; }
     const sx=Math.max(from.scale,to.scale)*flight.width*.56+10,sy=Math.max(from.scale,to.scale)*flight.height*.56+10;
-    const left=obstacle.x-sx,right=obstacle.x+obstacle.width+sx,top=obstacle.y-sy,bottom=obstacle.y+obstacle.height+sy;
+    const shift=(flight.offsetY??0)*Math.max(from.scale,to.scale);
+    const left=obstacle.x-sx,right=obstacle.x+obstacle.width+sx,top=obstacle.y-sy-shift,bottom=obstacle.y+obstacle.height+sy-shift;
+    // Existing approved edge positions may already exceed the conservative
+    // envelope. A detour must not extend farther out than those endpoints.
+    const minX=Math.min(sx,from.x,to.x),maxX=Math.max(room.width-sx,from.x,to.x);
+    const minY=Math.min(sy-shift,from.y,to.y),maxY=Math.max(room.height-sy-shift,from.y,to.y);
     const candidates: SpacePoint[][]=[[from,to]];
-    for(const y of [Math.max(sy,top-12),Math.min(room.height-sy,bottom+12)]) candidates.push([from,{x:from.x,y},{x:to.x,y},to]);
-    for(const x of [Math.max(sx,left-12),Math.min(room.width-sx,right+12)]) candidates.push([from,{x,y:from.y},{x,y:to.y},to]);
+    for(const y of [Math.max(minY,top-12),Math.min(maxY,bottom+12)]) candidates.push([from,{x:from.x,y},{x:to.x,y},to]);
+    for(const x of [Math.max(minX,left-12),Math.min(maxX,right+12)]) candidates.push([from,{x,y:from.y},{x,y:to.y},to]);
     candidates.push([from,{x:left,y:top},{x:right,y:top},to],[from,{x:left,y:bottom},{x:right,y:bottom},to],
       [from,{x:right,y:top},{x:left,y:top},to],[from,{x:right,y:bottom},{x:left,y:bottom},to]);
     const expanded={x:left,y:top,width:right-left,height:bottom-top};
     const routes=candidates.map(points=>routeOf(flight,points));
     const cost=(r: Route)=>{
-      const wall=r.points.slice(1).filter(p=>p.x<sx || p.x>room.width-sx || p.y<sy || p.y>room.height-sy).length;
+      const wall=r.points.slice(1).filter(p=>p.x<minX || p.x>maxX || p.y<minY || p.y>maxY).length;
       const moving=obstacle.fromX!==undefined || obstacle.fromY!==undefined;
       const lens=moving ? Array.from({length:steps-1},(_,i)=>i+1).filter(i=>searchOccupied(r,obstacle,i/steps)).length
         : r.points.slice(1).filter((p,i)=>intersects(r.points[i],p,expanded)).length;

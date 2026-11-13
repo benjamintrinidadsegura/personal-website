@@ -42,17 +42,31 @@ interface QueryTerm {
   concepts: string[];
 }
 
+interface PreparedQueryTerm extends QueryTerm {
+  normalizedValue: string;
+  tokens: string[];
+}
+
 interface DiscoveryQueryAnalysis {
   normalizedQuery: string;
-  directTerms: QueryTerm[];
-  synonymTerms: QueryTerm[];
-  relationshipTerms: QueryTerm[];
+  directTerms: PreparedQueryTerm[];
+  synonymTerms: PreparedQueryTerm[];
+  relationshipTerms: PreparedQueryTerm[];
 }
 
 interface SearchableField {
   source: DiscoveryMatchSource;
   value: string;
 }
+
+interface PreparedSearchableField extends SearchableField {
+  normalizedValue: string;
+  tokens: string[];
+}
+
+// Only indexed metadata is retained, never visitor queries or search results.
+// Scalar comparison below also detects in-place editorial metadata changes.
+const preparedFields = new WeakMap<DiscoveryItem, PreparedSearchableField[]>();
 
 interface MatchSignal extends SearchableField {
   kind: DiscoveryMatchKind;
@@ -92,19 +106,22 @@ function tokenizeDiscoveryText(value: string): string[] {
 
 const normalizedNeutralTerms = new Set(discoveryNeutralTerms.map(normalizeSearchText));
 
-function uniqueTerms(terms: QueryTerm[]): QueryTerm[] {
+function uniqueTerms(terms: QueryTerm[]): PreparedQueryTerm[] {
   const seen = new Set<string>();
-
-  return terms.filter((term) => {
-    const key = `${term.kind}:${normalizeSearchText(term.value)}`;
-    if (seen.has(key)) return false;
+  return terms.flatMap((term) => {
+    const normalizedValue = normalizeSearchText(term.value);
+    const key = `${term.kind}:${normalizedValue}`;
+    if (seen.has(key)) return [];
     seen.add(key);
-    return true;
+    return [{ ...term, normalizedValue, tokens: normalizedValue.split(" ").filter(Boolean) }];
   });
 }
 
 function includesTokenPhrase(tokens: string[], phrase: string): boolean {
-  const phraseTokens = tokenizeDiscoveryText(phrase);
+  return includesTokenSequence(tokens, tokenizeDiscoveryText(phrase));
+}
+
+function includesTokenSequence(tokens: string[], phraseTokens: string[]): boolean {
   if (phraseTokens.length === 0 || phraseTokens.length > tokens.length) return false;
 
   return tokens.some((_, startIndex) => (
@@ -169,10 +186,9 @@ function analyzeDiscoveryQuery(query: string): DiscoveryQueryAnalysis {
 }
 
 /** Strong whole-word/phrase evidence stays above progressive prefixes and substrings. */
-function termStrength(value: string, term: string): "exact" | "prefix" | "partial" | null {
-  const words=tokenizeDiscoveryText(value), terms=tokenizeDiscoveryText(term);
+function termStrength(words: string[], terms: string[]): "exact" | "prefix" | "partial" | null {
   if (!terms.length) return null;
-  if (includesTokenPhrase(words, term)) return "exact";
+  if (includesTokenSequence(words, terms)) return "exact";
   if (words.some((_, start) => terms.every((word, index) => {
     const candidate=words[start+index];
     return candidate && (index===terms.length-1 ? candidate.startsWith(word) : candidate===word);
@@ -181,19 +197,19 @@ function termStrength(value: string, term: string): "exact" | "prefix" | "partia
   if (terms.length===1 && terms[0].length>=4 && words.some(word=>word.includes(terms[0]))) return "partial";
   return null;
 }
-function matchesSearchTerm(value: string, term: string): boolean {
-  return termStrength(value, term)==="exact";
+function matchesSearchTerm(field: PreparedSearchableField, term: PreparedQueryTerm): boolean {
+  return termStrength(field.tokens, term.tokens)==="exact";
 }
-function titleMatchScore(title: string, term: string): number {
-  const normalizedTitle=normalizeSearchText(title), normalizedTerm=normalizeSearchText(term);
+function titleMatchScore(field: PreparedSearchableField, term: PreparedQueryTerm): number {
+  const normalizedTitle=field.normalizedValue, normalizedTerm=term.normalizedValue;
   if (!normalizedTerm) return 0;
   if (normalizedTitle===normalizedTerm) return TITLE_EXACT_SCORE;
-  const strength=termStrength(title,term);
+  const strength=termStrength(field.tokens,term.tokens);
   if (strength==="exact") return normalizedTitle.startsWith(normalizedTerm)?TITLE_PREFIX_SCORE:TITLE_SCORE;
   return strength==="prefix"?70:strength==="partial"?30:0;
 }
 
-function getSearchableFields(item: DiscoveryItem): SearchableField[] {
+function getSearchableFields(item: DiscoveryItem): PreparedSearchableField[] {
   const fields: SearchableField[] = [
     { source: "title", value: item.title },
     { source: "category", value: item.category },
@@ -208,16 +224,25 @@ function getSearchableFields(item: DiscoveryItem): SearchableField[] {
   }
 
   fields.push({ source: "description", value: item.description });
-  return fields;
+  const previous = preparedFields.get(item);
+  if (previous && previous.length === fields.length && fields.every((field, index) => (
+    field.source === previous[index].source && field.value === previous[index].value
+  ))) return previous;
+  const prepared = fields.map(field => {
+    const normalizedValue = normalizeSearchText(field.value);
+    return { ...field, normalizedValue, tokens: normalizedValue.split(" ").filter(Boolean) };
+  });
+  preparedFields.set(item, prepared);
+  return prepared;
 }
 
-function directFieldScore(field: SearchableField, term: string): number {
-  if (field.source === "title") return titleMatchScore(field.value, term);
-  const strength=termStrength(field.value, term);
+function directFieldScore(field: PreparedSearchableField, term: PreparedQueryTerm): number {
+  if (field.source === "title") return titleMatchScore(field, term);
+  const strength=termStrength(field.tokens, term.tokens);
   if (!strength) return 0;
   if (strength!=="exact") {
-    if (field.source==="description" && normalizeSearchText(term).length<3) return 0;
-    if (activeDiscoveryDimensions.includes(field.source as ActiveDiscoveryDimension) && normalizeSearchText(term).length<3) return 0;
+    if (field.source==="description" && term.normalizedValue.length<3) return 0;
+    if (activeDiscoveryDimensions.includes(field.source as ActiveDiscoveryDimension) && term.normalizedValue.length<3) return 0;
     return strength==="prefix"?60:20;
   }
   if (field.source === "category") return CATEGORY_SCORE;
@@ -232,7 +257,7 @@ function collectSignals(item: DiscoveryItem, analysis: DiscoveryQueryAnalysis): 
 
   for (const term of analysis.directTerms) {
     for (const field of fields) {
-      const score = directFieldScore(field, term.value);
+      const score = directFieldScore(field, term);
       if (score > 0) signals.push({ ...field, kind: term.kind, matchedTerm: term.value, score, concepts: term.concepts });
     }
   }
@@ -240,12 +265,12 @@ function collectSignals(item: DiscoveryItem, analysis: DiscoveryQueryAnalysis): 
   for (const term of [...analysis.relationshipTerms, ...analysis.synonymTerms]) {
     if (term.score === undefined) continue;
     for (const field of fields) {
-      if (!matchesSearchTerm(field.value, term.value)) continue;
+      if (!matchesSearchTerm(field, term)) continue;
       signals.push({
         ...field,
         kind: term.kind,
         matchedTerm: term.value,
-        score: term.score <= 90 && (field.source !== "title" || normalizeSearchText(field.value) !== normalizeSearchText(term.value))
+        score: term.score <= 90 && (field.source !== "title" || field.normalizedValue !== term.normalizedValue)
           ? Math.min(65, term.score) : term.score,
         concepts: term.concepts,
       });

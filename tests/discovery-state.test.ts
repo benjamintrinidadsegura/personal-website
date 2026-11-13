@@ -204,6 +204,14 @@ test("search shortcuts, arrow wrapping and Enter keep native results while Escap
     assert.equal(input().props["aria-expanded"], false);
     assert.equal(query, "Recruiting");
     assert.equal(activeLocks, 0);
+    // A focused local interaction (Universe return or Welcome dismissal) owns
+    // its handled Escape; the document-level canvas fallback must not reset it.
+    const handledEscape = new Event("keydown", { cancelable: true });
+    Object.assign(handledEscape, { key: "Escape" });
+    handledEscape.preventDefault();
+    events.dispatchEvent(handledEscape);
+    assert.equal(query, "Recruiting", "a handled Escape preserves the search and its local return focus");
+    assert.equal(input().props["aria-expanded"], false);
     documentEvent("keydown", { key: "k", metaKey: true });
     render();
     documentEvent("keydown", { key: "Escape" });

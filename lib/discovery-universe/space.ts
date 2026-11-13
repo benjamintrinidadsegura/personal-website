@@ -4,6 +4,12 @@ export type UniverseDirection = "atlas";
 export const universeWindowSize = 6;
 export type SpacePoint = { x: number; y: number };
 export type MotionPoint = SpacePoint & { opacity: number; scale: number; turn: number };
+
+/** Current public choices stay legible during collision/entry choreography.
+ * Retiring choices are already inert and may still fade out normally. */
+export function visibleContentOpacity(opacity: number, targetOpacity: number): number {
+  return targetOpacity > 0 ? Math.max(opacity, Math.min(.9, targetOpacity)) : opacity;
+}
 type Slot = SpacePoint & { scale: number };
 /** Finite, reversible scrubbing. Neither velocity nor elapsed time can change selection. */
 export const dragStride = (width: number) => Math.max(180, Math.min(300, width * .22));

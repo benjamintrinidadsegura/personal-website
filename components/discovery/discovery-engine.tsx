@@ -171,7 +171,7 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
     if (open || !query.trim()) return;
 
     const handleCanvasEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      if (event.defaultPrevented || event.key !== "Escape") return;
 
       event.preventDefault();
       resetDiscovery(true);

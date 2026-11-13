@@ -14,12 +14,12 @@ function fixture(reduce = false, compact = false, height = 760) {
   const documentStub:{activeElement:unknown}={activeElement:null};
   const frames = new Map<number, FrameRequestCallback>();
   const records = catalog.map(item => ({
-    id: item.id, style: {} as Record<string,string>, attrs: {} as Record<string,string>,
+    id: item.id, style: {} as Record<string,string>, attrs: {} as Record<string,string>, writes: 0,
     button:{offsetWidth:220,offsetHeight:160,getBoundingClientRect:()=>({top:950,bottom:1110}),scrollIntoView(){reveals++;}},
     path: { style: {}, setAttribute(key: string,value: string) { records.find(record => record.path === this)!.attrs[key] = value; } },
   }));
   for (const record of records) Object.defineProperty(record.style, "setProperty", {
-    value: (key: string, value: string) => { record.style[key] = value; },
+    value: (key: string, value: string) => { record.writes++; record.style[key] = value; },
   });
   const centerStyle: Record<string,string> = {};
   const lens = { getBoundingClientRect: () => ({ left: 400, top: 200+roomTop, width: 400, height: 76 }) };
@@ -86,4 +86,31 @@ test("a mode switch mid-flight resumes to the endpoint even when the revealed sc
  assert.equal(f.memory.get(id)!.x,1200*endpoint.desktop.x/100);
  assert.equal(f.memory.get(id)!.y,endpoint.desktop.y);
  current.stop();assert.equal(f.listeners(),0);
+});
+
+test("public choices keep readable image and text opacity through a held collision gesture",()=>{
+ const f=fixture(),matches=f.search();
+ const scene=composeUniverseSpace(matches,matches[0].item.id);
+ const current=f.motionModule.startUniverseMotion(f.root,scene,f.memory);
+ for(const dx of [-80,-150,-220,-150,-80,0]){
+  current.pan(dx);
+  for(const node of scene.nodes){
+   const record=f.records.find(record=>record.id===node.item.id)!;
+   assert.ok(Number(record.style.opacity)>=.9,node.item.title);
+   assert.notEqual(record.style.pointerEvents,"none");
+  }
+ }
+ current.release();f.tick(1000);current.stop();
+});
+
+test("settled invisible choices receive no per-frame visual writes and return when relevant",()=>{
+ const f=fixture(),matches=f.search();
+ const initialScene=composeUniverseSpace(matches,matches[0].item.id);
+ f.motionModule.startUniverseMotion(f.root,initialScene,f.memory).stop();
+ const hidden=f.records.find(record=>!initialScene.nodes.some(node=>node.item.id===record.id))!;
+ const before=hidden.writes;
+ const moving=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,matches[1].item.id),f.memory);
+ f.tick(80);f.tick(120);assert.equal(hidden.writes,before);moving.stop();
+ const revealed=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,hidden.id),f.memory);
+ f.tick(1000);assert.equal(hidden.style.visibility,"visible");assert.ok(Number(hidden.style.opacity)>=.9);revealed.stop();
 });
