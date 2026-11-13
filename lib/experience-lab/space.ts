@@ -12,9 +12,9 @@ export type MotionPoint = SpacePoint & { opacity: number; scale: number; turn: n
 type Slot = SpacePoint & { scale: number };
 const slots: Record<LabDirection, { wide: readonly Slot[]; compact: readonly Slot[] }> = {
   atlas: {
-    wide: [{x:20,y:320,scale:1},{x:79,y:190,scale:1},{x:79,y:570,scale:1},
-      {x:17,y:700,scale:1},{x:57,y:710,scale:1},{x:81,y:710,scale:1}],
-    compact: [{x:50,y:105,scale:1},{x:25,y:592,scale:1},{x:75,y:592,scale:1},
+    wide: [{x:22,y:300,scale:1},{x:78,y:555,scale:1},{x:78,y:235,scale:1},
+      {x:22,y:660,scale:1},{x:50,y:710,scale:1},{x:78,y:710,scale:1}],
+    compact: [{x:50,y:125,scale:1},{x:25,y:592,scale:1},{x:75,y:592,scale:1},
       {x:25,y:595,scale:1},{x:50,y:595,scale:1},{x:75,y:595,scale:1}],
   },
   editorial: {
