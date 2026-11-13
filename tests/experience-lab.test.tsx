@@ -205,11 +205,13 @@ test("the UI reshapes real card content, preserves input focus and reveals accur
     assert.notEqual(heading.props.className, "srOnly");
     let cards = nodes(tree).filter(node => node.props["data-lab-card"]);
     assert.equal(cards.length, spaceEngine.labWindowSize);
+    assert.ok(nodes(tree).filter(node => node.props["data-connection"]).every(node => node.props["data-relevant"] === false), "neutral connectors cannot claim query relevance");
     const input = nodes(tree).find(node => node.props.id === "lab-search")!;
     (input.props.onChange as (event: { target: { value: string } }) => void)({ target: { value: "Gaming" } });
     tree = render();
     cards = nodes(tree).filter(node => node.props["data-lab-card"]);
     assert.deepEqual(cards.map(node => node.props["data-lab-card"]), ["gaming-demo"]);
+    assert.deepEqual(nodes(tree).filter(node => node.props["data-relevant"] === true).map(node => node.props["data-connection"]), ["gaming-demo"], "connection relevance must follow actual matches in every locale");
     const objects = nodes(tree).filter(node => node.props["data-lab-object"]);
     assert.equal(objects.length, catalog.length, "query changes retain object identity slots");
     assert.ok(objects.filter(node => !node.props["data-lab-card"]).every(node => node.props.inert === true && node.props["aria-hidden"] === true));
@@ -363,4 +365,17 @@ test("project artwork uses existing project context without inventing a GOAT wor
       assert.equal(JSON.stringify(project), before, "presentation cannot replace approved project data");
     }
   }
+});
+
+
+test("connection feedback is finite and motion opt-in while semantic hierarchy survives reduced motion", () => {
+  const css = readFileSync("components/experience-lab/experience-lab.module.css", "utf8");
+  const declarations = [...css.matchAll(/animation:\s*([^;}]+)/g)].map(match => match[1]);
+  assert.equal(declarations.length, 1, "no ambient or extra connection loops");
+  assert.match(declarations[0], /connectionResponse 420ms ease-out 1/);
+  assert.doesNotMatch(css, /infinite|stroke-dashoffset/);
+  assert.match(css, /@media\(prefers-reduced-motion:no-preference\)\s*\{\s*\.space:focus-within[^}]+animation:/);
+  const beforeMotion = css.slice(0, css.indexOf("@keyframes connectionResponse"));
+  assert.match(beforeMotion, /path\[data-active=true\][^{]*\{[^}]+stroke-opacity:/);
+  assert.match(beforeMotion, /path:is\(\[data-relevant=true\],\[data-related=true\]\)/);
 });

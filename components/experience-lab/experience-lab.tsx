@@ -125,7 +125,7 @@ export function ExperienceLab({ catalog, locale }: { catalog: readonly LabItem[]
         onPointerDown={startGesture} onPointerMove={dragGesture} onPointerUp={event => endGesture(event)} onPointerCancel={event => endGesture(event, true)}>
         <svg className={styles.connections} data-space-strings aria-hidden="true">
           {catalog.map(item => <path key={item.id} data-connection={item.id} data-active={item.id === active?.id} data-related={related.some(other=>other.id===item.id)}
-            style={{ strokeOpacity: item.id === active?.id ? 1 : .45 }} />)}
+            data-relevant={Boolean(perspective.query.trim()) && matches.some(match => match.item.id === item.id)} />)}
         </svg>
         <div className={styles.controlColumn}>
           <p className={styles.srOnly}>{copy.subtitle}</p>

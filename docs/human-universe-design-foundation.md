@@ -45,3 +45,21 @@ lead imagery, title, centred lens, two supporting destinations. No motion change
 The contrast review also brightens the input placeholder, giving over 4.5:1
 even against the conservative opaque lightest glass stop. Native keyboard
 focus remains cyan on controls and an inline title underline on content.
+
+## Ice-blue material refinement
+
+The existing endpoint/motion system is unchanged. Visible neutral connections use
+0.32 stroke opacity at 0.8px, actual query matches and evidenced Focus relations
+0.52 at 1px, and the active selection 0.8 at 1.25px. A restrained 2px shadow belongs
+only to the active line. Retired/inert objects still fade with the existing motion;
+Focus hides background connectors and retains evidenced satellites only.
+
+Search, category and content keyboard focus can trigger one 420ms active-line
+response. It has no infinite iterations, particles or dashed moving lights. The
+animation exists only under prefers-reduced-motion:no-preference; the same static
+hierarchy and focus emphasis remain under reduced motion. Native focus ownership
+and the existing focus restoration are unchanged.
+
+The lens retains its exact size, position, 6px blur and text colours. Fine inset
+edges and one short contact shadow refine its depth; focus adds a local blue lift.
+No metadata, typography, catalogue records, ranking or destinations are changed.

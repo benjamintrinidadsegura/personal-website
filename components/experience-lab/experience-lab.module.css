@@ -27,9 +27,9 @@
 .space { grid-area: 1/1; position: relative; container-type: size; width: 100%; height: max(790px,calc(100svh - 260px)); touch-action: pan-y; isolation: isolate; scroll-margin-top: 90px; }
 .center { position: absolute; left: 50%; top: calc(50% - 38px - 28px); transform: translateX(-50%); width: 380px; max-width: calc(100% - 32px); z-index: 20; color: #dce9fa; }
 .searchLabel { display: block; font-size: 12px; line-height: 18px; margin-bottom: 10px; color: #c3d8ef; font-weight: 500; letter-spacing: .01em; }
-.searchSurface { display: flex; position: relative; align-items: center; gap: 10px; min-height: 76px; padding: 10px 12px 10px 18px; border-radius: 28px; border: 1px solid #badcf36b; background: linear-gradient(115deg,#3c628caa,#19385ce8 52%,#153552d9); box-shadow: inset 0 1px #e3f6ff77,inset 0 -1px #7dbbd133,0 14px 45px #000a1e66,0 0 42px #138fb81c; backdrop-filter: blur(6px); }
+.searchSurface { display: flex; position: relative; align-items: center; gap: 10px; min-height: 76px; padding: 10px 12px 10px 18px; border-radius: 28px; border: 1px solid #badcf36b; background: linear-gradient(115deg,#3c628caa,#19385ce8 52%,#153552d9); box-shadow: inset 0 1px #ecfaff99,inset 0 -1px #7dbbd144,inset 1px 0 #a2dff626,0 3px 4px #000a1e66,0 14px 45px #000a1e66,0 0 42px #138fb81c; backdrop-filter: blur(6px); }
 .searchSurface::before { content: ""; position: absolute; inset: 4px; border: 1px solid #cdeaff18; border-radius: 24px; pointer-events: none; background: linear-gradient(140deg,#e2f7ff0d,transparent 42%); }
-.searchSurface:focus-within { outline: 2px solid #88ebf5; outline-offset: 4px; }
+.searchSurface:focus-within { outline: 2px solid #88ebf5; outline-offset: 4px; border-color: #dcf7ff; background: linear-gradient(115deg,#3c628caa,#204263e8 52%,#153552d9); }
 .searchIcon { font-size: 28px; color: #a9e7f5; line-height: 1; }
 .searchSurface input { position: relative; min-width: 0; width: 100%; height: 44px; border: 0; background: none; color: #f5f9ff; outline: 0; font: inherit; font-size: 16px; }
 .searchSurface input::placeholder { color: #d6e5f5; font-size: 13px; opacity: 1; }
@@ -49,8 +49,12 @@
 .resultList small { font-size: 11px; max-width: 12ch; flex-shrink: 0; color: #b6cee4; }
 .sceneHint { font-size: 12px; line-height: 1.5; color: #b7cde4; max-width: 100%; }
 .connections { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
-.connections path { fill: none; stroke: #75bee2; stroke-width: .7; stroke-opacity: .25!important; vector-effect: non-scaling-stroke; }
-.connections path:not([data-active=true]):not([data-related=true]) { visibility: hidden; }
+/* Motion supplies actual endpoints and visibility; CSS only owns the hierarchy. */
+.connections path { fill: none; stroke: #89ccec; stroke-width: .8; stroke-opacity: .32; vector-effect: non-scaling-stroke; }
+.connections path:is([data-relevant=true],[data-related=true]) { stroke: #a2dff6; stroke-width: 1; stroke-opacity: .52; }
+.connections path[data-active=true] { stroke: #c8f2ff; stroke-width: 1.25; stroke-opacity: .8; filter: drop-shadow(0 0 2px #7ccce540); }
+.space:focus-within .connections path[data-active=true] { stroke-opacity: .96; }
+.space[data-focus=true] .connections path:not([data-related=true]) { visibility: hidden; }
 .nodes { list-style: none; margin: 0; padding: 0; }
 .nodePosition { position: absolute; left: 0; top: 0; z-index: 5; transform: translate(calc(var(--x)*1cqw),calc(var(--y)*100cqh/760)) translate(-50%,-50%) scale(var(--s,1)); }
 .nodePosition[data-visible=false] { visibility: hidden; opacity: 0; pointer-events: none; }
@@ -198,7 +202,12 @@
   .focusSurface { padding-left: 20px; padding-right: 20px; }
 }
 /* Reuse the existing finite motion; no additional animation or effects. */
+@keyframes connectionResponse {
+  0% { stroke-opacity: .96; stroke-width: 1.6; }
+  100% { stroke-opacity: .8; stroke-width: 1.25; }
+}
 @media(prefers-reduced-motion:no-preference) {
+  .space:focus-within .connections path[data-active=true] { animation: connectionResponse 420ms ease-out 1; }
   .searchSurface { transition: border-color 120ms ease; }
   .node:hover strong>span { text-decoration: underline; text-underline-offset: 4px; }
   .open { transition: background-color 120ms ease; }
