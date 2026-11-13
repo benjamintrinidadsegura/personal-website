@@ -372,7 +372,7 @@ test("connection feedback is finite and motion opt-in while semantic hierarchy s
   const css = readFileSync("components/experience-lab/experience-lab.module.css", "utf8");
   const declarations = [...css.matchAll(/animation:\s*([^;}]+)/g)].map(match => match[1]);
   assert.equal(declarations.length, 1, "no ambient or extra connection loops");
-  assert.match(declarations[0], /connectionResponse 420ms ease-out 1/);
+  assert.match(declarations[0], /connectionResponse 180ms ease-out 1/);
   assert.doesNotMatch(css, /infinite|stroke-dashoffset/);
   assert.match(css, /@media\(prefers-reduced-motion:no-preference\)\s*\{\s*\.space:focus-within[^}]+animation:/);
   const beforeMotion = css.slice(0, css.indexOf("@keyframes connectionResponse"));

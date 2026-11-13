@@ -10,7 +10,7 @@ import * as choreography from "../lib/experience-lab/choreography";
 
 function fixture(reduce = false, compact = false, height = 760) {
   const catalog = createLabCatalog("en"), search = createLabSearch(catalog);
-  let time = 0, next = 0, disconnected = 0,roomTop=0,reveals=0;
+  let time = 0, next = 0, disconnected = 0,roomTop=0,reveals=0,managedListeners=0;
   let resizeHandler=()=>{};
   const documentStub:{activeElement:unknown}={activeElement:null};
   const frames = new Map<number, FrameRequestCallback>();
@@ -36,7 +36,7 @@ function fixture(reduce = false, compact = false, height = 760) {
     "./space": geometry,
     "./choreography": choreography,
   }, {
-    matchMedia: (query: string) => ({ matches: query.includes("reduced") ? reduce : compact, addEventListener() {}, removeEventListener() {} }),
+    matchMedia: (query: string) => ({ matches: query.includes("reduced") ? reduce : compact, addEventListener() {managedListeners++;}, removeEventListener() {managedListeners--;} }),
     ResizeObserver: class { constructor(callback:()=>void){resizeHandler=callback;} observe() {} disconnect() { disconnected++; } },
     performance: { now: () => time },
     requestAnimationFrame: (callback: FrameRequestCallback) => { frames.set(++next,callback); return next; },
@@ -47,7 +47,7 @@ function fixture(reduce = false, compact = false, height = 760) {
   root.querySelectorAll=()=>nativeElements;
   const memory = new Map<string,MotionPoint>();
   const tick = (now: number) => { time = now; const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback(now)); };
-  return { resize:()=>resizeHandler(),root,search,records,nativeElements,centerStyle,lens,memory,tick,frames,motionModule,setRoomTop:(top:number)=>{roomTop=top;},setActive:(id:string)=>{documentStub.activeElement=records.find(record=>record.id===id)!.button;},reveals:()=>reveals,disconnected: () => disconnected };
+  return { resize:()=>resizeHandler(),root,search,records,nativeElements,centerStyle,lens,memory,tick,frames,motionModule,setRoomTop:(top:number)=>{roomTop=top;},setActive:(id:string)=>{documentStub.activeElement=records.find(record=>record.id===id)!.button;},reveals:()=>reveals,disconnected: () => disconnected, listeners: () => managedListeners };
 }
 
 test("interrupted constellation motion starts at the actual previous frame and becomes idle", () => {
@@ -253,4 +253,33 @@ test("retiring objects retain their last presentation role without changing sear
   assert.equal(e.inert,true);
  }
  assert.equal(ai.length,2);assert.equal(f.frames.size,0);m.stop();
+});
+
+
+test("Atlas gives short gestures a bounded deadline and settles every coordinated flight by 320ms", () => {
+  const f=fixture();
+  f.motionModule.startLabMotion(f.root,composeLabSpace(f.search(""),"personal-advantage"),f.memory).stop();
+  const scene=composeLabSpace(f.search("Karriere"),"career");
+  const motion=f.motionModule.startLabMotion(f.root,scene,f.memory);
+  f.tick(80);
+  assert.ok(f.frames.size>0,"input immediately starts a finite coordinated flight");
+  for(const record of f.records)assert.doesNotMatch(record.attrs.d??"",/NaN|undefined/);
+  f.tick(320);
+  assert.equal(f.frames.size,0,"no 340ms tail after a completed Atlas intent");
+  const end=JSON.stringify([...f.memory]);f.tick(1000);assert.equal(JSON.stringify([...f.memory]),end);
+  motion.stop();
+});
+
+
+test("repeated interrupted intents release all media listeners, observers and pending frames", () => {
+  const f=fixture();
+  for(let i=0;i<40;i++) {
+    const matches=f.search(i%2?"Community":"AI");
+    const motion=f.motionModule.startLabMotion(f.root,composeLabSpace(matches,matches[0].item.id),f.memory);
+    f.tick(i*400+80);motion.stop();
+    assert.equal(f.frames.size,0);
+    assert.equal(f.listeners(),0);
+    assert.ok(f.memory.size<=createLabCatalog("en").length*3+5,"identity memory stays bounded to the catalogue");
+  }
+  assert.equal(f.disconnected(),40);
 });

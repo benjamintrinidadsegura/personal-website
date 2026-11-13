@@ -54,7 +54,7 @@ The existing endpoint/motion system is unchanged. Visible neutral connections us
 only to the active line. Retired/inert objects still fade with the existing motion;
 Focus hides background connectors and retains evidenced satellites only.
 
-Search, category and content keyboard focus can trigger one 420ms active-line
+Search, category and content keyboard focus can trigger one 180ms active-line
 response. It has no infinite iterations, particles or dashed moving lights. The
 animation exists only under prefers-reduced-motion:no-preference; the same static
 hierarchy and focus emphasis remain under reduced motion. Native focus ownership
@@ -63,3 +63,31 @@ and the existing focus restoration are unchanged.
 The lens retains its exact size, position, 6px blur and text colours. Fine inset
 edges and one short contact shadow refine its depth; focus adds a local blue lift.
 No metadata, typography, catalogue records, ranking or destinations are changed.
+
+## Deep Navy lock and fluid settling
+
+The original initial screenshot and recording source have identical RGB means at
+four unobstructed 20x20px patches. Decoding the existing MP4 shifts those means by
+only 1–2 RGB levels. That is evidence of small encoding differences, not evidence
+that a player-specific washed-out appearance comes from a different brand colour.
+No environment colour values are replaced; the existing palette remains the source.
+
+A separate real CSS issue exists on mobile: Focus copy grew the 710px environment
+to 855.625px, stretching percentage-based light layers. The light overlay now shares
+`--room-height` with the interactive scene. The article's radial light has a stable
+minimum 1100px paint canvas (approximately the approved initial reference height),
+growing with tall viewports, independently of Focus copy. Content remains free to
+grow; no clipping is introduced. Search coordinates and object composition remain.
+
+Atlas uses the already planned path distance to choose a 180–320ms deadline rather
+than assigning every change 340ms. Input is still synchronous and interruptible;
+objects, lens and connection anchors sample one common eased progress. Existing
+monotonic easing, endpoint geometry, object identities, collision planning and
+listener cleanup remain. Reduced motion settles immediately. The CSS response is
+shortened from 420ms to 180ms; it does not gate any interaction. Focus edge lighting
+uses the same blur and palette, with no scaling or layout change.
+
+Local QA measurement/proxy scripts live only in engineering evidence. They are
+not application routes or release files. The controlled reduced-motion fixture
+sets both the JS preference and disables no-preference CSS solely in that proxy;
+it is explicitly distinct from a physical device or OS-level media preference.

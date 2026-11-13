@@ -72,11 +72,15 @@ export function startLabMotion(root: HTMLElement, scene: LabScene, memory: Map<s
       const point = memory.get(id);
       return !point || Object.keys(target).some(key => Math.abs(target[key as keyof MotionPoint] - point[key as keyof MotionPoint]) > .001);
     });
-    const duration = instant || reduced.matches || !changed ? 0 : scene.direction === "atlas" ? 340 : 460;
-    const flights=duration ? planFlights([...targets].map(([id,to])=>{
+    const animated = !instant && !reduced.matches && changed;
+    const flights=animated ? planFlights([...targets].map(([id,to])=>{
       const record=elements.find(record=>record.id===id)!;
       return {id,from:from.get(id)??to,to,width:record.width,height:record.height};
     }).sort((a,b)=>Number(b.id===activeId)-Number(a.id===activeId)),obstacle,room) : [];
+    // One shared deadline for objects, lens and connections. Small gestures settle
+    // sooner; detours receive time proportional to their actual planned distance.
+    const travel = Math.max(0,...flights.filter(flight => flight.to.opacity > 0).map(flight => flight.distance));
+    const duration = !animated ? 0 : scene.direction === "atlas" ? Math.round(Math.min(320,180 + travel * .18)) : 460;
     const began=performance.now();
     const step = (now: number) => {
       if (stopped) return;
