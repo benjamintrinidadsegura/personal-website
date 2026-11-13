@@ -1,5 +1,5 @@
 import { composeUniverseSpace, dragStride, edgeAnchor, universeConnection, mixMotion, visibleContentOpacity, type UniverseScene, type MotionPoint } from "./space";
-import { planFlights, sampleFlight, type Obstacle } from "./choreography";
+import { planFlights, sampleFlight, canAnimateFlights, clearSearchPosition, type Obstacle } from "./choreography";
 
 export type UniverseMotion = { stop: () => void; pan: (x: number) => void; release: () => void; finish: () => void };
 /** Finite, interruptible motion: shared coordinates drive transforms and paths. No frame-time layout reads. */
@@ -7,7 +7,6 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
   if(root.dataset)root.dataset.dragging="false";
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const compact = matchMedia("(max-width: 1199px)");
-  const initial = memory.size === 0;
   const elements = [...root.querySelectorAll<HTMLElement>("[data-universe-object]")].map(element => ({
     id: element.dataset.universeObject!, element,
     button: element.querySelector<HTMLButtonElement>("button")!,
@@ -22,6 +21,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
   let frame = 0, stopped = false, geometry = "", detailBottom = 0;
   let dragFrom: Map<string,MotionPoint> | undefined;
   const dragRoutes = new Map<number,ReturnType<typeof planFlights>>();
+  const safeDragRoutes = new Map<number,boolean>();
   let anchorFrom: MotionPoint | undefined, extentFrom: MotionPoint | undefined, connectionProgress = 1;
   let room={width:0,height:0},obstacle:Obstacle={x:0,y:0,width:0,height:0};
   const activeId=scene.nodes.find(node=>node.index===scene.selectedIndex)?.item.id;
@@ -53,7 +53,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       if (!point) continue;
       const targetOpacity = targets.get(record.id)?.opacity ?? 0;
       if (point.opacity === 0 && targetOpacity === 0 && record.element.style.visibility === "hidden") continue;
-      const opacity = visibleContentOpacity(point.opacity, targetOpacity);
+      const opacity = targetOpacity > 0 ? visibleContentOpacity(point.opacity, targetOpacity) : 0;
       record.element.style.transform = "translate3d(" + point.x + "px," + point.y + "px,0) translate(-50%,-50%) rotate(" + point.turn + "deg) scale(" + point.scale + ")";
       record.element.style.opacity = String(opacity);
       record.element.style.setProperty("--live-scale", String(point.scale));
@@ -68,7 +68,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       const end = edgeAnchor(source, point, record.width * point.scale, record.height * point.scale, point.turn);
       const start = edgeAnchor(point, source, migrating ? extent.x : lensWidth, migrating ? extent.y : lensHeight, migrating ? anchor.turn : 0);
       record.path.setAttribute("d", universeConnection(start, end));
-      record.path.style.opacity = String(point.opacity);
+      record.path.style.opacity = String(targetOpacity > 0 ? point.opacity : 0);
       if (record.id === activeId) {
         root.style.setProperty("--light-x", point.x + "px");
         root.style.setProperty("--light-y", point.y + "px");
@@ -88,12 +88,18 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       const point = memory.get(id);
       return !point || Object.keys(target).some(key => Math.abs(target[key as keyof MotionPoint] - point[key as keyof MotionPoint]) > .001);
     });
-    const animated = !instant && !reduced.matches && changed;
+    // Compact related objects would cross the newly opened Focus copy.
+    // Commit this measured layout together instead of flying through its controls.
+    const compactFocus = scene.focus && compact.matches && scene.nodes.some(node=>node.relation);
+    let animated = !instant && !reduced.matches && changed && !compactFocus;
     if(root.dataset)root.dataset.motionState=animated?"moving":"idle";
     const flights=animated ? planFlights([...targets].filter(([id,to]) => to.opacity > 0 || (from.get(id)?.opacity ?? 0) > 0).map(([id,to])=>{
       const record=elements.find(record=>record.id===id)!;
       return {id,from:from.get(id)??to,to,width:record.width,height:record.visualHeight,offsetY:record.visualOffsetY};
     }).sort((a,b)=>Number(b.id===activeId)-Number(a.id===activeId)),obstacle,room) : [];
+    // Reject unsafe swept geometry before paint; never dim genuine results to mask it.
+    if (animated && !canAnimateFlights(flights, obstacle)) animated = false;
+    if(root.dataset)root.dataset.motionState=animated?"moving":"idle";
     // One shared deadline for objects, lens and connections. Small gestures settle
     // sooner; detours receive time proportional to their actual planned distance.
     const travel = Math.max(0,...flights.filter(flight => flight.to.opacity > 0).map(flight => flight.distance));
@@ -227,15 +233,16 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       if (node) {
         const position = compact.matches ? node.compact : node.desktop;
         const scale = scene.focus ? compact.matches ? node.focusCompactScale : node.focusScale : compact.matches ? node.compactScale : node.scale;
-        const target = { x: bounds.width * position.x / 100, y: compact.matches && scene.focus && node.relation ? detailBottom+100 : scene.canvas ? position.y * bounds.height / (compact.matches ? 640 : 760) : position.y, opacity: compact.matches && node.role === "note" ? 0 : node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
+        let target = { x: bounds.width * position.x / 100, y: compact.matches && scene.focus && node.relation ? detailBottom+100 : scene.canvas ? position.y * bounds.height / (compact.matches ? 640 : 760) : position.y, opacity: compact.matches && node.role === "note" ? 0 : node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
+        if(!scene.focus)target=clearSearchPosition(target,record.width,record.visualHeight,record.visualOffsetY,obstacle,compact.matches);
         targets.set(record.id, target);
-        if (!previous || previous.opacity < .01) memory.set(record.id, initial ? target : { ...target, x: origin.x + (target.x - origin.x) * .88, y: origin.y + (target.y - origin.y) * .88, opacity: 0, scale: .92 });
+        if (!previous || previous.opacity < .01) memory.set(record.id, target);
       } else {
         const base = previous ?? { ...origin, scale: .92, turn: 0, opacity: 0 };
         const target = { ...base, opacity: 0, scale: .92 };
         if (base.opacity > .01) { target.x = origin.x + (base.x - origin.x) * 1.04; target.y = Math.min(bounds.height-35,origin.y + (base.y-origin.y)*1.04); }
         targets.set(record.id,target);
-        if (!previous) memory.set(record.id,target);
+        memory.set(record.id,target);
       }
     }
     animate();
@@ -278,9 +285,10 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
               scale:compact.matches?node.compactScale:node.scale,opacity:compact.matches&&node.role==="note"?0:node.depth,turn:0}:{...from,opacity:0};
             return {id:record.id,from,to,width:record.width,height:record.visualHeight,offsetY:record.visualOffsetY};
           }).filter(flight => flight.from.opacity > 0 || flight.to.opacity > 0);
-          dragRoutes.set(sign,planFlights(flights.sort((a,b)=>Number(b.id===next.item.id)-Number(a.id===next.item.id)),obstacle,room));
+          const routes=planFlights(flights.sort((a,b)=>Number(b.id===next.item.id)-Number(a.id===next.item.id)),obstacle,room);
+          dragRoutes.set(sign,routes);safeDragRoutes.set(sign,canAnimateFlights(routes,obstacle));
         }
-        for(const flight of dragRoutes.get(sign)!)memory.set(flight.id,sampleFlight(flight,progress));
+        if(safeDragRoutes.get(sign))for(const flight of dragRoutes.get(sign)!)memory.set(flight.id,sampleFlight(flight,progress));
       }else{
         const edge=Math.sign(x)*Math.min(14,Math.abs(x)*.08);
         for(const [id,point]of dragFrom)if(!id.startsWith("@"))memory.set(id,{...point,x:point.x+edge});
@@ -289,7 +297,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       draw();
     },
     release() {
-      dragFrom=undefined;dragRoutes.clear();
+      dragFrom=undefined;dragRoutes.clear();safeDragRoutes.clear();
       if(root.dataset)root.dataset.dragging="false";
       root.style.setProperty("--glass-x","24%");
       animate();

@@ -112,3 +112,32 @@ export function sampleFlight(route: ReturnType<typeof planFlights>[number], prog
   p.opacity*=between(route.recess[index],route.recess[index+1],t*steps-index);
   return p;
 }
+
+/** Intent-time swept-envelope gate. Current choices remain readable, so opacity
+ * recess cannot be used as collision clearance. Unsafe paths settle atomically.
+ * No DOM/layout access and no work in the animation frame loop. */
+export function canAnimateFlights(routes: ReturnType<typeof planFlights>, obstacle: Obstacle): boolean {
+  const active=routes.filter(r=>r.to.opacity>0);
+  const overlaps=(a:{left:number;right:number;top:number;bottom:number},b:{left:number;right:number;top:number;bottom:number})=>a.left<b.right+3&&a.right>b.left-3&&a.top<b.bottom+3&&a.bottom>b.top-3;
+  for(let step=0;step<=128;step++){
+    const t=step/128;
+    const bounds=active.map(route=>{const p=at(route,t),hw=route.width*p.scale/2,hh=route.height*p.scale/2,cy=p.y+(route.offsetY??0)*p.scale;return {left:p.x-hw,right:p.x+hw,top:cy-hh,bottom:cy+hh};});
+    const x=between(obstacle.fromX??obstacle.x,obstacle.x,t),y=between(obstacle.fromY??obstacle.y,obstacle.y,t);
+    const lens={left:x,right:x+obstacle.width,top:y,bottom:y+obstacle.height};
+    for(let i=0;i<bounds.length;i++){
+      if(overlaps(bounds[i],lens))return false;
+      for(let j=i+1;j<bounds.length;j++)if(overlaps(bounds[i],bounds[j]))return false;
+    }
+  }
+  return true;
+}
+
+/** Small endpoint clearance for long localized captions, without moving search. */
+export function clearSearchPosition(point: MotionPoint, width: number, height: number, offsetY: number, obstacle: Obstacle, compact: boolean): MotionPoint {
+  const halfW=width*point.scale/2,halfH=height*point.scale/2,cy=point.y+offsetY*point.scale,gap=8;
+  if(point.x+halfW<=obstacle.x-gap || point.x-halfW>=obstacle.x+obstacle.width+gap
+    || cy+halfH<=obstacle.y-gap || cy-halfH>=obstacle.y+obstacle.height+gap)return point;
+  const midX=obstacle.x+obstacle.width/2,midY=obstacle.y+obstacle.height/2;
+  if(compact || Math.abs(point.x-midX)<1)return {...point,y:(cy<midY?obstacle.y-gap-halfH:obstacle.y+obstacle.height+gap+halfH)-offsetY*point.scale};
+  return {...point,x:point.x<midX?obstacle.x-gap-halfW:obstacle.x+obstacle.width+gap+halfW};
+}

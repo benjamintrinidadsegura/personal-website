@@ -153,3 +153,35 @@ test("KI resolves the documented AI concept ahead of a weaker person's name pref
  assert.ok(namePrefix && matches[0].score>namePrefix.score);
  assert.equal(namePrefix.presentation,"suggestion");
 });
+
+test("a public person without an approved portrait keeps name initials instead of inheriting a tool scene",()=>{
+ const Visual=loadSource<{IslandVisual:(props:{item:content.UniverseItem})=>React.ReactElement}>("components/home/universe/island-visual.tsx",{
+ "react/jsx-runtime":jsxRuntime,"next/image":{__esModule:true,default:"img"},"./universe.module.css":{__esModule:true,default:{}},
+ }).IslandVisual;
+ const catalog=content.publicUniverse(discoveryIndex,"de");
+ const person=catalog.find(item=>item.id==="person-kiki-radicke")!;assert.equal(person.image,undefined);
+ const html=renderToStaticMarkup(React.createElement(Visual,{item:person}));
+ assert.match(html,/>KR</);assert.doesNotMatch(html,/<img|<image|context-scenes/);
+ const portrait=catalog.find(item=>item.id==="person-evgeny-vinokurov")!;
+ assert.match(renderToStaticMarkup(React.createElement(Visual,{item:portrait})),/<image/);
+});
+
+test("keyboard navigation to an already selected result restores its focus even when scene identity is unchanged",()=>{
+ for(const locale of locales){
+ const h=hookHarness();let query="";const items=localizeDiscoveryItems(discoveryIndex,locale);
+ const Universe=loadSource<{AdaptiveUniverse:()=>React.ReactElement}>("components/home/universe/adaptive-universe.tsx",{
+ "react/jsx-runtime":jsxRuntime,"react":{...h.hooks,useLayoutEffect:h.hooks.useEffect},"next/link":{__esModule:true,default:"a"},
+ "@/components/discovery/discovery-results":{DiscoveryNavigationStatus:()=>null,isUnmodifiedPrimaryClick:()=>false},
+ "@/components/i18n/locale-context":{useLocale:()=>locale},"@/components/discovery/discovery-context":{useDiscovery:()=>({items,query,matches:discoverItems(items,query),setQuery:(value:string)=>{query=value;},writingStatus:"unavailable"})},
+ "@/data/i18n/adaptive-home":{adaptiveHomeCopy},"@/data/i18n/discovery":{getDiscoveryUiCopy,getGuidedDiscoveryPrompts},"@/lib/discovery-universe/navigation":{canHandoffUniverseLink},"@/lib/discovery-universe/content":content,"@/lib/discovery-universe/space":space,"@/lib/discovery-universe/motion":{startUniverseMotion:()=>assert.fail("No DOM in component fixture")},"./island-visual":{IslandVisual:()=>React.createElement("span")},"./universe.module.css":{__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})},
+ }).AdaptiveUniverse;
+ const tree=h.render(Universe);let focusCount=0;
+ const room=nodes(tree).find(n=>n.props["data-count"]!==undefined)!;
+ (room.props.ref as {current:unknown}).current={querySelector:()=>({focus:()=>focusCount++,querySelector:()=>null})};
+ const matches=content.universeMatches(content.publicUniverse(items,locale),discoverItems(items,query),query);
+ const other=nodes(tree).find(n=>n.props["data-universe-object"]===matches[1].item.id)!;
+ const kiki=nodes(other).find(n=>n.props["data-space-node"]!==undefined)!;
+ (kiki.props.onKeyDown as (e:unknown)=>void)({key:"ArrowLeft",preventDefault(){}});
+ assert.equal(focusCount,1,locale);assert.equal(query,"");h.unmount();
+ }
+});

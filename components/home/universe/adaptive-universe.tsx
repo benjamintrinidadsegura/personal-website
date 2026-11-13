@@ -104,6 +104,15 @@ export function AdaptiveUniverse() {
   const move = (index: number, focus = false) => {
     const item = matches[index]?.item;
     if (!item) return;
+    if (focus && item.id === active?.id) {
+      // Selection can stay unchanged while keyboard focus belongs to another card.
+      if(focusActive){document.getElementById("universe-detail")?.focus();return;}
+      const button=space.current?.querySelector<HTMLButtonElement>('[data-universe-card="'+item.id+'"] button');
+      button?.focus({preventScroll:true});
+      const title=button?.querySelector("strong"),bounds=title?.getBoundingClientRect();
+      if(bounds && typeof innerHeight!=="undefined" && (bounds.top<85 || bounds.bottom>innerHeight-8))title?.scrollIntoView({block:"nearest",behavior:"instant"});
+      return;
+    }
     if (focus && item.id !== active?.id) pendingFocus.current = item.id;
     select(item.id);
   };
@@ -146,6 +155,7 @@ export function AdaptiveUniverse() {
     [copy.related, matches.filter(match=>match.presentation==="related").length],
   ] as const).filter(([,count])=>count>0).map(([label,count])=>label+" · "+count).join(" / ") || ui.noResults : copy.suggestions+" · "+matches.length;
   const category = (kind:UniverseKind) => ui.groups[kindGroup[kind]];
+  const presentationLabel = (value:string | undefined) => value==="suggestion"?copy.suggestions:value==="related"?copy.related:copy.results;
   return <article className={styles.universe} data-adaptive-universe data-focused={focusActive} aria-labelledby="universe-title"
     onKeyDown={event=>{if(focusActive && event.key==="Escape" && !event.defaultPrevented){event.preventDefault();leaveFocus();}}}>
     <header className={styles.topline}><div><p className={styles.prototype}>BTSHQ / Discover</p><h1 id="universe-title">{copy.title}</h1><p className={styles.subtitle}>{copy.subtitle}</p></div></header>
@@ -167,16 +177,16 @@ export function AdaptiveUniverse() {
               {kinds.map(group=>{const kind=Object.keys(kindGroup).find(key=>kindGroup[key as UniverseKind]===group) as UniverseKind;return <button key={group} type="button" aria-pressed={perspective.kind!=="all" && kindGroup[perspective.kind]===group} onClick={()=>{setFocused(false);setPerspective({kind,selectedId:"",selectionQuery:query});}}>{ui.groups[group]}</button>;})}
             </div>
           </details>
-          <div className={styles.resultBar}><details className={styles.resultList} data-universe-list><summary>{copy.list}</summary><ul>{matches.map(({item})=><li key={item.id}><button type="button" onClick={()=>{document.querySelector<HTMLDetailsElement>("[data-universe-list]")?.removeAttribute("open");enterFocus(item.id);}}><span lang={item.language}>{item.title}</span><small>{category(item.kind)}</small></button></li>)}</ul></details><button type="button" onClick={reset}>{copy.reset} ↺</button></div>
+          <div className={styles.resultBar}><details className={styles.resultList} data-universe-list><summary>{copy.list}</summary><ul>{matches.map(({item,presentation})=><li key={item.id}><button type="button" onClick={()=>{document.querySelector<HTMLDetailsElement>("[data-universe-list]")?.removeAttribute("open");enterFocus(item.id);}}><span lang={item.language}>{item.title}</span><small>{category(item.kind)}{query.trim()?" · "+presentationLabel(presentation):""}</small></button></li>)}</ul></details><button type="button" onClick={reset}>{copy.reset} ↺</button></div>
           <p id="universe-status" className={styles.sceneHint} role="status">{resultStatus}</p>
         </section>
         <ul className={styles.nodes} aria-label={ui.resultsLabel}>{catalog.map(item=>{
           const node=scene.nodes.find(node=>node.item.id===item.id), selected=item.id===active?.id, visible=Boolean(node);
-          return <li key={item.id} className={styles.nodePosition} data-universe-object={item.id} data-universe-card={visible?item.id:undefined} data-visible={visible} data-selected={selected} data-kind={item.kind} data-role={node?.role} inert={!visible} aria-hidden={!visible}
+          return <li key={item.id} className={styles.nodePosition} data-universe-object={item.id} data-universe-card={visible?item.id:undefined} data-visible={visible} data-selected={selected} data-kind={item.kind} data-presentation={node?.presentation} data-role={node?.role} inert={!visible} aria-hidden={!visible}
             style={{visibility:visible?"visible":undefined,"--x":node?.desktop.x??50,"--y":node?.desktop.y??0,"--mx":node?.compact.x??50,"--my":node?.compact.y??0,"--s":focusActive?node?.focusScale:node?.scale,"--ms":focusActive?node?.focusCompactScale:node?.compactScale} as CSSProperties}>
             <IslandVisual item={item} featured={selected || node?.role==="feature"}/>
-            <button type="button" data-space-node className={styles.node} aria-label={copy.select+" · "+item.title} aria-pressed={selected} tabIndex={visible?0:-1} aria-hidden={focusActive && selected?true:undefined} onClick={()=>enterFocus(item.id)} onKeyDown={event=>onNodeKey(event,node?.index??0)}>
-              <span className={styles.cardKind}>{category(item.kind)}{item.status!=="Live"?" · "+ui.statuses[item.status]:""}</span><strong lang={item.language}><span>{item.title}</span></strong><span className={styles.nodeFoot}><span>{selected?copy.focus:copy.select}</span><span aria-hidden="true">↗</span></span>
+            <button type="button" data-space-node className={styles.node} aria-label={copy.select+" · "+item.title+(query.trim() && node ? " · "+presentationLabel(node.presentation):"")} aria-pressed={selected} tabIndex={visible?0:-1} aria-hidden={focusActive && selected?true:undefined} onClick={()=>enterFocus(item.id)} onKeyDown={event=>onNodeKey(event,node?.index??0)}>
+              <span className={styles.cardKind}>{category(item.kind)}{item.status!=="Live"?" · "+ui.statuses[item.status]:""}{query.trim() && node ? " · "+presentationLabel(node.presentation):""}</span><strong lang={item.language}><span>{item.title}</span></strong><span className={styles.nodeFoot}><span>{selected?copy.focus:copy.select}</span><span aria-hidden="true">↗</span></span>
             </button>
             {focusActive && node?.relation && active?<span className={styles.connectionCaption}>{sharedUniverseTopics(active,item).slice(0,2).join(" · ")}</span>:null}
           </li>;

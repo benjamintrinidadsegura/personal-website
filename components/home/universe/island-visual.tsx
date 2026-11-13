@@ -9,6 +9,9 @@ export function IslandVisual({ item, featured = false }: { item: UniverseItem; f
     visual = <span className={styles.portraitStory}>
       {item.href.endsWith("/people/evgeny-vinokurov") ? <svg viewBox="164 78 254 258" preserveAspectRatio="xMidYMid slice"><image href={item.image.src} x="0" y="0" width="1280" height="720" /></svg> : <Image src={item.image.src} alt="" fill sizes="180px" loading={featured ? "eager" : "lazy"} className={styles.sceneImage} />}
     </span>;
+  } else if (item.kind === "person") {
+    // No approved portrait: identify the real person without borrowing a tool illustration.
+    visual = <span className={styles.ideaArt}><b>{item.title.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]).join("")}</b></span>;
   } else if (item.kind === "project") {
     visual = <span className={styles.projectArt} data-project-context>
       <span className={styles.projectTopics}>{item.topics.slice(0, 2).join(" · ")}</span>

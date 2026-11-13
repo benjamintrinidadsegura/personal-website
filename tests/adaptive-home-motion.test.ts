@@ -16,7 +16,7 @@ function fixture(reduce = false, compact = false, height = 760) {
   const records = catalog.map(item => ({
     id: item.id, style: {} as Record<string,string>, attrs: {} as Record<string,string>, writes: 0,
     button:{offsetWidth:220,offsetHeight:160,getBoundingClientRect:()=>({top:950,bottom:1110}),scrollIntoView(){reveals++;}},
-    path: { style: {}, setAttribute(key: string,value: string) { records.find(record => record.path === this)!.attrs[key] = value; } },
+    path: { style: {} as Record<string,string>, setAttribute(key: string,value: string) { records.find(record => record.path === this)!.attrs[key] = value; } },
   }));
   for (const record of records) Object.defineProperty(record.style, "setProperty", {
     value: (key: string, value: string) => { record.writes++; record.style[key] = value; },
@@ -50,20 +50,25 @@ function fixture(reduce = false, compact = false, height = 760) {
   return { setWidth:(value:number)=>{width=value;},resize:()=>resizeHandler(),root,search,records,nativeElements,centerStyle,lens,memory,tick,frames,motionModule,setRoomTop:(top:number)=>{roomTop=top;},setActive:(id:string)=>{documentStub.activeElement=records.find(record=>record.id===id)!.button;},reveals:()=>reveals,disconnected: () => disconnected, listeners: () => managedListeners };
 }
 
-test("finite motion is interruptible, preserves the actual intermediate object and path, and cleans listeners",()=>{
- const f=fixture(),matches=f.search();
- f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,matches[0].item.id),f.memory).stop();
- const first=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,matches[1].item.id),f.memory);f.tick(80);
- const id=matches[0].item.id,before={...f.memory.get(id)!},path=f.records.find(record=>record.id===id)!.attrs.d;first.stop();
- const second=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,matches[2].item.id),f.memory);
- assert.deepEqual(f.memory.get(id),before);assert.equal(f.records.find(record=>record.id===id)!.attrs.d,path);f.tick(1000);assert.equal(f.frames.size,0);second.stop();assert.equal(f.listeners(),0);
+test("finite safe motion is interruptible, preserves the actual intermediate object and path, and cleans listeners",()=>{
+ const f=fixture(),matches=f.search().slice(0,1),id=matches[0].item.id;
+ const origin=composeUniverseSpace(matches,id);origin.nodes[0].desktop={x:20,y:120,scale:1};
+ f.motionModule.startUniverseMotion(f.root,origin,f.memory).stop();
+ const atY=(y:number)=>({...origin,nodes:origin.nodes.map(node=>({...node,desktop:{...node.desktop,y}}))});
+ const first=f.motionModule.startUniverseMotion(f.root,atY(180),f.memory);f.tick(80);
+ const before={...f.memory.get(id)!},path=f.records.find(record=>record.id===id)!.attrs.d;
+ assert.ok(before.y>120&&before.y<180);assert.ok(f.frames.size>0);first.stop();
+ const second=f.motionModule.startUniverseMotion(f.root,atY(240),f.memory);
+ assert.deepEqual(f.memory.get(id),before);assert.equal(f.records.find(record=>record.id===id)!.attrs.d,path);
+ f.tick(1000);assert.equal(f.frames.size,0);second.stop();assert.equal(f.listeners(),0);
 });
+
 test("reduced motion applies complete scene endpoints synchronously and keeps no frame loop",()=>{
  const f=fixture(true),matches=f.search();const current=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,matches[1].item.id),f.memory);assert.equal(f.frames.size,0);assert.ok([...f.memory.values()].every(point=>Number.isFinite(point.x)&&Number.isFinite(point.y)));current.stop();assert.equal(f.listeners(),0);
 });
-test("direct scrubbing reverses to the original coordinates and shares geometry with connections",()=>{
+test("unsafe scrubbing holds readable geometry and reverses without painting a collision",()=>{
  const f=fixture(),matches=f.search(),id=matches[0].item.id;const current=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,id),f.memory),before={...f.memory.get(id)!};
- current.pan(-100);assert.notDeepEqual(f.memory.get(id),before);assert.ok(f.records.find(record=>record.id===id)!.attrs.d.startsWith("M "));current.pan(0);assert.deepEqual(f.memory.get(id),before);current.release();current.stop();assert.equal(f.frames.size,0);
+ current.pan(-100);assert.deepEqual(f.memory.get(id),before);assert.ok(f.records.find(record=>record.id===id)!.attrs.d.startsWith("M "));current.pan(0);assert.deepEqual(f.memory.get(id),before);current.release();current.stop();assert.equal(f.frames.size,0);
 });
 test("a hidden Discover scene does no animation work or geometry writes and recovers when Explore returns",()=>{
  const f=fixture(),matches=f.search(),id=matches[0].item.id;
@@ -73,12 +78,14 @@ test("a hidden Discover scene does no animation work or geometry writes and reco
 
 
 test("a mode switch mid-flight resumes to the endpoint even when the revealed scene has identical geometry",()=>{
- const f=fixture(),matches=f.search();
- f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,matches[0].item.id),f.memory).stop();
- const scene=composeUniverseSpace(matches,matches[1].item.id);
+ const f=fixture(),matches=f.search().slice(0,1);
+ const original=composeUniverseSpace(matches,matches[0].item.id);
+ original.nodes[0].desktop={x:20,y:120,scale:1};
+ f.motionModule.startUniverseMotion(f.root,original,f.memory).stop();
+ const scene={...original,nodes:original.nodes.map(node=>({...node,desktop:{...node.desktop,y:180}}))};
  const current=f.motionModule.startUniverseMotion(f.root,scene,f.memory);
  f.tick(80);assert.ok(f.frames.size>0);
- const id=matches[1].item.id,before={...f.memory.get(id)!};
+ const id=matches[0].item.id,before={...f.memory.get(id)!};
  f.setWidth(0);f.resize();assert.equal(f.frames.size,0);assert.deepEqual(f.memory.get(id),before);assert.equal(f.root.dataset.motionState,"idle");
  f.setWidth(1200);f.resize();assert.ok(f.frames.size>0,"identical returning geometry must restart the cancelled flight");
  f.tick(1000);assert.equal(f.frames.size,0);assert.equal(f.root.dataset.motionState,"idle");
@@ -113,4 +120,27 @@ test("settled invisible choices receive no per-frame visual writes and return wh
  f.tick(80);f.tick(120);assert.equal(hidden.writes,before);moving.stop();
  const revealed=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,hidden.id),f.memory);
  f.tick(1000);assert.equal(hidden.style.visibility,"visible");assert.ok(Number(hidden.style.opacity)>=.9);revealed.stop();
+});
+
+test("a search removes retired objects before new choices paint, including interrupted reentry",()=>{
+ const f=fixture(),all=f.search();
+ f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(all,all[0].item.id),f.memory).stop();
+ const retired=all[0].item.id,subset=all.slice(1,3);
+ const current=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(subset,subset[0].item.id),f.memory);
+ const record=f.records.find(r=>r.id===retired)!;
+ assert.equal(record.style.visibility,"hidden");assert.equal(record.style.pointerEvents,"none");assert.equal(record.path.style.opacity,"0");
+ assert.equal(f.nativeElements.find(r=>r.dataset.universeObject===retired)!.inert,true);
+ current.stop();
+ const returned=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(all,retired),f.memory);
+ assert.equal(record.style.visibility,"visible");assert.ok(Number(record.style.opacity)>=.9);returned.stop();
+});
+
+test("compact Focus commits related content below the reading controls before animation can cross them",()=>{
+ const f=fixture(false,true),matches=f.search(),id="tool-life-alignment";
+ f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,id),f.memory).stop();
+ const scene=composeUniverseSpace(matches,id,true);assert.ok(scene.nodes.some(node=>node.relation));
+ const focused=f.motionModule.startUniverseMotion(f.root,scene,f.memory);
+ assert.equal(f.root.dataset.motionState,"idle");assert.equal(f.frames.size,0);
+ for(const node of scene.nodes)assert.ok(f.memory.get(node.item.id)!.opacity>=.86);
+ focused.stop();assert.equal(f.listeners(),0);
 });

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { discoverItems } from "../lib/discovery";
 import { visibleContentOpacity } from "../lib/discovery-universe/space";
-import { planFlights, sampleFlight } from "../lib/discovery-universe/choreography";
+import { planFlights, sampleFlight, canAnimateFlights, clearSearchPosition } from "../lib/discovery-universe/choreography";
 import type { DiscoveryItem } from "../types/discovery";
 
 test("active content has a visibility floor while retired content can leave the scene", () => {
@@ -45,4 +45,27 @@ test("a portrait silhouette travels around the centered search without extending
     assert.equal(overlaps, false, `portrait crosses search at ${i}%`);
     assert.ok(p.y >= 165 && p.y <= 760 - 135);
   }
+});
+
+test("readable swept paths are accepted only when they clear other content and search, even at interrupted starts",()=>{
+ const point=(x:number,y:number)=>({x,y,opacity:1,scale:1,turn:0});
+ const obstacle={x:400,y:300,width:400,height:160};
+ const safe=planFlights([{id:"public-a",from:point(120,100),to:point(220,100),width:100,height:100}],obstacle,{width:1200,height:760});
+ assert.equal(canAnimateFlights(safe,obstacle),true);
+ const interrupted=planFlights([{id:"public-a",from:point(120,100),to:point(220,100),width:100,height:100},{id:"public-b",from:point(120,100),to:point(1000,100),width:100,height:100}],obstacle,{width:1200,height:760});
+ assert.equal(canAnimateFlights(interrupted,obstacle),false);
+ const onSearch=planFlights([{id:"public-a",from:point(500,350),to:point(200,100),width:100,height:100}],obstacle,{width:1200,height:760});
+ assert.equal(canAnimateFlights(onSearch,obstacle),false);
+});
+
+test("a long caption clears the 1280px search edge without moving the search or clipping genuine results",()=>{
+ const point={x:303.6,y:165,scale:1,turn:0,opacity:1},lens={x:442.5,y:314,width:380,height:218};
+ const corrected=clearSearchPosition(point,300,346,3,lens,false);
+ assert.equal(corrected.x+150,lens.x-8);assert.equal(corrected.y,point.y);
+ assert.deepEqual(clearSearchPosition(corrected,300,346,3,lens,false),corrected);
+ assert.equal(lens.x,442.5);
+ const route=planFlights([{id:"clear-caption",from:corrected,to:corrected,width:300,height:346,offsetY:3}],lens,{width:1265,height:780});
+ assert.equal(canAnimateFlights(route,lens),true,"a real 8px gap is safe even inside the planner's decorative detour margin");
+ const mobile=clearSearchPosition({...point,x:160,y:240},260,280,-30,{x:20,y:250,width:280,height:180},true);
+ assert.equal(mobile.x,160);assert.ok(mobile.y-30+140<=242);
 });
