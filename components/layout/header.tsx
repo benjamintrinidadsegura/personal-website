@@ -144,7 +144,7 @@ export function Header({ accountState }: { accountState: AccountState }) {
 
   return (
     <header data-scroll-lock-compensate className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#04111b]/88 backdrop-blur-xl">
-      <div className="mx-auto flex h-20 max-w-[90rem] items-center gap-2 px-5 sm:px-8 lg:grid lg:grid-cols-[auto_minmax(8rem,20rem)_auto_auto_auto] lg:gap-2 xl:gap-4">
+      <div className="mx-auto flex h-20 max-w-[110rem] items-center gap-2 px-5 sm:px-8 lg:grid lg:grid-cols-[auto_minmax(8rem,20rem)_auto_auto_auto] lg:gap-2 xl:gap-4">
         <Link href={localizedHref("/#home")} className="mr-auto flex shrink-0 items-center gap-3 text-lg font-black tracking-tight lg:mr-0" aria-label={copy.homeLabel}>
           <span className="grid h-8 w-8 place-items-center rounded-full border border-[#35d0e5]/40 text-[10px] tracking-widest text-[#35d0e5]">BTS</span>
           <span>Digital HQ</span>

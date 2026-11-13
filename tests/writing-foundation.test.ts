@@ -415,9 +415,10 @@ test("Writing Studio polish keeps writing primary and secondary settings compact
 test("root layout still composes published Writing and suppresses only placeholders", () => {
   const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
   assert.equal(layout.includes("publishedWriting.length > 0"), true);
+  assert.ok(layout.includes("const publishedWriting = writingResult.data"));
   assert.equal(layout.includes("!item.id.match(/^writing-\\d+$/u)"), true);
   assert.equal(layout.includes("createPublishedWritingDiscoveryItems(publishedWriting)"), true);
-  assert.equal(layout.includes("<DiscoveryProvider items={discoveryItems}>"), true);
+  assert.equal(layout.includes("<DiscoveryProvider items={discoveryItems} writingStatus={writingResult.status}>"), true);
 });
 
 test("server action payload remains bounded and no raw HTML rendering is introduced", () => {

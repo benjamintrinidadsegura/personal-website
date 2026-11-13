@@ -145,6 +145,18 @@ export const discoveryDimensionsByItemId: Readonly<Record<string, DiscoveryDimen
  * the canonical term. Canonical terms are never expanded again.
  */
 export const discoverySynonymGroups: readonly DiscoverySynonymGroup[] = [
+  // AI is already indexed on the public About page; translate the concept, not a demo query.
+  { id: "artificial-intelligence", canonical: "AI", aliases: [
+    { value: "KI", match: "token" }, { value: "künstliche Intelligenz", match: "phrase" },
+    { value: "artificial intelligence", match: "phrase" },
+  ] },
+  // Public Life Alignment overview describes life direction; these are navigation aliases,
+  // never a conclusion about a visitor's circumstances or assessment results.
+  { id: "life-overview", canonical: "Life Alignment", aliases: [
+    { value: "leben", match: "token" }, { value: "life", match: "token" },
+    { value: "Lebensausrichtung", match: "token" },
+  ] },
+
   {
     id: "recruiting",
     canonical: "Recruiting",

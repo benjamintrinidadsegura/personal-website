@@ -367,7 +367,7 @@ export function WorldMapExperience({ geometry }: { geometry: WorldMapGeometry })
 
   return (
     <div className="section-lines relative overflow-hidden px-4 pb-24 pt-28 sm:px-8 sm:pt-36">
-      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[62rem] bg-[radial-gradient(circle_at_72%_12%,rgba(53,208,229,0.15),transparent_34rem),radial-gradient(circle_at_12%_38%,rgba(255,122,0,0.09),transparent_25rem)]" />
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[62rem] bg-[radial-gradient(circle_at_72%_12%,rgba(53,208,229,0.15),transparent_34rem),radial-gradient(circle_at_12%_38%,rgba(40,107,194,0.12),transparent_25rem)]" />
       <div className="relative mx-auto max-w-[90rem]">
         <nav aria-label={copy.breadcrumb} className="font-mono text-xs text-slate-400"><ol className="flex items-center gap-2"><li><Link href={href("/")} className="inline-flex min-h-11 items-center hover:text-white">Digital HQ</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="text-[#35d0e5]">{copy.breadcrumb}</li></ol></nav>
 

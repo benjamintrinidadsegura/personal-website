@@ -1,13 +1,19 @@
 "use client";
 
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 
 import { ContextCanvas } from "@/components/discovery/context-canvas";
 import { useLocale } from "@/components/i18n/locale-context";
 import { homeViewsCopy } from "@/data/i18n/home-views";
 import { connectHomeViews } from "@/lib/home-view";
 
+const subscribeView = (listener: () => void) => {
+  document.addEventListener("btshq:home-view", listener); document.addEventListener("change", listener);
+  return () => { document.removeEventListener("btshq:home-view", listener); document.removeEventListener("change", listener); };
+};
+const viewSnapshot = () => Boolean(document.querySelector<HTMLInputElement>('#home-view-explore:checked'));
 export function HomeViews({ discover, explore, bootstrap }: { discover: ReactNode; explore: ReactNode; bootstrap: ReactNode }) {
+  const exploreActive = useSyncExternalStore(subscribeView, viewSnapshot, () => false);
   const root = useRef<HTMLDivElement>(null);
   const copy = homeViewsCopy[useLocale()];
 
@@ -32,7 +38,7 @@ export function HomeViews({ discover, explore, bootstrap }: { discover: ReactNod
         </fieldset>
         {bootstrap}
       </div>
-      <ContextCanvas>
+      <ContextCanvas enabled={exploreActive}>
         <div id="home-discover-panel" data-home-panel="discover" role="region" aria-label={`Discover — ${copy.discoverDescription}`}>
           {discover}
         </div>

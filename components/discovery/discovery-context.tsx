@@ -11,6 +11,8 @@ import { revealHomeAnchor } from "@/lib/home-view";
 import type { AdaptiveDiscoveryView, DiscoveryGroup, DiscoveryItem, DiscoveryMatch } from "@/types/discovery";
 
 interface DiscoveryContextValue {
+  items: DiscoveryItem[];
+  writingStatus: "data" | "unavailable";
   query: string;
   setQuery: (query: string) => void;
   matches: DiscoveryMatch[];
@@ -43,7 +45,7 @@ function isCurrentLocation(targetHref: string) {
 
 const DiscoveryContext = createContext<DiscoveryContextValue | null>(null);
 
-export function DiscoveryProvider({ children, items = discoveryIndex }: { children: ReactNode; items?: DiscoveryItem[] }) {
+export function DiscoveryProvider({ children, items = discoveryIndex, writingStatus = "data" }: { children: ReactNode; items?: DiscoveryItem[]; writingStatus?: "data" | "unavailable" }) {
   const locale = useLocale();
   const pathname = usePathname();
   const [query, setQueryState] = useState("");
@@ -189,6 +191,8 @@ export function DiscoveryProvider({ children, items = discoveryIndex }: { childr
   const adaptiveView = useMemo(() => createAdaptiveDiscoveryView(matches, selectedMatchId), [matches, selectedMatchId]);
   const value = useMemo(
     () => ({
+      items: localizedItems,
+      writingStatus,
       query,
       setQuery,
       matches,
@@ -203,7 +207,7 @@ export function DiscoveryProvider({ children, items = discoveryIndex }: { childr
       settleCanvasNavigation,
       clearDiscovery,
     }),
-    [adaptiveView, beginCanvasNavigation, canvasNavigation, clearDiscovery, groups, matches, overlayOpen, query, selectMatch, selectedMatchId, setQuery, settleCanvasNavigation],
+    [localizedItems, writingStatus, adaptiveView, beginCanvasNavigation, canvasNavigation, clearDiscovery, groups, matches, overlayOpen, query, selectMatch, selectedMatchId, setQuery, settleCanvasNavigation],
   );
 
   return <DiscoveryContext.Provider value={value}>{children}</DiscoveryContext.Provider>;

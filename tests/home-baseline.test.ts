@@ -34,6 +34,8 @@ async function home(locale: Locale, result: PublishedWritingReadResult) {
   const dependencies: Record<string, unknown> = {
     "react/jsx-runtime": jsxRuntime,
     "@/components/home/home-views": { HomeViews: () => null },
+    "@/components/home/universe/adaptive-universe": { AdaptiveUniverse: () => null },
+    "@/components/home/daily-welcome": { DailyWelcome: () => null },
     "@/components/home/discover-home": { DiscoverHome: () => null },
     "@/lib/home-view": homeView,
     "@/lib/i18n/server": { getLocale: async () => locale },
@@ -44,7 +46,10 @@ async function home(locale: Locale, result: PublishedWritingReadResult) {
     dependencies[`@/components/${name === "HomeQuote" ? "quotes" : "sections"}/${filename}`] = { [name]: sections[name] };
   }
   const page = loadSource<{ default: () => Promise<ReactElement<{ discover: ReactElement<{ locale: Locale; publishedWritingResult: PublishedWritingReadResult; dateKey: string }>; explore: ReactElement<{ children: ReactElement[] }> }>>; revalidate: number }>("app/page.tsx", dependencies);
-  return { page, sections, tree: await page.default() };
+  const wrapper = await page.default() as unknown as ReactElement<{ children: ReactElement[] }>;
+  const [welcome, tree] = wrapper.props.children;
+  assert.equal((welcome.props as {article?:PublicWritingSummary}).article, result.data[0]);
+  return { page, sections, tree: tree as unknown as Awaited<ReturnType<typeof page.default>> };
 }
 
 test("home preserves the complete Explore section order and shares the same localized Writing snapshot", async () => {
@@ -61,9 +66,10 @@ test("home preserves the complete Explore section order and shares the same loca
       assert.equal(writing.props.publishedWritingStatus, result.status);
       const quote = children[1] as ReactElement<{ dateKey: string }>;
       assert.match(quote.props.dateKey, /^\d{4}-\d{2}-\d{2}$/u);
-      assert.equal(tree.props.discover.props.locale, locale);
-      assert.equal(tree.props.discover.props.publishedWritingResult, result, "Discover must receive the same public snapshot without another query");
-      assert.equal(tree.props.discover.props.dateKey, quote.props.dateKey, "both views must use one UTC date key");
+      const discover = (tree.props.discover.props as unknown as {children:ReactElement[]}).children[1] as typeof tree.props.discover;
+      assert.equal(discover.props.locale, locale);
+      assert.equal(discover.props.publishedWritingResult, result, "Discover must receive the same public snapshot without another query");
+      assert.equal(discover.props.dateKey, quote.props.dateKey, "both views must use one UTC date key");
     }
   }
 });

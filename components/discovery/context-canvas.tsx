@@ -32,10 +32,10 @@ function DiscoveryCanvasSurface({ overlayOpen }: { overlayOpen: boolean }) {
   );
 }
 
-export function ContextCanvas({ children }: { children: ReactNode }) {
+export function ContextCanvas({ children, enabled = true }: { children: ReactNode; enabled?: boolean }) {
   const { query, overlayOpen } = useDiscovery();
   const reduceMotion = useReducedMotion();
-  const discoveryActive = Boolean(query.trim());
+  const discoveryActive = enabled && Boolean(query.trim());
 
   return (
     <>

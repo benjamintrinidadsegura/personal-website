@@ -26,6 +26,7 @@ function viewInput(root: HTMLElement, view: HomeView) {
 export function selectHomeView(root: HTMLElement, view: HomeView): void {
   const input = viewInput(root, view);
   if (input) input.checked = true;
+  root.dispatchEvent?.(new Event("btshq:home-view", { bubbles: true }));
 }
 
 /** Reveal before measuring, scrolling or focusing. Anchor navigation never saves a preference. */

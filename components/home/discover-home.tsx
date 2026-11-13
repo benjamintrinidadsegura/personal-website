@@ -37,7 +37,7 @@ export function DiscoverHome({ locale, publishedWritingResult, dateKey }: {
       <section id="discover-featured" aria-labelledby="discover-title" className="discover-featured">
         <header className="discover-section-heading">
           <p className="discover-eyebrow">BTSHQ / Discover</p>
-          <h1 id="discover-title">{copy.featured}</h1>
+          <h2 id="discover-title">{copy.featured}</h2>
         </header>
         <div className="discover-featured-grid">
           {article ? (

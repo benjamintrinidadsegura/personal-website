@@ -71,25 +71,32 @@ export const discoveryGroupOrder: DiscoveryGroup[] = [
 
 export const adaptiveDiscoveryGroupLimit = 4;
 
-/** Normalizes user-authored content for locale-aware, case-insensitive matching. */
+/** Display/reason normalization retains the established spelling contract. */
 export function normalizeDiscoveryText(value: string): string {
   return value.normalize("NFKC").toLocaleLowerCase("de-DE").trim().replace(/\s+/gu, " ");
 }
 
+/** Normalizes user-authored content for locale-aware, case-insensitive matching. */
+export function normalizeSearchText(value: string): string {
+  return value.slice(0, 2000).normalize("NFKC").toLocaleLowerCase("de-DE")
+    .replaceAll("ä", "ae").replaceAll("ö", "oe").replaceAll("ü", "ue").replaceAll("ß", "ss")
+    .normalize("NFKD").replace(/\p{M}/gu, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim().replace(/\s+/gu, " ");
+}
+
 function tokenizeDiscoveryText(value: string): string[] {
-  return normalizeDiscoveryText(value)
+  return normalizeSearchText(value)
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .split(" ")
     .filter(Boolean);
 }
 
-const normalizedNeutralTerms = new Set(discoveryNeutralTerms.map(normalizeDiscoveryText));
+const normalizedNeutralTerms = new Set(discoveryNeutralTerms.map(normalizeSearchText));
 
 function uniqueTerms(terms: QueryTerm[]): QueryTerm[] {
   const seen = new Set<string>();
 
   return terms.filter((term) => {
-    const key = `${term.kind}:${normalizeDiscoveryText(term.value)}`;
+    const key = `${term.kind}:${normalizeSearchText(term.value)}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -106,7 +113,7 @@ function includesTokenPhrase(tokens: string[], phrase: string): boolean {
 }
 
 function analyzeDiscoveryQuery(query: string): DiscoveryQueryAnalysis {
-  const normalizedQuery = normalizeDiscoveryText(query);
+  const normalizedQuery = normalizeSearchText(query);
   const tokens = tokenizeDiscoveryText(normalizedQuery);
   const meaningfulTokens = tokens.filter((token) => !normalizedNeutralTerms.has(token));
   const meaningfulPhrase = meaningfulTokens.join(" ");
@@ -138,15 +145,19 @@ function analyzeDiscoveryQuery(query: string): DiscoveryQueryAnalysis {
 
   const synonymTerms = relationshipTerms.length > 0 ? [] : uniqueTerms(discoverySynonymGroups.flatMap((group) => {
     const matchingAlias = group.aliases.find((alias) => {
-      const normalizedAlias = normalizeDiscoveryText(alias.value);
+      const normalizedAlias = normalizeSearchText(alias.value);
+      // A single unfinished word can suggest a documented alias. It stays below
+      // genuine descriptive evidence; aliases never recursively expand.
+      if (tokens.length === 1 && tokens[0].length >= 3 && normalizedAlias.startsWith(tokens[0])) return true;
       if (alias.match === "whole-query") return meaningfulPhrase === normalizedAlias;
       if (alias.match === "phrase") return includesTokenPhrase(tokens, normalizedAlias);
       return tokens.includes(normalizedAlias);
     });
 
     if (!matchingAlias) return [];
-    const aliasConcepts = tokenizeDiscoveryText(matchingAlias.value);
-    return [{ value: group.canonical, kind: "synonym" as const, score: SYNONYM_SCORE, concepts: aliasConcepts }];
+    const progressive = tokens.length === 1 && normalizeSearchText(matchingAlias.value) !== tokens[0] && normalizeSearchText(matchingAlias.value).startsWith(tokens[0]);
+    const aliasConcepts = progressive ? tokens : tokenizeDiscoveryText(matchingAlias.value);
+    return [{ value: group.canonical, kind: "synonym" as const, score: progressive ? 85 : SYNONYM_SCORE, concepts: aliasConcepts }];
   }));
 
   return {
@@ -157,26 +168,29 @@ function analyzeDiscoveryQuery(query: string): DiscoveryQueryAnalysis {
   };
 }
 
-function matchesSearchTerm(value: string, term: string): boolean {
-  const normalizedValue = normalizeDiscoveryText(value);
-  const normalizedTerm = normalizeDiscoveryText(term);
-  if (!normalizedTerm) return false;
-
-  if (tokenizeDiscoveryText(normalizedTerm).length > 1 || normalizedTerm.length > 2) {
-    return normalizedValue.includes(normalizedTerm);
-  }
-
-  return tokenizeDiscoveryText(normalizedValue).includes(normalizedTerm);
+/** Strong whole-word/phrase evidence stays above progressive prefixes and substrings. */
+function termStrength(value: string, term: string): "exact" | "prefix" | "partial" | null {
+  const words=tokenizeDiscoveryText(value), terms=tokenizeDiscoveryText(term);
+  if (!terms.length) return null;
+  if (includesTokenPhrase(words, term)) return "exact";
+  if (words.some((_, start) => terms.every((word, index) => {
+    const candidate=words[start+index];
+    return candidate && (index===terms.length-1 ? candidate.startsWith(word) : candidate===word);
+  }))) return "prefix";
+  // Bounded partials are useful within long compound words, never arbitrary K/IT/HR fragments.
+  if (terms.length===1 && terms[0].length>=4 && words.some(word=>word.includes(terms[0]))) return "partial";
+  return null;
 }
-
+function matchesSearchTerm(value: string, term: string): boolean {
+  return termStrength(value, term)==="exact";
+}
 function titleMatchScore(title: string, term: string): number {
-  const normalizedTitle = normalizeDiscoveryText(title);
-  const normalizedTerm = normalizeDiscoveryText(term);
+  const normalizedTitle=normalizeSearchText(title), normalizedTerm=normalizeSearchText(term);
   if (!normalizedTerm) return 0;
-  if (normalizedTitle === normalizedTerm) return TITLE_EXACT_SCORE;
-  if (normalizedTitle.startsWith(normalizedTerm)) return TITLE_PREFIX_SCORE;
-  if (normalizedTerm.length > 2 && normalizedTitle.includes(normalizedTerm)) return TITLE_SCORE;
-  return 0;
+  if (normalizedTitle===normalizedTerm) return TITLE_EXACT_SCORE;
+  const strength=termStrength(title,term);
+  if (strength==="exact") return normalizedTitle.startsWith(normalizedTerm)?TITLE_PREFIX_SCORE:TITLE_SCORE;
+  return strength==="prefix"?70:strength==="partial"?30:0;
 }
 
 function getSearchableFields(item: DiscoveryItem): SearchableField[] {
@@ -199,7 +213,13 @@ function getSearchableFields(item: DiscoveryItem): SearchableField[] {
 
 function directFieldScore(field: SearchableField, term: string): number {
   if (field.source === "title") return titleMatchScore(field.value, term);
-  if (!matchesSearchTerm(field.value, term)) return 0;
+  const strength=termStrength(field.value, term);
+  if (!strength) return 0;
+  if (strength!=="exact") {
+    if (field.source==="description" && normalizeSearchText(term).length<3) return 0;
+    if (activeDiscoveryDimensions.includes(field.source as ActiveDiscoveryDimension) && normalizeSearchText(term).length<3) return 0;
+    return strength==="prefix"?60:20;
+  }
   if (field.source === "category") return CATEGORY_SCORE;
   if (field.source === "tag" || field.source === "keyword") return TAG_OR_KEYWORD_SCORE;
   if (field.source === "description") return DESCRIPTION_SCORE;
@@ -225,7 +245,8 @@ function collectSignals(item: DiscoveryItem, analysis: DiscoveryQueryAnalysis): 
         ...field,
         kind: term.kind,
         matchedTerm: term.value,
-        score: term.score,
+        score: term.score <= 90 && (field.source !== "title" || normalizeSearchText(field.value) !== normalizeSearchText(term.value))
+          ? Math.min(65, term.score) : term.score,
         concepts: term.concepts,
       });
     }
@@ -279,14 +300,16 @@ function getMatch(item: DiscoveryItem, analysis: DiscoveryQueryAnalysis): Discov
   for (const signal of sortedSignals) {
     const reason = createReason(signal);
     if (!reason) continue;
-    const reasonKey = normalizeDiscoveryText(reason.displayValue);
+    const reasonKey = normalizeSearchText(reason.displayValue);
     if (reasonKeys.has(reasonKey)) continue;
     reasonKeys.add(reasonKey);
     reasons.push(reason);
     if (reasons.length === MAX_MATCH_REASONS) break;
   }
 
-  return { item, score: strongestScore + coverageBonus, reasons };
+  const requestedConcepts = new Set(analysis.directTerms.flatMap(term=>term.concepts));
+  const presentation = analysis.relationshipTerms.length===0 && [...requestedConcepts].some(concept=>!matchedConcepts.has(concept)) ? "related" : strongestScore <= 90 ? "suggestion" : "match";
+  return { item, score: strongestScore <= 90 ? Math.min(90, strongestScore + coverageBonus) : strongestScore + coverageBonus, reasons, presentation };
 }
 
 /**

@@ -263,5 +263,6 @@ export function createPublishedWritingDiscoveryItems(articles: PublicWritingSumm
     keywords: [article.deck, "Artikel", "Gedanken"].filter(Boolean),
     status: "Live",
     href: `/writing/${article.slug}`,
+    contentLanguage: article.language,
   }));
 }

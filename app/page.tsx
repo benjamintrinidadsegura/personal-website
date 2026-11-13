@@ -1,3 +1,5 @@
+import { AdaptiveUniverse } from "@/components/home/universe/adaptive-universe";
+import { DailyWelcome } from "@/components/home/daily-welcome";
 import { HomeViews } from "@/components/home/home-views";
 import { DiscoverHome } from "@/components/home/discover-home";
 import { About } from "@/components/sections/about";
@@ -22,8 +24,10 @@ export default async function Home() {
   const publishedWriting = publishedWritingResult.data;
   const dateKey = new Date().toISOString().slice(0, 10);
   return (
+    <>
+    <DailyWelcome dateKey={dateKey} article={publishedWriting[0]} />
     <HomeViews bootstrap={<script dangerouslySetInnerHTML={{ __html: homeViewBootstrap }} />}
-      discover={<DiscoverHome locale={locale} publishedWritingResult={publishedWritingResult} dateKey={dateKey} />}
+      discover={<><AdaptiveUniverse /><DiscoverHome locale={locale} publishedWritingResult={publishedWritingResult} dateKey={dateKey} /></>}
       explore={<>
       <Hero anchorId="explore-home" />
       <HomeQuote dateKey={dateKey} />
@@ -36,5 +40,6 @@ export default async function Home() {
       <Feedback />
       <Contact />
     </>} />
+    </>
   );
 }

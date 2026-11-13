@@ -282,6 +282,6 @@ export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: 
         tags: item.tags.map((tag) => pulseCopy.sourceLabels[tag as keyof typeof pulseCopy.sourceLabels] ?? tag),
       };
     }
-    return { ...localized, href: localized.href ? localizeHref(localized.href, locale) : undefined };
+    return { ...localized, href: localized.href ? localizeHref(localized.href, item.contentLanguage ?? locale) : undefined };
   });
 }

@@ -499,12 +499,12 @@ test("context canvas stays homepage-local while the root layout remains server-r
   const scrollLock = readFileSync(new URL("../lib/scroll-lock.ts", import.meta.url), "utf8");
 
   assert.equal(layout.startsWith('"use client"'), false);
-  assert.equal(layout.includes("<DiscoveryProvider items={discoveryItems}>"), true);
+  assert.equal(layout.includes("<DiscoveryProvider items={discoveryItems} writingStatus={writingResult.status}>"), true);
   assert.equal(layout.includes("<ContextCanvas"), false);
   assert.ok(page.includes("<HomeViews"));
   assert.ok(page.indexOf('<Hero anchorId="explore-home" />') < page.indexOf("<HqPulse publishedWriting={publishedWriting} />"));
-  assert.equal((views.match(/<ContextCanvas>/gu) ?? []).length, 1);
-  assert.ok(views.indexOf("<ContextCanvas>") < views.indexOf("{explore}"));
+  assert.equal((views.match(/<ContextCanvas enabled=\{exploreActive\}>/gu) ?? []).length, 1);
+  assert.ok(views.indexOf("<ContextCanvas enabled={exploreActive}>") < views.indexOf("{explore}"));
   assert.ok(views.indexOf("{explore}") < views.indexOf("</ContextCanvas>"));
   assert.equal(context.includes("localizeDiscoveryItems(items, locale)"), true);
   assert.equal(context.includes("discoverItems(localizedItems, query)"), true);

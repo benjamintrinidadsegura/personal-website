@@ -68,7 +68,7 @@ export function LifeAlignmentHub() {
     const localizeHref = useLocalizedHref();
     const { hub: lifeAlignmentHub, available: availableLifeAlignmentModules, future: futureLifeAlignmentModules } = getLifeAlignmentHubContent(locale);
     return (<article className="section-lines relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36">
-      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[58rem] bg-[radial-gradient(circle_at_82%_12%,rgba(245,185,113,0.15),transparent_28rem),radial-gradient(circle_at_15%_34%,rgba(116,216,200,0.08),transparent_24rem),radial-gradient(circle_at_58%_60%,rgba(185,165,255,0.07),transparent_24rem)]"/>
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[58rem] bg-[radial-gradient(circle_at_82%_12%,rgba(83,151,224,0.15),transparent_28rem),radial-gradient(circle_at_15%_34%,rgba(116,216,200,0.08),transparent_24rem),radial-gradient(circle_at_58%_60%,rgba(185,165,255,0.07),transparent_24rem)]"/>
 
       <div className="relative mx-auto max-w-[90rem]">
         <nav aria-label={lifeUiValue(locale, "Breadcrumb", "Brotkrümelnavigation")} className="font-mono text-xs text-slate-400">

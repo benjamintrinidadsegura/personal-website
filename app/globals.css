@@ -23,14 +23,14 @@
 }
 
 /* Discover is a server-rendered editorial view, with one small existing quote island. */
-.discover-editorial { max-width: 84rem; margin-inline: auto; padding: 2.5rem 1.25rem 5rem; color: #f8fafc; }
+.discover-editorial { max-width: 100rem; margin-inline: auto; padding: 2.5rem 1.25rem 5rem; color: #f8fafc; }
 .discover-editorial a:focus-visible { outline: 2px solid #73e3f1; outline-offset: 6px; border-radius: .15rem; }
 .discover-eyebrow { color: #9aaabd; font: 750 .7rem/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; }
 .discover-section-heading { margin-bottom: 1.75rem; }
-.discover-section-heading h1 { margin-top: .5rem; font-size: clamp(1.65rem, 3vw, 2.2rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.2; }
+.discover-section-heading h2 { margin-top: .5rem; font-size: clamp(1.65rem, 3vw, 2.2rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.2; }
 .discover-featured-grid { display: grid; gap: 1.25rem; align-items: stretch; }
-.discover-writing { display: flex; min-width: 0; flex-direction: column; align-items: start; gap: 1.75rem; border: 1px solid rgba(245,185,113,.22); border-radius: .6rem; padding: clamp(1.5rem, 3.5vw, 3rem); background: linear-gradient(140deg, #132731, #0c202d); }
-.discover-writing-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; color: #f5b971; font: 750 .72rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; }
+.discover-writing { display: flex; min-width: 0; flex-direction: column; align-items: start; gap: 1.75rem; border: 1px solid rgba(157,213,244,.22); border-radius: .6rem; padding: clamp(1.5rem, 3.5vw, 3rem); background: linear-gradient(140deg, #132731, #0c202d); }
+.discover-writing-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; color: #b5dff5; font: 750 .72rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; }
 .discover-writing-link { display: block; width: 100%; }
 .discover-writing h2 { max-width: 21ch; font-size: clamp(2rem, 3.6vw, 3.4rem); font-weight: 850; letter-spacing: -.04em; line-height: 1.12; text-wrap: balance; overflow-wrap: anywhere; }
 .discover-writing-link:hover h2 { color: #b7f0f6; }
@@ -66,8 +66,8 @@
 .discover-path-label { color: #9aaabd; font: 700 .72rem/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .08em; }
 .discover-path-title { max-width: 21ch; font-size: clamp(1.6rem, 2.8vw, 2.35rem); line-height: 1.2; font-weight: 750; letter-spacing: -.035em; text-wrap: balance; }
 .discover-path-arrow { position: absolute; right: 1rem; bottom: 2rem; color: #9debf4; font-size: 1.5rem; }
-.discover-path-projects { border-top-color: rgba(245,185,113,.6); background: linear-gradient(115deg, rgba(245,185,113,.06), transparent); }
-.discover-path-projects .discover-path-label { color: #f5b971; }
+.discover-path-projects { border-top-color: rgba(157,213,244,.6); background: linear-gradient(115deg, rgba(157,213,244,.06), transparent); }
+.discover-path-projects .discover-path-label { color: #b5dff5; }
 .discover-path-experiences { background: linear-gradient(115deg, rgba(53,208,229,.05), transparent); }
 .discover-path-experiences .discover-path-title { font-weight: 500; }
 .discover-path a:hover .discover-path-title { color: #9debf4; }
@@ -142,7 +142,7 @@ body[data-scroll-locked="true"] [data-scroll-lock-compensate] {
 .hero-glow {
   background:
     radial-gradient(circle at 72% 32%, rgba(53,208,229,.16), transparent 22rem),
-    radial-gradient(circle at 88% 70%, rgba(255,122,0,.09), transparent 20rem),
+    radial-gradient(circle at 88% 70%, rgba(38,114,210,.12), transparent 20rem),
     linear-gradient(90deg, rgba(4,17,27,.1), rgba(4,17,27,.75));
 }
 
@@ -1102,13 +1102,13 @@ html[data-navigation-settling="true"] .navigation-feedback::before {
 .quote-experience-daily { grid-template-columns: minmax(0,.62fr) minmax(0,1fr); }
 .quote-experience-result {
   margin-top: clamp(2.75rem, 8vw, 5rem);
-  border: 1px solid rgba(245,185,113,.22);
+  border: 1px solid rgba(157,213,244,.22);
   border-radius: 1.75rem;
   padding: clamp(1.5rem, 5vw, 3rem);
   background: linear-gradient(135deg, rgba(245,185,113,.055), rgba(53,208,229,.025));
 }
 .quote-experience-eyebrow {
-  color: #f5b971;
+  color: #b5dff5;
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: .72rem;
   font-weight: 900;
@@ -1558,3 +1558,11 @@ html[data-navigation-settling="true"] .navigation-feedback::before {
     break-inside: avoid-page;
   }
 }
+
+/* Shared public environment. Brand colours, photos and semantic alerts keep their identity. */
+.home-views { background:#050e1d; }
+.home-view-toolbar { background:#081629; }
+.home-view-switch { max-width:110rem; }
+#home-explore-panel>section>div.mx-auto { max-width:104rem; }
+#home-explore-panel #hero-title { font-size:clamp(3rem,6.4vw,8.4rem); }
+@media(max-width:639px) { #home-explore-panel #hero-title { font-size:clamp(2.5rem,12.5vw,3rem); } }

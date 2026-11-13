@@ -26,6 +26,8 @@ export interface DiscoveryItem {
   status: DiscoveryStatus;
   /** Only set when the destination is known to exist. */
   href?: string;
+  /** Actual public Writing language, including a verified source-language fallback. */
+  contentLanguage?: import("@/lib/i18n/config").Locale;
   dimensions?: DiscoveryDimensions;
 }
 
@@ -56,6 +58,7 @@ export interface DiscoveryMatchReason {
 }
 
 export interface DiscoveryMatch {
+  presentation?: "match" | "suggestion" | "related";
   item: DiscoveryItem;
   score: number;
   reasons: DiscoveryMatchReason[];
