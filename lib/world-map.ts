@@ -61,9 +61,10 @@ export function centerWorldMapPoint(
   zoom: number,
 ): WorldMapOffset {
   const boundedZoom = clampWorldMapZoom(zoom);
+  const fit = Math.min(viewport.width / geometry.width, viewport.height / geometry.height);
   return clampWorldMapOffset({
-    x: -(point.x / geometry.width - 0.5) * viewport.width * boundedZoom,
-    y: -(point.y / geometry.height - 0.5) * viewport.height * boundedZoom,
+    x: (geometry.width / 2 - point.x) * fit * boundedZoom,
+    y: (geometry.height / 2 - point.y) * fit * boundedZoom,
   }, viewport, boundedZoom);
 }
 
@@ -132,6 +133,11 @@ export function relationshipKinds(connection: WorldMapConnection): WorldMapRelat
 
 export function matchesWorldMapFilter(connection: WorldMapConnection, filter: WorldMapFilter): boolean {
   return filter === "all" || connection.relationships.some(({ kind }) => kind === filter);
+}
+
+/** Empty selection means all; combining categories is an inclusive union, never a rank boost. */
+export function matchesWorldMapFilters(connection: WorldMapConnection, filters: readonly WorldMapRelationshipKind[]): boolean {
+  return filters.length === 0 || filters.some((kind) => matchesWorldMapFilter(connection, kind));
 }
 
 export function filterWorldMapConnections(

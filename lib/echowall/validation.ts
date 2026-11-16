@@ -4,6 +4,8 @@ import {
   type EchoSubmission,
   type RawEchoSubmission,
 } from "@/types/echowall";
+import { isEchoCountry } from "@/lib/echowall/countries";
+import { livingWorldCopy } from "@/data/i18n/living-world";
 import type { Locale } from "@/lib/i18n/config";
 
 type ValidationResult =
@@ -65,6 +67,7 @@ export function validateEchoSubmission(
   const emailValue = asString(raw.email);
   const consentValue = asString(raw.consent);
   const formTokenValue = asString(raw.formToken);
+  const countryCode = isEchoCountry(raw.countryCode) ? raw.countryCode : null;
 
   const displayName = displayNameValue
     ? normalizeText(displayNameValue)
@@ -103,6 +106,10 @@ export function validateEchoSubmission(
     }
   }
 
+  if (raw.countryCode != null && raw.countryCode !== "" && !countryCode) {
+    fieldErrors.countryCode = livingWorldCopy[locale].countryInvalid;
+  }
+
   if (consentValue !== "true" && consentValue !== "on") {
     fieldErrors.consent = validationCopy[locale].consent;
   }
@@ -122,6 +129,7 @@ export function validateEchoSubmission(
       message,
       category,
       email: email || null,
+      ...(countryCode ? { countryCode, includeInCommunityMap: raw.includeInCommunityMap === "true" } : {}),
     },
     formToken: formTokenValue ?? "",
   };

@@ -1,0 +1,44 @@
+/* Scoped to World Map and EchoWall; the adaptive homepage keeps its own scene. */
+.living-world {
+  --world-ink: #05101e;
+  --world-paper: #edf7ff;
+  --world-light: #9bdff1;
+  --world-rule: #2d4c67;
+  --world-surface: #0b2137;
+  --world-serif: Georgia, "Times New Roman", serif;
+  background: radial-gradient(ellipse 50rem 36rem at 80% 0, #102f4d 0, transparent 76%), var(--world-ink);
+  color: var(--world-paper);
+}
+.living-world .living-title { color: var(--world-paper); font-family: var(--world-serif); font-weight: 400; line-height: 1.04; text-wrap: balance; overflow-wrap: anywhere; }
+.living-world .living-panel { border: 1px solid var(--world-rule); border-radius: 1.5rem; background: linear-gradient(145deg, #0e2941, var(--world-surface) 77%); }
+.living-world .living-panel :is(h2,h3) { font-family: var(--world-serif); font-weight: 400; }
+.living-world :is(a,button,input,select,textarea,summary):focus-visible { outline: 2px solid var(--world-light); outline-offset: 3px; }
+.living-world .living-meta { color: #abd5e8; }
+.living-world .living-muted { color: #b3c7d8; }
+.living-world .living-link { display: inline-flex; align-items: center; min-height: 2.75rem; gap: .6rem; color: var(--world-light); font-weight: 700; text-decoration: underline; text-underline-offset: .24em; }
+.living-world .living-link:hover { color: var(--world-paper); }
+.living-world .living-action { color: var(--world-ink); background: var(--world-light); }
+.living-world .living-action:hover { background: var(--world-paper); }
+.living-map .world-map-stage { border-color: var(--world-rule); background: #061526; }
+.living-map .world-map-viewport { container-type: size; background: radial-gradient(ellipse at 50% 42%, #102b42, #071421 72%); }
+.living-map .world-map-plane { position: absolute; top: 50%; left: 50%; width: min(100cqw, calc(100cqh * var(--map-ratio))); aspect-ratio: var(--map-ratio); translate: -50% -50%; }
+.living-map .world-map-filter[aria-pressed="true"] { border-color: var(--world-light); color: var(--world-ink); background: var(--world-light); }
+.living-map .world-map-filter:hover { border-color: var(--world-light); }
+.living-map .world-map-pin[aria-pressed="true"] { box-shadow: 0 0 0 4px #061526, 0 0 0 7px #9bdff180; }
+.living-map .world-map-pin-tooltip { max-width: min(11rem, 36cqw); overflow-wrap: anywhere; }
+.living-map #map-list-title { scroll-margin-top: 6rem; }
+.living-map .world-map-detail { display: flex; overflow: hidden; max-height: min(70%, 28rem); border-radius: 1.5rem; }
+.living-map .world-map-context-card-compact { display: flex; flex-direction: column; min-height: 0; width: 100%; }
+.living-map .world-map-context-header { display: flex; flex: none; align-items: center; justify-content: space-between; gap: .5rem; padding: .6rem 1rem; border-bottom: 1px solid var(--world-rule); background: #0b2137; }
+.living-map .world-map-context-header button { flex: none; }
+.living-map .world-map-context-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1rem; }
+.living-map #context-card-title:focus-visible { outline: 2px solid var(--world-light); outline-offset: 3px; }
+.living-echo .living-echo-intro { padding-block: clamp(2.5rem, 7vw, 6rem); }
+.living-echo .living-echo-message { margin-block: 1.1rem .2rem; font: 400 clamp(1.3rem, 2.8vw, 2.15rem)/1.44 var(--world-serif); color: var(--world-paper); overflow-wrap: anywhere; white-space: pre-wrap; }
+.living-echo-list { display: grid; gap: 1rem; }
+.living-echo .living-echo-form :is(input:not([type="checkbox"]),textarea,select) { background: #081b2d; border-radius: .65rem; }
+.living-echo .living-echo-form input[type="checkbox"] { accent-color: var(--world-light); }
+.living-world .text-slate-500 { color: #a3b8cb; }
+@media (min-width: 52rem) { .living-echo-list { grid-template-columns: repeat(2,minmax(0,1fr)); } .living-echo-list > li:first-child { grid-column: 1 / -1; } .living-echo-list > li:first-child .living-echo-message { max-width: 54ch; } }
+@media (min-width: 1024px) { .living-map .world-map-detail { max-height: none; } }
+@media (prefers-reduced-motion: reduce) { .living-map .world-map-pin-tooltip { transition: none; } }

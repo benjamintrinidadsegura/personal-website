@@ -37,6 +37,8 @@ type DatabaseSubmission = {
   message: string;
   category: "thought" | "feedback" | "reaction" | "message" | null;
   email: string | null;
+  countryCode?: string;
+  includeInCommunityMap?: boolean;
   networkHash: string;
   emailHash: string | null;
   messageHash: string;
@@ -165,11 +167,21 @@ export async function submitEchoAction(
   const networkIdentifier =
     requestHeaders.get("x-real-ip")?.trim() || forwardedFor || null;
 
+  const countryContextEnabled = process.env.ECHOWALL_COUNTRY_CONTEXT_ENABLED === "true";
+  const countryCode = formData.get("countryCode");
+  if (!countryContextEnabled && countryCode !== null && countryCode !== "") {
+    return { ok: false, code: "SERVICE_UNAVAILABLE" };
+  }
+
   const raw: RawEchoSubmission = {
     displayName: formData.get("displayName"),
     message: formData.get("message"),
     category: formData.get("category"),
     email: formData.get("email"),
+    ...(countryContextEnabled ? {
+      countryCode,
+      includeInCommunityMap: formData.get("includeInCommunityMap"),
+    } : {}),
     consent: formData.get("consent"),
     website: formData.get("website"),
     formToken: formData.get("formToken"),
@@ -186,7 +198,7 @@ export async function submitEchoAction(
     async (submission) => {
       const { getSupabaseServerClient } = await import("@/lib/supabase/server");
       const supabase = getSupabaseServerClient();
-      const { data, error } = await supabase.rpc("submit_echo", {
+      const payload = {
         p_display_name: submission.displayName,
         p_message: submission.message,
         p_category: submission.category,
@@ -196,7 +208,14 @@ export async function submitEchoAction(
         p_message_hash: submission.messageHash,
         p_form_token_hash: submission.formTokenHash,
         p_deletion_token_hash: submission.deletionTokenHash,
-      });
+      };
+      const { data, error } = submission.countryCode
+        ? await supabase.rpc("submit_echo_with_country", {
+          ...payload,
+          p_country_code: submission.countryCode,
+          p_include_in_community_map: submission.includeInCommunityMap ?? false,
+        })
+        : await supabase.rpc("submit_echo", payload);
 
       return {
         echoId: typeof data === "string" ? data : null,
