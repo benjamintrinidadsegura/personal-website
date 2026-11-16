@@ -3,6 +3,7 @@ import { getLocalizedPublishedSpotlights } from "@/data/i18n/people";
 import { getHqPulseCopy } from "@/data/i18n/hq-pulse";
 import { getWorldMapDictionary } from "@/data/i18n/world-map";
 import { getNerdCornerCopy } from "@/data/i18n/nerd-corner";
+import { createAdditionalLifeAlignmentDiscoveryItems } from "@/data/i18n/discovery-life-alignment";
 import { guidedDiscoveryPrompts } from "@/data/discovery-curation";
 import { adaptiveHomeCopy } from "@/data/i18n/adaptive-home";
 import { projects } from "@/data/projects";
@@ -255,11 +256,12 @@ export function getDiscoveryUiCopy(locale: Locale) {
 }
 
 export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: Locale): DiscoveryItem[] {
+  const modules = new Map(createAdditionalLifeAlignmentDiscoveryItems(locale).map(({ id, title, description, tags, keywords }) => [id, { title, description, tags, keywords }]));
   const people = new Map(getLocalizedPublishedSpotlights(locale).map((spotlight) => [spotlight.id, spotlight]));
   const peopleBySlug = new Map(getLocalizedPublishedSpotlights(locale).map((spotlight) => [spotlight.slug, spotlight]));
   const localizedProjectCopy = projectCopyById(locale);
   return items.map((item) => {
-    let localized: DiscoveryItem = { ...item, ...(staticCopyByLocale[locale][item.id] ?? localizedProjectCopy.get(item.id)) };
+    let localized: DiscoveryItem = { ...item, ...(modules.get(item.id) ?? staticCopyByLocale[locale][item.id] ?? localizedProjectCopy.get(item.id)) };
     if (item.id === "page-nerd-corner") {
       const nerdCopy = getNerdCornerCopy(locale);
       localized = { ...localized, description: nerdCopy.description, category: nerdCopy.eyebrow, tags: ["Nerd Corner", nerdCopy.music, nerdCopy.books], keywords: [nerdCopy.currentlyInto, nerdCopy.favorites, nerdCopy.currentlyReading, nerdCopy.currentlyPlaying, "Streamory"] };

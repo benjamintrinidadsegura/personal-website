@@ -1,5 +1,6 @@
 import { publishedSpotlights, spotlightConfig } from "@/data/spotlights";
 import { discoveryDimensionsByItemId } from "@/data/discovery-curation";
+import { createAdditionalLifeAlignmentDiscoveryItems } from "@/data/i18n/discovery-life-alignment";
 import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
 import { hqPulseItems } from "@/data/hq-pulse";
 import { interviewFormats } from "@/data/interviews";
@@ -208,6 +209,7 @@ const toolItems: DiscoveryItem[] = [
     status: "Beta",
     href: "/echowall",
   },
+  ...createAdditionalLifeAlignmentDiscoveryItems(),
 ];
 
 const pageItems: DiscoveryItem[] = [
