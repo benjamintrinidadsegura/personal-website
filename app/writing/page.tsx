@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { NewsletterCta } from "@/components/newsletter/newsletter-cta";
 import { ShareFormatSignal } from "@/components/writing/share/share-format-signal";
+import { WritingRetryButton } from "@/components/writing/writing-retry-button";
 import { getWritingDictionary, localizeWritingTopic, writingTaxonomies } from "@/data/i18n/writing";
 import { getWritingShareDictionary } from "@/data/i18n/writing-share";
 import { getGlobalDictionary } from "@/data/i18n/global";
@@ -44,6 +45,7 @@ export default async function WritingPage() {
           <section role="status" aria-labelledby="unavailable-writing-title" data-writing-index-unavailable className="border-b border-white/15 py-20">
             <h2 id="unavailable-writing-title" className="text-3xl font-black text-white">{copy.unavailableTitle}</h2>
             <p className="mt-4 max-w-2xl leading-7 text-slate-300">{copy.unavailableBody}</p>
+            <WritingRetryButton locale={locale} />
           </section>
         ) : featured ? (
           <section aria-labelledby="featured-writing-title" className="border-b border-white/15 py-20 sm:py-28">

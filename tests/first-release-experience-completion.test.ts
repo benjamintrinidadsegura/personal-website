@@ -14,12 +14,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 const source = (path: string) => readFileSync(resolve(here, path), "utf8");
 
 test("Experience Completion promotes Quote immediately after the hero with stable navigation and discovery", () => {
-  const home = source("../app/page.tsx");
+  const home = source("../app/page.tsx").split("export default")[1];
   const quote = source("../components/quotes/home-quote.tsx");
   const header = source("../components/layout/header.tsx");
   const discovery = source("../data/discovery-index.ts");
   assert.ok(home.indexOf("<Hero") < home.indexOf("<HomeQuote"));
-  assert.ok(home.indexOf("<HomeQuote") < home.indexOf("<HqPulse"));
+  assert.ok(home.indexOf("<HomeQuote") < home.indexOf("<PublishedPulse"));
   assert.match(quote, /id="quote"/u);
   assert.match(header, /copy\.nav\.quote[\s\S]*\/#quote/u);
   assert.match(discovery, /id: "page-quote"[\s\S]*href: "\/#quote"/u);

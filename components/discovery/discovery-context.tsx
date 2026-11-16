@@ -9,10 +9,14 @@ import { localizeDiscoveryItems } from "@/data/i18n/discovery";
 import { createAdaptiveDiscoveryView, discoverItems, groupDiscoveryItems } from "@/lib/discovery";
 import { revealHomeAnchor } from "@/lib/home-view";
 import type { AdaptiveDiscoveryView, DiscoveryGroup, DiscoveryItem, DiscoveryMatch } from "@/types/discovery";
+import type { PublicWritingSummary } from "@/types/writing";
+import type { Locale } from "@/lib/i18n/config";
 
 interface DiscoveryContextValue {
   items: DiscoveryItem[];
-  writingStatus: "data" | "unavailable";
+  writingStatus: "data" | "unavailable" | "loading";
+  latestWriting?: PublicWritingSummary;
+  setWritingSnapshot: (snapshot: { locale: Locale; items: DiscoveryItem[]; status: "data" | "unavailable"; latest?: PublicWritingSummary }) => void;
   query: string;
   setQuery: (query: string) => void;
   matches: DiscoveryMatch[];
@@ -45,9 +49,11 @@ function isCurrentLocation(targetHref: string) {
 
 const DiscoveryContext = createContext<DiscoveryContextValue | null>(null);
 
-export function DiscoveryProvider({ children, items = discoveryIndex, writingStatus = "data" }: { children: ReactNode; items?: DiscoveryItem[]; writingStatus?: "data" | "unavailable" }) {
+export function DiscoveryProvider({ children, items = discoveryIndex, writingStatus = "data" }: { children: ReactNode; items?: DiscoveryItem[]; writingStatus?: "data" | "unavailable" | "loading" }) {
   const locale = useLocale();
   const pathname = usePathname();
+  const [writingSnapshot, setWritingSnapshot] = useState<{ locale: Locale; items: DiscoveryItem[]; status: "data" | "unavailable"; latest?: PublicWritingSummary } | null>(null);
+  const currentWriting = writingSnapshot?.locale === locale ? writingSnapshot : null;
   const [query, setQueryState] = useState("");
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
@@ -185,14 +191,19 @@ export function DiscoveryProvider({ children, items = discoveryIndex, writingSta
     };
   }, [pendingAnchorId]);
 
-  const localizedItems = useMemo(() => localizeDiscoveryItems(items, locale), [items, locale]);
+  const contentItems = currentWriting?.items ?? items;
+  const resolvedWritingStatus = currentWriting?.status ?? writingStatus;
+  const latestWriting = currentWriting?.latest;
+  const localizedItems = useMemo(() => localizeDiscoveryItems(contentItems, locale), [contentItems, locale]);
   const matches = useMemo(() => discoverItems(localizedItems, query), [localizedItems, query]);
   const groups = useMemo(() => groupDiscoveryItems(matches), [matches]);
   const adaptiveView = useMemo(() => createAdaptiveDiscoveryView(matches, selectedMatchId), [matches, selectedMatchId]);
   const value = useMemo(
     () => ({
       items: localizedItems,
-      writingStatus,
+      writingStatus: resolvedWritingStatus,
+      latestWriting,
+      setWritingSnapshot,
       query,
       setQuery,
       matches,
@@ -207,7 +218,7 @@ export function DiscoveryProvider({ children, items = discoveryIndex, writingSta
       settleCanvasNavigation,
       clearDiscovery,
     }),
-    [localizedItems, writingStatus, adaptiveView, beginCanvasNavigation, canvasNavigation, clearDiscovery, groups, matches, overlayOpen, query, selectMatch, selectedMatchId, setQuery, settleCanvasNavigation],
+    [localizedItems, resolvedWritingStatus, latestWriting, adaptiveView, beginCanvasNavigation, canvasNavigation, clearDiscovery, groups, matches, overlayOpen, query, selectMatch, selectedMatchId, setQuery, settleCanvasNavigation],
   );
 
   return <DiscoveryContext.Provider value={value}>{children}</DiscoveryContext.Provider>;

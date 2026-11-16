@@ -663,7 +663,7 @@ test("composer is lazy, keyboard-addressable, progressive, and does not add a re
   assert.equal(nativeShare.includes("navigator.share({ files: [file]"), true, "native file share");
   assert.equal(nativeShare.includes("const filesOnly: ShareData = { files: [...files] }"), true, "native carousel share");
   assert.doesNotMatch(nativeShare, /shareCardFiles[\s\S]*?title: input\.title|shareCardFiles[\s\S]*?text:/u, "carousel share stays files-first");
-  assert.equal(page.includes("getPublishedWritingBySlug"), true);
+  assert.equal(page.includes("getPublishedWritingPageArticle"), true);
   assert.equal(page.includes("writingDocumentToShareBlocks"), true);
   assert.equal(page.includes("articleShareBlocks.map(({ text }) => text).join"), true);
   assert.equal(queries.includes('.eq("status", "published")'), true);

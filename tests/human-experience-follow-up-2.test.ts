@@ -46,7 +46,7 @@ test("FOLLOW-UP 2 Home public Writing reads have a finite aborting deadline and 
   assert.match(queries, /\.abortSignal\(signal\)/u);
   assert.match(queries, /status: "unavailable"/u);
   assert.match(home, /getPublishedWritingResult/u);
-  assert.match(home, /publishedWritingStatus=\{publishedWritingResult\.status\}/u);
+  assert.match(home, /publishedWritingStatus=\{result\.status\}/u);
   assert.match(writing, /data-writing-home-unavailable/u);
   assert.match(writing, /errorCopy\.viewTitle/u);
   assert.doesNotMatch(writing, /publishedWritingStatus === "unavailable"[\s\S]*placeholdersByLocale\[locale\]/u);

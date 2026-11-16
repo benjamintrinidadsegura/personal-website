@@ -23,6 +23,7 @@ function publicQueries(response: Response | Error = { data: [], error: null }, c
   const calls: Array<[string, ...unknown[]]> = [];
   const { diagnostics, records } = writingDiagnosticsHarness({ fetch: fetchImpl });
   const cacheArguments: unknown[][] = [];
+  const requestMaps: Map<string, unknown>[] = [];
   const cachePolicies: unknown[] = [];
   let signal: AbortSignal | undefined;
   const builder = {
@@ -41,6 +42,7 @@ function publicQueries(response: Response | Error = { data: [], error: null }, c
   const queries = loadSource<typeof Queries>("lib/writing/queries.ts", {
     "react": { cache: (callback: (...args: unknown[]) => unknown) => {
       const request = new Map<string, unknown>();
+      requestMaps.push(request);
       return (...args: unknown[]) => {
         if (!memoizeRequest) return callback(...args);
         const key = JSON.stringify(args);
@@ -66,8 +68,8 @@ function publicQueries(response: Response | Error = { data: [], error: null }, c
     "@/lib/supabase/server": { getSupabaseServerClient: (options?: { fetch?: typeof globalThis.fetch }) => client ?? (fetchImpl
       ? createClient("https://fixture.invalid", "fixture-only", { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }, global: { fetch: options?.fetch } })
       : { from: (table: string) => { calls.push(["from", table]); return builder; } }) },
-  }, { process: { env: configured ? { SUPABASE_URL: "https://fixture.invalid", SUPABASE_SECRET_KEY: "fixture-only" } : {} } });
-  return { queries, calls, records, cacheArguments, cachePolicies, signal: () => signal };
+  }, { process: { env: configured ? { SUPABASE_URL: "https://fixture.invalid", SUPABASE_SECRET_KEY: "fixture-only" } : {} }, ...(fetchImpl ? { globalThis: { fetch: fetchImpl } } : {}) });
+  return { queries, calls, records, cacheArguments, cachePolicies, signal: () => signal, beginRequest: () => requestMaps.forEach((map) => map.clear()), setResponse: (value: Response | Error) => { response = value; } };
 }
 
 test("one render shares a pending collection read across consumers without sharing consumer diagnostics", async () => {
@@ -186,13 +188,13 @@ test("collection auth failures are sanitized and correlated for all seven locale
   }
 });
 
-test("unavailable cache deliveries share an origin ID without adding consumer context to cache identity", async () => {
-  const fixture = publicQueries({ data: null, error: { code: "PGRST303", message: "unknown private error" }, status: 401 }, true, false, undefined, true);
+test("unavailable render deliveries share an origin without creating a persistent cache entry", async () => {
+  const fixture = publicQueries({ data: null, error: { code: "PGRST303", message: "unknown private error" }, status: 401 }, true, false, undefined, true, undefined, true);
   await fixture.queries.getPublishedWritingResult("de", { consumer: "home" });
   await fixture.queries.getPublishedWritingResult("de", { consumer: "sitemap" });
   assert.equal(fixture.calls.filter(([name]) => name === "from").length, 1);
-  assert.deepEqual(fixture.cacheArguments, [["de"], ["de"]]);
-  assert.deepEqual(fixture.cachePolicies[0], { keys: ["published-writing"], options: { revalidate: 300, tags: ["published-writing"] } });
+  assert.deepEqual(fixture.cacheArguments, []);
+  assert.deepEqual(fixture.cachePolicies, [], "failures and publications must never enter persistent cache");
   const [origin, first, second] = fixture.records;
   assert.equal(first.origin_read_id, origin.correlation_id);
   assert.equal(second.origin_read_id, origin.correlation_id);
@@ -321,7 +323,7 @@ test("the unchanged deployed publication rules reject invalid documents, withdra
   assert.deepEqual((await publicQueries({ data: [{ ...row, translations: [syntheticTranslation] }], error: null }).queries.getPublishedWritingResult("en")).data, []);
 });
 
-test("sitemap reads bypass both existing caches and fetch Data Cache without changing other consumers", async () => {
+test("sitemap bypasses render memoization while every consumer bypasses persistent and fetch caches", async () => {
   let current = [row];
   const requests: Array<{ url: URL; cache?: RequestCache; signal?: AbortSignal | null }> = [];
   const fetch: typeof globalThis.fetch = async (input, init) => {
@@ -339,13 +341,10 @@ test("sitemap reads bypass both existing caches and fetch Data Cache without cha
   assert.equal((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data.length, 1);
   assert.equal(requests.length, 3, "each attempt executes a new SDK read, even in one render");
   assert.deepEqual(await fixture.queries.getPublishedWritingResult("de", { consumer: "discovery_index" }), before);
-  assert.equal(requests.length, 3, "home/search retain their render and persistent cache");
-  assert.equal(requests[0].cache, undefined);
-  assert.equal(fixture.cacheArguments.length, 1, "fresh sitemap reads never enter unstable_cache");
-  assert.deepEqual(fixture.cachePolicies, [
-    { keys: ["published-writing"], options: { revalidate: 300, tags: ["published-writing"] } },
-    { keys: ["published-writing-by-slug"], options: { revalidate: 300, tags: ["published-writing"] } },
-  ]);
+  assert.equal(requests.length, 3, "home/search share only the current render");
+  assert.equal(requests[0].cache, "no-store");
+  assert.equal(fixture.cacheArguments.length, 0, "no public Writing read enters unstable_cache");
+  assert.deepEqual(fixture.cachePolicies, []);
   for (const { url } of requests) {
     assert.equal(url.searchParams.get("status"), "eq.published");
     assert.equal(url.searchParams.get("slug"), "not.is.null");
@@ -399,4 +398,70 @@ test("fresh sitemap publication, withdrawal and translation changes are visible 
   assert.equal((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data.length, 1, "new publication");
   current = [{ ...row, source_revision: 4, translations }];
   assert.deepEqual((await fixture.queries.getPublishedWritingForSitemap("fixture-correlation")).data[0].availableLanguages, ["de"]);
+});
+
+test("a failed collection is shared only within a render and the next render can recover immediately", async () => {
+  const fixture = publicQueries({ data: null, error: { code: "PGRST303", message: "JWT expired" }, status: 401 }, true, false, undefined, true, undefined, true);
+  assert.equal((await fixture.queries.getPublishedWritingResult("de")).status, "unavailable");
+  assert.equal(await fixture.queries.isPublishedWritingRetryable("de"), false, "auth errors must not trigger automatic retries");
+  fixture.setResponse({ data: [row], error: null, status: 200 });
+  assert.equal((await fixture.queries.getPublishedWritingResult("de")).status, "unavailable", "one render retains one coherent result");
+  fixture.beginRequest();
+  assert.equal((await fixture.queries.getPublishedWritingResult("de")).data.length, 1, "no 300-second failed cache entry");
+  assert.equal(fixture.calls.filter(([name]) => name === "from").length, 2);
+  assert.deepEqual(fixture.cachePolicies, []);
+});
+
+test("fresh homepage, search and index snapshots remove withdrawals and reflect new publications in seven locales", async () => {
+  for (const locale of locales) {
+    const fixture = publicQueries({ data: [row], error: null }, true, false, undefined, true, undefined, true);
+    const reads = () => Promise.all(["home", "discovery_index", "writing_index"].map(consumer => fixture.queries.getPublishedWritingResult(locale, { consumer: consumer as "home" | "discovery_index" | "writing_index" })));
+    assert.ok((await reads()).every(r => r.data.length === 1));
+    fixture.setResponse({ data: [{ ...row, status: "draft" }], error: null });
+    fixture.beginRequest();
+    assert.ok((await reads()).every(r => r.data.length === 0), "withdrawn content must never be a stale fallback");
+    fixture.setResponse({ data: [row], error: null });
+    fixture.beginRequest();
+    assert.ok((await reads()).every(r => r.data.length === 1));
+    assert.equal(fixture.calls.filter(([name]) => name === "from").length, 3, "one read per render, not per consumer");
+  }
+});
+
+test("only transient failures qualify for the bounded automatic recovery", async () => {
+  const timeout = publicQueries(undefined, true, true, undefined, false, undefined, true);
+  await timeout.queries.getPublishedWritingResult();
+  assert.equal(await timeout.queries.isPublishedWritingRetryable("de"), true);
+  for (const response of [{ data: null, error: { code: "42501" }, status: 403 }, { data: null, error: { code: "PGRST303" }, status: 401 }]) {
+    const fixture = publicQueries(response, true, false, undefined, false, undefined, true);
+    await fixture.queries.getPublishedWritingResult();
+    assert.equal(await fixture.queries.isPublishedWritingRetryable("de"), false);
+  }
+  assert.equal(await publicQueries(undefined, false).queries.isPublishedWritingRetryable("de"), false);
+});
+
+test("article missing, unavailable and published states are distinct and no missing result persists", async () => {
+  const fixture = publicQueries({ data: null, error: null }, true, false, undefined, true, undefined, true);
+  assert.deepEqual(await fixture.queries.getPublishedWritingArticleResult(row.slug), { status: "missing", article: null });
+  fixture.setResponse({ data: row, error: null }); fixture.beginRequest();
+  assert.equal((await fixture.queries.getPublishedWritingArticleResult(row.slug)).article?.slug, row.slug);
+  fixture.setResponse({ data: null, error: { code: "PGRST303" }, status: 401 }); fixture.beginRequest();
+  assert.deepEqual(await fixture.queries.getPublishedWritingArticleResult(row.slug), { status: "unavailable", article: null });
+  await assert.rejects(fixture.queries.getPublishedWritingPageArticle(row.slug, "de"), /PUBLIC_WRITING_UNAVAILABLE/u);
+  assert.equal(await fixture.queries.getPublishedWritingBySlug(row.slug), null, "optional continuation remains compatible");
+});
+
+test("HTTP200 with a stalled response body times out honestly and the next request recovers", async () => {
+  let recovering = false;
+  const fetch: typeof globalThis.fetch = async (_input, init) => {
+    if (recovering) return new globalThis.Response(JSON.stringify([row]), { headers: { "content-type": "application/json" } });
+    return new globalThis.Response(new ReadableStream({ start(controller) {
+      init?.signal?.addEventListener("abort", () => controller.error(new DOMException("fixture aborted", "AbortError")), { once: true });
+    } }), { status: 200 });
+  };
+  const fixture = publicQueries(undefined, true, false, undefined, true, fetch, true);
+  assert.equal((await fixture.queries.getPublishedWritingResult()).status, "unavailable");
+  assert.equal(fixture.records[0].state, "timeout");
+  assert.equal(fixture.records[0].http_status, 200);
+  recovering = true; fixture.beginRequest();
+  assert.equal((await fixture.queries.getPublishedWritingResult()).data.length, 1);
 });

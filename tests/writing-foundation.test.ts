@@ -414,11 +414,15 @@ test("Writing Studio polish keeps writing primary and secondary settings compact
 
 test("root layout still composes published Writing and suppresses only placeholders", () => {
   const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
-  assert.equal(layout.includes("publishedWriting.length > 0"), true);
-  assert.ok(layout.includes("const publishedWriting = writingResult.data"));
-  assert.equal(layout.includes("!item.id.match(/^writing-\\d+$/u)"), true);
-  assert.equal(layout.includes("createPublishedWritingDiscoveryItems(publishedWriting)"), true);
-  assert.equal(layout.includes("<DiscoveryProvider items={discoveryItems} writingStatus={writingResult.status}>"), true);
+  const bridge = readFileSync(new URL("../components/writing/published-writing-discovery.tsx", import.meta.url), "utf8");
+  const catalog = readFileSync(new URL("../data/discovery-index.ts", import.meta.url), "utf8");
+  assert.match(layout, /createDiscoveryItemsWithWriting\(\[\]\)/u);
+  assert.match(layout, /<Suspense fallback=\{null\}><PublishedWritingDiscovery/u);
+  assert.match(bridge, /getPublishedWritingResult\(locale/u);
+  assert.match(bridge, /createDiscoveryItemsWithWriting\(result\.data\)/u);
+  assert.match(catalog, /createPublishedWritingDiscoveryItems\(articles\)/u);
+  assert.equal(catalog.includes(String.raw`!/^writing-\d+$/u.test(item.id)`), true);
+  assert.equal(layout.includes('<DiscoveryProvider items={discoveryItems} writingStatus="loading">'), true);
 });
 
 test("server action payload remains bounded and no raw HTML rendering is introduced", () => {

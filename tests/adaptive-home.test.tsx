@@ -84,6 +84,7 @@ for(const locale of locales)test(`welcome keyboard, recommendation dismissal and
  const doc={querySelector:()=>null,body,activeElement:inside,addEventListener:(name:string,fn:(event:unknown)=>void)=>listeners.set(name,fn),removeEventListener:(name:string)=>listeners.delete(name),getElementById:()=>({focus:()=>focusCount++})};
  const win={localStorage:store,location:{hash:""},addEventListener:()=>{},removeEventListener:()=>{},dispatchEvent:()=>true};
  const Welcome=loadSource<{DailyWelcome:(props:{dateKey:string})=>React.ReactElement<Record<string,unknown>>|null}>("components/home/daily-welcome.tsx",{
+ "@/components/discovery/discovery-context":{useDiscovery:()=>({latestWriting:undefined})},
  "react/jsx-runtime":jsxRuntime,"react":{...h.hooks,useSyncExternalStore:(_:unknown,snapshot:()=>boolean)=>snapshot()},"next/link":{__esModule:true,default:"a"},
  "@/components/i18n/locale-context":{useLocale:()=>locale},"@/components/quotes/quote-experience":{QuoteExperience:()=>React.createElement("span")},
  "@/data/i18n/adaptive-home":{adaptiveHomeCopy},"@/lib/home-welcome":{welcomeGate:gate},"@/lib/i18n/routing":{localizeHref:(href:string,l:string)=>l==="de"?href:`/${l}${href}`},"./daily-welcome.module.css":{__esModule:true,default:{}},

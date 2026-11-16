@@ -12,6 +12,7 @@ import { homeViewsCopy } from "../data/i18n/home-views";
 import * as people from "../data/i18n/people";
 import { quoteDictionaries } from "../data/i18n/quotes";
 import * as writing from "../data/i18n/writing";
+import { writingRecoveryCopy } from "../data/i18n/writing-recovery";
 import * as worldMap from "../data/world-map";
 import * as config from "../lib/i18n/config";
 import * as routing from "../lib/i18n/routing";
@@ -38,6 +39,7 @@ function discoverComponent(spotlights = people) {
     "@/data/find-your-next-step": nextStep, "@/data/i18n/about": about,
     "@/data/i18n/discover": { discoverCopy }, "@/data/i18n/home-views": { homeViewsCopy },
     "@/data/i18n/people": spotlights, "@/data/i18n/writing": writing,
+    "@/data/i18n/writing-recovery": { writingRecoveryCopy },
     "@/data/world-map": worldMap, "@/lib/i18n/config": config, "@/lib/i18n/routing": routing,
   }).DiscoverHome;
 }
@@ -45,6 +47,9 @@ function discoverComponent(spotlights = people) {
 function elements(node: React.ReactNode): React.ReactElement<Record<string, unknown>>[] {
   if (Array.isArray(node)) return node.flatMap(elements);
   if (!React.isValidElement<Record<string, unknown>>(node)) return [];
+  if (typeof node.type === "function" && node.type.name === "DiscoverWritingFeature") {
+    return [node, ...elements((node.type as (props: object) => React.ReactNode)(node.props))];
+  }
   return [node, ...elements(node.props.children as React.ReactNode)];
 }
 

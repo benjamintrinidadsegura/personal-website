@@ -57,9 +57,9 @@ test("FOLLOW-UP Writing, Quote and FYNS share real generated files while preserv
   assert.doesNotMatch(native, /foreignObject/u);
   assert.doesNotMatch(native, /instagram|tiktok|whatsapp/iu);
 
-  const home = source("../app/page.tsx");
+  const home = source("../app/page.tsx").split("export default")[1];
   assert.ok(home.indexOf("<Hero") < home.indexOf("<HomeQuote"));
-  assert.ok(home.indexOf("<HomeQuote") < home.indexOf("<HqPulse"));
+  assert.ok(home.indexOf("<HomeQuote") < home.indexOf("<PublishedPulse"));
 });
 
 test("FOLLOW-UP Writing preserves draft acceptance and makes publication requirements actionable", () => {

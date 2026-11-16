@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { LocaleProvider } from "@/components/i18n/locale-context";
 import { DiscoveryProvider } from "@/components/discovery/discovery-context";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { NavigationFeedback } from "@/components/navigation/navigation-feedback";
 import { CanonicalSiteUrlProvider } from "@/components/site/canonical-site-url-context";
-import { createHqPulseDiscoveryItems, createPublishedWritingDiscoveryItems, discoveryIndex } from "@/data/discovery-index";
-import { createHqPulseItems } from "@/data/hq-pulse";
+import { createDiscoveryItemsWithWriting } from "@/data/discovery-index";
+import { PublishedWritingDiscovery } from "@/components/writing/published-writing-discovery";
 import { getAccountState } from "@/lib/account/state";
-import { getPublishedWritingResult } from "@/lib/writing/queries";
 import { getLocale } from "@/lib/i18n/server";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
 import { localeDetails, locales } from "@/lib/i18n/config";
@@ -47,21 +47,8 @@ export const viewport: Viewport = { themeColor: "#04111b" };
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = await getLocale();
   const siteUrl = requireSiteUrl();
-  const [writingResult, accountState] = await Promise.all([
-    getPublishedWritingResult(locale, { consumer: "discovery_index" }),
-    getAccountState(),
-  ]);
-  const publishedWriting = writingResult.data;
-  const hasPublishedWriting = publishedWriting.length > 0;
-  const staticDiscoveryItems = discoveryIndex.filter((item) => (
-    !item.id.startsWith("pulse-") && (!hasPublishedWriting || !item.id.match(/^writing-\d+$/u))
-  ));
-  const resolvedPulseItems = createHqPulseItems({ publishedWriting });
-  const discoveryItems = [
-    ...staticDiscoveryItems,
-    ...createPublishedWritingDiscoveryItems(publishedWriting),
-    ...createHqPulseDiscoveryItems(resolvedPulseItems),
-  ];
+  const accountState = await getAccountState();
+  const discoveryItems = createDiscoveryItemsWithWriting([]);
   const websiteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -82,8 +69,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <a className="skip-link" href="#main-content">
               {getGlobalDictionary(locale).skipLink}
             </a>
-            <DiscoveryProvider items={discoveryItems} writingStatus={writingResult.status}>
+            <DiscoveryProvider items={discoveryItems} writingStatus="loading">
               <Header accountState={accountState} />
+              <Suspense fallback={null}><PublishedWritingDiscovery locale={locale} /></Suspense>
               <main id="main-content">{children}</main>
             </DiscoveryProvider>
             <Footer />

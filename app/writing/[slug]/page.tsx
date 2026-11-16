@@ -22,7 +22,7 @@ import { getLocalizedPathname, localizeHref } from "@/lib/i18n/routing";
 import { isNewsletterEditionId, parseWritingNewsletterPreparationStatus } from "@/lib/newsletter/preparation";
 import { getLocale } from "@/lib/i18n/server";
 import { absoluteSiteUrl, requireSiteUrl } from "@/lib/site-url";
-import { getPublishedWritingBySlug } from "@/lib/writing/queries";
+import { getPublishedWritingPageArticle } from "@/lib/writing/queries";
 import { legacyWritingBodyToShareBlocks, writingDocumentToShareBlocks } from "@/lib/writing/document";
 import type { WritingShareContext, WritingShareSource } from "@/types/writing";
 
@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const locale = await getLocale();
-  const article = await getPublishedWritingBySlug((await params).slug, locale);
+  const article = await getPublishedWritingPageArticle((await params).slug, locale);
   if (!article) return {};
   const canonicalLocale = article.translationStatus === "fallback" ? article.sourceLanguage : article.language;
   const canonical = getLocalizedPathname(`/writing/${article.slug}`, canonicalLocale);
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function WritingArticlePage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ newsletter?: string | string[]; newsletterEdition?: string | string[] }> }) {
   const locale = await getLocale();
-  const article = await getPublishedWritingBySlug((await params).slug, locale);
+  const article = await getPublishedWritingPageArticle((await params).slug, locale);
   if (!article) notFound();
   const query = await searchParams;
   const newsletterStatus = parseWritingNewsletterPreparationStatus(Array.isArray(query.newsletter) ? null : query.newsletter);

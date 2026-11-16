@@ -2,7 +2,7 @@ import { publishedSpotlights, spotlightConfig } from "@/data/spotlights";
 import { discoveryDimensionsByItemId } from "@/data/discovery-curation";
 import { createAdditionalLifeAlignmentDiscoveryItems } from "@/data/i18n/discovery-life-alignment";
 import { findYourNextStep, nextStepJourneys } from "@/data/find-your-next-step";
-import { hqPulseItems } from "@/data/hq-pulse";
+import { createHqPulseItems, hqPulseItems } from "@/data/hq-pulse";
 import { interviewFormats } from "@/data/interviews";
 import { lifeAlignment } from "@/data/life-alignment";
 import { lifeVision } from "@/data/life-alignment-life-vision";
@@ -254,4 +254,13 @@ export function createPublishedWritingDiscoveryItems(articles: PublicWritingSumm
     href: `/writing/${article.slug}`,
     contentLanguage: article.language,
   }));
+}
+
+/** The same verified records feed live search and Pulse; no article fallback on failure. */
+export function createDiscoveryItemsWithWriting(articles: PublicWritingSummary[]): DiscoveryItem[] {
+  return [
+    ...discoveryIndex.filter((item) => !item.id.startsWith("pulse-") && !/^writing-\d+$/u.test(item.id)),
+    ...createPublishedWritingDiscoveryItems(articles),
+    ...createHqPulseDiscoveryItems(createHqPulseItems({ publishedWriting: articles })),
+  ];
 }

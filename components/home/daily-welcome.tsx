@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useDiscovery } from "@/components/discovery/discovery-context";
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { useLocale } from "@/components/i18n/locale-context";
 import { QuoteExperience } from "@/components/quotes/quote-experience";
@@ -20,7 +21,9 @@ const snapshot = () => welcomeGate.visible(storage, window.location.hash);
 const serverSnapshot = () => false;
 
 /** Nonmodal: no focus capture, backdrop, scroll lock or obligation to dismiss. */
-export function DailyWelcome({ dateKey, article }: { dateKey: string; article?: PublicWritingSummary }) {
+export function DailyWelcome({ dateKey, article: suppliedArticle }: { dateKey: string; article?: PublicWritingSummary }) {
+  const { latestWriting } = useDiscovery();
+  const article = suppliedArticle ?? latestWriting;
   const locale = useLocale(), copy = adaptiveHomeCopy[locale];
   const visible = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   const panel = useRef<HTMLElement>(null);

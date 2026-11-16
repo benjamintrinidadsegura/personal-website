@@ -317,7 +317,8 @@ test("presentation remains server-first, semantic, mobile-safe, and free of live
   assert.equal(component.includes("min-w-0 border-b"), true);
   assert.equal(component.includes("min-h-11"), true);
   assert.equal(home.includes("<Now />"), false);
-  assert.equal(home.includes("<HqPulse publishedWriting={publishedWriting} />"), true);
+  assert.equal(home.includes("<PublishedPulse read={writingRead} />"), true);
+  assert.match(home, /<HqPulse publishedWriting=\{\(await read\)\.data\}/u);
 });
 
 test("default source density needs neither filters nor Show More", () => {

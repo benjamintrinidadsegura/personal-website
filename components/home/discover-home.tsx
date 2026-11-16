@@ -1,4 +1,6 @@
 import Image from "next/image";
+import type { ReactNode } from "react";
+import { writingRecoveryCopy } from "@/data/i18n/writing-recovery";
 import Link from "next/link";
 
 import { QuoteExperience } from "@/components/quotes/quote-experience";
@@ -13,34 +15,14 @@ import { localeDetails, type Locale } from "@/lib/i18n/config";
 import { localizeHref } from "@/lib/i18n/routing";
 import type { PublishedWritingReadResult } from "@/lib/writing/queries";
 
-/** Server presentation of the same public snapshot used by Explore; no second content query. */
-export function DiscoverHome({ locale, publishedWritingResult, dateKey }: {
-  locale: Locale;
-  publishedWritingResult: PublishedWritingReadResult;
-  dateKey: string;
-}) {
+export function DiscoverWritingFeature({ locale, result }: { locale: Locale; result?: PublishedWritingReadResult }) {
   const copy = discoverCopy[locale];
   const writing = getWritingDictionary(locale);
-  const article = publishedWritingResult.data[0];
-  const about = getAboutContent(locale);
-  // The existing adapter admits only published Spotlights with verified public map context.
-  const connection = createWorldMapConnections(getLocalizedPublishedSpotlights(locale))[0];
-  const paths = [
-    { key: "projects", copy: copy.projects, href: "/#building" },
-    { key: "writing", copy: copy.writing, href: "/writing" },
-    { key: "people", copy: copy.people, href: "/people" },
-    { key: "experiences", copy: copy.experiences, href: findYourNextStep.href },
-  ];
-
-  return (
-    <div className="discover-editorial">
-      <section id="discover-featured" aria-labelledby="discover-title" className="discover-featured">
-        <header className="discover-section-heading">
-          <p className="discover-eyebrow">BTSHQ / Discover</p>
-          <h2 id="discover-title">{copy.featured}</h2>
-        </header>
-        <div className="discover-featured-grid">
-          {article ? (
+  const article = result?.data[0];
+  if (!result) return <div className="discover-writing discover-writing-empty" data-discover-writing-state="loading" aria-busy="true">
+    <p className="discover-eyebrow">Writing</p><div role="status"><h2>{writingRecoveryCopy[locale].loadingTitle}</h2><p className="discover-writing-introduction">{writingRecoveryCopy[locale].loadingBody}</p></div>
+  </div>;
+  return (article ? (
             <article className="discover-writing" data-discover-writing={article.id}>
               <div className="discover-writing-meta">
                 <span>{writing.page.featured}</span>
@@ -59,15 +41,44 @@ export function DiscoverHome({ locale, publishedWritingResult, dateKey }: {
               {article.translationStatus === "fallback" ? <p className="discover-source-notice">{writing.article.sourceNotice}</p> : null}
             </article>
           ) : (
-            <div className="discover-writing discover-writing-empty" data-discover-writing-state={publishedWritingResult.status === "unavailable" ? "unavailable" : "empty"}>
+            <div className="discover-writing discover-writing-empty" data-discover-writing-state={result.status === "unavailable" ? "unavailable" : "empty"}>
               <p className="discover-eyebrow">Writing</p>
               <div role="status">
-                <h2>{publishedWritingResult.status === "unavailable" ? copy.unavailableTitle : copy.emptyTitle}</h2>
-                <p className="discover-writing-introduction">{publishedWritingResult.status === "unavailable" ? copy.unavailableBody : copy.emptyBody}</p>
+                <h2>{result.status === "unavailable" ? copy.unavailableTitle : copy.emptyTitle}</h2>
+                <p className="discover-writing-introduction">{result.status === "unavailable" ? copy.unavailableBody : copy.emptyBody}</p>
               </div>
               <Link className="discover-text-link" href={localizeHref("/writing", locale)}>{copy.writingLink}<span aria-hidden="true"> ↗</span></Link>
             </div>
-          )}
+          ));
+}
+
+/** Server presentation of the same public snapshot used by Explore; no second content query. */
+export function DiscoverHome({ locale, publishedWritingResult, dateKey, writingFeature }: {
+  locale: Locale;
+  publishedWritingResult?: PublishedWritingReadResult;
+  writingFeature?: ReactNode;
+  dateKey: string;
+}) {
+  const copy = discoverCopy[locale];
+  const about = getAboutContent(locale);
+  // The existing adapter admits only published Spotlights with verified public map context.
+  const connection = createWorldMapConnections(getLocalizedPublishedSpotlights(locale))[0];
+  const paths = [
+    { key: "projects", copy: copy.projects, href: "/#building" },
+    { key: "writing", copy: copy.writing, href: "/writing" },
+    { key: "people", copy: copy.people, href: "/people" },
+    { key: "experiences", copy: copy.experiences, href: findYourNextStep.href },
+  ];
+
+  return (
+    <div className="discover-editorial">
+      <section id="discover-featured" aria-labelledby="discover-title" className="discover-featured">
+        <header className="discover-section-heading">
+          <p className="discover-eyebrow">BTSHQ / Discover</p>
+          <h2 id="discover-title">{copy.featured}</h2>
+        </header>
+        <div className="discover-featured-grid">
+          {writingFeature ?? <DiscoverWritingFeature locale={locale} result={publishedWritingResult} />}
           <div className="discover-daily">
             <QuoteExperience context={{ surface: "daily", dateKey }} variant="daily" presentation="compact" description="" safeSharePath="/" />
           </div>

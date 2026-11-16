@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { createElement, type ReactElement, type ReactNode } from "react";
+import { Suspense, createElement, type ReactElement, type ReactNode } from "react";
+import { writingRecoveryCopy } from "../data/i18n/writing-recovery";
 import * as jsxRuntime from "react/jsx-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -33,10 +34,12 @@ async function home(locale: Locale, result: PublishedWritingReadResult) {
   const sections = Object.fromEntries(sectionNames.map((name) => [name, (props: object) => createElement("section", { ...props, "data-section": name })]));
   const dependencies: Record<string, unknown> = {
     "react/jsx-runtime": jsxRuntime,
+    "react": { Suspense },
+    "@/data/i18n/writing-recovery": { writingRecoveryCopy },
     "@/components/home/home-views": { HomeViews: () => null },
     "@/components/home/universe/adaptive-universe": { AdaptiveUniverse: () => null },
     "@/components/home/daily-welcome": { DailyWelcome: () => null },
-    "@/components/home/discover-home": { DiscoverHome: () => null },
+    "@/components/home/discover-home": { DiscoverHome: () => null, DiscoverWritingFeature: () => null },
     "@/lib/home-view": homeView,
     "@/lib/i18n/server": { getLocale: async () => locale },
     "@/lib/writing/queries": { getPublishedWritingResult: async (requested: Locale) => { assert.equal(requested, locale); return result; } },
@@ -48,7 +51,7 @@ async function home(locale: Locale, result: PublishedWritingReadResult) {
   const page = loadSource<{ default: () => Promise<ReactElement<{ discover: ReactElement<{ locale: Locale; publishedWritingResult: PublishedWritingReadResult; dateKey: string }>; explore: ReactElement<{ children: ReactElement[] }> }>>; revalidate: number }>("app/page.tsx", dependencies);
   const wrapper = await page.default() as unknown as ReactElement<{ children: ReactElement[] }>;
   const [welcome, tree] = wrapper.props.children;
-  assert.equal((welcome.props as {article?:PublicWritingSummary}).article, result.data[0]);
+  assert.equal((welcome.props as {article?:PublicWritingSummary}).article, undefined, "Welcome must not await optional Writing");
   return { page, sections, tree: tree as unknown as Awaited<ReturnType<typeof page.default>> };
 }
 
@@ -57,7 +60,12 @@ test("home preserves the complete Explore section order and shares the same loca
     for (const result of [{ status: "data", data: articles }, { status: "data", data: [] }, { status: "unavailable", data: [] }] satisfies PublishedWritingReadResult[]) {
       const { page, sections, tree } = await home(locale, result);
       assert.equal(page.revalidate, 300);
-      const children = tree.props.explore.props.children;
+      const streamedChildren = tree.props.explore.props.children;
+      const children = await Promise.all(streamedChildren.map(async (child) => {
+        if (child.type !== Suspense) return child;
+        const slot = (child.props as { children: ReactElement<Record<string, unknown>> }).children;
+        return await (slot.type as (props: object) => Promise<ReactElement>)(slot.props);
+      }));
       assert.deepEqual(children.map((child) => child.type), sectionNames.map((name) => sections[name]));
       const pulse = children[2] as ReactElement<{ publishedWriting: PublicWritingSummary[] }>;
       const writing = children[4] as ReactElement<{ publishedWriting: PublicWritingSummary[]; publishedWritingStatus: string }>;
@@ -68,7 +76,9 @@ test("home preserves the complete Explore section order and shares the same loca
       assert.match(quote.props.dateKey, /^\d{4}-\d{2}-\d{2}$/u);
       const discover = (tree.props.discover.props as unknown as {children:ReactElement[]}).children[1] as typeof tree.props.discover;
       assert.equal(discover.props.locale, locale);
-      assert.equal(discover.props.publishedWritingResult, result, "Discover must receive the same public snapshot without another query");
+      const feature = (discover.props as unknown as {writingFeature: ReactElement<{children: ReactElement<Record<string,unknown>>}>}).writingFeature.props.children;
+      const resolved = await (feature.type as (props: object) => Promise<ReactElement<{result: PublishedWritingReadResult}>>)(feature.props);
+      assert.equal(resolved.props.result, result, "streamed Discover must receive the same verified snapshot");
       assert.equal(discover.props.dateKey, quote.props.dateKey, "both views must use one UTC date key");
     }
   }

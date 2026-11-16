@@ -47,6 +47,7 @@ function loadIndex(locale: Locale, result: PublishedWritingReadResult) {
     "next/link": { __esModule: true, default: "a" },
     "@/components/newsletter/newsletter-cta": { NewsletterCta: () => null },
     "@/components/writing/share/share-format-signal": { ShareFormatSignal },
+    "@/components/writing/writing-retry-button": { WritingRetryButton: () => jsxRuntime.jsx("button", { type: "button", "data-retry-writing": true, children: "Retry fixture" }) },
     "@/data/i18n/writing": writingCopy,
     "@/data/i18n/writing-share": { getWritingShareDictionary },
     "@/data/i18n/global": { getGlobalDictionary },
