@@ -1,6 +1,6 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { isEchoCountryContextEnabled } from "@/lib/echowall/country-configuration";
 import { isEchoCountry } from "@/lib/echowall/countries";
 
@@ -14,7 +14,6 @@ import {
 } from "@/types/echowall";
 
 const MAX_PUBLIC_ECHOES = 50;
-const CACHE_SECONDS = 300;
 
 type PublicEchoRow = {
   id: unknown;
@@ -55,12 +54,16 @@ function mapPublicEcho(row: PublicEchoRow): PublicEcho | null {
   };
 }
 
-const queryApprovedEchoes = unstable_cache(
+// Deduplicate within a render only. A hidden/deleted echo must not survive in
+// a persistent public cache, including after moderation outside this process.
+const queryApprovedEchoes = cache(
   async (requestedLimit: number, includeCountryContext: boolean): Promise<PublicEchoQueryResult> => {
     const limit = Math.min(Math.max(Math.trunc(requestedLimit), 1), MAX_PUBLIC_ECHOES);
 
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient({
+        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+      });
       const read = (columns: string) => supabase
         .from("echoes")
         .select(columns)
@@ -91,8 +94,6 @@ const queryApprovedEchoes = unstable_cache(
       return { status: "unavailable", echoes: [] };
     }
   },
-  ["approved-echoes"],
-  { revalidate: CACHE_SECONDS, tags: ["approved-echoes"] },
 );
 
 export async function getApprovedEchoes(

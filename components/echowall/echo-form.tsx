@@ -2,7 +2,7 @@
 
 import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 
-import { submitEchoAction } from "@/app/echowall/actions";
+import { issueEchoFormToken, submitEchoAction } from "@/app/echowall/actions";
 import { useLocalizedHref } from "@/components/i18n/locale-context";
 import type { livingWorldCopy } from "@/data/i18n/living-world";
 import type { EchoDictionary } from "@/data/i18n/echowall";
@@ -19,7 +19,27 @@ type EchoFormProps = {
 
 export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoFormProps) {
   const href = useLocalizedHref();
-  const [state, formAction, isPending] = useActionState(submitEchoAction, initialState);
+  const [currentFormToken, setCurrentFormToken] = useState(formToken);
+  const [state, formAction, isPending] = useActionState<EchoActionState, FormData>(
+    async (previous, data) => {
+      try {
+        const result = await submitEchoAction(previous, data);
+        if (!result.ok && result.code === "INVALID_FORM_TOKEN") {
+          // Renew only the signed form token; never resend the contribution.
+          const renewed = await issueEchoFormToken();
+          if (!renewed) return { ok: false, code: "SERVICE_UNAVAILABLE" };
+          setCurrentFormToken(renewed);
+        }
+        return result;
+      } catch {
+        // A transport failure must keep the mounted, controlled draft intact.
+        // The server may have committed: do not retry or claim success here.
+        return { ok: false, code: "SERVICE_UNAVAILABLE" };
+      }
+    },
+    initialState,
+  );
+  const submissionInFlight = useRef(false);
   const [displayName, setDisplayName] = useState("");
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
@@ -34,6 +54,7 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoF
 
   useEffect(() => {
     if (!state) return;
+    submissionInFlight.current = false;
     if (state.ok) {
       successRef.current?.focus();
       return;
@@ -108,7 +129,8 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoF
   const submit = (event: FormEvent<HTMLFormElement>) => {
     // Keep the native action for progressive enhancement and preserve the draft in the hydrated form.
     event.preventDefault();
-    if (isPending) return;
+    if (isPending || submissionInFlight.current) return;
+    submissionInFlight.current = true;
     const data = new FormData(event.currentTarget);
     startTransition(() => formAction(data));
   };
@@ -118,7 +140,7 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoF
 
   return (
     <form ref={formRef} action={formAction} onSubmit={submit} noValidate className="living-echo-form space-y-8">
-      <input type="hidden" name="formToken" value={formToken} />
+      <input type="hidden" name="formToken" value={currentFormToken ?? ""} />
 
       <div
         ref={errorRef}

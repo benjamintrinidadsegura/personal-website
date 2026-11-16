@@ -86,7 +86,7 @@ function loadEchoQuery(flag: boolean, hasColumns: boolean) {
   };
   const query = loadSource<{ getApprovedEchoes: EchoQuery }>("lib/echowall/queries.ts", {
     "server-only": {},
-    "next/cache": { unstable_cache: (fn: EchoQuery) => fn },
+    "react": { cache: (fn: EchoQuery) => fn },
     "@/lib/echowall/country-configuration": { isEchoCountryContextEnabled: () => flag },
     "@/lib/echowall/countries": { isEchoCountry },
     "@/lib/public-content-hygiene": { isPublicEchoReady },

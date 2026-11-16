@@ -13,7 +13,7 @@ function reader(flag = true) {
   let error: unknown = null;
   let thrown = false;
   const calls: { columns: string; limit?: number }[] = [];
-  let cacheContract: unknown;
+  let renderMemoizers = 0;
   const client = { from(table: string) {
     assert.equal(table, "echoes");
     return { select(columns: string) {
@@ -34,14 +34,14 @@ function reader(flag = true) {
   } };
   const api = loadSource<{ getApprovedEchoes: (limit: number, country?: boolean) => Promise<PublicEchoQueryResult> }>("lib/echowall/queries.ts", {
     "server-only": {},
-    "next/cache": { unstable_cache: (fn: unknown, keys: unknown, options: unknown) => { cacheContract = { keys, options }; return fn; } },
+    "react": { cache: (fn: unknown) => { renderMemoizers++; return fn; } },
     "@/lib/echowall/country-configuration": { isEchoCountryContextEnabled: () => flag },
     "@/lib/echowall/countries": { isEchoCountry },
     "@/lib/public-content-hygiene": { isPublicEchoReady },
     "@/lib/supabase/server": { getSupabaseServerClient: () => client },
     "@/types/echowall": { echoCategories },
   });
-  return { read: api.getApprovedEchoes, calls, cacheContract, setRows: (value: Row[]) => { rows = value; }, setFailure: (value: unknown, exception = false) => { error = value; thrown = exception; } };
+  return { read: api.getApprovedEchoes, calls, renderMemoizers, setRows: (value: Row[]) => { rows = value; }, setFailure: (value: unknown, exception = false) => { error = value; thrown = exception; } };
 }
 
 test("approved echo projection excludes private columns, pending/rejected/hidden/deleted and invalid or synthetic records", async () => {
@@ -63,7 +63,7 @@ test("genuine empty, unavailable, exception and subsequent recovery remain disti
   query.setFailure({ code: "safe-test-error" }); assert.deepEqual(await query.read(50, true), { status: "unavailable", echoes: [] });
   query.setFailure(null, true); assert.deepEqual(await query.read(50), { status: "unavailable", echoes: [] });
   query.setFailure(null); query.setRows([approved]); assert.equal((await query.read(50, true)).status, "data");
-  assert.deepEqual(query.cacheContract, { keys: ["approved-echoes"], options: { revalidate: 300, tags: ["approved-echoes"] } });
+  assert.equal(query.renderMemoizers, 1);
 });
 
 test("moderation and deletion remove country eligibility on the next invalidated public read", async () => {
