@@ -145,6 +145,9 @@ export const discoveryDimensionsByItemId: Readonly<Record<string, DiscoveryDimen
  * the canonical term. Canonical terms are never expanded again.
  */
 export const discoverySynonymGroups: readonly DiscoverySynonymGroup[] = [
+  // Actual public index groups, using the existing localized Discovery vocabulary.
+  { id: "public-people-group", canonical: "People", aliases: ["Menschen", "personas", "insanlar", "ludzie", "άνθρωποι", "люди"].map(value => ({value, match: "token" as const})) },
+  { id: "public-project-group", canonical: "Projects", aliases: ["Projekte", "proyectos", "projeler", "projekty", "έργα", "проекты"].map(value => ({value, match: "token" as const})) },
   // AI is already indexed on the public About page; translate the concept, not a demo query.
   { id: "artificial-intelligence", canonical: "AI", aliases: [
     { value: "KI", match: "token" }, { value: "künstliche Intelligenz", match: "phrase" },
@@ -362,6 +365,7 @@ export const discoveryRelationships: readonly DiscoveryRelationship[] = [
 ];
 
 export const discoveryNeutralTerms: readonly string[] = [
+  "ihre", "kennenlernen",
   "ich",
   "ein",
   "eine",

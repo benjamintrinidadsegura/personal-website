@@ -319,7 +319,7 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
               </div>
             ) : null}
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-white/10 px-4 py-2 font-mono text-[9px] uppercase tracking-wider text-slate-500">
-              <span aria-live="polite">{query.trim() ? copy.count(matches.length) : copy.startTyping}</span>
+              <span aria-live="polite">{query.trim() ? copy.resultSummary(matches) : copy.startTyping}</span>
               <span>{copy.shortcuts}</span>
             </div>
           </div>

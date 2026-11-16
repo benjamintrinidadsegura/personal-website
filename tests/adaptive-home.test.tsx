@@ -150,8 +150,7 @@ test("KI resolves the documented AI concept ahead of a weaker person's name pref
  assert.equal(matches[0]?.item.id,"page-about");
  assert.equal(matches[0]?.presentation,"match");
  const namePrefix=matches.find(match=>match.item.href==="/people/kiki-radicke");
- assert.ok(namePrefix && matches[0].score>namePrefix.score);
- assert.equal(namePrefix.presentation,"suggestion");
+ assert.equal(namePrefix,undefined,"a known topical acronym must not suggest an incidental person prefix");
 });
 
 test("a public person without an approved portrait keeps name initials instead of inheriting a tool scene",()=>{

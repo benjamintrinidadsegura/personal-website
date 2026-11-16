@@ -96,12 +96,13 @@ test("every discovery destination is a verified route or home anchor", () => {
 });
 
 test("unfinished content without a page remains discoverable but not navigable", () => {
-  for (const title of ["Career Agent", "Talking Cure", "Personal Conversations", "Leidenschaft"] as const) {
+  for (const title of ["Career Agent", "Talking Cure", "Personal Conversations"] as const) {
     const item = discoveryIndex.find((candidate) => candidate.title === title);
     assert.ok(item, title);
     assert.equal(item.href, undefined, title);
     assert.ok(item.status === "Coming Soon" || item.status === "In Development", title);
   }
+  assert.equal(discoveryIndex.some(item => item.id.startsWith("writing-") && item.status !== "Live"), false, "unpublished Writing teasers are not public search records");
 });
 
 test("matching starts at one character and ignores casing", () => {
@@ -331,7 +332,7 @@ test("higher ranking tiers cannot be overtaken by dimension volume or coverage",
       group: "Pages",
       title: "Direct",
       description: "x",
-      category: "Alpha",
+      category: "Alpha Beta Gamma Delta",
       tags: [],
       keywords: [],
       status: "Live",
@@ -363,6 +364,7 @@ test("higher ranking tiers cannot be overtaken by dimension volume or coverage",
 function getReasonSourceValues(match: DiscoveryMatch): string[] {
   const { item } = match;
   return match.reasons.map((reason) => {
+    if (reason.source === "group") return item.group;
     if (reason.source === "title" || reason.source === "category" || reason.source === "description") return item[reason.source];
     if (reason.source === "tag") return item.tags.find((value) => value === reason.value) ?? "";
     if (reason.source === "keyword") return item.keywords.find((value) => value === reason.value) ?? "";

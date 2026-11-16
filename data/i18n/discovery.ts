@@ -4,6 +4,7 @@ import { getHqPulseCopy } from "@/data/i18n/hq-pulse";
 import { getWorldMapDictionary } from "@/data/i18n/world-map";
 import { getNerdCornerCopy } from "@/data/i18n/nerd-corner";
 import { guidedDiscoveryPrompts } from "@/data/discovery-curation";
+import { adaptiveHomeCopy } from "@/data/i18n/adaptive-home";
 import { projects } from "@/data/projects";
 import type { Locale } from "@/lib/i18n/config";
 import { localizeHref } from "@/lib/i18n/routing";
@@ -242,8 +243,15 @@ const interviewKeyword: Record<Locale, string> = {
   de: "Interview", en: "interview", es: "entrevista", tr: "röportaj", pl: "wywiad", el: "συνέντευξη", ru: "интервью",
 };
 
-export function getDiscoveryUiCopy(locale: Locale): DiscoveryUiCopy {
-  return ui[locale];
+export function getDiscoveryUiCopy(locale: Locale) {
+  const copy = ui[locale], labels = adaptiveHomeCopy[locale];
+  const presentationLabels = {match: labels.results, suggestion: labels.suggestions, related: labels.related};
+  return {...copy, presentationLabels, resultSummary(matches: readonly import("@/types/discovery").DiscoveryMatch[]) {
+    return (["match", "suggestion", "related"] as const).flatMap(kind => {
+      const count = matches.filter(match => (match.presentation ?? "match") === kind).length;
+      return count ? [kind === "match" ? copy.count(count) : `${presentationLabels[kind]} · ${count}`] : [];
+    }).join(" / ");
+  }};
 }
 
 export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: Locale): DiscoveryItem[] {
@@ -281,6 +289,10 @@ export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: 
         category: item.category === "conversation" ? pulseCopy.typeLabels.conversation : pulseCopy.typeLabels.publication,
         tags: item.tags.map((tag) => pulseCopy.sourceLabels[tag as keyof typeof pulseCopy.sourceLabels] ?? tag),
       };
+    }
+    // Preserve the concept documented in About's public AI-perspective disclosure.
+    if (item.id === "page-about" && item.keywords.includes("AI-assisted reflection")) {
+      localized = {...localized, keywords: [...new Set([...localized.keywords, "AI-assisted reflection"])]};
     }
     return { ...localized, href: localized.href ? localizeHref(localized.href, item.contentLanguage ?? locale) : undefined };
   });

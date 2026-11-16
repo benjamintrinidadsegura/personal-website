@@ -87,7 +87,7 @@ function DiscoveryResultOption({
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-bold text-white">{item.title}</span>
           <span className={`rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${statusClasses[item.status]}`}>
-            {copy.statuses[item.status]}
+            {copy.statuses[item.status]} · {copy.presentationLabels[match.presentation ?? "match"]}
           </span>
         </div>
         <p className="mt-1 line-clamp-1 text-sm leading-5 text-slate-400 sm:line-clamp-2">{item.description}</p>

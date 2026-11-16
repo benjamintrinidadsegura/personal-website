@@ -8,7 +8,6 @@ import { lifeVision } from "@/data/life-alignment-life-vision";
 import { lifeAlignmentHub } from "@/data/life-alignment-modules";
 import { partnerModule } from "@/data/life-alignment-partner";
 import { projects } from "@/data/projects";
-import { writingEntries } from "@/data/writing";
 import type { HqPulseItem, ProjectArea, ProjectStatus } from "@/types/content";
 import type { DiscoveryItem, DiscoveryStatus } from "@/types/discovery";
 import type { PublicWritingSummary } from "@/types/writing";
@@ -74,17 +73,6 @@ export function createHqPulseDiscoveryItems(items: readonly HqPulseItem[]): Disc
 }
 
 const pulseItems = createHqPulseDiscoveryItems(hqPulseItems);
-
-const writingItems: DiscoveryItem[] = writingEntries.map((entry, index) => ({
-  id: `writing-${index + 1}`,
-  group: "Insights",
-  title: entry.title,
-  description: entry.excerpt,
-  category: entry.category,
-  tags: ["Writing", "Field Notes"],
-  keywords: ["Artikel", "Gedanken"],
-  status: "Coming Soon",
-}));
 
 const interviewDestinations: Record<(typeof interviewFormats)[number]["title"], Pick<DiscoveryItem, "status" | "href">> = {
   "Career Spotlight": { status: "Live", href: "/people" },
@@ -240,7 +228,6 @@ const pageItems: DiscoveryItem[] = [
 const baseDiscoveryIndex: DiscoveryItem[] = [
   ...projectItems,
   ...pulseItems,
-  ...writingItems,
   ...interviewItems,
   ...peopleItems,
   ...toolItems,

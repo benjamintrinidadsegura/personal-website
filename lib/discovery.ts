@@ -49,6 +49,7 @@ interface PreparedQueryTerm extends QueryTerm {
 
 interface DiscoveryQueryAnalysis {
   normalizedQuery: string;
+  exactShortTokens: Set<string>;
   directTerms: PreparedQueryTerm[];
   synonymTerms: PreparedQueryTerm[];
   relationshipTerms: PreparedQueryTerm[];
@@ -179,6 +180,9 @@ function analyzeDiscoveryQuery(query: string): DiscoveryQueryAnalysis {
 
   return {
     normalizedQuery,
+    exactShortTokens: new Set(tokens.filter(token => token.length === 2 && discoverySynonymGroups.some(group =>
+      normalizeSearchText(group.canonical) === token || group.aliases.some(alias => normalizeSearchText(alias.value) === token),
+    ))),
     directTerms,
     synonymTerms,
     relationshipTerms,
@@ -213,6 +217,7 @@ function getSearchableFields(item: DiscoveryItem): PreparedSearchableField[] {
   const fields: SearchableField[] = [
     { source: "title", value: item.title },
     { source: "category", value: item.category },
+    { source: "group", value: item.group },
     ...item.tags.map((value) => ({ source: "tag" as const, value })),
     ...item.keywords.map((value) => ({ source: "keyword" as const, value })),
   ];
@@ -245,7 +250,7 @@ function directFieldScore(field: PreparedSearchableField, term: PreparedQueryTer
     if (activeDiscoveryDimensions.includes(field.source as ActiveDiscoveryDimension) && term.normalizedValue.length<3) return 0;
     return strength==="prefix"?60:20;
   }
-  if (field.source === "category") return CATEGORY_SCORE;
+  if (field.source === "category" || field.source === "group") return CATEGORY_SCORE;
   if (field.source === "tag" || field.source === "keyword") return TAG_OR_KEYWORD_SCORE;
   if (field.source === "description") return DESCRIPTION_SCORE;
   return DIMENSION_SCORE;
@@ -257,7 +262,13 @@ function collectSignals(item: DiscoveryItem, analysis: DiscoveryQueryAnalysis): 
 
   for (const term of analysis.directTerms) {
     for (const field of fields) {
-      const score = directFieldScore(field, term);
+      const strength = termStrength(field.tokens, term.tokens);
+      // Established short concepts require whole words, never a person's prefix.
+      if (term.tokens.some(token => analysis.exactShortTokens.has(token)) && strength !== "exact") continue;
+      if (analysis.normalizedQuery.length === 1 && !["title", "category", "group"].includes(field.source)) continue;
+      let score = directFieldScore(field, term);
+      if (analysis.normalizedQuery.length === 1) score = Math.min(70, score);
+      if (strength === "exact" && field.source === "tag" && term.tokens.some(token => analysis.exactShortTokens.has(token))) score = 750;
       if (score > 0) signals.push({ ...field, kind: term.kind, matchedTerm: term.value, score, concepts: term.concepts });
     }
   }
@@ -270,8 +281,11 @@ function collectSignals(item: DiscoveryItem, analysis: DiscoveryQueryAnalysis): 
         ...field,
         kind: term.kind,
         matchedTerm: term.value,
-        score: term.score <= 90 && (field.source !== "title" || field.normalizedValue !== term.normalizedValue)
-          ? Math.min(65, term.score) : term.score,
+        score: field.source === "group" ? CATEGORY_SCORE
+          : term.concepts.some(token => analysis.exactShortTokens.has(token)) && term.kind === "synonym"
+          ? Math.min(790, field.source === "tag" ? 675 : Math.round(directFieldScore(field, term) * .9))
+          : term.score <= 90 && (field.source !== "title" || field.normalizedValue !== term.normalizedValue)
+            ? Math.min(65, term.score) : term.score,
         concepts: term.concepts,
       });
     }
@@ -281,8 +295,8 @@ function collectSignals(item: DiscoveryItem, analysis: DiscoveryQueryAnalysis): 
 }
 
 function getReasonLabel(signal: MatchSignal): DiscoveryReasonLabel | null {
-  if (signal.kind === "relationship" || signal.kind === "synonym") return "Gefunden über";
-  if (signal.source === "category" || signal.source === "tag" || signal.source === "keyword") return "Passt zu";
+  if (signal.kind === "relationship" || signal.kind === "synonym" || signal.kind === "typo") return "Gefunden über";
+  if (signal.source === "category" || signal.source === "group" || signal.source === "tag" || signal.source === "keyword") return "Passt zu";
   if (activeDiscoveryDimensions.includes(signal.source as ActiveDiscoveryDimension)) return "Relevant für";
   return null;
 }
@@ -297,7 +311,7 @@ function createReason(signal: MatchSignal): DiscoveryMatchReason | null {
   if (!label) return null;
   if (signal.kind === "direct" && signal.value.length > 56) return null;
 
-  const useSourceValue = signal.kind === "direct";
+  const useSourceValue = signal.kind === "direct" || signal.kind === "typo";
   return {
     source: signal.source,
     value: signal.value,
@@ -345,11 +359,44 @@ export function discoverItems(items: DiscoveryItem[], query: string): DiscoveryM
   const analysis = analyzeDiscoveryQuery(query);
   if (!analysis.normalizedQuery || analysis.directTerms.length === 0) return [];
 
-  return items
+  const ranked = items
     .map((item, index) => ({ match: getMatch(item, analysis), index }))
     .filter((entry): entry is { match: DiscoveryMatch; index: number } => entry.match !== null)
     .sort((left, right) => right.match.score - left.match.score || left.index - right.index)
     .map(({ match }) => match);
+  if (!ranked.length) return typoMatches(items, analysis.normalizedQuery);
+  if (analysis.normalizedQuery.length === 1) return ranked.slice(0, 6);
+  const complete = ranked.some(match => match.presentation === "match");
+  let suggestions = 0, related = 0;
+  return ranked.filter(match => match.presentation === "related" ? !complete && ++related <= 3
+    : match.presentation !== "suggestion" || ++suggestions <= (analysis.normalizedQuery.length === 2 ? 3 : 6));
+}
+
+/** One edit only, including adjacent transposition; never recursive or substring fuzzy matching. */
+function oneEditApart(a: string, b: string): boolean {
+  if (Math.abs(a.length - b.length) > 1 || a === b) return false;
+  if (a.length === b.length) {
+    const different: number[] = [];
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) { different.push(i); if (different.length > 2) return false; }
+    return different.length === 1 || (different.length === 2 && different[1] === different[0] + 1 && a[different[0]] === b[different[1]] && a[different[1]] === b[different[0]]);
+  }
+  const short = a.length < b.length ? a : b, long = a.length < b.length ? b : a;
+  let i = 0;
+  while (i < short.length && short[i] === long[i]) i++;
+  return short.slice(i) === long.slice(i + 1);
+}
+
+/** Fallback for one 5–32-character word, explicit metadata only, at most six suggestions. */
+function typoMatches(items: DiscoveryItem[], query: string): DiscoveryMatch[] {
+  if (!/^[\p{L}\p{N}]{5,32}$/u.test(query)) return [];
+  return items.flatMap(item => {
+    for (const field of getSearchableFields(item)) {
+      if (!["title", "category", "group", "tag", "keyword"].includes(field.source)) continue;
+      if (!field.tokens.some(token => token.length <= 33 && oneEditApart(query, token))) continue;
+      return [{item, score: 80, presentation: "suggestion" as const, reasons: [{source: field.source, value: field.value, matchedTerm: query, kind: "typo" as const, label: "Gefunden über" as const, displayValue: field.value}]}];
+    }
+    return [];
+  }).slice(0, 6);
 }
 
 export function groupDiscoveryItems(matches: DiscoveryMatch[]): Map<DiscoveryGroup, DiscoveryMatch[]> {

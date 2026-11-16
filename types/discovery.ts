@@ -3,8 +3,8 @@ export type DiscoveryGroup = "Projects" | "Insights" | "Tools" | "People" | "Pag
 export type DiscoveryStatus = "Live" | "Beta" | "In Development" | "Coming Soon";
 
 /**
- * Reserved semantic dimensions for later Discovery Engine versions.
- * Discovery Engine v1 deliberately does not search these fields yet.
+ * Public intent/goals/problems/useCases metadata is searched; habitats and
+ * personality remain reserved and do not influence public retrieval.
  */
 export interface DiscoveryDimensions {
   intent?: string[];
@@ -36,12 +36,13 @@ export type ActiveDiscoveryDimension = "intent" | "goals" | "problems" | "useCas
 export type DiscoveryMatchSource =
   | "title"
   | "category"
+  | "group"
   | "tag"
   | "keyword"
   | ActiveDiscoveryDimension
   | "description";
 
-export type DiscoveryMatchKind = "direct" | "synonym" | "relationship";
+export type DiscoveryMatchKind = "direct" | "synonym" | "relationship" | "typo";
 
 export type DiscoveryReasonLabel = "Passt zu" | "Gefunden über" | "Relevant für";
 
