@@ -6,7 +6,7 @@ import { localizeHref } from "../lib/i18n/routing";
 
 test("page-view preparation drops queries and fragments for exact editorial pages in all locales", () => {
   for (const locale of locales) {
-    for (const path of ["/", "/about", "/people", "/world", "/writing"]) {
+    for (const path of ["/", "/about", "/people", "/world", "/writing", "/echowall"]) {
       const pathname = localizeHref(path, locale);
       const payload = getPublicPageView(pathname + "?token=synthetic-token&email=private%40example.test#answer");
       assert.deepEqual(payload, { type: "pageview", pathname });
@@ -17,7 +17,7 @@ test("page-view preparation drops queries and fragments for exact editorial page
 test("sensitive workflows, unknown content, external URLs and encoded paths are excluded", () => {
   for (const locale of locales) {
     for (const path of ["/admin/login", "/account", "/life-alignment", "/life-alignment/invite/secret",
-      "/life-alignment/session/private", "/tools/personal-advantage", "/echowall", "/writing/unverified-slug",
+      "/life-alignment/session/private", "/tools/personal-advantage", "/echowall/private", "/writing/unverified-slug",
       "/people/unknown", "/writing/../account", "/api", "/%77riting", "/writing/"]) {
       assert.equal(getPublicPageView(localizeHref(path, locale)), null);
     }

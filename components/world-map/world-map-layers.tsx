@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GlobalReach } from "@/components/world-map/global-reach";
 
 import { livingWorldCopy } from "@/data/i18n/living-world";
 import { echoCountryName, summarizeEchoCountries } from "@/lib/echowall/countries";
@@ -33,11 +34,7 @@ export async function WorldMapLayers({ locale }: { locale: Locale }) {
           EchoWall<span aria-hidden="true">↗</span>
         </Link>
       </section>
-      <section id="country-reach" aria-labelledby="country-reach-title" className="living-panel p-6 sm:p-8">
-        <h2 id="country-reach-title" className="text-3xl text-white">{copy.reachTitle}</h2>
-        <p className="mt-3 leading-7 text-slate-300">{copy.reachHelp}</p>
-        <p className="living-muted mt-4">{copy.reachUnavailable}</p>
-      </section>
+      <GlobalReach locale={locale} />
     </div>
   );
 }
