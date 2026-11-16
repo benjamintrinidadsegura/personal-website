@@ -109,6 +109,7 @@ export interface RelationshipSoloResult {
   questionSetVersion: string;
   interpretationVersion: string;
   reflections: readonly RelationshipSoloReflection[];
+  teamInsights?: import("./life-alignment-team-insights").TeamSoloInsights;
 }
 
 export type AlignmentSessionStatus = "active" | "completed" | "withdrawn";

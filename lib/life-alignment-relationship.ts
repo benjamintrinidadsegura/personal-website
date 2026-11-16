@@ -1,4 +1,5 @@
 import { getRelationshipModule, relationshipText } from "@/data/life-alignment-relationship";
+import { buildTeamSoloInsights } from "@/lib/life-alignment-team-insights";
 import type { Locale } from "@/lib/i18n/config";
 import type {
   RelationshipAnswer,
@@ -191,6 +192,10 @@ export function buildRelationshipSharedResult(moduleId: RelationshipModuleId, pa
 export function buildRelationshipSoloResult(moduleId: RelationshipModuleId, answers: RelationshipAnswerSet, locale: Locale = "en"): RelationshipSoloResult {
   const definition = getRelationshipModule(moduleId);
   if (!isRelationshipAssessmentComplete(definition, answers)) throw new Error("ASSESSMENT_INCOMPLETE");
+  if (moduleId === "team") {
+    const teamInsights = buildTeamSoloInsights(answers, locale);
+    return { kind: "solo", moduleId, moduleVersion: definition.version, questionSetVersion: definition.questionSetVersion, interpretationVersion: teamInsights.version, reflections: [], teamInsights };
+  }
   const copy = resultCopy[locale];
   const reflections = definition.questions.flatMap<RelationshipSoloReflection>((question) => {
     const answer = answers[question.id];
