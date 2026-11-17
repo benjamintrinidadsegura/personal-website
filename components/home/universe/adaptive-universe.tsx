@@ -35,6 +35,9 @@ export function AdaptiveUniverse() {
   const active=(perspective.selectionQuery===query ? matches.find(({item})=>item.id===perspective.selectedId)?.item : undefined)??matches[0]?.item;
   const [focusQuery,setFocusQuery]=useState("");
   const focusActive=focused && focusQuery===query;
+  // A query changed by the shared search also ends Focus; returning to the old
+  // query must not resurrect its previously selected content.
+  if (focused && focusQuery !== query) setFocused(false);
   const direction:UniverseDirection="atlas";
   const scene=useMemo(()=>composeUniverseSpace(matches,active?.id??"",focusActive,direction,discovering?"discovery":"search"),[matches,active?.id,focusActive,discovering]);
   const related=active?relatedUniverseItems(active,matches.map(match=>match.item)):[];
@@ -43,7 +46,7 @@ export function AdaptiveUniverse() {
   const didDrag = useRef(false);
   const motion = useRef<UniverseMotion | null>(null);
   const positions = useRef(new Map<string, MotionPoint>());
-  const pendingFocus = useRef<string | null>(null);
+  const pendingFocus = useRef<{ target: string; query: string } | null>(null);
   const focusIntent = useRef(0);
   const returnPerspective = useRef<Perspective | null>(null);
   const returnViewport = useRef<{ x: number; y: number } | null>(null);
@@ -55,9 +58,10 @@ export function AdaptiveUniverse() {
     const currentMotion = startUniverseMotion(space.current, scene, positions.current);
     motion.current = currentMotion;
     let focusFrame = 0;
-    const target = pendingFocus.current;
+    const request = pendingFocus.current;
+    const target = request?.query === query ? request.target : null;
+    if (request && request.query !== query) pendingFocus.current = null;
     const intent = focusIntent.current;
-    pendingFocus.current = null;
     if (target) {
       if (target.startsWith("@restore:") && returnViewport.current && typeof window !== "undefined") {
         const { x, y } = returnViewport.current;
@@ -65,18 +69,20 @@ export function AdaptiveUniverse() {
         returnViewport.current = null;
       }
       if (target !== "@detail" && target !== "@search" && !target.startsWith("@restore:")) currentMotion.finish();
-      let attempts = 0;
       const focusVisibleTarget = () => {
         // A deliberate search interaction takes precedence over a delayed handoff.
-        if(intent!==focusIntent.current)return;
-        const button = target === "@detail" ? document.getElementById("universe-detail")
-          : target === "@search" ? document.getElementById("universe-search")
+        if(intent!==focusIntent.current || pendingFocus.current!==request)return;
+        const button = target === "@detail" ? space.current?.parentElement?.querySelector<HTMLElement>("#universe-detail")
+          : target === "@search" ? space.current?.querySelector<HTMLInputElement>("#universe-search")
           : space.current?.querySelector<HTMLButtonElement>('[data-universe-card="' + target.replace("@restore:", "") + '"] button');
         if (!button) return;
         if (getComputedStyle(button).visibility === "visible") {
           button.focus({ preventScroll: target !== "@search" });
+          // A scene/catalog rerender may interrupt a handoff before focus is
+          // possible. Retain the intent until it succeeds or the user cancels it.
+          if (document.activeElement === button && pendingFocus.current === request) pendingFocus.current = null;
           if (target === "@detail" && typeof innerHeight === "number") {
-            const field = document.getElementById("universe-search"), bounds = field?.getBoundingClientRect();
+            const field = space.current?.querySelector<HTMLInputElement>("#universe-search"), bounds = field?.getBoundingClientRect();
             if (bounds && (bounds.top < 85 || bounds.bottom > innerHeight - 8)) field?.scrollIntoView({ block:"center", behavior:"instant" });
           }
           if (target !== "@detail" && document.activeElement === button && typeof innerHeight === "number") {
@@ -84,49 +90,53 @@ export function AdaptiveUniverse() {
             if (bounds.top < 85 || bounds.bottom > innerHeight - 8) visible.scrollIntoView({ block: "nearest", behavior: "instant" });
           }
         }
-        if (document.activeElement !== button && ++attempts < 4) focusFrame = requestAnimationFrame(focusVisibleTarget);
+        // Readiness, not a frame deadline, owns the handoff. A hidden document
+        // or panel does no retry work; cleanup and newer intent cancel it.
+        if (document.activeElement !== button && document.visibilityState !== "hidden" && (space.current?.checkVisibility?.() ?? true)) {
+          focusFrame = requestAnimationFrame(focusVisibleTarget);
+        }
       };
       focusVisibleTarget();
     }
     return () => { cancelAnimationFrame(focusFrame); currentMotion.stop(); };
-  }, [scene, direction]);
+  }, [scene, direction, query]);
 
+  const queueFocus = (target: string) => { pendingFocus.current = { target, query }; };
+  const discardFocus = () => { pendingFocus.current=null;returnPerspective.current=null;returnViewport.current=null;setFocused(false); };
   const select = (id: string) => setPerspective(current => ({ ...current, selectedId: id, selectionQuery: query }));
   const enterFocus = (id: string) => {
-    if (focusActive && active?.id === id) { document.getElementById("universe-detail")?.focus(); return; }
+    if (focusActive && active?.id === id) { space.current?.parentElement?.querySelector<HTMLElement>("#universe-detail")?.focus(); return; }
     if (!focusActive) {
-      returnPerspective.current = scene.nodes.some(node => node.item.id === id)
-        ? { ...perspective } : { ...perspective, selectedId: id, selectionQuery: query };
+      returnPerspective.current = { ...perspective, selectedId: id, selectionQuery: query };
       if (typeof window !== "undefined") returnViewport.current = { x: window.scrollX, y: window.scrollY };
     }
-    pendingFocus.current = "@detail"; select(id); setFocusQuery(query); setFocused(true);
+    queueFocus("@detail"); select(id); setFocusQuery(query); setFocused(true);
   };
   const leaveFocus = () => {
     const previous = returnPerspective.current;
-    const restored = previous ? composeUniverseSpace(matches, previous.selectedId, false, direction, discovering?"discovery":"search") : scene;
-    const destination = restored.nodes.some(node => node.item.id === active?.id) ? active?.id
-      : restored.nodes.find(node => node.index === restored.selectedIndex)?.item.id;
-    pendingFocus.current = destination ? "@restore:" + destination : "@search";
-    if (previous) setPerspective(previous);
+    const restored = composeUniverseSpace(matches, previous?.selectionQuery===query ? previous.selectedId : "", false, direction, discovering?"discovery":"search");
+    const destination = restored.nodes.find(node => node.index === restored.selectedIndex)?.item.id;
+    queueFocus(destination ? "@restore:" + destination : "@search");
+    if (previous) setPerspective({ ...previous, selectedId: destination ?? "", selectionQuery: query });
     returnPerspective.current = null; setFocused(false);
   };
-  const refine = () => { returnViewport.current = null; pendingFocus.current = "@search"; setFocused(false); };
-  const reset = () => { setRound(0);setEntryId("");returnViewport.current = null; setFocused(false); setPerspective(initial); setQuery(""); };
-  const refresh = () => { setRound(value=>value+1);setEntryId("");setFocused(false);setPerspective(value=>({...value,selectedId:"",selectionQuery:""})); };
+  const refine = () => { discardFocus();queueFocus("@search"); };
+  const reset = () => { discardFocus();setRound(0);setEntryId("");setPerspective(initial);setQuery(""); };
+  const refresh = () => { discardFocus();setRound(value=>value+1);setEntryId("");setPerspective(value=>({...value,selectedId:"",selectionQuery:""})); };
   const chooseEntry = (id:string) => { if(discovering)setEntryId(id);enterFocus(id); };
   const move = (index: number, focus = false) => {
     const item = matches[index]?.item;
     if (!item) return;
     if (focus && item.id === active?.id) {
       // Selection can stay unchanged while keyboard focus belongs to another card.
-      if(focusActive){document.getElementById("universe-detail")?.focus();return;}
+      if(focusActive){space.current?.parentElement?.querySelector<HTMLElement>("#universe-detail")?.focus();return;}
       const button=space.current?.querySelector<HTMLButtonElement>('[data-universe-card="'+item.id+'"] button');
       button?.focus({preventScroll:true});
       const title=button?.querySelector("strong"),bounds=title?.getBoundingClientRect();
       if(bounds && typeof innerHeight!=="undefined" && (bounds.top<85 || bounds.bottom>innerHeight-8))title?.scrollIntoView({block:"nearest",behavior:"instant"});
       return;
     }
-    if (focus && item.id !== active?.id) pendingFocus.current = item.id;
+    if (focus && item.id !== active?.id) queueFocus(item.id);
     select(item.id);
   };
   const onNodeKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -161,7 +171,7 @@ export function AdaptiveUniverse() {
     if (next !== scene.selectedIndex) move(next);
   };
 
-  const changeQuery = (value:string) => { returnViewport.current=null; setFocused(false); setPerspective(current=>({...current,selectedId:""})); setQuery(value); };
+  const changeQuery = (value:string) => { discardFocus();setPerspective(current=>({...current,selectedId:""}));setQuery(value); };
   const resultStatus = query.trim() ? ([
     [copy.results, matches.filter(match=>match.presentation==="match").length],
     [copy.suggestions, matches.filter(match=>match.presentation==="suggestion").length],
@@ -188,11 +198,11 @@ export function AdaptiveUniverse() {
             {query ? <button type="button" aria-label={copy.reset} onClick={()=>changeQuery("")}>×</button>:<span className={styles.inputStar} aria-hidden="true">✧</span>}
           </div>
           <details className={styles.categoryDisclosure} data-universe-categories><summary>{copy.categories} · {perspective.kind==="all"?copy.all:category(perspective.kind)}</summary>
-            <div className={styles.categories}><button type="button" aria-pressed={perspective.kind==="all"} onClick={()=>{setEntryId("");setFocused(false);setPerspective(initial);}}>{copy.all}</button>
-              {kinds.map(group=>{const kind=Object.keys(kindGroup).find(key=>kindGroup[key as UniverseKind]===group) as UniverseKind;return <button key={group} type="button" aria-pressed={perspective.kind!=="all" && kindGroup[perspective.kind]===group} onClick={()=>{setEntryId("");setFocused(false);setPerspective({kind,selectedId:"",selectionQuery:query});}}>{ui.groups[group]}</button>;})}
+            <div className={styles.categories}><button type="button" aria-pressed={perspective.kind==="all"} onClick={()=>{discardFocus();setEntryId("");setPerspective(initial);}}>{copy.all}</button>
+              {kinds.map(group=>{const kind=Object.keys(kindGroup).find(key=>kindGroup[key as UniverseKind]===group) as UniverseKind;return <button key={group} type="button" aria-pressed={perspective.kind!=="all" && kindGroup[perspective.kind]===group} onClick={()=>{discardFocus();setEntryId("");setPerspective({kind,selectedId:"",selectionQuery:query});}}>{ui.groups[group]}</button>;})}
             </div>
           </details>
-          <div className={styles.resultBar}><details className={styles.resultList} data-universe-list><summary>{discovering?copy.entries:copy.list}</summary><ul>{listMatches.map(({item,presentation})=><li key={item.id}><button type="button" onClick={()=>{document.querySelector<HTMLDetailsElement>("[data-universe-list]")?.removeAttribute("open");chooseEntry(item.id);}}><span lang={item.language}>{item.title}</span><small>{category(item.kind)}{query.trim()?" · "+presentationLabel(presentation):""}</small></button></li>)}</ul></details><button type="button" data-curated-refresh={discovering && !focusActive?"":undefined} onClick={discovering && !focusActive?refresh:reset}>{discovering && !focusActive?copy.refresh:copy.reset} ↻</button></div>
+          <div className={styles.resultBar}><details className={styles.resultList} data-universe-list><summary>{discovering?copy.entries:copy.list}</summary><ul>{listMatches.map(({item,presentation})=><li key={item.id}><button type="button" onClick={()=>{space.current?.querySelector<HTMLDetailsElement>("[data-universe-list]")?.removeAttribute("open");chooseEntry(item.id);}}><span lang={item.language}>{item.title}</span><small>{category(item.kind)}{query.trim()?" · "+presentationLabel(presentation):""}</small></button></li>)}</ul></details><button type="button" data-curated-refresh={discovering && !focusActive?"":undefined} onClick={discovering && !focusActive?refresh:reset}>{discovering && !focusActive?copy.refresh:copy.reset} ↻</button></div>
           <p id="universe-status" className={styles.sceneHint} role="status">{resultStatus}</p>
         </section>
         <ul className={styles.nodes} aria-label={ui.resultsLabel}>{catalog.map(item=>{
