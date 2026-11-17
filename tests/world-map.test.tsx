@@ -80,13 +80,12 @@ function withRelationships(base: WorldMapConnection, id: string, kinds: readonly
 
 test("MAP-01–MAP-04 and MAP-CORR-01 preserve thin People truth while separating current context from origin", () => {
   const connections = createWorldMapConnections(publishedSpotlights);
-  assert.equal(connections.length, 6);
+  assert.equal(connections.length, 5);
   assert.deepEqual(connections.map(({ entity }) => entity.id), [
     "person-evgeny-vinokurov",
     "person-kiki-radicke",
     "person-johanna-geisler",
     "person-kevin-schweisfurth",
-    "person-amr-medhat",
     "person-melanie-kleinhenz",
   ]);
   for (const connection of connections) {
@@ -112,10 +111,9 @@ test("MAP-CORR-01: Evgeny is Bremen current context and Siberia origin; origin n
   assert.deepEqual(progress.continents.map(({ id }) => id), ["EU"]);
 });
 
-test("MAP-03 source gates: Amr stays country-level while accepted public and professional contexts retain exact semantics", () => {
+test("MAP-03 source gates: origin-only data is excluded while verified professional contexts retain exact semantics", () => {
   const byId = new Map(createWorldMapConnections(publishedSpotlights).map((entry) => [entry.entity.id, entry]));
-  assert.equal(byId.get("person-amr-medhat")?.currentLocation.id, "country-eg");
-  assert.equal(byId.get("person-amr-medhat")?.currentLocation.cityId, undefined);
+  assert.equal(byId.has("person-amr-medhat"), false);
   assert.equal(byId.get("person-johanna-geisler")?.currentLocation.cityId, "hamburg");
   assert.equal(byId.get("person-kiki-radicke")?.currentLocation.regionId, "frankfurt-rhine-main");
   assert.equal(byId.get("person-kiki-radicke")?.currentLocation.context, "public-professional-context");
@@ -278,13 +276,13 @@ test("MAP-CORR-05 country aggregation is filter-aware, deduplicated and based on
 test("MAP-CORR-06 and MAP-15–MAP-19 make Discovery, Presence and Growth spatially meaningful without paid weighting", () => {
   const real = createWorldMapConnections(publishedSpotlights);
   const progress = calculateWorldMapProgress([...real, real[0]]);
-  assert.equal(progress.uniqueEntities, 6);
-  assert.equal(progress.uniqueRelationships, 6);
-  assert.equal(progress.discoveredCountries, 2);
+  assert.equal(progress.uniqueEntities, 5);
+  assert.equal(progress.uniqueRelationships, 5);
+  assert.equal(progress.discoveredCountries, 1);
   assert.equal(progress.discoveredCities, 5);
-  assert.equal(progress.continentsWithPresence, 2);
+  assert.equal(progress.continentsWithPresence, 1);
   assert.equal(progress.countries.find(({ id }) => id === "DE")?.stage, "growing");
-  assert.equal(progress.countries.find(({ id }) => id === "EG")?.stage, "discovered");
+  assert.equal(progress.countries.some(({ id }) => id === "EG"), false);
   assert.equal(resolveWorldMapStage(1, 1, 1), "discovered");
   assert.equal(resolveWorldMapStage(2, 1, 2), "presence");
   assert.equal(resolveWorldMapStage(3, 1, 3), "growing");
@@ -408,4 +406,26 @@ test("MAP-28–MAP-30 keep local build-side geometry, no vendor/runtime generati
   }
   assert.match(types, /currentLocation/u);
   assert.match(types, /origin\?/u);
+});
+
+
+test("origin-only Spotlight metadata never becomes a current map location or presence counter", () => {
+  const amr = publishedSpotlights.find(({ id }) => id === "person-amr-medhat");
+  assert.ok(amr);
+  assert.equal(amr.location?.context, "origin");
+  assert.deepEqual(createWorldMapConnections([amr]), []);
+  const progress = calculateWorldMapProgress(createWorldMapConnections([amr]));
+  assert.equal(progress.uniqueEntities, 0);
+  assert.deepEqual(progress.countries, []);
+  assert.deepEqual(progress.continents, []);
+});
+
+
+test("each displaced map control retains a non-interactive geographic anchor", () => {
+  const entries = createWorldMapConnections(getLocalizedPublishedSpotlights("en"));
+  const geometry = fakeGeometry(entries);
+  const html = renderToStaticMarkup(<LocaleProvider locale="en"><WorldMapExperience geometry={geometry} /></LocaleProvider>);
+  assert.equal((html.match(/data-map-pin-anchor=/gu) ?? []).length, entries.length);
+  assert.equal((html.match(/<line x1="0" y1="0"/gu) ?? []).length, entries.length);
+  assert.match(html, /aria-hidden="true" data-map-pin-anchor/u);
 });

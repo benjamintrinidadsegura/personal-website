@@ -7,6 +7,7 @@ host-side API proxy binds loopback only.
 Use --serve for bounded manual browser QA; Ctrl-C always removes owned resources.
 """
 from pathlib import Path
+import ipaddress
 import argparse, base64, hashlib, hmac, http.server, json, os, secrets
 import subprocess, threading, time, urllib.request, urllib.error, uuid
 
@@ -17,7 +18,13 @@ if any(p.name != '.env.example' for p in ROOT.glob('.env*')):
 parser = argparse.ArgumentParser()
 parser.add_argument('--evidence', required=True, type=Path)
 parser.add_argument('--serve', action='store_true')
+parser.add_argument('--subnet', help='Optional unused RFC1918 IPv4 /24 through /28 for the internal test network')
 args = parser.parse_args()
+if args.subnet:
+    subnet = ipaddress.ip_network(args.subnet)
+    private_ranges = tuple(map(ipaddress.ip_network, ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')))
+    if subnet.version != 4 or not 24 <= subnet.prefixlen <= 28 or not any(subnet.subnet_of(area) for area in private_ranges):
+        parser.error('--subnet must be an unused RFC1918 IPv4 /24 through /28')
 args.evidence.mkdir(parents=True, exist_ok=True)
 name = 'btshq-echo-test-' + uuid.uuid4().hex[:10]
 db, rest, bridge, network = name+'-db', name+'-rest', name+'-bridge', name+'-net'
@@ -55,7 +62,7 @@ proxy=None
 next_process=None
 try:
     images={image:docker('image','inspect',image,'--format','{{.Id}}') for image in ['postgres:17-alpine','postgrest/postgrest:v14.18','node:24-alpine']}
-    docker('network','create','--internal','--label','btshq.disposable=echowall',network); owned.append(('network',network))
+    docker('network','create','--internal','--label','btshq.disposable=echowall',*(['--subnet', str(subnet)] if args.subnet else []),network); owned.append(('network',network))
     docker('run','--detach','--pull=never','--name',db,'--label','btshq.disposable=echowall','--network',network,
       '--tmpfs','/var/lib/postgresql/data:rw,size=256m','-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:17-alpine'); owned.append(('container',db))
     for _ in range(40):

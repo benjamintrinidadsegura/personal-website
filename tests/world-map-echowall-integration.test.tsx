@@ -43,7 +43,8 @@ test("combined relationship categories are a union, deduplicate connections and 
 for (const locale of locales) {
   test(`map content, close control and canonical story links remain available in ${locale}`, () => {
     const connections = createWorldMapConnections(getLocalizedPublishedSpotlights(locale));
-    assert.equal(connections.length, 6);
+    assert.equal(connections.length, 5);
+    assert.equal(connections.some(({ entity }) => entity.id === "person-amr-medhat"), false);
     const geometry = createWorldMapGeometry(connections);
     const html = renderToStaticMarkup(<LocaleProvider locale={locale}><WorldMapExperience geometry={geometry} /></LocaleProvider>);
     assert.match(html, /href="#map-list-title"/u);

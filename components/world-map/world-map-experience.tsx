@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 
 import { useLocale, useLocalizedHref } from "@/components/i18n/locale-context";
 import { livingWorldCopy } from "@/data/i18n/living-world";
@@ -85,11 +85,11 @@ function placeLabel(location: WorldMapLocation, copy: ReturnType<typeof getWorld
 }
 
 const placeCalloutOffset: Record<string, { x: number; y: number }> = {
-  "city-bremen-de": { x: -80, y: -38 },
-  "city-hamburg-de": { x: 84, y: -48 },
-  "city-blieskastel-de": { x: 120, y: 18 },
-  "region-frankfurt-rhine-main-de": { x: -112, y: 45 },
-  "region-wuerzburg-de": { x: 94, y: 56 },
+  "city-bremen-de": { x: -62, y: -58 },
+  "city-hamburg-de": { x: 62, y: -58 },
+  "city-blieskastel-de": { x: 0, y: 70 },
+  "region-frankfurt-rhine-main-de": { x: -74, y: 12 },
+  "region-wuerzburg-de": { x: 74, y: 28 },
 };
 
 const countryLabelOffset: Record<string, { x: number; y: number }> = {
@@ -107,6 +107,20 @@ const placeLabelOffset: Record<string, { x: number; y: number }> = {
 };
 
 const mapLabelTextShadow = "-1px -1px 0 #031019, 1px -1px 0 #031019, -1px 1px 0 #031019, 1px 1px 0 #031019, 0 2px 6px #031019";
+
+// Offsets separate 44px controls in screen space. Leaders preserve the actual
+// projected geography instead of implying that the displaced control is a place.
+function MapPinAnchor({ point, offset, geometry, zoom }: {
+  point: { x: number; y: number };
+  offset: { x: number; y: number };
+  geometry: Pick<WorldMapGeometry, "width" | "height">;
+  zoom: number;
+}) {
+  return <svg aria-hidden="true" data-map-pin-anchor width="1" height="1" className="pointer-events-none absolute overflow-visible" style={{ left: `${point.x / geometry.width * 100}%`, top: `${point.y / geometry.height * 100}%` }}>
+    <line x1="0" y1="0" x2={offset.x / zoom} y2={offset.y / zoom} stroke="#9bdff1" strokeOpacity="0.55" strokeWidth={1 / zoom} />
+    <circle cx="0" cy="0" r={2 / zoom} fill="#9bdff1" />
+  </svg>;
+}
 
 function stageFill(stage: WorldMapStage | undefined) {
   if (stage === "growing") return "rgba(72,145,222,.48)";
@@ -588,10 +602,13 @@ export function WorldMapExperience({ geometry, children }: { geometry: WorldMapG
                         const shortLabel = placeLabel(group[0].currentLocation, copy);
                         const callout = placeCalloutOffset[group[0].currentLocation.id] ?? { x: 0, y: 0 };
                         return (
-                          <button key={group[0].currentLocation.id} type="button" value={group[0].id} onClick={openPin} aria-controls={selected ? "world-map-context" : undefined} aria-pressed={selected?.currentLocation.id === group[0].currentLocation.id} aria-label={`${label}; ${group.length} ${copy.entriesAtLocation}`} className="world-map-pin world-map-pin-cluster" style={{ left: `calc(${(point.x / geometry.width) * 100}% + ${(callout.x * 0.35) / zoom}px)`, top: `calc(${(point.y / geometry.height) * 100}% + ${(callout.y * 0.35) / zoom}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
+                          <Fragment key={group[0].currentLocation.id}>
+                          <MapPinAnchor point={point} offset={callout} geometry={geometry} zoom={zoom} />
+                          <button key={group[0].currentLocation.id} type="button" value={group[0].id} onClick={openPin} aria-controls={selected ? "world-map-context" : undefined} aria-pressed={selected?.currentLocation.id === group[0].currentLocation.id} aria-label={`${label}; ${group.length} ${copy.entriesAtLocation}`} className="world-map-pin world-map-pin-cluster" style={{ left: `calc(${(point.x / geometry.width) * 100}% + ${callout.x / zoom}px)`, top: `calc(${(point.y / geometry.height) * 100}% + ${callout.y / zoom}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
                             <span aria-hidden="true">{group.length}</span>
                             <span className="world-map-pin-tooltip">{shortLabel}</span>
                           </button>
+                          </Fragment>
                         );
                       }) : null}
 
@@ -600,11 +617,16 @@ export function WorldMapExperience({ geometry, children }: { geometry: WorldMapG
                         const primary = kinds[0];
                         const angle = (index / Math.max(group.length, 1)) * Math.PI * 2;
                         const spread = group.length > 1 ? 25 : 0;
+                        const callout = placeCalloutOffset[connection.currentLocation.id] ?? { x: 0, y: 0 };
+                        const offset = { x: callout.x + Math.cos(angle) * spread, y: callout.y + Math.sin(angle) * spread };
                         return (
-                          <button key={connection.id} type="button" value={connection.id} onClick={openPin} aria-controls={selected ? "world-map-context" : undefined} aria-pressed={selected?.id === connection.id} aria-label={`${selected?.id === connection.id ? `${copy.selectedPin}: ` : ""}${copy.pinFor} ${connection.entity.name}, ${locationLabel(connection.currentLocation, copy)}; ${kinds.map((kind) => copy.categories[kind].label).join(", ")}`} className={`world-map-pin ${categoryTone[primary]} ${primary === "interviewed" || primary === "advertising-partner" ? "rounded-full" : primary === "partner" ? "rotate-45 rounded-[0.3rem]" : primary === "team-up" ? "rounded-xl" : "rounded-[0.1rem]"}`} style={{ left: `calc(${(connection.point.x / geometry.width) * 100}% + ${Math.cos(angle) * spread}px)`, top: `calc(${(connection.point.y / geometry.height) * 100}% + ${Math.sin(angle) * spread}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
+                          <Fragment key={connection.id}>
+                          <MapPinAnchor point={connection.point} offset={offset} geometry={geometry} zoom={zoom} />
+                          <button key={connection.id} type="button" value={connection.id} onClick={openPin} aria-controls={selected ? "world-map-context" : undefined} aria-pressed={selected?.id === connection.id} aria-label={`${selected?.id === connection.id ? `${copy.selectedPin}: ` : ""}${copy.pinFor} ${connection.entity.name}, ${locationLabel(connection.currentLocation, copy)}; ${kinds.map((kind) => copy.categories[kind].label).join(", ")}`} className={`world-map-pin ${categoryTone[primary]} ${primary === "interviewed" || primary === "advertising-partner" ? "rounded-full" : primary === "partner" ? "rotate-45 rounded-[0.3rem]" : primary === "team-up" ? "rounded-xl" : "rounded-[0.1rem]"}`} style={{ left: `calc(${(connection.point.x / geometry.width) * 100}% + ${offset.x / zoom}px)`, top: `calc(${(connection.point.y / geometry.height) * 100}% + ${offset.y / zoom}px)`, transform: `scale(${1 / zoom}) translate(-50%, -50%)` }}>
                             <span className={primary === "partner" ? "-rotate-45" : ""}>{selected?.id === connection.id ? "✓" : categoryGlyph[primary]}</span>
                             <span className={`world-map-pin-tooltip ${primary === "partner" ? "-rotate-45" : ""}`}>{connection.entity.name}</span>
                           </button>
+                          </Fragment>
                         );
                       })) : null}
                     </div>

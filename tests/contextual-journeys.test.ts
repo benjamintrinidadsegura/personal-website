@@ -131,7 +131,7 @@ test("static project and Spotlight continuations need no Writing query and retai
       assert.ok(tree);
       const html = renderToStaticMarkup(tree);
       assert.ok(html.includes(contextualCopy[locale].title));
-      assert.equal((html.match(/<a /gu) ?? []).length, from.kind === "person" ? 3 : 2);
+      assert.equal((html.match(/<a /gu) ?? []).length, from.kind === "person" && from.id !== "person-amr-medhat" ? 3 : 2);
       assert.match(html, /aria-labelledby="contextual-continuation-title"/u);
       assert.match(html, /<h2 id="contextual-continuation-title"/u);
       assert.match(html, /focus-visible:outline/u);
@@ -149,7 +149,8 @@ test("each Spotlight retains one curated published peer conversation without exc
   for (const locale of locales) for (const [id, peerSlug] of Object.entries(expectedPeers)) {
     const source: ContentReference = { kind: "person", id };
     const result = journeys.resolveContextualDestinations(source, journeys.getContextualReferences(source), locale);
-    assert.equal(result.length, 3);
+    assert.equal(result.length, id === "person-amr-medhat" ? 2 : 3);
+    if (id === "person-amr-medhat") assert.ok(!result.some(({ kind }) => kind === "world"));
     assert.deepEqual(result.filter(({ kind }) => kind === "person").map(({ href }) => href), [localizeHref(`/people/${peerSlug}`, locale)]);
   }
 });

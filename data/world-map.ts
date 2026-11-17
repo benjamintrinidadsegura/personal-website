@@ -90,20 +90,9 @@ export const worldMapPublicLocationAdapters: Readonly<Record<string, PublicLocat
       publicSource: "Human-authorized World Map acceptance fix: Blieskastel city-level business context; no residence, home, live-location, or street-address claim",
     },
   },
-  "person-amr-medhat": {
-    verify: (spotlight) => spotlight.location?.country === "Ägypten" && spotlight.location.context === "origin",
-    currentLocation: {
-      id: "country-eg",
-      role: "current",
-      context: "public-context",
-      provenance: "canonical-spotlight",
-      precision: "country",
-      countryId: "EG",
-      continentId: "AF",
-      coordinate: { longitude: 30.8025, latitude: 26.8206, precision: "country-representative" },
-      publicSource: "data/spotlights.ts#person-amr-medhat.location+professionalContext",
-    },
-  },
+  // Amr's published Spotlight establishes Egyptian origin, not current location.
+  // Keep his public Spotlight available; map presence requires separately verified
+  // current/professional location metadata, so no current-location adapter exists.
   "person-melanie-kleinhenz": {
     verify: (spotlight) => spotlight.organization === "FemaleForward" && spotlight.professionalContext.includes("FemaleForward"),
     currentLocation: {

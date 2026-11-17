@@ -17,8 +17,11 @@ are excluded. New shared styling is scoped to `.living-world` on `/world` and
 
 The canonical Spotlight adapter, publication checks, approved public location
 provenance, relationships and destinations remain unchanged. Current data has
-six published people, five city/region contexts plus one country-level context,
-two current countries and one real relationship category (Interviews). Empty categories are not advertised.
+five published people with five city/region contexts,
+one country and one real relationship category (Interviews). Amr's published
+Spotlight establishes Egyptian origin only. It remains public and searchable,
+but has no current-location adapter until a separate current/professional
+location is verified. Origin is never promoted to current map presence. Empty categories are not advertised.
 Origin is kept distinct from current public context. No new personal contact
 channel or location claim is created.
 
@@ -66,9 +69,10 @@ silently retries without the contributor's declaration.
 Country totals count distinct eligible approved contribution IDs among at most
 50 recent public echoes. Groups below three are suppressed. These are neither
 unique people nor website visitors; the threshold is no anonymity guarantee.
-Existing `approved-echoes` cache/tag behavior remains: 300-second revalidation,
-and tag invalidation by authorized moderation. Publication/withdrawal propagation
-in an actual hosted country-enabled deployment is not established by local tests.
+Public reads use React request memoization and a `no-store` transport, not a
+persistent 300-second public collection cache. Moderation invalidation remains;
+publication/withdrawal propagation in an actual hosted country-enabled
+deployment is not established by local tests.
 
 World Map links to the contribution section; EchoWall links back to World Map.
 Country summaries are separate from personal relationship pins and never create
@@ -110,3 +114,32 @@ Local rollback is the preserved `5d9b3566…` parent. A later application rollba
 does not require dropping additive columns or deleting declarations; any schema
 removal needs its own reviewed retention and recovery plan. Before a future
 Production release, freshly verify its deployment/rollback identity and access.
+
+
+## Current local readiness boundary
+
+The protected reference Preview intentionally lacks `SUPABASE_URL` and
+`SUPABASE_SECRET_KEY`; its public reader reports unavailable. The form has a
+separate configuration gate requiring `ECHOWALL_IP_HASH_SECRET`,
+`ECHOWALL_FORM_TOKEN_SECRET` and `SITE_URL`; it cannot issue a signed form token
+when the signing/hash settings are absent, independently of database reads.
+Neither limitation should be bypassed by connecting Preview to Production.
+
+The existing synthetic PostgreSQL 17/PostgREST harness can run with an explicit
+unused RFC1918 subnet when Docker's automatic address pools are exhausted:
+`python scripts/test-echowall-backend.py --subnet <unused-private-/28> --evidence <local-directory>`.
+Check host routes and existing Docker subnets first. Docker rejects overlapping
+networks; the harness keeps `--internal`, no published container ports, tmpfs
+database storage, unique resource ownership and cleanup. It never prunes shared
+networks. The default automatic allocation remains unchanged.
+
+Analytics and voluntary EchoWall country collection remain OFF. Current
+provider-payload, contractual and activation limitations are documented in
+[Analytics readiness](analytics-global-reach-readiness.md); an unavailable reach
+source must never be replaced with relationship or contribution statistics.
+
+The current correction also separates overlapping map controls using the existing
+fixed screen-space callouts at both zoom levels. Non-interactive ice-blue leaders
+and anchor dots show the unchanged projected geographic point. These offsets
+are UI callouts, not new coordinates or claims about a person's location.
+There is no per-frame collision solver, new map provider or additional request.
