@@ -1,4 +1,4 @@
-import { compactContentRoomHeight, composeUniverseSpace, dragStride, edgeAnchor, universeConnection, universeRoomHeight, mixMotion, visibleContentOpacity, type UniverseScene, type MotionPoint } from "./space";
+import { compactContentRoomHeight, wideContentRoomHeight, composeUniverseSpace, dragStride, edgeAnchor, universeConnection, universeRoomHeight, mixMotion, visibleContentOpacity, type UniverseScene, type MotionPoint } from "./space";
 import { planFlights, sampleFlight, canAnimateFlights, clearSearchPosition, type Obstacle } from "./choreography";
 
 export type UniverseMotion = { stop: () => void; pan: (x: number) => void; release: () => void; finish: () => void };
@@ -18,7 +18,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
   const center = root.querySelector<HTMLElement>("[data-search-center]") ?? lens;
   const targets = new Map<string, MotionPoint>();
   let origin = { x: 0, y: 0 }, liveOrigin={x:0,y:0},lensWidth = 0, lensHeight = 0;
-  let frame = 0, stopped = false, geometry = "", detailBottom = 0, compactContentMinimum = 0;
+  let frame = 0, stopped = false, geometry = "", detailBottom = 0, compactContentMinimum = 0, wideContentMinimum = 0;
   let dragFrom: Map<string,MotionPoint> | undefined;
   const dragRoutes = new Map<number,ReturnType<typeof planFlights>>();
   const safeDragRoutes = new Map<number,boolean>();
@@ -184,9 +184,10 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
     }
     if (typeof window !== "undefined" && root.closest) {
       if(!compact.matches || scene.focus)compactContentMinimum=0;
+      if(compact.matches || scene.focus)wideContentMinimum=0;
       const article = root.closest<HTMLElement>("[data-adaptive-universe]");
       const controls = article?.querySelector<HTMLElement>("[data-universe-controls]");
-      const height = Math.max(compact.matches && !scene.focus ? compactContentRoomHeight(0,0) : 0,compactContentMinimum,universeRoomHeight(window.visualViewport?.height ?? innerHeight, bounds.top + window.scrollY,
+      const height = Math.max(compact.matches && !scene.focus ? compactContentRoomHeight(0,0) : 0,compactContentMinimum,wideContentMinimum,universeRoomHeight(window.visualViewport?.height ?? innerHeight, bounds.top + window.scrollY,
         controls?.offsetHeight ?? 72, compact.matches, scene.nodes.length));
       const parent = root.parentElement;
       if (parent && parent.style.getPropertyValue("--room-height") !== height + "px") {
@@ -254,6 +255,13 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       const minimum=compactContentRoomHeight(lowerHeight,search.bottom-(input.top+input.height/2));
       if(minimum>bounds.height+1 && !refitting){compactContentMinimum=minimum;geometry="";measure(true,true);return;}
     }
+    if(!compact.matches && !scene.focus && scene.nodes.length>1){
+      const minimum=wideContentRoomHeight(scene.nodes.map(node=>{
+        const record=elements.find(record=>record.id===node.item.id)!;
+        return {...node.desktop,width:record.width,height:record.visualHeight,offsetY:record.visualOffsetY,scale:node.scale};
+      }),bounds.width,bounds.height);
+      if(minimum>bounds.height+1 && !refitting){wideContentMinimum=minimum;geometry="";measure(true,true);return;}
+    }
     const selectedNode=scene.nodes.find(node=>node.item.id===activeId),selectedRecord=elements.find(record=>record.id===activeId);
     const selectedTitle=selectedRecord?.button.querySelector?.("strong");
     if(selectedNode&&selectedRecord&&selectedTitle){
@@ -298,7 +306,9 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
         memory.set(record.id,target);
       }
     }
-    animate();
+    // A bounded room refit invalidates the old slot geometry. Commit the fitted
+    // endpoints together before paint; never fly from that obsolete layout.
+    animate(refitting);
   };
   const observer = new ResizeObserver(() => measure());
   observer.observe(root);

@@ -127,6 +127,13 @@ main [id] { scroll-margin-top: 6rem; }
 /* Reserve the entering page's first viewport while Next streams its contents.
    This only affects the existing loading fallback, never settled page spacing. */
 #main-content > [data-navigation-loading] { min-height:100svh; }
+/* Native scroll restoration can expose the footer before streamed content arrives.
+   Keep its space, but defer its paint through the loading-boundary replacement.
+   Without scripting the existing footer must remain available. */
+@media (scripting: enabled) {
+  body > footer { transition:visibility 0s 50ms; }
+  body:has(#main-content > [data-navigation-loading]) > footer { visibility:hidden; transition:none; }
+}
 
 html[data-scroll-restoring="true"] { scroll-behavior: auto !important; }
 

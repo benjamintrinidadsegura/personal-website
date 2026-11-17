@@ -1,9 +1,23 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { discoverItems } from "../lib/discovery";
-import { visibleContentOpacity } from "../lib/discovery-universe/space";
+import { visibleContentOpacity, wideContentRoomHeight, universeRoomHeight } from "../lib/discovery-universe/space";
 import { planFlights, sampleFlight, canAnimateFlights, clearSearchPosition } from "../lib/discovery-universe/choreography";
 import type { DiscoveryItem } from "../types/discovery";
+
+test("short desktop rooms fit long public captions without changing their slots or scale",()=>{
+ const items=[{x:22,y:220,width:340,height:346,offsetY:23,scale:1},{x:22,y:630,width:340,height:200,offsetY:-40,scale:.8}];
+ const before=JSON.stringify(items),height=wideContentRoomHeight(items,1265,540);
+ assert.equal(universeRoomHeight(800,277,72,false,4),600,"short desktop rooms reserve the caption envelope before their first fit");
+ assert.ok(height>540);
+ const top=items[0],bottom=items[1];
+ assert.ok(bottom.y*height/760+(bottom.offsetY-bottom.height/2)*bottom.scale-(top.y*height/760+(top.offsetY+top.height/2)*top.scale)>=12);
+ assert.equal(JSON.stringify(items),before);
+ assert.equal(wideContentRoomHeight(items,1265,height),height);
+ assert.equal(wideContentRoomHeight([],1265,540),540);
+ const separate=items.map((item,index)=>({...item,x:index?78:22,height:100,offsetY:0}));
+ assert.equal(wideContentRoomHeight(separate,1265,540),540);
+});
 
 test("active content has a visibility floor while retired content can leave the scene", () => {
   for (const opacity of [0, .08, .12, .4, .8, 1]) {

@@ -12,14 +12,14 @@
 .prototype { font-size:11px; font-weight:650; letter-spacing:.15em; color:#85c7ec; }
 .topline h1 { font:400 clamp(26px,2.5vw,38px)/1.15 Georgia,serif; letter-spacing:-.035em; color:#f1f5fc; }
 .topline a { display:flex; align-items:center; min-height:44px; color:#c1d2e8; }
-.experience { --room-height:max(540px,calc(100svh - 360px)); position:relative; width:100%; margin:12px auto 0; display:grid; grid-template-columns:minmax(0,1fr); isolation:isolate; }
+.experience { --room-height:max(600px,calc(100svh - 360px)); position:relative; width:100%; max-width:1680px; margin:12px auto 0; display:grid; grid-template-columns:minmax(0,1fr); isolation:isolate; }
 .experience::before {
   content:""; position:absolute; z-index:-1; inset:0 0 auto; height:var(--room-height); pointer-events:none;
   background:radial-gradient(ellipse 38% 43% at 50% 48%,#1658ab45,transparent 84%),radial-gradient(ellipse 28% 40% at 78% 20%,#09555a22,transparent),radial-gradient(ellipse 35% 30% at 20% 72%,#163b7a24,transparent);
 }
 .space { grid-area:1/1; position:relative; container-type:size; width:100%; height:var(--room-height); touch-action:pan-y; isolation:isolate; scroll-margin-top:90px; }
-.center { position:absolute; left:50%; top:calc(50% - 66px); transform:translateX(-50%); width:clamp(360px,28vw,440px); max-width:calc(100% - 32px); z-index:20; color:#dce9fa; }
-.searchLabel { display:block; font-size:12px; line-height:18px; margin-bottom:10px; color:#c3d8ef; font-weight:500; }
+.center { position:absolute; left:50%; top:calc(50% - 66px); transform:translateX(-50%); width:clamp(360px,28vw,480px); max-width:calc(100% - 32px); z-index:20; color:#dce9fa; }
+.searchLabel { display:block; width:fit-content; max-width:100%; background:var(--ink); font-size:12px; line-height:18px; margin-bottom:10px; color:#c3d8ef; font-weight:500; }
 .searchSurface {
   display:flex; position:relative; isolation:isolate; align-items:center; gap:10px; min-height:76px; padding:10px 12px 10px 18px;
   border-radius:28px; border:1px solid #badcf36b;

@@ -78,13 +78,35 @@ export type UniverseScene = ReturnType<typeof composeUniverseSpace>;
 
 /** Fit measured page chrome; short screens grow only as much as content needs. */
 export function universeRoomHeight(viewportHeight: number, sceneTop: number, controlsHeight: number, compact: boolean, count: number): number {
-  const minimum = compact ? 590 : count > 4 ? 700 : 540;
+  // Reserve the measured long-caption desktop envelope before the first paint.
+  // The later measured fit can still grow for unusually long localized content.
+  const minimum = compact ? 590 : count > 4 ? 700 : 600;
   return Math.ceil(Math.max(minimum, viewportHeight - sceneTop - controlsHeight - 16));
 }
 
 /** Two-sided room around a fixed central lens; measured only on content intent. */
 export function compactContentRoomHeight(lowerContentHeight: number, controlsBelowLens: number): number {
   return Math.max(640,Math.ceil(2 * (controlsBelowLens + lowerContentHeight + 8 + 12)));
+}
+
+/** Fit the measured painted silhouettes in their existing desktop slots.
+ * Only intent/resize measurement calls this; it does not change order or scale. */
+export function wideContentRoomHeight(items: readonly { x:number; y:number; width:number; height:number; offsetY:number; scale:number }[], width:number, minimum:number): number {
+  let height=minimum;
+  for(const item of items){
+    const fraction=item.y/760,top=(item.offsetY-item.height/2)*item.scale,bottom=(item.offsetY+item.height/2)*item.scale;
+    if(fraction>0)height=Math.max(height,(12-top)/fraction);
+    if(fraction<1)height=Math.max(height,(12+bottom)/(1-fraction));
+  }
+  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+    const a=items[i],b=items[j];
+    if(Math.abs(a.x-b.x)*width/100>=(a.width*a.scale+b.width*b.scale)/2+12)continue;
+    const [upper,lower]=a.y<b.y?[a,b]:[b,a],separation=(lower.y-upper.y)/760;
+    if(separation<=0)continue;
+    const upperBottom=(upper.offsetY+upper.height/2)*upper.scale,lowerTop=(lower.offsetY-lower.height/2)*lower.scale;
+    height=Math.max(height,(upperBottom-lowerTop+12)/separation);
+  }
+  return Math.ceil(height);
 }
 
 export function mixMotion(from: MotionPoint, to: MotionPoint, progress: number): MotionPoint {

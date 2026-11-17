@@ -7,7 +7,7 @@ import type { UniverseMotion } from "../lib/discovery-universe/motion";
 import * as geometry from "../lib/discovery-universe/space";
 import * as choreography from "../lib/discovery-universe/choreography";
 import { loadSource } from "./helpers/load-source";
-function fixture(reduce = false, compact = false, height = 760, viewport = false) {
+function fixture(reduce = false, compact = false, height = 760, viewport = false, permitFlight = false) {
   const catalog = publicUniverse(discoveryIndex,"en"), search = () => universeMatches(catalog,[],"");
   let time = 0, next = 0, disconnected = 0,roomTop=0,reveals=0,managedListeners=0,width=1200;
   let resizeHandler=()=>{};
@@ -34,7 +34,7 @@ function fixture(reduce = false, compact = false, height = 760, viewport = false
   };
   const motionModule = loadSource<{startUniverseMotion: (root: unknown, scene: ReturnType<typeof composeUniverseSpace>, memory: Map<string,MotionPoint>) => UniverseMotion}>("lib/discovery-universe/motion.ts", {
     "./space": geometry,
-    "./choreography": choreography,
+    "./choreography": {...choreography,canAnimateFlights:(...args:Parameters<typeof choreography.canAnimateFlights>)=>permitFlight || choreography.canAnimateFlights(...args)},
   }, {
     matchMedia: (query: string) => ({ matches: query.includes("reduced") ? reduce : compact, addEventListener() {managedListeners++;}, removeEventListener() {managedListeners--;} }),
     ResizeObserver: class { constructor(callback:()=>void){resizeHandler=callback;} observe() {} disconnect() { disconnected++; } },
@@ -171,4 +171,15 @@ test("an off-scene long caption reserves compact room with bounded synchronous r
  const current=f.motionModule.startUniverseMotion(f.root,scene,f.memory);
  assert.equal(reads,2,"initial measurement and one bounded refit finish synchronously");
  assert.ok(f.memory.size>0);assert.equal(f.frames.size,0);current.stop();assert.equal(f.listeners(),0);
+});
+
+test("a desktop caption refit commits the fitted layout without animating obsolete slots",()=>{
+ // Even a planner-accepted path must not animate from an obsolete room fit.
+ const f=fixture(false,false,540,false,true),matches=f.search(),scene=composeUniverseSpace(matches,matches[0].item.id);
+ f.motionModule.startUniverseMotion(f.root,scene,f.memory).stop();
+ f.records.find(record=>record.id===scene.nodes[0].item.id)!.button.offsetHeight=700;
+ const current=f.motionModule.startUniverseMotion(f.root,scene,f.memory);
+ assert.equal(f.root.dataset.motionState,"idle");assert.equal(f.frames.size,0);
+ for(const node of scene.nodes)assert.ok(Number.isFinite(f.memory.get(node.item.id)!.y));
+ current.stop();assert.equal(f.listeners(),0);
 });

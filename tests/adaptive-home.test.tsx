@@ -116,7 +116,7 @@ test("curated arrival resolves existing public references without inventing quer
 
 test("scene room fits measured chrome and preserves native scrolling on short displays",()=>{
  assert.equal(space.universeRoomHeight(1080,280,74,false,4),710);
- assert.equal(space.universeRoomHeight(600,280,74,false,4),540);
+ assert.equal(space.universeRoomHeight(600,280,74,false,4),600);
  assert.equal(space.universeRoomHeight(568,230,74,true,4),590);
  assert.equal(space.universeRoomHeight(1000,280,74,false,6),700);
 });
