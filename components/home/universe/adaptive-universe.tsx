@@ -96,7 +96,7 @@ export function AdaptiveUniverse() {
     if (focusActive && active?.id === id) { document.getElementById("universe-detail")?.focus(); return; }
     if (!focusActive) {
       returnPerspective.current = scene.nodes.some(node => node.item.id === id)
-        ? { ...perspective } : { ...perspective, selectedId: id };
+        ? { ...perspective } : { ...perspective, selectedId: id, selectionQuery: query };
       if (typeof window !== "undefined") returnViewport.current = { x: window.scrollX, y: window.scrollY };
     }
     pendingFocus.current = "@detail"; select(id); setFocusQuery(query); setFocused(true);
