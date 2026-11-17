@@ -82,6 +82,11 @@ export function universeRoomHeight(viewportHeight: number, sceneTop: number, con
   return Math.ceil(Math.max(minimum, viewportHeight - sceneTop - controlsHeight - 16));
 }
 
+/** Two-sided room around a fixed central lens; measured only on content intent. */
+export function compactContentRoomHeight(lowerContentHeight: number, controlsBelowLens: number): number {
+  return Math.max(640,Math.ceil(2 * (controlsBelowLens + lowerContentHeight + 8 + 12)));
+}
+
 export function mixMotion(from: MotionPoint, to: MotionPoint, progress: number): MotionPoint {
   const t = Math.max(0, Math.min(1, progress));
   const value = (key: keyof MotionPoint) => from[key] + (to[key] - from[key]) * t;

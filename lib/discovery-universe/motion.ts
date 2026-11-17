@@ -1,4 +1,4 @@
-import { composeUniverseSpace, dragStride, edgeAnchor, universeConnection, universeRoomHeight, mixMotion, visibleContentOpacity, type UniverseScene, type MotionPoint } from "./space";
+import { compactContentRoomHeight, composeUniverseSpace, dragStride, edgeAnchor, universeConnection, universeRoomHeight, mixMotion, visibleContentOpacity, type UniverseScene, type MotionPoint } from "./space";
 import { planFlights, sampleFlight, canAnimateFlights, clearSearchPosition, type Obstacle } from "./choreography";
 
 export type UniverseMotion = { stop: () => void; pan: (x: number) => void; release: () => void; finish: () => void };
@@ -18,7 +18,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
   const center = root.querySelector<HTMLElement>("[data-search-center]") ?? lens;
   const targets = new Map<string, MotionPoint>();
   let origin = { x: 0, y: 0 }, liveOrigin={x:0,y:0},lensWidth = 0, lensHeight = 0;
-  let frame = 0, stopped = false, geometry = "", detailBottom = 0;
+  let frame = 0, stopped = false, geometry = "", detailBottom = 0, compactContentMinimum = 0;
   let dragFrom: Map<string,MotionPoint> | undefined;
   const dragRoutes = new Map<number,ReturnType<typeof planFlights>>();
   const safeDragRoutes = new Map<number,boolean>();
@@ -160,7 +160,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
     };
     step(began);
   };
-  const measure = (force = false) => {
+  const measure = (force = false, refitting = false) => {
     if (stopped) return;
     // All geometry is read together, only on a scene change or resize.
     // Keep an exiting object's last silhouette while React retires its search role.
@@ -183,20 +183,19 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       return;
     }
     if (typeof window !== "undefined" && root.closest) {
+      if(!compact.matches || scene.focus)compactContentMinimum=0;
       const article = root.closest<HTMLElement>("[data-adaptive-universe]");
       const controls = article?.querySelector<HTMLElement>("[data-universe-controls]");
-      const height = universeRoomHeight(window.visualViewport?.height ?? innerHeight, bounds.top + window.scrollY,
-        controls?.offsetHeight ?? 72, compact.matches, scene.nodes.length);
+      const height = Math.max(compact.matches && !scene.focus ? compactContentRoomHeight(0,0) : 0,compactContentMinimum,universeRoomHeight(window.visualViewport?.height ?? innerHeight, bounds.top + window.scrollY,
+        controls?.offsetHeight ?? 72, compact.matches, scene.nodes.length));
       const parent = root.parentElement;
       if (parent && parent.style.getPropertyValue("--room-height") !== height + "px") {
         parent.style.setProperty("--room-height", height + "px");
         bounds = root.getBoundingClientRect();
       }
     }
-    if (scene.direction === "atlas" && typeof innerHeight === "number" && typeof lens.offsetTop === "number") {
-      const before=lens.getBoundingClientRect(),controls=center.getBoundingClientRect();
-      center.style.top = Math.max(150, bounds.height / 2 - (before.top-controls.top) - before.height/2) + "px";
-    }
+    // CSS anchors the lens to 50% of the room. A measured pixel top can lag
+    // a room resize and briefly pull the search away from its actual centre.
     const input = lens.getBoundingClientRect(),search=center.getBoundingClientRect();
     const measuredTitle=elements.find(record=>record.id===activeId)?.button.querySelector?.("strong");
     const measuredDetail=root.parentElement?.querySelector?.<HTMLElement>("[data-focus-body]");
@@ -245,6 +244,15 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       }
       if(title)memory.set("@title:"+record.id,{x:title.offsetLeft-record.width/2,y:title.offsetTop-record.height/2,opacity:1,scale:1,turn:0});
       memory.set("@size:" + record.id, { x:record.width, y:record.height, opacity:1, scale:1, turn:0 });
+    }
+    if(compact.matches && !scene.focus){
+      // Reserve the already-measured public catalog's longest caption up front.
+      // Deliberate curation then keeps a stable room instead of resizing under
+      // newly entering content while the observer rebases its geometry.
+      const lowerScale=Math.max(0,...scene.nodes.filter(node=>node.role==="feature").map(node=>node.compactScale));
+      const lowerHeight=Math.max(0,...elements.map(record=>record.visualHeight))*lowerScale;
+      const minimum=compactContentRoomHeight(lowerHeight,search.bottom-(input.top+input.height/2));
+      if(minimum>bounds.height+1 && !refitting){compactContentMinimum=minimum;geometry="";measure(true,true);return;}
     }
     const selectedNode=scene.nodes.find(node=>node.item.id===activeId),selectedRecord=elements.find(record=>record.id===activeId);
     const selectedTitle=selectedRecord?.button.querySelector?.("strong");

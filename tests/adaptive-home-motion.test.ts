@@ -22,7 +22,7 @@ function fixture(reduce = false, compact = false, height = 760, viewport = false
     value: (key: string, value: string) => { record.writes++; record.style[key] = value; },
   });
   const centerStyle: Record<string,string> = {};
-  const lens = { getBoundingClientRect: () => ({ left: 400, top: 200+roomTop, width: 400, height: 76 }) };
+  const lens = { getBoundingClientRect: () => ({ left: 400, top: 200+roomTop, bottom:276+roomTop, width: 400, height: 76 }) };
   const root = {
     dataset: {} as Record<string,string>,
     style: { setProperty() {} }, getBoundingClientRect: () => ({ left: 0, top: roomTop, width, height }),
@@ -161,4 +161,14 @@ test("measured content silhouettes stay within the room even with an edge refere
  const motion=f.motionModule.startUniverseMotion(f.root,scene,f.memory);
  assert.equal(f.memory.get(id)!.y,92,"160px measured content retains 12px of top clearance");
  motion.stop();assert.equal(f.listeners(),0);
+});
+
+test("an off-scene long caption reserves compact room with bounded synchronous refitting",()=>{
+ const f=fixture(true,true,590),matches=f.search(),scene=composeUniverseSpace(matches,matches[0].item.id);
+ f.records.find(record=>!scene.nodes.some(node=>node.item.id===record.id))!.button.offsetHeight=700;
+ let reads=0;const bounds=f.root.getBoundingClientRect;
+ f.root.getBoundingClientRect=()=>{reads++;return bounds();};
+ const current=f.motionModule.startUniverseMotion(f.root,scene,f.memory);
+ assert.equal(reads,2,"initial measurement and one bounded refit finish synchronously");
+ assert.ok(f.memory.size>0);assert.equal(f.frames.size,0);current.stop();assert.equal(f.listeners(),0);
 });

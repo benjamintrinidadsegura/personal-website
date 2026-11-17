@@ -56,14 +56,40 @@ export function universeMatches(items:readonly UniverseItem[], matches:readonly 
 }
 /** A small editorial entry collection, never a ranked or invented search result.
  * Resolve references against the current public catalog and published Writing read. */
-export function curatedUniverseMatches(matches: readonly UniverseMatch[], latestWritingId?: string): UniverseMatch[] {
-  const references = [...(latestWritingId ? [`writing-${latestWritingId}`] : []),
-    ...welcomeOrder, "tool-personal-advantage"];
-  return uniqueDestinations(references.flatMap(id => {
-    const match = matches.find(match => match.item.id === id);
-    return match ? [{ ...match, score: 0, presentation: "suggestion" as const, matchedTopics: [] }] : [];
-  }));
+// Additional editorial references reuse existing public records, never duplicate content.
+const perspectiveReferences = [...welcomeOrder, "tool-personal-advantage", "tool-money-profile",
+  "person-kiki-radicke", "person-kevin-schweisfurth", "pulse-people-kiki-radicke", "pulse-people-kevin-schweisfurth",
+  "pulse-people-johanna-geisler", "pulse-people-melanie-kleinhenz", "pulse-people-amr-medhat", "project-ratecom", "project-hobbyswap",
+  "project-streamory", "project-byc", "page-writing", "page-brain-manual", "page-about",
+  "tool-life-alignment-family", "tool-life-alignment-friendship", "tool-life-alignment-career",
+  "tool-life-alignment-team", "tool-life-alignment-founder"];
+export const curatedEntryLimit = 7;
+export function curatedUniverseMatches(matches: readonly UniverseMatch[], latestWritingId?: string, round = 0, entryId = ""): UniverseMatch[] {
+  const resolved = uniqueDestinations(matches.map(match=>({...match,score:0,presentation:"suggestion" as const,matchedTopics:[]})));
+  const initialReferences = [...(latestWritingId ? [`writing-${latestWritingId}`] : []), ...welcomeOrder, "tool-personal-advantage"];
+  const resolve = (ids:readonly string[]) => ids.flatMap(id=>{const match=resolved.find(match=>match.item.id===id);return match?[match]:[];});
+  const pool = uniqueDestinations([...resolve(perspectiveReferences),...resolved.filter(match=>match.item.kind==="writing")]);
+  const cycle = Number.isSafeInteger(round) && round > 0 ? round : 0;
+  let selection:UniverseMatch[];
+  if (!cycle) selection=resolve(initialReferences);
+  else {
+    const order:UniverseKind[]=["person","project","tool","world","community","writing","page"];
+    const buckets=order.map(kind=>pool.filter(match=>match.item.kind===kind)).filter(bucket=>bucket.length);
+    selection=buckets.map(bucket=>bucket[(cycle-1)%bucket.length]);
+    // Fill sparse categories only from actual available public records.
+    const remaining=pool.filter(match=>!selection.some(chosen=>chosen.item.href===match.item.href));
+    const start=remaining.length ? (cycle-1)%remaining.length : 0;
+    selection.push(...remaining.slice(start),...remaining.slice(0,start));
+    selection=selection.slice(0,curatedEntryLimit);
+    const offset=cycle%Math.max(1,selection.length);
+    selection=[...selection.slice(offset),...selection.slice(0,offset)];
+  }
+  // A complete-list selection may be outside the editorial references. It is
+  // admitted only from the current validated catalog, retaining the seven-entry cap.
+  const chosen=resolved.find(match=>match.item.id===entryId);
+  return uniqueDestinations([...(chosen?[chosen]:[]),...selection]).slice(0,curatedEntryLimit);
 }
+
 const genericTopics = new Set([
   "page", "tool", "writing", "format", "interview",
   ...locales.flatMap(locale=>Object.values(getDiscoveryUiCopy(locale).groups)),

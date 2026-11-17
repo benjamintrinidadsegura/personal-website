@@ -50,7 +50,7 @@
 .categories button[data-available=false] { color:#a9bed4; }
 .resultBar { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .resultBar>button { min-height:44px; border:0; background:none; color:inherit; font-size:12px; white-space:nowrap; }
-.resultList ul { position:absolute; left:0; top:100%; width:100%; max-height:330px; overflow:auto; list-style:none; margin:0; padding:8px 12px; border:1px solid #6d95b0; border-radius:16px; background:#10253e; box-shadow:0 20px 35px #010813cc; z-index:30; }
+.resultList ul { position:absolute; left:0; top:auto; bottom:calc(100% + 8px); width:100%; max-height:min(330px,calc(50svh - 6rem)); overflow:auto; list-style:none; margin:0; padding:8px 12px; border:1px solid #6d95b0; border-radius:16px; background:#10253e; box-shadow:0 20px 35px #010813cc; z-index:30; }
 .resultList li button { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:52px; padding:10px 5px; text-align:left; border:0; border-bottom:1px solid #7895b333; background:none; color:#e6effa; font-size:12px; }
 .resultList small { font-size:11px; max-width:12ch; flex-shrink:0; color:#b6cee4; }
 .sceneHint { font-size:12px; line-height:1.5; color:#b7cde4; max-width:100%; }
@@ -134,7 +134,7 @@
 @media(max-width:1199px) {
   /* Match the compact motion endpoint before hydration as well. */
   .nodePosition[data-role=note] { visibility:hidden!important; pointer-events:none!important; }
-  .experience { --room-height:max(590px,calc(100svh - 300px)); }
+  .experience { --room-height:max(640px,calc(100svh - 300px)); }
   .nodePosition { width:260px; transform:translate(calc(var(--mx)*1cqw),calc(var(--my)*100cqh/640)) translate(-50%,-50%) scale(var(--ms,1)); }
   .node { width:260px; height:250px; padding-top:160px; }
   .art { width:260px; height:132px; }
@@ -193,3 +193,5 @@
   .topline h1 { font-size:22px; }
   .subtitle { display:none; }
 }
+
+.resultBar summary { overflow-wrap:anywhere; }
