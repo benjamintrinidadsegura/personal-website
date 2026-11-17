@@ -53,7 +53,10 @@ export function composeUniverseSpace(matches: readonly UniverseMatch[], selected
       const order = visualOrder.indexOf(match.item.id);
       // A query changes the composition, never the authoritative ordering or membership.
       const arrangement = atlasSlots(displayed.length);
-      const desktop = arrangement.wide[order], compact = arrangement.compact[order];
+      // Only the four-entry arrival gets an editorial stagger; ranking and Search/Focus slots stay intact.
+      const arrival = mode === "discovery" && !focus && displayed.length === 4
+        ? [{x:22,y:220,scale:1},{x:78,y:270,scale:.9},{x:76,y:620,scale:.84},{x:24,y:650,scale:.8}] : null;
+      const desktop = arrival?.[order] ?? arrangement.wide[order], compact = arrangement.compact[order];
       const adaptedDesktop = direction === "atlas"
         ? isSelected && leadKind === "writing" ? {...desktop,y:desktop.y+12}
           : isSelected && leadKind === "world" ? {...desktop,y:desktop.y-8} : desktop
@@ -122,6 +125,12 @@ export function edgeAnchor(from: SpacePoint, center: SpacePoint, width: number, 
   const y = dx * Math.sin(angle) + dy * Math.cos(angle);
   const ratio = 1 / (Math.hypot(x / Math.max(1,width / 2), y / Math.max(1,height / 2)) || 1);
   return { x: center.x + dx * ratio, y: center.y + dy * ratio };
+}
+/** Dock outside the painted rectangle; ellipse edges can land inside its text. */
+export function connectionAnchor(from: SpacePoint, center: SpacePoint, width:number, height:number): SpacePoint {
+  const dx=from.x-center.x,dy=from.y-center.y;
+  const ratio=1/(Math.max(Math.abs(dx)/Math.max(1,width/2+8),Math.abs(dy)/Math.max(1,height/2+8))||1);
+  return {x:center.x+dx*ratio,y:center.y+dy*ratio};
 }
 export function universeConnection(from: SpacePoint, to: SpacePoint): string {
   const dx = to.x - from.x, dy = to.y - from.y;

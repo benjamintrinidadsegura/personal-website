@@ -1,7 +1,8 @@
-import { compactContentRoomHeight, wideContentRoomHeight, composeUniverseSpace, dragStride, edgeAnchor, universeConnection, universeRoomHeight, mixMotion, visibleContentOpacity, type UniverseScene, type MotionPoint } from "./space";
+import { compactContentRoomHeight, wideContentRoomHeight, composeUniverseSpace, dragStride, connectionAnchor, universeConnection, universeRoomHeight, mixMotion, visibleContentOpacity, type UniverseScene, type MotionPoint } from "./space";
 import { planFlights, sampleFlight, canAnimateFlights, clearSearchPosition, type Obstacle } from "./choreography";
 
 export type UniverseMotion = { stop: () => void; pan: (x: number) => void; release: () => void; finish: () => void };
+let maskSequence=0;
 /** Finite, interruptible motion: shared coordinates drive transforms and paths. No frame-time layout reads. */
 export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, memory: Map<string, MotionPoint>): UniverseMotion {
   if(root.dataset)root.dataset.dragging="false";
@@ -12,12 +13,28 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
     button: element.querySelector<HTMLButtonElement>("button")!,
     path: root.querySelector<SVGPathElement>('[data-connection="' + element.dataset.universeObject + '"]')!,
     width: 0, height: 0, visualHeight: 0, visualOffsetY: 0,
+    artWidth:0,artHeight:0,artOffsetX:0,artOffsetY:0,
+    ink:[] as {x:number;y:number;width:number;height:number}[],
   }));
   const lens = root.querySelector<HTMLElement>("[data-search-lens]")!;
   const svg = root.querySelector<SVGSVGElement>("svg[data-space-strings]")!;
+  // One reused mask per mounted scene, never one new DOM node per query/frame.
+  let inkMask:SVGPathElement|undefined;
+  if(svg.ownerDocument){
+    inkMask=svg.querySelector<SVGPathElement>("[data-connection-ink]")??undefined;
+    if(!inkMask){
+      const ns="http://www.w3.org/2000/svg",doc=svg.ownerDocument;
+      const defs=doc.createElementNS(ns,"defs"),mask=doc.createElementNS(ns,"mask"),paper=doc.createElementNS(ns,"rect");
+      mask.id="btshq-connection-ink-"+(++maskSequence);mask.setAttribute("maskUnits","userSpaceOnUse");mask.setAttribute("x","0");mask.setAttribute("y","0");mask.setAttribute("width","100%");mask.setAttribute("height","100%");
+      paper.setAttribute("width","100%");paper.setAttribute("height","100%");paper.setAttribute("fill","white");
+      inkMask=doc.createElementNS(ns,"path");inkMask.setAttribute("data-connection-ink","");inkMask.setAttribute("fill","black");
+      mask.append(paper,inkMask);defs.append(mask);svg.prepend(defs);
+    }
+    for(const record of elements)record.path.setAttribute("mask","url(#"+inkMask.parentElement!.id+")");
+  }
   const center = root.querySelector<HTMLElement>("[data-search-center]") ?? lens;
   const targets = new Map<string, MotionPoint>();
-  let origin = { x: 0, y: 0 }, liveOrigin={x:0,y:0},lensWidth = 0, lensHeight = 0;
+  let origin = { x: 0, y: 0 }, liveOrigin={x:0,y:0};
   let frame = 0, stopped = false, geometry = "", detailBottom = 0, compactContentMinimum = 0, wideContentMinimum = 0;
   let dragFrom: Map<string,MotionPoint> | undefined;
   const dragRoutes = new Map<number,ReturnType<typeof planFlights>>();
@@ -25,6 +42,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
   const dragTugs = new Map<number,number>();
   let anchorFrom: MotionPoint | undefined, extentFrom: MotionPoint | undefined, connectionProgress = 1;
   let room={width:0,height:0},obstacle:Obstacle={x:0,y:0,width:0,height:0};
+  let readingMask:{x:number;y:number;width:number;height:number}|undefined;
   const activeId=scene.nodes.find(node=>node.index===scene.selectedIndex)?.item.id;
 
   // A blocked flight still responds to the hand. A common bounded translation
@@ -57,9 +75,10 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
     center.style.transform="translateX(-50%) translate3d("+(liveOrigin.x-origin.x)+"px,"+(liveOrigin.y-origin.y)+"px,0)";
     const selected = scene.focus ? memory.get(activeId ?? "") : undefined;
     const selectedRecord = selected ? elements.find(record => record.id === activeId) : undefined;
-    const anchorTarget = selected ?? { ...liveOrigin, opacity:1, scale:1, turn:0 };
-    const extentTarget = { x:selectedRecord ? selectedRecord.width * selected!.scale : lensWidth,
-      y:selectedRecord ? selectedRecord.height * selected!.scale : lensHeight, opacity:1, scale:1, turn:0 };
+    const anchorTarget = selected && selectedRecord ? {...selected,y:selected.y+selectedRecord.visualOffsetY*selected.scale}
+      : {x:obstacle.x+obstacle.width/2+liveOrigin.x-origin.x,y:obstacle.y+obstacle.height/2+liveOrigin.y-origin.y,opacity:1,scale:1,turn:0};
+    const extentTarget = { x:selectedRecord ? selectedRecord.width * selected!.scale : obstacle.width,
+      y:selectedRecord ? selectedRecord.visualHeight * selected!.scale : obstacle.height, opacity:1, scale:1, turn:0 };
     // A connection's source migrates with the same finite flight as its objects.
     // Preserve its actual intermediate geometry when Focus or a query interrupts it.
     const anchor = mixMotion(anchorFrom ?? anchorTarget, anchorTarget, connectionProgress);
@@ -91,15 +110,33 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       record.element.style.pointerEvents = opacity < .2 ? "none" : "";
       record.element.style.visibility = opacity > .005 ? "visible" : "hidden";
       const migrating = record.id !== activeId;
-      const source = migrating ? anchor : liveOrigin;
-      const end = edgeAnchor(source, point, record.width * point.scale, record.height * point.scale, point.turn);
-      const start = edgeAnchor(point, source, migrating ? extent.x : lensWidth, migrating ? extent.y : lensHeight, migrating ? anchor.turn : 0);
+      const source = migrating ? anchor : anchorTarget;
+      const painted = record.artWidth && record.artHeight
+        ? {x:point.x+record.artOffsetX*point.scale,y:point.y+record.artOffsetY*point.scale}
+        : {...point,y:point.y+record.visualOffsetY*point.scale};
+      const end = connectionAnchor(source, painted, (record.artWidth||record.width) * point.scale, (record.artHeight||record.visualHeight) * point.scale);
+      const start = connectionAnchor(painted, source, migrating ? extent.x : obstacle.width, migrating ? extent.y : obstacle.height);
       record.path.setAttribute("d", universeConnection(start, end));
       record.path.style.opacity = String(targetOpacity > 0 ? point.opacity : 0);
       if (record.id === activeId) {
         root.style.setProperty("--light-x", point.x + "px");
         root.style.setProperty("--light-y", point.y + "px");
       }
+    }
+    if(inkMask){
+      const areas:string[]=[];
+      const exclude=(x:number,y:number,width:number,height:number)=>areas.push(`M${x-3},${y-3}h${width+6}v${height+6}h${-width-6}z`);
+      exclude(obstacle.x+liveOrigin.x-origin.x-5,obstacle.y+liveOrigin.y-origin.y-5,obstacle.width+10,obstacle.height+10);
+      for(const record of elements){
+        const point=memory.get(record.id);if(!point || !(targets.get(record.id)?.opacity))continue;
+        for(const ink of record.ink)exclude(point.x+(ink.x-record.width/2)*point.scale,point.y+(ink.y-record.height/2)*point.scale,ink.width*point.scale,ink.height*point.scale);
+      }
+      if(readingMask){
+        const dx=!compact.matches&&scene.nodes.length>1&&selectedPoint&&selectedTarget?selectedPoint.x-selectedTarget.x:0;
+        const dy=!compact.matches&&scene.nodes.length>1&&selectedPoint&&selectedTarget?selectedPoint.y-selectedTarget.y:0;
+        exclude(readingMask.x+dx,readingMask.y+dy,readingMask.width,readingMask.height);
+      }
+      inkMask.setAttribute("d",areas.join(" "));
     }
   };
   const animate = (instant = false) => {
@@ -220,12 +257,25 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
     const previousOrigin=memory.get("@lens")??origin;
     obstacle={x:search.left-bounds.left,y:search.top-bounds.top,width:search.width,height:search.height,
       fromX:search.left-bounds.left+previousOrigin.x-origin.x,fromY:search.top-bounds.top+previousOrigin.y-origin.y};
-    lensWidth = input.width; lensHeight = input.height;
     for (const record of elements) {
       record.width = record.button.offsetWidth; record.height = record.button.offsetHeight;
       // Plan around the painted silhouette, not the button's empty lower area.
       // These layout reads stay in the existing intent/resize measurement pass.
       const artwork=record.element.querySelector<HTMLElement>("[data-universe-visual]");
+      record.artWidth=artwork?.offsetWidth??0;record.artHeight=artwork?.offsetHeight??0;
+      record.artOffsetX=(artwork?.offsetLeft??0)+(record.artWidth-record.width)/2;
+      record.artOffsetY=(artwork?.offsetTop??0)+(record.artHeight-record.height)/2;
+      record.ink=[];
+      if(inkMask&&scene.nodes.some(node=>node.item.id===record.id)){
+        const box=record.button.getBoundingClientRect(),scale=box.width/record.width||1;
+        const captions=record.button.querySelectorAll<HTMLElement>(":scope > strong > span, :scope > span:not(:last-child), :scope > span:last-child > span");
+        // Cache tight painted bounds once per intent/resize. Blank image margins
+        // stay transparent, so a connection remains continuous beside the portrait.
+        for(const element of [artwork,...captions])if(element){
+          const rect=element.getBoundingClientRect();
+          if(rect.width&&rect.height)record.ink.push({x:(rect.left-box.left)/scale,y:(rect.top-box.top)/scale,width:rect.width/scale,height:rect.height/scale});
+        }
+      }
       const contentBottom=Math.max((artwork?.offsetTop??0)+(artwork?.offsetHeight??0),
         ...Array.from(record.button.children??[]).map(child=>{
           const content=child as HTMLElement;
@@ -262,6 +312,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       }),bounds.width,bounds.height);
       if(minimum>bounds.height+1 && !refitting){wideContentMinimum=minimum;geometry="";measure(true,true);return;}
     }
+    readingMask=undefined;
     const selectedNode=scene.nodes.find(node=>node.item.id===activeId),selectedRecord=elements.find(record=>record.id===activeId);
     const selectedTitle=selectedRecord?.button.querySelector?.("strong");
     if(selectedNode&&selectedRecord&&selectedTitle){
@@ -277,6 +328,8 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       parent?.style.setProperty("--focus-width",width+"px");
       parent?.style.setProperty("--focus-tail",compact.matches && scene.nodes.some(node=>node.relation)?"220px":"26px");
       const detail=parent?.querySelector?.<HTMLElement>("[data-focus-body]");
+      // Protect the reading column, including the compact toolbar flow allowance.
+      readingMask={x:compact.matches?20:standalone?(bounds.width-width)/2:left,y:copyY,width:detail?.offsetWidth??width,height:(detail?.offsetHeight??280)+(compact.matches?64:0)};
       detailBottom=copyY+(detail?.offsetHeight??280)+(compact.matches?64:0);
     }
     svg.setAttribute("viewBox", "0 0 " + bounds.width + " " + bounds.height);
@@ -306,6 +359,14 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
         memory.set(record.id,target);
       }
     }
+    // Focus can place related objects below the SVG room. Keep its mask's white
+    // canvas bounded to those measured endpoints rather than clipping their connections.
+    const inkBottom=Math.max(bounds.height,...elements.map(record=>{
+      const point=targets.get(record.id);
+      return point?.opacity ? point.y+(record.visualHeight-record.height/2)*point.scale+12 : 0;
+    }));
+    inkMask?.parentElement?.setAttribute("height",String(inkBottom));
+    inkMask?.parentElement?.querySelector("rect")?.setAttribute("height",String(inkBottom));
     // A bounded room refit invalidates the old slot geometry. Commit the fitted
     // endpoints together before paint; never fly from that obsolete layout.
     animate(refitting);
@@ -318,6 +379,13 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
   if(title)observer.observe(title);
   const detail=root.parentElement?.querySelector?.<HTMLElement>("[data-focus-body]");
   if(detail)observer.observe(detail);
+  // Font/label reflow can change ink without resizing the fixed object canvas.
+  // Observe only the current scene's captions; transforms never trigger this observer.
+  const inkObserver=inkMask?new ResizeObserver(()=>measure(true)):undefined;
+  if(inkObserver)for(const record of elements)if(scene.nodes.some(node=>node.item.id===record.id)){
+    for(const child of Array.from(record.button.children))inkObserver.observe(child);
+  }
+  if(svg.ownerDocument?.fonts?.status==="loading")void svg.ownerDocument.fonts.ready.then(()=>measure(true));
   const onPreference = () => measure(true);
   const onViewport = () => measure();
   if (typeof window !== "undefined") {
@@ -329,7 +397,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
   measure(true);
   return {
     stop() {
-      stopped = true; cancelAnimationFrame(frame); observer.disconnect();
+      stopped = true; cancelAnimationFrame(frame); observer.disconnect();inkObserver?.disconnect();
       if(root.dataset)root.dataset.dragging="false";
       if(root.dataset)root.dataset.motionState="idle";
       reduced.removeEventListener("change", onPreference); compact.removeEventListener("change", onPreference);
