@@ -7,7 +7,7 @@ import type { UniverseMotion } from "../lib/discovery-universe/motion";
 import * as geometry from "../lib/discovery-universe/space";
 import * as choreography from "../lib/discovery-universe/choreography";
 import { loadSource } from "./helpers/load-source";
-function fixture(reduce = false, compact = false, height = 760) {
+function fixture(reduce = false, compact = false, height = 760, viewport = false) {
   const catalog = publicUniverse(discoveryIndex,"en"), search = () => universeMatches(catalog,[],"");
   let time = 0, next = 0, disconnected = 0,roomTop=0,reveals=0,managedListeners=0,width=1200;
   let resizeHandler=()=>{};
@@ -42,6 +42,7 @@ function fixture(reduce = false, compact = false, height = 760) {
     requestAnimationFrame: (callback: FrameRequestCallback) => { frames.set(++next,callback); return next; },
     cancelAnimationFrame: (id: number) => frames.delete(id),
     document:documentStub,innerHeight:900,
+    window:viewport?{addEventListener(){managedListeners++;},removeEventListener(){managedListeners--;},visualViewport:{addEventListener(){managedListeners++;},removeEventListener(){managedListeners--;}}}:undefined,
   });
   const nativeElements = records.map(record => ({dataset:{universeObject:record.id},style:record.style,inert:false,querySelector:()=>record.button}));
   root.querySelectorAll=()=>nativeElements;
@@ -66,9 +67,18 @@ test("finite safe motion is interruptible, preserves the actual intermediate obj
 test("reduced motion applies complete scene endpoints synchronously and keeps no frame loop",()=>{
  const f=fixture(true),matches=f.search();const current=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,matches[1].item.id),f.memory);assert.equal(f.frames.size,0);assert.ok([...f.memory.values()].every(point=>Number.isFinite(point.x)&&Number.isFinite(point.y)));current.stop();assert.equal(f.listeners(),0);
 });
-test("unsafe scrubbing holds readable geometry and reverses without painting a collision",()=>{
+
+test("viewport and preference listeners release together without idle animation work",()=>{
+ const f=fixture(true,false,760,true),matches=f.search();
+ const current=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,matches[0].item.id),f.memory);
+ assert.equal(f.listeners(),4);assert.equal(f.frames.size,0);current.stop();assert.equal(f.listeners(),0);assert.equal(f.frames.size,0);
+});
+test("unsafe scrubbing uses bounded common displacement and reverses without changing object spacing",()=>{
  const f=fixture(),matches=f.search(),id=matches[0].item.id;const current=f.motionModule.startUniverseMotion(f.root,composeUniverseSpace(matches,id),f.memory),before={...f.memory.get(id)!};
- current.pan(-100);assert.deepEqual(f.memory.get(id),before);assert.ok(f.records.find(record=>record.id===id)!.attrs.d.startsWith("M "));current.pan(0);assert.deepEqual(f.memory.get(id),before);current.release();current.stop();assert.equal(f.frames.size,0);
+ const positions=new Map(f.memory);current.pan(-100);const dx=f.memory.get(id)!.x-before.x;
+ assert.ok(dx<0&&dx>=-12);assert.equal(f.memory.get(id)!.y,before.y);
+ for(const node of composeUniverseSpace(matches,id).nodes){const old=positions.get(node.item.id)!,point=f.memory.get(node.item.id)!;assert.equal(point.x-old.x,dx);assert.equal(point.y,old.y);}
+ assert.ok(f.records.find(record=>record.id===id)!.attrs.d.startsWith("M "));current.pan(0);assert.deepEqual(f.memory.get(id),before);current.release();current.stop();assert.equal(f.frames.size,0);
 });
 test("a hidden Discover scene does no animation work or geometry writes and recovers when Explore returns",()=>{
  const f=fixture(),matches=f.search(),id=matches[0].item.id;
@@ -143,4 +153,12 @@ test("compact Focus commits related content below the reading controls before an
  assert.equal(f.root.dataset.motionState,"idle");assert.equal(f.frames.size,0);
  for(const node of scene.nodes)assert.ok(f.memory.get(node.item.id)!.opacity>=.86);
  focused.stop();assert.equal(f.listeners(),0);
+});
+
+test("measured content silhouettes stay within the room even with an edge reference slot",()=>{
+ const f=fixture(true),matches=f.search().slice(0,1),id=matches[0].item.id;
+ const scene=composeUniverseSpace(matches,id);scene.nodes[0].desktop={x:20,y:0,scale:1};scene.nodes[0].scale=1;
+ const motion=f.motionModule.startUniverseMotion(f.root,scene,f.memory);
+ assert.equal(f.memory.get(id)!.y,92,"160px measured content retains 12px of top clearance");
+ motion.stop();assert.equal(f.listeners(),0);
 });

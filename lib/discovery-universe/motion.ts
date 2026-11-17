@@ -1,4 +1,4 @@
-import { composeUniverseSpace, dragStride, edgeAnchor, universeConnection, mixMotion, visibleContentOpacity, type UniverseScene, type MotionPoint } from "./space";
+import { composeUniverseSpace, dragStride, edgeAnchor, universeConnection, universeRoomHeight, mixMotion, visibleContentOpacity, type UniverseScene, type MotionPoint } from "./space";
 import { planFlights, sampleFlight, canAnimateFlights, clearSearchPosition, type Obstacle } from "./choreography";
 
 export type UniverseMotion = { stop: () => void; pan: (x: number) => void; release: () => void; finish: () => void };
@@ -22,9 +22,36 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
   let dragFrom: Map<string,MotionPoint> | undefined;
   const dragRoutes = new Map<number,ReturnType<typeof planFlights>>();
   const safeDragRoutes = new Map<number,boolean>();
+  const dragTugs = new Map<number,number>();
   let anchorFrom: MotionPoint | undefined, extentFrom: MotionPoint | undefined, connectionProgress = 1;
   let room={width:0,height:0},obstacle:Obstacle={x:0,y:0,width:0,height:0};
   const activeId=scene.nodes.find(node=>node.index===scene.selectedIndex)?.item.id;
+
+  // A blocked flight still responds to the hand. A common bounded translation
+  // preserves object spacing; test its clearance once per direction, never per frame.
+  const tug = (x: number) => {
+    const sign = Math.sign(x);
+    if (!dragTugs.has(sign)) {
+      let distance = 12;
+      for (; distance > 0; distance--) {
+        const safe = elements.every(record => {
+          const point = dragFrom?.get(record.id);
+          if (!point || point.opacity < .2) return true;
+          const left = point.x + sign * distance - record.width * point.scale / 2;
+          const right = left + record.width * point.scale;
+          const top = point.y + (record.visualOffsetY - record.visualHeight / 2) * point.scale;
+          const bottom = top + record.visualHeight * point.scale;
+          return left >= 2 && right <= room.width - 2 &&
+            (right < obstacle.x - 10 || left > obstacle.x + obstacle.width + 10 ||
+              bottom < obstacle.y - 10 || top > obstacle.y + obstacle.height + 10);
+        });
+        if (safe) break;
+      }
+      dragTugs.set(sign, distance);
+    }
+    const delta = sign * Math.min(dragTugs.get(sign) ?? 0, Math.abs(x) * .08);
+    for (const [id, point] of dragFrom ?? []) if (!id.startsWith("@")) memory.set(id, {...point, x:point.x + delta});
+  };
 
   const draw = () => {
     center.style.transform="translateX(-50%) translate3d("+(liveOrigin.x-origin.x)+"px,"+(liveOrigin.y-origin.y)+"px,0)";
@@ -144,7 +171,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
     }
     const previousTransform=center.style.transform;
     center.style.transform="translateX(-50%)";
-    const bounds = root.getBoundingClientRect();
+    let bounds = root.getBoundingClientRect();
     // Explore keeps this scene mounted; hidden geometry must neither animate nor overwrite memory.
     if (!bounds.width || !bounds.height) {
       cancelAnimationFrame(frame);
@@ -154,6 +181,17 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       center.style.transform = previousTransform;
       if(root.dataset)root.dataset.motionState="idle";
       return;
+    }
+    if (typeof window !== "undefined" && root.closest) {
+      const article = root.closest<HTMLElement>("[data-adaptive-universe]");
+      const controls = article?.querySelector<HTMLElement>("[data-universe-controls]");
+      const height = universeRoomHeight(window.visualViewport?.height ?? innerHeight, bounds.top + window.scrollY,
+        controls?.offsetHeight ?? 72, compact.matches, scene.nodes.length);
+      const parent = root.parentElement;
+      if (parent && parent.style.getPropertyValue("--room-height") !== height + "px") {
+        parent.style.setProperty("--room-height", height + "px");
+        bounds = root.getBoundingClientRect();
+      }
     }
     if (scene.direction === "atlas" && typeof innerHeight === "number" && typeof lens.offsetTop === "number") {
       const before=lens.getBoundingClientRect(),controls=center.getBoundingClientRect();
@@ -234,7 +272,14 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
         const position = compact.matches ? node.compact : node.desktop;
         const scale = scene.focus ? compact.matches ? node.focusCompactScale : node.focusScale : compact.matches ? node.compactScale : node.scale;
         let target = { x: bounds.width * position.x / 100, y: compact.matches && scene.focus && node.relation ? detailBottom+100 : scene.canvas ? position.y * bounds.height / (compact.matches ? 640 : 760) : position.y, opacity: compact.matches && node.role === "note" ? 0 : node.depth, scale, turn: node.index === scene.selectedIndex ? 0 : node.turn };
-        if(!scene.focus)target=clearSearchPosition(target,record.width,record.visualHeight,record.visualOffsetY,obstacle,compact.matches);
+        if(!scene.focus){
+          target=clearSearchPosition(target,record.width,record.visualHeight,record.visualOffsetY,obstacle,compact.matches);
+          // Long localized captions may extend past the reference slot's top.
+          // Contain the measured painted silhouette once, not on animation frames.
+          const top=12-(record.visualOffsetY-record.visualHeight/2)*scale;
+          const bottom=room.height-12-(record.visualOffsetY+record.visualHeight/2)*scale;
+          target.y=Math.max(top,Math.min(bottom,target.y));
+        }
         targets.set(record.id, target);
         if (!previous || previous.opacity < .01) memory.set(record.id, target);
       } else {
@@ -256,6 +301,11 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
   const detail=root.parentElement?.querySelector?.<HTMLElement>("[data-focus-body]");
   if(detail)observer.observe(detail);
   const onPreference = () => measure(true);
+  const onViewport = () => measure();
+  if (typeof window !== "undefined") {
+    window.addEventListener("resize", onViewport);
+    window.visualViewport?.addEventListener("resize", onViewport);
+  }
   reduced.addEventListener("change", onPreference);
   compact.addEventListener("change", onPreference);
   measure(true);
@@ -265,6 +315,10 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       if(root.dataset)root.dataset.dragging="false";
       if(root.dataset)root.dataset.motionState="idle";
       reduced.removeEventListener("change", onPreference); compact.removeEventListener("change", onPreference);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("resize", onViewport);
+        window.visualViewport?.removeEventListener("resize", onViewport);
+      }
     },
     pan(x) {
       if(scene.focus)return;
@@ -277,7 +331,7 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
       root.style.setProperty("--glass-x",(50+Math.max(-36,Math.min(36,x/dragStride(room.width)*36)))+"%");
       if(next){
         if(!dragRoutes.has(sign)){
-          const preview=composeUniverseSpace(scene.matches,next.item.id,false,scene.direction);
+          const preview=composeUniverseSpace(scene.matches,next.item.id,false,scene.direction,scene.mode);
           const flights=elements.map(record=>{
             const from=dragFrom!.get(record.id)??{...origin,opacity:0,scale:.5,turn:0};
             const node=preview.nodes.find(node=>node.item.id===record.id),p=compact.matches?node?.compact:node?.desktop;
@@ -289,15 +343,15 @@ export function startUniverseMotion(root: HTMLElement, scene: UniverseScene, mem
           dragRoutes.set(sign,routes);safeDragRoutes.set(sign,canAnimateFlights(routes,obstacle));
         }
         if(safeDragRoutes.get(sign))for(const flight of dragRoutes.get(sign)!)memory.set(flight.id,sampleFlight(flight,progress));
+        else tug(x);
       }else{
-        const edge=Math.sign(x)*Math.min(14,Math.abs(x)*.08);
-        for(const [id,point]of dragFrom)if(!id.startsWith("@"))memory.set(id,{...point,x:point.x+edge});
+        tug(x);
       }
       connectionProgress=1;anchorFrom=undefined;extentFrom=undefined;
       draw();
     },
     release() {
-      dragFrom=undefined;dragRoutes.clear();safeDragRoutes.clear();
+      dragFrom=undefined;dragRoutes.clear();safeDragRoutes.clear();dragTugs.clear();
       if(root.dataset)root.dataset.dragging="false";
       root.style.setProperty("--glass-x","24%");
       animate();

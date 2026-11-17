@@ -78,24 +78,47 @@ for(const locale of locales)test(`universe presentation and Focus retain real ti
  query="";tree=h.render(Universe);const card=nodes(tree).find(node=>node.props["data-space-node"]!==undefined)!;(card.props.onClick as ()=>void)();tree=h.render(Universe);assert.ok(nodes(tree).some(node=>node.props.id==="universe-detail"));assert.equal(query,"");h.unmount();
 });
 
-for(const locale of locales)test(`welcome keyboard, recommendation dismissal and nonmodal focus ownership: ${locale}`,()=>{
- const h=hookHarness(),gate=createWelcomeGate(),store=memoryStorage(),listeners=new Map<string,(event:unknown)=>void>();let focusCount=0;
- const body={closest:()=>null},outside={closest:()=>null},inside={closest:()=>null};
- const doc={querySelector:()=>null,body,activeElement:inside,addEventListener:(name:string,fn:(event:unknown)=>void)=>listeners.set(name,fn),removeEventListener:(name:string)=>listeners.delete(name),getElementById:()=>({focus:()=>focusCount++})};
+for(const locale of locales)for(const action of ["close","thanks","escape"] as const)test(`native welcome owns focus, nested cancel and daily dismissal: ${locale} / ${action}`,()=>{
+ const h=hookHarness(),gate=createWelcomeGate(),store=memoryStorage();let focusCount=0,locks=0,refIndex=0;
+ class Element {isConnected=true;focus(){focusCount++;doc.activeElement=this;}}
+ const article:PublicWritingSummary|undefined=action==="thanks"?{id:"published-fixture",slug:"source-canonical",title:"Published test source",excerpt:"Public summary",deck:"Public deck",contentType:"essay",topics:[],readingMinutes:3,publishedAt:"2026-11-17T00:00:00Z",language:"en",sourceLanguage:"en",availableLanguages:["en"],translationStatus:"fallback"}:undefined;
+ const body=new Element(),outside=new Element(),inside=new Element();
+ const doc={querySelector:()=>null,body,activeElement:outside,getElementById:()=>outside};
+ const panel={open:false,contains:(e:unknown)=>e===inside,showModal(){this.open=true;doc.activeElement=inside;},close(){this.open=false;doc.activeElement=outside;}};
  const win={localStorage:store,location:{hash:""},addEventListener:()=>{},removeEventListener:()=>{},dispatchEvent:()=>true};
  const Welcome=loadSource<{DailyWelcome:(props:{dateKey:string})=>React.ReactElement<Record<string,unknown>>|null}>("components/home/daily-welcome.tsx",{
- "@/components/discovery/discovery-context":{useDiscovery:()=>({latestWriting:undefined})},
- "react/jsx-runtime":jsxRuntime,"react":{...h.hooks,useSyncExternalStore:(_:unknown,snapshot:()=>boolean)=>snapshot()},"next/link":{__esModule:true,default:"a"},
+ "@/components/discovery/discovery-context":{useDiscovery:()=>({latestWriting:article})},
+ "react/jsx-runtime":jsxRuntime,"react":{...h.hooks,useLayoutEffect:h.hooks.useEffect,useRef:(initial:unknown)=>{const ref=h.hooks.useRef(initial);if(refIndex++===0)ref.current=panel;return ref;},useSyncExternalStore:(_:unknown,snapshot:()=>boolean)=>snapshot()},"next/link":{__esModule:true,default:"a"},
  "@/components/i18n/locale-context":{useLocale:()=>locale},"@/components/quotes/quote-experience":{QuoteExperience:()=>React.createElement("span")},
- "@/data/i18n/adaptive-home":{adaptiveHomeCopy},"@/lib/home-welcome":{welcomeGate:gate},"@/lib/i18n/routing":{localizeHref:(href:string,l:string)=>l==="de"?href:`/${l}${href}`},"./daily-welcome.module.css":{__esModule:true,default:{}},
- },{window:win,document:doc,Event}).DailyWelcome;
- const render=()=>h.render(()=>Welcome({dateKey:"2026-11-13"}));const tree=render()!;
- assert.equal(tree.props["aria-modal"],"false");assert.equal(doc.activeElement,inside,"arrival never captures focus");
- (tree.props.ref as {current:unknown}).current={contains:(element:unknown)=>element===inside};
- const event=(target:unknown)=>({key:"Escape",target,defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}});
- listeners.get("keydown")!(event(outside));assert.ok(render(),"unrelated controls keep Escape");
- listeners.get("keydown")!(event({closest:()=>({})}));assert.ok(render(),"nested modal keeps Escape");
- const close=nodes(tree).find(node=>node.props["aria-label"]===adaptiveHomeCopy[locale].close)!;(close.props.onClick as ()=>void)();assert.equal(render(),null);assert.equal(focusCount,1);assert.equal(store.values.size,1);h.unmount();
+ "@/data/i18n/adaptive-home":{adaptiveHomeCopy},"@/lib/home-welcome":{welcomeGate:gate},"@/lib/scroll-lock":{acquireScrollLock:()=>{locks++;return()=>{locks--;};}},"@/lib/i18n/routing":{localizeHref:(href:string,l:string)=>l==="de"?href:`/${l}${href}`},"./daily-welcome.module.css":{__esModule:true,default:{}},
+ },{window:win,document:doc,HTMLElement:Element,Event}).DailyWelcome;
+ const render=()=>{refIndex=0;return h.render(()=>Welcome({dateKey:"2026-11-13"}));};const tree=render()!;
+ const links=nodes(tree).filter(node=>node.type==="a").map(node=>node.props.href);assert.equal(links.length,article?3:2);if(article)assert.equal(links[0],"/en/writing/source-canonical");
+ assert.equal(tree.type,"dialog");assert.equal(tree.props["aria-modal"],"true");assert.equal(panel.open,true);assert.equal(doc.activeElement,inside);assert.equal(locks,1);
+ const cancel=tree.props.onCancel as (e:unknown)=>void;
+ cancel({target:{},currentTarget:panel,defaultPrevented:false,preventDefault:()=>assert.fail("nested sharing owns its Escape")});assert.equal(panel.open,true);
+ if(action==="escape"){let prevented=false;cancel({target:panel,currentTarget:panel,defaultPrevented:false,preventDefault:()=>{prevented=true;}});assert.equal(prevented,true);}
+ else {const buttons=nodes(tree).filter(node=>node.type==="button"),button=action==="close"?buttons[0]:buttons.at(-1)!;(button.props.onClick as ()=>void)();}
+ assert.equal(render(),null);assert.equal(panel.open,false);assert.equal(doc.activeElement,outside);assert.equal(focusCount,1);assert.equal(locks,0);assert.equal(store.values.size,1);h.unmount();assert.equal(locks,0);
+});
+
+test("curated arrival resolves existing public references without inventing query relevance",()=>{
+ const article:PublicWritingSummary={id:"test-published",slug:"verified-test",title:"Published source",deck:"Existing deck",excerpt:"Existing excerpt",contentType:"essay",topics:["Ideas"],publishedAt:"2026-11-13T12:00:00Z",readingMinutes:3,language:"en",sourceLanguage:"en",availableLanguages:["en"],translationStatus:"fallback"};
+ for(const locale of locales){
+  const catalog=content.publicUniverse(localizeDiscoveryItems([...discoveryIndex,...createPublishedWritingDiscoveryItems([article])],locale),locale),all=content.universeMatches(catalog,[],"");
+  const curated=content.curatedUniverseMatches(all,article.id);
+  assert.equal(curated[0].item.id,"writing-test-published");assert.equal(curated[0].item.href,"/en/writing/verified-test");
+  assert.equal(new Set(curated.map(m=>m.item.href)).size,curated.length);assert.ok(curated.every(m=>m.score===0&&m.presentation==="suggestion"));
+  assert.ok(content.curatedUniverseMatches(all.filter(m=>m.item.kind!=="writing"),article.id).every(m=>m.item.kind!=="writing"));
+  const scene=space.composeUniverseSpace(curated,curated[0].item.id,false,"atlas","discovery");assert.equal(scene.nodes.length,4);assert.equal(scene.matches.length,curated.length);
+ }
+});
+
+test("scene room fits measured chrome and preserves native scrolling on short displays",()=>{
+ assert.equal(space.universeRoomHeight(1080,280,74,false,4),710);
+ assert.equal(space.universeRoomHeight(600,280,74,false,4),540);
+ assert.equal(space.universeRoomHeight(568,230,74,true,4),590);
+ assert.equal(space.universeRoomHeight(1000,280,74,false,6),700);
 });
 
 test("life aliases and progressive alias suggestions lead to the actual public Life Alignment overview",()=>{
@@ -183,5 +206,25 @@ test("keyboard navigation to an already selected result restores its focus even 
  const kiki=nodes(other).find(n=>n.props["data-space-node"]!==undefined)!;
  (kiki.props.onKeyDown as (e:unknown)=>void)({key:"ArrowLeft",preventDefault(){}});
  assert.equal(focusCount,1,locale);assert.equal(query,"");h.unmount();
+ }
+});
+
+test("touch capture transfer from a content button does not cancel the scene gesture; scene capture loss does",()=>{
+ for(const locale of locales){
+ const h=hookHarness(),items=localizeDiscoveryItems(discoveryIndex,locale);
+ const Universe=loadSource<{AdaptiveUniverse:()=>React.ReactElement}>("components/home/universe/adaptive-universe.tsx",{
+ "react/jsx-runtime":jsxRuntime,"react":{...h.hooks,useLayoutEffect:h.hooks.useEffect},"next/link":{__esModule:true,default:"a"},
+ "@/components/discovery/discovery-results":{DiscoveryNavigationStatus:()=>null,isUnmodifiedPrimaryClick:()=>false},
+ "@/components/i18n/locale-context":{useLocale:()=>locale},"@/components/discovery/discovery-context":{useDiscovery:()=>({items,query:"",matches:discoverItems(items,""),setQuery:()=>{},writingStatus:"unavailable"})},
+ "@/data/i18n/adaptive-home":{adaptiveHomeCopy},"@/data/i18n/discovery":{getDiscoveryUiCopy,getGuidedDiscoveryPrompts},"@/lib/discovery-universe/navigation":{canHandoffUniverseLink},"@/lib/discovery-universe/content":content,"@/lib/discovery-universe/space":space,"@/lib/discovery-universe/motion":{startUniverseMotion:()=>assert.fail("No DOM in gesture fixture")},"./island-visual":{IslandVisual:()=>null},"./universe.module.css":{__esModule:true,default:{}},
+ }).AdaptiveUniverse;
+ let tree=h.render(Universe),captured=false,releases=0;
+ const parent={setPointerCapture:()=>{captured=true;},hasPointerCapture:()=>captured,releasePointerCapture:()=>{captured=false;releases++;}},child={hasAttribute:()=>true,closest(){return this;}};
+ const room=()=>nodes(tree).find(node=>node.props.onPointerDown)!;
+ const send=(name:string,x:number,target:unknown=child)=>{(room().props[name] as (event:unknown)=>void)({button:0,pointerId:7,clientX:x,clientY:100,target,currentTarget:parent});};
+ const selected=()=>nodes(tree).find(node=>node.props["data-selected"]===true)?.props["data-universe-object"];
+ const first=selected();send("onPointerDown",200);send("onPointerMove",50);assert.equal(captured,true);
+ send("onLostPointerCapture",50,child);assert.equal(captured,true,"bubbled implicit button capture loss must not abort");send("onPointerUp",50);tree=h.render(Universe);assert.notEqual(selected(),first);assert.equal(releases,1);
+ const second=selected();send("onPointerDown",200);send("onPointerMove",50);send("onLostPointerCapture",50,parent);send("onPointerUp",50);tree=h.render(Universe);assert.equal(selected(),second,"actual scene capture loss cancels without advancing");h.unmount();
  }
 });

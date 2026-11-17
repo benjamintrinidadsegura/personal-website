@@ -19,19 +19,21 @@ export function dragSelection(dx: number, width: number, index: number, count: n
 }
 
 function atlasSlots(count: number): { wide: readonly Slot[]; compact: readonly Slot[] } {
-  const wide = count === 1 ? [{x:50,y:145,scale:1}]
-    : count === 2 ? [{x:24,y:165,scale:1},{x:76,y:185,scale:.86}]
-    : [{x:24,y:165,scale:1},{x:77,y:165,scale:.8},{x:79,y:465,scale:.76},
-      {x:24,y:565,scale:.68},{x:50,y:660,scale:.64},{x:78,y:685,scale:.62}];
-  return {wide, compact:[{x:50,y:128,scale:.94},{x:25,y:575,scale:.54},{x:75,y:575,scale:.54},
-    {x:25,y:575,scale:.54},{x:50,y:575,scale:.54},{x:75,y:575,scale:.54}]};
+  const wide = count === 1 ? [{x:24,y:350,scale:1.04}]
+    : count === 2 ? [{x:23,y:315,scale:1},{x:77,y:350,scale:.94}]
+    : count <= 4 ? [{x:22,y:220,scale:1},{x:78,y:215,scale:.9},{x:78,y:606,scale:.84},{x:22,y:630,scale:.8}]
+    : [{x:19,y:170,scale:.94},{x:81,y:170,scale:.84},{x:81,y:560,scale:.8},
+      {x:19,y:560,scale:.78},{x:50,y:115,scale:.7},{x:50,y:680,scale:.64}];
+  return {wide, compact:[{x:50,y:128,scale:.84},{x:25,y:566,scale:.54},{x:75,y:566,scale:.54},
+    {x:25,y:566,scale:.54},{x:50,y:566,scale:.54},{x:75,y:566,scale:.54}]};
 }
 /** Editorial roles change from actual selection and index evidence, never fabricated query lists. */
-export function composeUniverseSpace(matches: readonly UniverseMatch[], selectedId: string, focus = false, direction: UniverseDirection = "atlas") {
+export function composeUniverseSpace(matches: readonly UniverseMatch[], selectedId: string, focus = false, direction: UniverseDirection = "atlas", mode: "discovery" | "search" = "search") {
   const selectedIndex = Math.max(0, matches.findIndex(({ item }) => item.id === selectedId));
   const selected = matches[selectedIndex];
-  const start = Math.floor(selectedIndex / universeWindowSize) * universeWindowSize;
-  const window = matches.slice(start, start + universeWindowSize);
+  const windowSize = mode === "discovery" ? 4 : universeWindowSize;
+  const start = Math.floor(selectedIndex / windowSize) * windowSize;
+  const window = matches.slice(start, start + windowSize);
   const strongest = matches[0]?.score || 1;
   const relations = focus && selected ? relatedUniverseItems(selected.item, matches.map(match => match.item)) : [];
   const focusItems = new Set([selected?.item.id, ...relations.map(item => item.id)]);
@@ -42,7 +44,7 @@ export function composeUniverseSpace(matches: readonly UniverseMatch[], selected
   const leadKind = selected?.item.kind;
   const worldX = leadKind === "person" ? 64 : leadKind === "writing" ? 68 : 50;
   return {
-    direction, focus, matches, selectedIndex, start, end: start + window.length,
+    direction, mode, focus, matches, selectedIndex, start, end: start + window.length,
     canvas: direction === "atlas",
     height: direction === "atlas" ? {wide:760,compact:640} : {wide:1330,compact:2000},
     world: { wide: {x:worldX,y:leadKind === "writing" ? 300 : 350}, compact:{x:50,y:direction === "atlas" ? 230 : 490} },
@@ -73,6 +75,12 @@ export function composeUniverseSpace(matches: readonly UniverseMatch[], selected
   };
 }
 export type UniverseScene = ReturnType<typeof composeUniverseSpace>;
+
+/** Fit measured page chrome; short screens grow only as much as content needs. */
+export function universeRoomHeight(viewportHeight: number, sceneTop: number, controlsHeight: number, compact: boolean, count: number): number {
+  const minimum = compact ? 590 : count > 4 ? 700 : 540;
+  return Math.ceil(Math.max(minimum, viewportHeight - sceneTop - controlsHeight - 16));
+}
 
 export function mixMotion(from: MotionPoint, to: MotionPoint, progress: number): MotionPoint {
   const t = Math.max(0, Math.min(1, progress));

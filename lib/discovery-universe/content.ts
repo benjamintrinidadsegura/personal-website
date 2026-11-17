@@ -54,6 +54,16 @@ export function universeMatches(items:readonly UniverseItem[], matches:readonly 
   });
   return uniqueDestinations(sorted.map(item=>({item,score:0,presentation:"suggestion" as const,matchedTopics:[]})));
 }
+/** A small editorial entry collection, never a ranked or invented search result.
+ * Resolve references against the current public catalog and published Writing read. */
+export function curatedUniverseMatches(matches: readonly UniverseMatch[], latestWritingId?: string): UniverseMatch[] {
+  const references = [...(latestWritingId ? [`writing-${latestWritingId}`] : []),
+    ...welcomeOrder, "tool-personal-advantage"];
+  return uniqueDestinations(references.flatMap(id => {
+    const match = matches.find(match => match.item.id === id);
+    return match ? [{ ...match, score: 0, presentation: "suggestion" as const, matchedTopics: [] }] : [];
+  }));
+}
 const genericTopics = new Set([
   "page", "tool", "writing", "format", "interview",
   ...locales.flatMap(locale=>Object.values(getDiscoveryUiCopy(locale).groups)),

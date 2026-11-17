@@ -22,6 +22,16 @@
   .home-view-switch { padding-inline: 2rem; }
 }
 
+@media (max-width: 639px) {
+  .home-view-toolbar { height: 4rem; }
+  .home-view-switch { padding-inline: .75rem; gap: .25rem; }
+  .home-view-choice { min-width: 0; flex: 1; }
+  .home-view-choice > span { padding-inline: .6rem; }
+  .home-view-choice small { font-size: .65rem; }
+  .home-views [id] { scroll-margin-top: 10rem; }
+  .home-views [data-context-discovery-view] { top: 9rem; }
+}
+
 /* Discover is a server-rendered editorial view, with one small existing quote island. */
 .discover-editorial { max-width: 100rem; margin-inline: auto; padding: 2.5rem 1.25rem 5rem; color: #f8fafc; }
 .discover-editorial a:focus-visible { outline: 2px solid #73e3f1; outline-offset: 6px; border-radius: .15rem; }
@@ -114,6 +124,9 @@ html {
 }
 
 main [id] { scroll-margin-top: 6rem; }
+/* Reserve the entering page's first viewport while Next streams its contents.
+   This only affects the existing loading fallback, never settled page spacing. */
+#main-content > [data-navigation-loading] { min-height:100svh; }
 
 html[data-scroll-restoring="true"] { scroll-behavior: auto !important; }
 
