@@ -51,6 +51,9 @@ type SubmitToDatabase = (
 ) => Promise<{ echoId: string | null; errorCode?: string }>;
 
 function configuration(): SubmissionSecrets | null {
+  // Live submissions require a separate operational/security activation decision.
+  // Existing public reads stay available; a configured database alone is not consent to write.
+  if (process.env.ECHOWALL_SUBMISSIONS_ENABLED !== "true") return null;
   const ipHashSecret = process.env.ECHOWALL_IP_HASH_SECRET;
   const formTokenSecret = process.env.ECHOWALL_FORM_TOKEN_SECRET;
   const siteUrl = process.env.SITE_URL;
@@ -160,6 +163,8 @@ export async function submitEchoAction(
   _previousState: EchoActionState,
   formData: FormData,
 ): Promise<SubmitEchoResult> {
+  const secrets = configuration();
+  if (!secrets) return { ok: false, code: "SERVICE_UNAVAILABLE" };
   const requestHeaders = await headers();
   const forwardedFor = requestHeaders.get("x-forwarded-for")
     ?.split(",")[0]
@@ -194,7 +199,7 @@ export async function submitEchoAction(
       host: requestHeaders.get("host"),
       networkIdentifier,
     },
-    configuration(),
+    secrets,
     async (submission) => {
       const { getSupabaseServerClient } = await import("@/lib/supabase/server");
       const supabase = getSupabaseServerClient();

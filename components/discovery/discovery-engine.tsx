@@ -250,9 +250,9 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
           ref={desktopInput}
           placeholder={copy.placeholder}
           onClick={(event) => openDiscovery(event.currentTarget)}
-          className="h-10 w-full rounded-full border border-white/15 bg-white/[0.035] pl-9 pr-14 text-sm text-white outline-none transition placeholder:text-slate-500 hover:border-white/25 focus:border-[#35d0e5]/60 focus:bg-[#071824] focus:ring-2 focus:ring-[#35d0e5]/15"
+          className="h-10 w-full rounded-full border border-white/15 bg-white/[0.035] pl-9 pr-14 text-sm text-white outline-none transition placeholder:text-slate-400 hover:border-white/25 focus:border-[#35d0e5]/60 focus:bg-[#071824] focus:ring-2 focus:ring-[#35d0e5]/15"
         />
-        <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-white/15 px-1.5 py-0.5 font-mono text-[9px] text-slate-500">⌘/Ctrl K</kbd>
+        <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-white/15 px-1.5 py-0.5 font-mono text-[9px] text-slate-400">⌘/Ctrl K</kbd>
       </div>
 
       <button
@@ -274,7 +274,7 @@ export function DiscoveryEngine({ onOpen }: { onOpen?: () => void }) {
                 {...inputProps}
                 ref={mobileInput}
                 placeholder={copy.placeholder}
-                className="h-12 w-full rounded-xl border border-white/15 bg-[#04111b] px-4 text-base text-white outline-none placeholder:text-slate-500 focus:border-[#35d0e5]/60 focus:ring-2 focus:ring-[#35d0e5]/15"
+                className="h-12 w-full rounded-xl border border-white/15 bg-[#04111b] px-4 text-base text-white outline-none placeholder:text-slate-400 focus:border-[#35d0e5]/60 focus:ring-2 focus:ring-[#35d0e5]/15"
               />
             </div>
             <p id={descriptionId} className="sr-only">{copy.description}</p>

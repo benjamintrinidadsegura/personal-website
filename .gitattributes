@@ -1,1 +1,7 @@
 supabase/migrations/*.sql text eol=lf
+
+# Canonical text contracts and pinned SVG bytes must survive Windows checkouts.
+components/discovery/context-discovery-view.tsx text eol=lf
+components/life-alignment/life-alignment-page.tsx text eol=lf
+lib/comments/queries.ts text eol=lf
+public/brand/ai/*.svg text eol=lf

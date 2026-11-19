@@ -4,7 +4,7 @@
 
 ## Current evidence
 
-Integrated base: `9c8fa2bc3ac9de4061ad9c6fd83be7f2d16c8074`. Production remains `7379c749b954f692b84885375ce1e0af9805001f`, deployment `dpl_GrrjeSHYBMtVjuBSayNg2mUNE66C`. Supabase project `mzpwytbbijfbkuhvfihl` is bts-online-production, ACTIVE_HEALTHY, Frankfurt. A read-only aggregate confirms 19 published articles. No draft bodies, customer records or credential values were retrieved.
+Integrated base: `9c8fa2bc3ac9de4061ad9c6fd83be7f2d16c8074`. Production remains `7379c749b954f692b84885375ce1e0af9805001f`, deployment `dpl_GrrjeSHYBMtVjuBSayNg2mUNE66C`. Supabase project `mzpwytbbijfbkuhvfihl` is the Production project, ACTIVE_HEALTHY, Frankfurt. A read-only aggregate confirms 19 published articles. No draft bodies, customer records or credential values were retrieved.
 
 Three separate problems are evidenced:
 

@@ -132,7 +132,7 @@ function submission(flag: boolean, failCountry = false) {
       calls.push({ name, country: payload.p_country_code, aggregate: payload.p_include_in_community_map });
       return failCountry ? { data: null, error: { message: "private upstream detail" } } : { data: "isolated-pending-id", error: null };
     } }) },
-  }, { process: { env: { SITE_URL: siteUrl, ECHOWALL_FORM_TOKEN_SECRET: formSecret, ECHOWALL_IP_HASH_SECRET: "isolated-unit-hash-key", ECHOWALL_COUNTRY_CONTEXT_ENABLED: String(flag) } } });
+  }, { process: { env: { SITE_URL: siteUrl, ECHOWALL_SUBMISSIONS_ENABLED: "true", ECHOWALL_FORM_TOKEN_SECRET: formSecret, ECHOWALL_IP_HASH_SECRET: "isolated-unit-hash-key", ECHOWALL_COUNTRY_CONTEXT_ENABLED: String(flag) } } });
   const form = (country?: string) => {
     const data = new FormData();
     for (const [key,value] of Object.entries({ ...valid, formToken: security.createFormToken(formSecret, Date.now()-4_000), ...(country ? {countryCode:country,includeInCommunityMap:"true"} : {}) })) data.set(key,value);

@@ -64,7 +64,8 @@
 .quote-experience.quote-experience-compact .quote-experience-share { border-color: rgba(255,255,255,.22); background: transparent; color: #c4cfdb; }
 .quote-experience.quote-experience-compact .quote-experience-share:hover,
 .quote-experience.quote-experience-compact .quote-experience-share:focus-visible { background: rgba(53,208,229,.08); color: white; }
-.discover-human { display: grid; gap: 2rem; margin-top: 4rem; border-top: 1px solid rgba(255,255,255,.13); padding-top: 3rem; }
+.discover-human { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; margin-top: 4rem; border-top: 1px solid rgba(255,255,255,.13); padding-top: 3rem; }
+.discover-human > * { min-width: 0; overflow-wrap: anywhere; }
 .discover-human h2 { max-width: 21ch; margin-top: 1rem; font-size: clamp(1.9rem, 3.3vw, 2.9rem); font-weight: 750; letter-spacing: -.035em; line-height: 1.2; text-wrap: balance; }
 .discover-human-copy > p { max-width: 47ch; color: #c4cfdb; font-size: 1rem; line-height: 1.85; }
 .discover-human-copy .discover-human-principle { margin-block: 1rem; color: #9aaabd; font-size: .86rem; }
@@ -88,7 +89,7 @@
 .discover-connection-links { display: flex; flex-wrap: wrap; gap: .5rem 2rem; margin-top: 1.25rem; }
 @media (min-width: 640px) {
   .discover-editorial { padding-inline: 2rem; }
-  .discover-human { grid-template-columns: 1fr 1fr; gap: 3rem; }
+  .discover-human { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3rem; }
   .discover-path-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
   .discover-path-projects, .discover-path-experiences { grid-column: span 7; }
   .discover-path-writing, .discover-path-people { grid-column: span 5; }
