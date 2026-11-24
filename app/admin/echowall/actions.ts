@@ -87,3 +87,16 @@ export async function saveEchoFounderReply(echoId: string, value: string | null)
   revalidatePath("/community");
   return { ok: true as const };
 }
+
+export async function withdrawEchoPublicCountry(echoId: string) {
+  const authorization = await authorizeAction();
+  if (!authorization || !validUuid(echoId)) return { status: "unavailable" as const };
+
+  const { data, error } = await authorization.supabase.rpc("withdraw_echo_public_country", { p_echo_id: echoId });
+  if (error || typeof data !== "boolean") return { status: "unavailable" as const };
+  if (!data) return { status: "absent" as const };
+
+  revalidatePath("/echowall");
+  revalidatePath("/community");
+  return { status: "removed" as const };
+}
