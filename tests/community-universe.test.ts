@@ -4,13 +4,20 @@ import * as reachPeriodsModule from "../lib/analytics/reach-periods";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import * as jsxRuntime from "react/jsx-runtime";
+import { renderToStaticMarkup } from "react-dom/server";
 import world from "world-atlas/countries-50m.json";
 import { publicUniverse, universeMatches } from "../lib/discovery-universe/content";
 import { discoverItems } from "../lib/discovery";
 import { communityProductAliases } from "../data/i18n/community-search";
 import { discoveryIndex } from "../data/discovery-index";
 import { localizeDiscoveryItems } from "../data/i18n/discovery";
-import { communityCopy } from "../data/i18n/community";
+import { communityCopy, connectionMapLabel } from "../data/i18n/community";
+import { discoverCopy } from "../data/i18n/discover";
+import { getGlobalDictionary } from "../data/i18n/global";
+import { livingWorldCopy } from "../data/i18n/living-world";
+import { getWorldMapDictionary } from "../data/i18n/world-map";
 import { regionByNumericCode, regionByCountryCode } from "../data/reach-country-codes";
 import { reachProjectId } from "../lib/analytics/country-reach";
 import { prepareReachPeriod, reachColorIndex, inactiveReach } from "../lib/analytics/reach-periods";
@@ -20,6 +27,48 @@ import { locales } from "../lib/i18n/config";
 import { localizeHref } from "../lib/i18n/routing";
 
 const now = Date.parse("2026-11-24T11:00:00.000Z");
+
+test("the localized Community search results render recognizable artwork and retain their destinations", () => {
+  const { IslandVisual } = loadSource<typeof import("../components/home/universe/island-visual")>(
+    "components/home/universe/island-visual.tsx",
+    {
+      "next/image": { __esModule: true, default: ({ src, alt }: { src: string; alt: string }) => createElement("img", { src, alt }) },
+      "react/jsx-runtime": jsxRuntime,
+      "./universe.module.css": { __esModule: true, default: { worldArt: "worldArt", echoArt: "echoArt", ideaArt: "ideaArt" } },
+    },
+  );
+  const products = [
+    { id: "page-global-reach", route: "/community#global-reach", artwork: /world-atlas\.svg/u },
+    { id: "page-community", route: "/community", artwork: /world-atlas\.svg/u },
+    { id: "page-world-map", route: "/world", artwork: /world-atlas\.svg/u },
+    { id: "tool-echowall", route: "/echowall", artwork: /class="echoArt"/u },
+  ];
+  for (const locale of locales) {
+    const items = localizeDiscoveryItems(discoveryIndex, locale);
+    const universe = publicUniverse(items, locale);
+    for (const { id, route, artwork } of products) {
+      const indexed = items.find((item) => item.id === id);
+      assert.ok(indexed);
+      const result = universeMatches(universe, discoverItems(items, indexed.title), indexed.title)[0]?.item;
+      assert.ok(result, `${locale}: missing ${id}`);
+      assert.equal(result.id, id, locale);
+      assert.equal(result.href, localizeHref(route, locale));
+      const markup = renderToStaticMarkup(createElement(IslandVisual, { item: result }));
+      assert.match(markup, artwork);
+      assert.doesNotMatch(markup, /class="ideaArt"/u);
+      assert.match(markup, /aria-hidden="true"/u);
+    }
+  }
+});
+
+test("German navigation and related CTAs consistently name the Connection Map", () => {
+  assert.equal(connectionMapLabel.de, "Connection Map");
+  assert.equal(getGlobalDictionary("de").nav.worldMap, connectionMapLabel.de);
+  assert.equal(getWorldMapDictionary("de").breadcrumb, connectionMapLabel.de);
+  assert.match(discoverCopy.de.mapLink, /\bConnection Map\b/u);
+  assert.match(livingWorldCopy.de.mapLink, /\bConnection Map\b/u);
+  assert.ok(communityProductAliases("page-world-map", "de")?.includes("Karte der Verbindungen"));
+});
 const reference = {
   version: 1, source: "vercel-web-analytics", metric: "pageviews", projectId: reachProjectId,
   provenance: "owner-approved-aggregate", publicDisplayApproved: true, routeScope: "public-allowlist-v1",

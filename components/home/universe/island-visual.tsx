@@ -17,7 +17,7 @@ export function IslandVisual({ item, featured = false }: { item: UniverseItem; f
       <span className={styles.projectTopics}>{item.topics.slice(0, 2).join(" · ")}</span>
       <span className={styles.projectDescription} lang={item.language}>{item.summary}</span>
     </span>;
-  } else if (item.kind === "world") {
+  } else if (item.kind === "world" || item.id === "page-global-reach" || item.id === "page-community") {
     visual = <span className={styles.worldArt}><Image src="/images/experience-lab/world-atlas.svg" alt="" fill unoptimized loading={featured ? "eager" : "lazy"} /></span>;
   } else if (item.kind === "community") {
     visual = <span className={styles.echoArt}><b>echo</b><i /><i /></span>;

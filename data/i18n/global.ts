@@ -24,7 +24,7 @@ const de = {
     quote: "Zitat des Tages",
     writing: "Writing",
     people: "People / Interviews",
-    worldMap: "World Map",
+    worldMap: "Connection Map",
     tools: "Tools",
     partners: "Partner",
     contact: "Kontakt",

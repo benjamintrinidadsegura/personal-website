@@ -28,7 +28,7 @@ export const discoverCopy: Record<Locale, DiscoverCopy> = {
     projects: ["Projekte", "Was ich aufbaue."], writing: ["Writing", "Was mich beschäftigt."],
     people: ["Menschen", "Mit wem ich ins Gespräch komme."], experiences: ["Erlebnisse", "Finde deinen Weg."],
     continueTitle: "Weiter entdecken", connection: "Ein Gespräch. Ein Ort. Mehr Kontext.",
-    conversationLink: "Das Gespräch entdecken", mapLink: "Verbindungen auf der World Map",
+    conversationLink: "Das Gespräch entdecken", mapLink: "Verbindungen auf der Connection Map",
   },
   en: {
     featured: "Featured today", emptyTitle: "Room for the next thought.",

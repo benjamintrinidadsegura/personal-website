@@ -7,7 +7,7 @@ type LivingWorldCopy = Record<
 
 export const livingWorldCopy: Record<Locale, LivingWorldCopy> = {
   de: {
-    mapLink: "Entdecke die World Map",
+    mapLink: "Entdecke die Connection Map",
     filtersHelp: "Mehrere Kategorien lassen sich kombinieren. Angezeigt werden Verbindungen mit mindestens einer ausgewählten Kategorie.",
     combinedFilters: "Mehrere Kategorien",
     country: "Land",
