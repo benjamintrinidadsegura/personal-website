@@ -68,3 +68,22 @@ export async function loadModerationHistory(echoId: string) {
     ? { ok: false as const, message: "Historie nicht verfügbar." }
     : { ok: true as const, events: data as EchoModerationEvent[] };
 }
+
+export async function loadEchoFounderReply(echoId: string) {
+  const authorization = await authorizeAction();
+  if (!authorization || !validUuid(echoId)) return { ok: false as const };
+  const { data, error } = await authorization.supabase.rpc("read_echo_founder_reply", { p_echo_id: echoId });
+  return error ? { ok: false as const } : { ok: true as const, reply: typeof data === "string" ? data : null };
+}
+
+export async function saveEchoFounderReply(echoId: string, value: string | null) {
+  const authorization = await authorizeAction();
+  if (!authorization || !validUuid(echoId) || (value !== null && typeof value !== "string")) return { ok: false as const };
+  const body = value?.normalize("NFC").trim() ?? null;
+  if (body !== null && (!body || Array.from(body).length > 500)) return { ok: false as const };
+  const { data, error } = await authorization.supabase.rpc("save_echo_founder_reply", { p_echo_id: echoId, p_body: body });
+  if (error || data !== true) return { ok: false as const };
+  revalidatePath("/echowall");
+  revalidatePath("/community");
+  return { ok: true as const };
+}

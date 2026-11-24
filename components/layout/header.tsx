@@ -6,6 +6,7 @@ import { AccountMenu } from "@/components/account/account-menu";
 import { DiscoveryEngine } from "@/components/discovery/discovery-engine";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useLocale, useLocalizedHref } from "@/components/i18n/locale-context";
+import { communityCopy } from "@/data/i18n/community";
 import { getGlobalDictionary } from "@/data/i18n/global";
 import { getMoneyProfileUiCopy } from "@/data/money-profile-locales";
 import type { AccountState } from "@/lib/account/state";
@@ -44,7 +45,9 @@ export function Header({ accountState }: { accountState: AccountState }) {
         { id: "quote", label: copy.nav.quote, href: localizedHref("/#quote") },
         { id: "writing", label: copy.nav.writing, href: localizedHref("/writing") },
         { id: "people", label: copy.nav.people, href: localizedHref("/people") },
-        { id: "world-map", label: copy.nav.worldMap, href: localizedHref("/world") },
+        { id: "community", label: communityCopy[locale].community, href: localizedHref("/community") },
+        { id: "world-map", label: "Connection Map", href: localizedHref("/world") },
+        { id: "global-reach", label: communityCopy[locale].reach, href: localizedHref("/global-reach") },
       ],
     },
     {

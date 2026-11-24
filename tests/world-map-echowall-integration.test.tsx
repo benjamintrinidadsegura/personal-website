@@ -55,7 +55,8 @@ for (const locale of locales) {
     assert.match(context, /id="context-card-title" tabindex="-1"/u);
     assert.match(context, /<img/u);
     for (const value of Object.values(livingWorldCopy[locale])) assert.ok(value.trim());
-    assert.ok(source("app/echowall/page.tsx").includes('localizeHref("/world", locale)'));
+    assert.match(source("components/echowall/echo-wall.tsx"), /<CommunityNav locale=\{locale\} current="\/echowall"/u);
+    assert.match(source("components/community/community-nav.tsx"), /href: "\/world"/u);
   });
 }
 

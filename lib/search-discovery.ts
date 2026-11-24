@@ -16,6 +16,8 @@ export const publicStaticRoutes = [
   "/about/nerd-corner",
   "/people",
   "/world",
+  "/community",
+  "/global-reach",
   "/tools/personal-advantage",
   "/tools/money-profile",
 ] as const;

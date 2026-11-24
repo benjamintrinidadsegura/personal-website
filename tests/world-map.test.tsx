@@ -388,7 +388,7 @@ test("MAP-02/MAP-09/MAP-12/MAP-26/MAP-27 render geography, real filters and text
   assert.match(html, /data-map-interaction="passive"/u);
   assert.match(html, /data-map-interaction-toggle/u);
   assert.match(html, /aria-pressed="true"/u);
-  assert.doesNotMatch(html, /<select/u, "one real category does not need a duplicate dropdown");
+  assert.match(html, /<select[^>]*aria-describedby="map-filter-help"[^>]*><option value="all"[^>]*>All<\/option><option value="interviewed"[^>]*>Interviews<\/option><\/select>/u, "the selector exposes only real categories");
   assert.doesNotMatch(html, /Team-Ups|Investors|Advertising partners|Other connections/u, "empty production categories stay hidden");
   assert.match(source("../components/world-map/world-map-experience.tsx"), /aria-pressed=\{selected\?\.id === connection\.id\}/u);
   assert.match(html, /motion-reduce/u);

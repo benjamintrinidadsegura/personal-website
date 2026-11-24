@@ -6,6 +6,8 @@ import * as runtime from "react/jsx-runtime";
 import { hookHarness } from "./helpers/hook-harness";
 import { loadSource } from "./helpers/load-source";
 import { getEchoDictionary } from "../data/i18n/echowall";
+import { EchoAvatar } from "../components/echowall/echo-avatar";
+import * as limits from "../lib/echowall/limits";
 import { locales } from "../lib/i18n/config";
 import type { EchoForm } from "../components/echowall/echo-form";
 import type { EchoActionState } from "../types/echowall";
@@ -30,6 +32,8 @@ for (const locale of locales) for (const failure of ["transport", "expired"] as 
         return [state, (data: FormData) => { pending = reducer(state, data).then(setState); }, false];
       } },
     "react/jsx-runtime": runtime,
+    "./echo-avatar": { EchoAvatar },
+    "@/lib/echowall/limits": limits,
     "@/app/echowall/actions": { submitEchoAction: async () => {
       calls++;
       if (calls === 1) { await new Promise<void>((resolve) => { release = resolve; });

@@ -38,6 +38,8 @@ const knownStaticRoutes = new Set([
   "/about/how-my-brain-works",
   "/about/nerd-corner",
   "/world",
+  "/community",
+  "/global-reach",
   "/people/evgeny-vinokurov",
   "/people/kiki-radicke",
   "/people/johanna-geisler",

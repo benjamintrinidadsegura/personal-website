@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { CommunityNav } from "@/components/community/community-nav";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 
 import { useLocale, useLocalizedHref } from "@/components/i18n/locale-context";
@@ -413,12 +414,12 @@ export function WorldMapExperience({ geometry, children }: { geometry: WorldMapG
       <div className="relative mx-auto max-w-[90rem]">
         <nav aria-label={copy.breadcrumb} className="font-mono text-xs text-slate-400"><ol className="flex items-center gap-2"><li><Link href={href("/")} className="inline-flex min-h-11 items-center hover:text-white">Digital HQ</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="text-[#35d0e5]">{copy.breadcrumb}</li></ol></nav>
 
-        <header className="grid min-w-0 grid-cols-1 gap-10 border-b border-white/15 py-14 lg:grid-cols-[1.08fr_0.72fr] lg:items-end lg:py-20">
-          <div><p className="font-mono text-xs font-black uppercase tracking-[0.28em] text-[#35d0e5]">{copy.eyebrow}</p><h1 className="living-title mt-6 max-w-5xl text-[clamp(2.8rem,7vw,7.1rem)] tracking-[-0.055em]">{copy.title}</h1></div>
-          <div className="border-l-2 border-[#9bdff1] pl-6 sm:pl-8"><p className="text-xl font-black leading-8 text-white sm:text-2xl">{copy.subtitle}</p><p className="mt-5 leading-7 text-slate-400">{copy.introduction}</p><p className="mt-6 text-sm leading-6 living-muted">{copy.privacyNote}</p></div>
+        <CommunityNav locale={locale} current="/world" /><header className="grid min-w-0 gap-4 border-b border-white/15 py-4 lg:grid-cols-[1fr_0.8fr] lg:items-end">
+          <div><p className="font-mono text-xs font-black uppercase tracking-[0.28em] text-[#35d0e5]">Connection Map · {copy.eyebrow}</p><h1 className="living-title mt-2 max-w-5xl text-[clamp(2.5rem,5vw,4.5rem)] tracking-[-0.055em]">{copy.title}</h1></div>
+          <div className="border-l-2 border-[#9bdff1] pl-6 sm:pl-8"><p className="text-xl font-black leading-8 text-white sm:text-2xl">{copy.subtitle}</p><p className="mt-2 text-sm leading-6 living-muted">{copy.privacyNote}</p></div>
         </header>
 
-        <section aria-labelledby="map-title" className="py-14 sm:py-20">
+        <section aria-labelledby="map-title" className="pb-14 pt-5 sm:pb-20">
           <div className="min-w-0">
             <div className="min-w-0">
               <div className="flex flex-col gap-6 border-b border-white/10 pb-7 xl:flex-row xl:items-end xl:justify-between">
@@ -433,7 +434,7 @@ export function WorldMapExperience({ geometry, children }: { geometry: WorldMapG
               <section aria-labelledby="filter-title" className="living-panel world-map-filter-bar mt-5">
                 <h3 id="filter-title" className="text-xl text-white">{copy.filtersTitle}</h3>
                 <p className="mt-1 text-sm leading-5 text-slate-300">{copy.filtersDescription}</p>
-                {availableRelationshipFilters.length > 1 ? <><p id="map-filter-help" className="mt-2 text-sm living-muted">{journeyCopy.filtersHelp}</p><label className="mt-3 grid max-w-sm gap-2 text-sm text-slate-200">{copy.categorySelect}<select aria-describedby="map-filter-help" value={filters.length === 1 ? filters[0] : filters.length ? "combined" : "all"} onChange={(event) => { setFilters(event.target.value === "all" ? [] : [event.target.value as WorldMapRelationshipKind]); setSelectedId(null); }} className="min-h-12 min-w-0 rounded-xl border border-white/25 bg-[#081b2d] px-3 text-white"><option value="all">{copy.all}</option>{filters.length > 1 ? <option value="combined" disabled>{journeyCopy.combinedFilters}</option> : null}{availableRelationshipFilters.map((kind) => <option key={kind} value={kind}>{copy.categories[kind].label}</option>)}</select></label></> : null}
+                {availableRelationshipFilters.length > 0 ? <><p id="map-filter-help" className="mt-2 text-sm living-muted">{journeyCopy.filtersHelp}</p><label className="mt-3 grid max-w-sm gap-2 text-sm text-slate-200">{copy.categorySelect}<select aria-describedby="map-filter-help" value={filters.length === 1 ? filters[0] : filters.length ? "combined" : "all"} onChange={(event) => { setFilters(event.target.value === "all" ? [] : [event.target.value as WorldMapRelationshipKind]); setSelectedId(null); }} className="min-h-12 min-w-0 rounded-xl border border-white/25 bg-[#081b2d] px-3 text-white"><option value="all">{copy.all}</option>{filters.length > 1 ? <option value="combined" disabled>{journeyCopy.combinedFilters}</option> : null}{availableRelationshipFilters.map((kind) => <option key={kind} value={kind}>{copy.categories[kind].label}</option>)}</select></label></> : null}
                 <div className="mt-3 flex flex-wrap gap-2">
                   {quickFilters.map((item) => (
                     <button key={item} type="button" aria-pressed={item === "all" ? filters.length === 0 : filters.includes(item)} onClick={() => chooseFilter(item)}
@@ -670,7 +671,7 @@ export function WorldMapExperience({ geometry, children }: { geometry: WorldMapG
           </div>
         </section>
 
-        {children}
+        <p className="mb-6 max-w-3xl text-sm leading-6 living-muted">{copy.introduction}</p>{children}
 
         <section aria-labelledby="map-cta-title" className="living-panel p-7 sm:p-12 lg:p-16">
           <div className="grid min-w-0 grid-cols-1 gap-10 lg:grid-cols-[1fr_0.78fr] lg:items-end">

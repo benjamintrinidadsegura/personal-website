@@ -1,5 +1,6 @@
 "use client";
 
+import { EchoFounderEditor } from "@/components/admin/echo-founder-editor";
 import { useRef, useState, useTransition } from "react";
 import { loadModerationHistory, moderateEchoAction, revealPrivateContact } from "@/app/admin/echowall/actions";
 import type { AdminEcho, EchoModerationEvent, ModerationAction } from "@/types/echowall";
@@ -39,6 +40,7 @@ export function EchoModerationList({ echoes }: { echoes: AdminEcho[] }) {
           {echo.status !== "deleted" && echo.has_private_contact ? <button type="button" onClick={(event) => { trigger.current = event.currentTarget; startTransition(async () => { const result = await revealPrivateContact(echo.id); setContact(result.ok ? result.email : result.message); setHistory(null); setSelected({ echo, action: "approve" }); dialog.current?.showModal(); }); }} className="min-h-11 rounded-full border border-white/20 px-4 font-bold text-white">Show private contact</button> : null}
           <button type="button" onClick={(event) => { trigger.current = event.currentTarget; startTransition(async () => { const result = await loadModerationHistory(echo.id); setHistory(result.ok ? result.events : []); setContact(result.ok ? null : result.message); setSelected({ echo, action: "approve" }); dialog.current?.showModal(); }); }} className="min-h-11 rounded-full border border-white/20 px-4 font-bold text-white">Load history</button>
         </div>
+        <EchoFounderEditor echoId={echo.id} editable={echo.status === "approved"} />
       </article></li>)}
     </ol>
     <dialog ref={dialog} onClose={() => { setContact(null); setHistory(null); trigger.current?.focus(); }} className="m-auto w-[min(92vw,36rem)] border border-white/20 bg-[#071826] p-0 text-white backdrop:bg-black/75">

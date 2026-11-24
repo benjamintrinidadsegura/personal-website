@@ -1,3 +1,4 @@
+import { canOpenCommunityReview } from "@/lib/community/review-boundary";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -49,6 +50,9 @@ export async function proxy(request: NextRequest) {
     && pathnameRouting.locale !== defaultLocale
     && isLocaleAwarePublicPath(pathnameRouting.internalPathname);
   const securityPathname = localeRouting.internalPathname;
+  if (securityPathname === "/community-review" && !canOpenCommunityReview(request.headers)) {
+    return new NextResponse(null, { status: 404, headers: { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow" } });
+  }
   if (localeRouting.canonicalRedirect) {
     const destination = request.nextUrl.clone();
     destination.pathname = localeRouting.canonicalRedirect;

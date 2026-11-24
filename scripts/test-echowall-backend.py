@@ -9,7 +9,7 @@ Use --serve for bounded manual browser QA; Ctrl-C always removes owned resources
 from pathlib import Path
 import ipaddress
 import argparse, base64, hashlib, hmac, http.server, json, os, secrets
-import subprocess, threading, time, urllib.request, urllib.error, uuid
+import subprocess, threading, time, urllib.request, urllib.error, uuid, sys
 
 ROOT = Path(__file__).resolve().parents[1]
 # Next loads env files itself: refuse them even after scrubbing inherited vars.
@@ -18,6 +18,7 @@ if any(p.name != '.env.example' for p in ROOT.glob('.env*')):
 parser = argparse.ArgumentParser()
 parser.add_argument('--evidence', required=True, type=Path)
 parser.add_argument('--serve', action='store_true')
+parser.add_argument('--community', action='store_true', help='Verify additive Community EchoWall functionality')
 parser.add_argument('--subnet', help='Optional unused RFC1918 IPv4 /24 through /28 for the internal test network')
 args = parser.parse_args()
 if args.subnet:
@@ -80,6 +81,11 @@ try:
       grant execute on function auth.uid(),auth.jwt() to authenticated;""")
     migrations=['20260721_001_echowall_foundation.sql','20260722_002_grant_echowall_service_role.sql','20260723000000_echowall_admin_moderation.sql','20260723010000_echowall_deleted_recovery.sql','20260929000000_harden_service_role_table_privileges.sql']
     for migration in migrations: sql((ROOT/'supabase/migrations'/migration).read_text(encoding='utf-8'))
+    if args.community:
+        # Simulate the broad hosted defaults to verify explicit revocation.
+        sql("""alter default privileges in schema public grant all on tables to anon,authenticated,service_role;
+          alter default privileges in schema public grant execute on functions to anon,authenticated,service_role;""")
+        sql((ROOT/'supabase/pending-migrations/20261124102340_echowall_community_experience.sql').read_text(encoding='utf-8'))
     passed('Existing EchoWall migration chain applies before country migration')
     docker('run','--detach','--pull=never','--name',bridge,'--label','btshq.disposable=echowall','--network',network,'node:24-alpine','node','-e','setInterval(()=>{},60000)');owned.append(('container',bridge))
     docker('run','--detach','--pull=never','--name',rest,'--label','btshq.disposable=echowall','--network',network,
@@ -215,6 +221,11 @@ try:
     if result.returncode: raise RuntimeError('Application/database bridge failed: '+result.stderr[:1000])
     application_result=json.loads(result.stdout.strip().splitlines()[-1])
     passed('Application validation → Supabase SDK → actual PostgREST → actual PostgreSQL')
+    if args.community:
+        sys.path.insert(0,str(ROOT/'tests/integration'))
+        sys.dont_write_bytecode = True
+        import community_echo
+        community_echo.verify(sql,request,passed,admin,visitor,chosen,rejected,moderate,expect_error)
     # Aggregate evidence only: no row IDs, raw answers, JWTs or form/deletion references.
     evidence={'result':'PASS','checks':checks,'application':application_result,'postgres':sql('show server_version;'),'images':images,'postgrestImage':'postgrest/postgrest:v14.18',
       'network':'internal; no published container ports; host proxy loopback only','data':'synthetic only','productionAccess':False,'countryFlag':'OFF outside isolated tests',
@@ -227,6 +238,9 @@ try:
         # No external Auth/SMTP/webhook service is started by this harness.
         env.update(SITE_URL='http://localhost:3298',SUPABASE_URL=proxy_url,SUPABASE_SECRET_KEY=token('service_role'),
           ECHOWALL_FORM_TOKEN_SECRET='local-form-only',ECHOWALL_IP_HASH_SECRET='local-hash-only',ECHOWALL_COUNTRY_CONTEXT_ENABLED='false',VERCEL_ENV='preview')
+        if args.community:
+            env.pop('VERCEL_ENV', None)
+            env.update(BTS_COMMUNITY_LOCAL_REVIEW='1',ECHOWALL_REACTIONS_ENABLED='true',ECHOWALL_REACTION_SECRET=secrets.token_hex(32))
         log=(args.evidence/'local-server.log').open('w',encoding='utf-8')
         next_process=subprocess.Popen(['node',str(ROOT/'node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3298'],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT)
         print('LOCAL_BROWSER_READY http://localhost:3298/echowall (country OFF)',flush=True)

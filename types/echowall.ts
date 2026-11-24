@@ -40,6 +40,10 @@ export type PublicEcho = {
   message: string;
   category: EchoCategory | null;
   publishedAt: string;
+  reply?: string;
+  likes?: number;
+  liked?: boolean;
+  language?: string;
   countryCode?: string;
   includeInCommunityMap?: boolean;
 };

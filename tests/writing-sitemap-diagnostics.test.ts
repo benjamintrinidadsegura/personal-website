@@ -58,7 +58,7 @@ test("sitemap generation distinguishes successful empty and unavailable reads wi
     }
     const entries = await fixture.sitemap.default();
     assert.deepEqual(entries, fixture.sitemap.createSitemap([]));
-    assert.equal(entries.length, 273);
+    assert.equal(entries.length, 287);
     assert.equal(entries.some(({ url }) => new URL(url).pathname.includes("/writing/published-fixture")), false);
     assert.equal(fixture.records[0].state, status === "data" ? "success" : "unavailable");
     assert.equal(fixture.records[0].accepted_count, 0);
@@ -131,7 +131,7 @@ test("missing production canonical origin still fails closed without generated U
   assert.deepEqual(fixture.records, []);
 });
 
-test("the 17-article language distribution preserves 387 URLs and removes withdrawn or stale translations", async () => {
+test("the 17-article language distribution preserves Writing coverage across 401 URLs and removes withdrawn or stale translations", async () => {
   const rows = Array.from({ length: 17 }, (_, index) => ({
     ...row, id: `published-${index}`, slug: `published-${index}`,
     translations: config.locales.filter(locale => locale !== "de").slice(0, index < 14 ? 6 : index === 14 ? 3 : 5).map(locale => ({
@@ -144,7 +144,7 @@ test("the 17-article language distribution preserves 387 URLs and removes withdr
   let current: PublishedWritingReadResult = { status: "data", data: summaries };
   const fixture = sitemapHarness(async () => current);
   const entries = await fixture.sitemap.default();
-  assert.equal(entries.length, 387);
+  assert.equal(entries.length, 401);
   assert.equal(entries.filter(({ url }) => /\/writing\/published-\d+$/u.test(url)).length, 114);
   assert.equal(new Set(entries.map(({ url }) => url)).size, entries.length);
   assert.ok(entries.every(({ url }) => url.startsWith("https://btshq.online/")));

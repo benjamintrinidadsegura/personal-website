@@ -426,6 +426,8 @@ test("robots and sitemap fail closed and expose only canonical production routes
       "/about/nerd-corner",
       "/people",
       "/world",
+      "/community",
+      "/global-reach",
       "/tools/personal-advantage",
       "/tools/money-profile",
       "/life-alignment",

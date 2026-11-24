@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/app/living-world.css";
+import "@/app/community.css";
 
 import { WorldMapLayers } from "@/components/world-map/world-map-layers";
 import { WorldMapExperience } from "@/components/world-map/world-map-experience";
@@ -16,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return createLocalizedMetadata({
     locale,
     pathname: "/world",
-    title: copy.metadata.title,
+    title: `Connection Map · ${copy.metadata.title}`,
     description: copy.metadata.description,
   });
 }

@@ -1,6 +1,8 @@
 import { getLocalizedProjects } from "@/data/i18n/projects";
 import { getLocalizedPublishedSpotlights } from "@/data/i18n/people";
 import { getHqPulseCopy } from "@/data/i18n/hq-pulse";
+import { communityCopy } from "@/data/i18n/community";
+import { reachCopy } from "@/data/i18n/reach-dashboard";
 import { getWorldMapDictionary } from "@/data/i18n/world-map";
 import { getNerdCornerCopy } from "@/data/i18n/nerd-corner";
 import { createAdditionalLifeAlignmentDiscoveryItems } from "@/data/i18n/discovery-life-alignment";
@@ -265,6 +267,14 @@ export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: 
     if (item.id === "page-nerd-corner") {
       const nerdCopy = getNerdCornerCopy(locale);
       localized = { ...localized, description: nerdCopy.description, category: nerdCopy.eyebrow, tags: ["Nerd Corner", nerdCopy.music, nerdCopy.books], keywords: [nerdCopy.currentlyInto, nerdCopy.favorites, nerdCopy.currentlyReading, nerdCopy.currentlyPlaying, "Streamory"] };
+    }
+    if (item.id === "page-community") {
+      const copy = communityCopy[locale];
+      localized = { ...localized, title: copy.community, description: copy.intro, tags: [copy.voices, copy.relationships] };
+    }
+    if (item.id === "page-global-reach") {
+      const copy = reachCopy[locale];
+      localized = { ...localized, title: communityCopy[locale].reach, description: copy[0], tags: [copy[3], copy[4]] };
     }
     if (item.id === "page-world-map") {
       const mapCopy = getWorldMapDictionary(locale);

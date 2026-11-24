@@ -1,3 +1,4 @@
+import { echoMessageLimit, echoTextLength } from "./limits";
 import {
   echoCategories,
   type EchoField,
@@ -84,7 +85,7 @@ export function validateEchoSubmission(
     fieldErrors.displayName = validationCopy[locale].nameContent;
   }
 
-  if (characterLength(message) < 10 || characterLength(message) > 500) {
+  if (echoTextLength(message) < 10 || echoTextLength(message) > echoMessageLimit) {
     fieldErrors.message = validationCopy[locale].messageLength;
   } else if (hasForbiddenContent(message)) {
     fieldErrors.message = validationCopy[locale].messageContent;

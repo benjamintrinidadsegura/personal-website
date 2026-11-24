@@ -3,6 +3,8 @@
 import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 
 import { issueEchoFormToken, submitEchoAction } from "@/app/echowall/actions";
+import { EchoAvatar } from "./echo-avatar";
+import { echoMessageLimit, echoTextLength } from "@/lib/echowall/limits";
 import { useLocalizedHref } from "@/components/i18n/locale-context";
 import type { livingWorldCopy } from "@/data/i18n/living-world";
 import type { EchoDictionary } from "@/data/i18n/echowall";
@@ -12,12 +14,13 @@ const initialState: EchoActionState = null;
 
 type EchoFormProps = {
   formToken: string | null;
+  optionalLabel?: string;
   copy: EchoDictionary["form"];
   countryOptions?: { code: string; label: string }[];
   countryCopy?: (typeof livingWorldCopy)["en"];
 };
 
-export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoFormProps) {
+export function EchoForm({ formToken, copy, countryOptions, countryCopy, optionalLabel }: EchoFormProps) {
   const href = useLocalizedHref();
   const [currentFormToken, setCurrentFormToken] = useState(formToken);
   const [state, formAction, isPending] = useActionState<EchoActionState, FormData>(
@@ -139,7 +142,7 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoF
     state && !state.ok ? state.fieldErrors?.[field] : undefined;
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={submit} noValidate className="living-echo-form space-y-8">
+    <form ref={formRef} action={formAction} onSubmit={submit} noValidate className="living-echo-form space-y-4">
       <input type="hidden" name="formToken" value={currentFormToken ?? ""} />
 
       <div
@@ -151,13 +154,13 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoF
         {state && !state.ok ? copy.errors[state.code] : ""}
       </div>
 
-      <div className="grid gap-7 sm:grid-cols-2">
+      <div>
         <div>
           <label htmlFor="echo-display-name" className="block font-bold text-white">
             {copy.displayName} <span className="text-[#9bdff1]">({copy.required})</span>
           </label>
           <p id="display-name-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.displayHelp}</p>
-          <input
+          <div className="mt-2 flex items-center gap-2"><EchoAvatar name={displayName} /><input
             id="echo-display-name"
             name="displayName"
             value={displayName}
@@ -169,46 +172,24 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoF
             autoComplete="name"
             aria-describedby={`display-name-help${fieldError("displayName") ? " display-name-error" : ""}`}
             aria-invalid={fieldError("displayName") ? true : undefined}
-            className="mt-3 min-h-12 w-full border border-white/15 bg-[#07192b] px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
+            className="min-h-12 w-full border border-white/15 bg-[#07192b] px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
           />
-          {fieldError("displayName") && <p id="display-name-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("displayName")}</p>}
+          </div>{fieldError("displayName") && <p id="display-name-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("displayName")}</p>}
         </div>
 
-        <div>
-          <label htmlFor="echo-category" className="block font-bold text-white">{copy.category} <span className="font-normal text-slate-400">({copy.optional})</span></label>
-          <p id="category-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.categoryHelp}</p>
-          <select
-            id="echo-category"
-            name="category"
-            aria-describedby={`category-help${fieldError("category") ? " category-error" : ""}`}
-            aria-invalid={fieldError("category") ? true : undefined}
-            className="mt-3 min-h-12 w-full border border-white/15 bg-[#07192b] px-4 py-3 text-white outline-none transition focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-          >
-            <option value="">{copy.noCategory}</option>
-            <option value="thought">{copy.categories.thought}</option>
-            <option value="feedback">{copy.categories.feedback}</option>
-            <option value="reaction">{copy.categories.reaction}</option>
-            <option value="message">{copy.categories.message}</option>
-          </select>
-          {fieldError("category") && <p id="category-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("category")}</p>}
-        </div>
       </div>
 
       <div>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <label htmlFor="echo-message" className="font-bold text-white">{copy.message} <span className="text-[#9bdff1]">({copy.required})</span></label>
-          <span id="message-counter" className="font-mono text-xs text-slate-500" aria-live="off">{Array.from(message).length} / 500</span>
+          <span id="message-counter" className="font-mono text-xs text-slate-300" aria-live="off">{echoTextLength(message)} / {echoMessageLimit}</span>
         </div>
         <p id="message-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.messageHelp}</p>
         <textarea
           id="echo-message"
           name="message"
           required
-          minLength={10}
-          maxLength={500}
-          rows={7}
+          rows={4}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           aria-describedby={`message-help message-counter${fieldError("message") ? " message-error" : ""}`}
@@ -218,6 +199,9 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoF
         {fieldError("message") && <p id="message-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("message")}</p>}
       </div>
 
+      <details className="rounded-lg border border-[#355568] p-3" open={fieldError("email") || fieldError("category") || fieldError("countryCode") ? true : undefined}>
+        <summary className="cursor-pointer font-bold">{optionalLabel ?? copy.category}</summary>
+        <div className="mt-3 space-y-4">
       <div>
         <label htmlFor="echo-email" className="block font-bold text-white">{copy.email} <span className="font-normal text-slate-400">({copy.privateOptional})</span></label>
         <p id="email-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.emailHelp}</p>
@@ -231,7 +215,7 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoF
           autoComplete="email"
           aria-describedby={`email-help${fieldError("email") ? " email-error" : ""}`}
           aria-invalid={fieldError("email") ? true : undefined}
-          className="mt-3 min-h-12 w-full border border-white/15 bg-[#07192b] px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
+          className="min-h-12 w-full border border-white/15 bg-[#07192b] px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
         />
         {fieldError("email") && <p id="email-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("email")}</p>}
       </div>
@@ -262,6 +246,29 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy }: EchoF
           </label>
         </div>
       ) : null}
+
+        <div>
+          <label htmlFor="echo-category" className="block font-bold text-white">{copy.category} <span className="font-normal text-slate-400">({copy.optional})</span></label>
+          <p id="category-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.categoryHelp}</p>
+          <select
+            id="echo-category"
+            name="category"
+            aria-describedby={`category-help${fieldError("category") ? " category-error" : ""}`}
+            aria-invalid={fieldError("category") ? true : undefined}
+            className="min-h-12 w-full border border-white/15 bg-[#07192b] px-4 py-3 text-white outline-none transition focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+          >
+            <option value="">{copy.noCategory}</option>
+            <option value="thought">{copy.categories.thought}</option>
+            <option value="feedback">{copy.categories.feedback}</option>
+            <option value="reaction">{copy.categories.reaction}</option>
+            <option value="message">{copy.categories.message}</option>
+          </select>
+          {fieldError("category") && <p id="category-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("category")}</p>}
+        </div>
+        </div>
+      </details>
 
       <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
         <input id="echo-website" name="website" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" />

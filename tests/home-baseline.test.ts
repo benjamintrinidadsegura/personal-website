@@ -34,6 +34,8 @@ async function home(locale: Locale, result: PublishedWritingReadResult) {
   const sections = Object.fromEntries(sectionNames.map((name) => [name, (props: object) => createElement("section", { ...props, "data-section": name })]));
   const dependencies: Record<string, unknown> = {
     "react/jsx-runtime": jsxRuntime,
+    "@/app/community.css": {},
+    "@/components/community/community-nav": { CommunityNav: () => null },
     "react": { Suspense },
     "@/data/i18n/writing-recovery": { writingRecoveryCopy },
     "@/components/home/home-views": { HomeViews: () => null },
@@ -66,7 +68,9 @@ test("home preserves the complete Explore section order and shares the same loca
         const slot = (child.props as { children: ReactElement<Record<string, unknown>> }).children;
         return await (slot.type as (props: object) => Promise<ReactElement>)(slot.props);
       }));
-      assert.deepEqual(children.map((child) => child.type), sectionNames.map((name) => sections[name]));
+      const oldSections = children.filter((child) => child.type !== "div");
+      assert.deepEqual(oldSections.map((child) => child.type), sectionNames.map((name) => sections[name]));
+      assert.equal(children.filter((child) => child.type === "div").length, 1, "Community links add one bounded navigation section");
       const pulse = children[2] as ReactElement<{ publishedWriting: PublicWritingSummary[] }>;
       const writing = children[4] as ReactElement<{ publishedWriting: PublicWritingSummary[]; publishedWritingStatus: string }>;
       assert.equal(pulse.props.publishedWriting, result.data);
@@ -87,6 +91,8 @@ test("home preserves the complete Explore section order and shares the same loca
 function writingSection(locale: Locale) {
   return loadSource<{ Writing: (props: { publishedWriting: readonly PublicWritingSummary[]; publishedWritingStatus: PublishedWritingReadResult["status"] }) => Promise<ReactElement> }>("components/sections/writing.tsx", {
     "react/jsx-runtime": jsxRuntime,
+    "@/app/community.css": {},
+    "@/components/community/community-nav": { CommunityNav: () => null },
     "next/link": { __esModule: true, default: "a" },
     "@/data/writing": writingData,
     "@/data/i18n/home": homeCopy,
@@ -128,6 +134,8 @@ test("the Hero's existing #now link resolves to the mounted HQ Pulse without cha
   for (const locale of locales) {
     const { HqPulse } = loadSource<{ HqPulse: (props: object) => Promise<ReactElement> }>("components/sections/hq-pulse.tsx", {
       "react/jsx-runtime": jsxRuntime,
+    "@/app/community.css": {},
+    "@/components/community/community-nav": { CommunityNav: () => null },
       "next/link": { __esModule: true, default: "a" },
       "@/data/discovery-index": discoveryData,
       "@/data/human-pulse": humanPulse,
