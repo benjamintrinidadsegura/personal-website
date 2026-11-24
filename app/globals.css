@@ -18,6 +18,10 @@
 .home-views:has(#home-view-explore:checked) [data-home-panel="explore"] { display: block; }
 .home-views [id] { scroll-margin-top: 11rem; }
 .home-views [data-context-discovery-view] { top: 10rem; }
+@media (max-width: 639px) {
+  #home-explore-panel :is(#contact-title, #about-title) { overflow-wrap: anywhere; }
+  #home-explore-panel [aria-labelledby="social-title"] a { flex-wrap: wrap; row-gap: .5rem; }
+}
 @media (min-width: 640px) {
   .home-view-switch { padding-inline: 2rem; }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { startTransition, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useDiscovery } from "@/components/discovery/discovery-context";
 import type { DiscoveryItem } from "@/types/discovery";
@@ -15,7 +15,11 @@ export function WritingDiscoverySnapshot({ locale, items, status, latest, retrya
   const router = useRouter();
   const pathname = usePathname();
   const attempted = useRef<string | null>(null);
-  useEffect(() => { setWritingSnapshot({ locale, items, status, latest }); }, [locale, items, status, latest, setWritingSnapshot]);
+  useEffect(() => {
+    // Let the streamed route hydrate before the optional index update can
+    // interrupt its boundary and replace visible content with the fallback.
+    startTransition(() => setWritingSnapshot({ locale, items, status, latest }));
+  }, [locale, items, status, latest, setWritingSnapshot]);
   useEffect(() => {
     const key = `${locale}:${pathname}`;
     if (status !== "unavailable" || !retryable || attempted.current === key) return;

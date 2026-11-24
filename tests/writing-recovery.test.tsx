@@ -53,9 +53,17 @@ test("automatic retry is visible-only, transient-only, once per navigation and c
   const timers = new Map<number, () => void>(); let sequence = 0;
   const listeners = new Map<string, () => void>(); const snapshots: object[] = [];
   const router = { refresh: () => refreshes++ };
-  const setWritingSnapshot = (data: object) => snapshots.push(data);
+  let inTransition = false;
+  const startTransition = (publish: () => void) => {
+    inTransition = true;
+    try { publish(); } finally { inTransition = false; }
+  };
+  const setWritingSnapshot = (data: object) => {
+    assert.equal(inTransition, true, "optional publication cannot interrupt route hydration");
+    snapshots.push(data);
+  };
   const Snapshot = loadSource<{ WritingDiscoverySnapshot: (props: object) => null }>("components/writing/writing-discovery-snapshot.tsx", {
-    "react": h.hooks, "next/navigation": { usePathname: () => pathname, useRouter: () => router },
+    "react": { ...h.hooks, startTransition }, "next/navigation": { usePathname: () => pathname, useRouter: () => router },
     "@/components/discovery/discovery-context": { useDiscovery: () => ({ setWritingSnapshot }) },
   }, { document: { get visibilityState() { return visibilityState; }, addEventListener: (key: string, callback: () => void) => listeners.set(key, callback), removeEventListener: (key: string) => listeners.delete(key) },
     setTimeout: (callback: () => void, duration: number) => { assert.equal(duration, 1000); timers.set(++sequence, callback); return sequence; }, clearTimeout: (key: number) => timers.delete(key) });
