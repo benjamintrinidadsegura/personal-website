@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "@/app/community.css";
 import { CommunityOverview } from "@/components/community/community-overview";
 import { communityCopy } from "@/data/i18n/community";
-import { inactiveReach } from "@/lib/analytics/reach-periods";
+import { readFirstPartyReach } from "@/lib/analytics/first-party-reach";
 import { parseEchoFeed } from "@/lib/echowall/feed";
 import { readPublicEchoFeed } from "@/lib/echowall/public-feed";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
@@ -16,6 +16,6 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const dynamic = "force-dynamic";
 export default async function CommunityPage() {
-  const [locale, feed] = await Promise.all([getLocale(), readPublicEchoFeed(parseEchoFeed({}, false), 2, false)]);
-  return <CommunityOverview locale={locale} feed={feed} dataset={inactiveReach()} participation={echoSubmissionsConfigured() && feed.status !== "unavailable"} />;
+  const [locale, feed, dataset] = await Promise.all([getLocale(), readPublicEchoFeed(parseEchoFeed({}, false), 2, false), readFirstPartyReach()]);
+  return <CommunityOverview locale={locale} feed={feed} dataset={dataset} participation={echoSubmissionsConfigured() && feed.status !== "unavailable"} />;
 }

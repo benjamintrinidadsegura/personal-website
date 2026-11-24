@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ReachPrivacyChoice } from "@/components/community/reach-privacy-choice";
 
 import { getGlobalDictionary } from "@/data/i18n/global";
 import { getPrivacyDictionary, lifeAlignmentHistoryPrivacyCopy, lifeAlignmentLocalPrivacyCopy, relationshipAlignmentPrivacyCopy, writingTranslationPrivacyCopy } from "@/data/i18n/privacy";
@@ -11,6 +12,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { localizeHref } from "@/lib/i18n/routing";
 import { getLocale } from "@/lib/i18n/server";
 import { newsletterControllerAddress } from "@/lib/newsletter/config";
+import { firstPartyReachEnabled } from "@/lib/analytics/first-party-config";
 
 const personalAdvantagePrivacyCopy: Record<Locale, string> = {
   de: "Personal Advantage Mapping speichert ausschließlich versionierte, strukturierte Fortschritts- und Ergebnisdaten im lokalen Speicher dieses Browsers. Optionale Freitexte bleiben nur im Arbeitsspeicher der aktuellen Seite und werden nicht dauerhaft gespeichert. Antworten werden weder an BTS noch an ein Konto, Analytics oder einen KI-Anbieter gesendet. Ein Neustart löscht den lokalen Stand; das Löschen der Browserdaten ebenfalls. One-Pager und Share Cards enthalten nur ausdrücklich ausgewählte, abgeleitete Zusammenfassungen – niemals Rohantworten, Freitexte, Details zu Einschränkungen oder private Zugangsdaten.",
@@ -130,6 +132,7 @@ export default async function PrivacyPage() {
         </section>
 
         <PrivacySections sections={sections.slice(3, 7)} />
+        {firstPartyReachEnabled() && <ReachPrivacyChoice locale={locale} />}
 
         <section id="feedback" aria-labelledby="feedback-privacy-title" className="scroll-mt-28 border-b border-white/15 py-14">
           <h2 id="feedback-privacy-title" className="text-3xl font-black text-white">{copy.feedback.title}</h2>

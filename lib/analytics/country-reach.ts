@@ -6,9 +6,13 @@ export const reachProjectId = "prj_unkyAkItBZl4z15yQDutrM1j9RLw";
 export const reachFreshnessMs = 24 * 60 * 60 * 1000;
 export const minimumPublicCountryViews = 5;
 
+export function isReachCountry(value: unknown): value is string {
+  return typeof value === "string" && isoCountries.has(value);
+}
+
 export type CountryReachSnapshot = {
   version: 1;
-  source: "vercel-web-analytics";
+  source: "vercel-web-analytics" | "btshq-first-party";
   metric: "pageviews";
   projectId: typeof reachProjectId;
   provenance: "owner-approved-aggregate";
@@ -36,7 +40,7 @@ export function validateCountryReach(input: unknown, now: number = Date.now()): 
   const invalid = { status: "unavailable", reason: "invalid" } as const;
   if (input === null || input === undefined) return { status: "unavailable", reason: "missing" };
   if (!record(input) || !exactKeys(input, ["version", "source", "metric", "projectId", "provenance", "publicDisplayApproved", "routeScope", "periodStart", "periodEnd", "retrievedAt", "geography", "countries"])) return invalid;
-  if (input.version !== 1 || input.source !== "vercel-web-analytics" || input.metric !== "pageviews"
+  if (input.version !== 1 || (input.source !== "vercel-web-analytics" && input.source !== "btshq-first-party") || input.metric !== "pageviews"
     || input.projectId !== reachProjectId || input.provenance !== "owner-approved-aggregate"
     || input.publicDisplayApproved !== true || input.routeScope !== "public-allowlist-v1"
     || !["complete", "partial"].includes(String(input.geography))) return invalid;
@@ -53,8 +57,7 @@ export function validateCountryReach(input: unknown, now: number = Date.now()): 
   const countries: { countryCode: string; pageViews: number }[] = [];
   let omittedLowVolume = false;
   for (const row of input.countries) {
-    if (!record(row) || !exactKeys(row, ["countryCode", "pageViews"]) || typeof row.countryCode !== "string"
-      || !isoCountries.has(row.countryCode) || seen.has(row.countryCode)
+    if (!record(row) || !exactKeys(row, ["countryCode", "pageViews"]) || !isReachCountry(row.countryCode) || seen.has(row.countryCode)
       || !Number.isSafeInteger(row.pageViews) || (row.pageViews as number) < 0) return invalid;
     seen.add(row.countryCode);
     if ((row.pageViews as number) < minimumPublicCountryViews) { omittedLowVolume = true; continue; }
@@ -63,7 +66,7 @@ export function validateCountryReach(input: unknown, now: number = Date.now()): 
   if (!countries.length) return { status: "unavailable", reason: "suppressed" };
   return {
     status: "available", omittedLowVolume,
-    snapshot: { version: 1, source: "vercel-web-analytics", metric: "pageviews", projectId: reachProjectId,
+    snapshot: { version: 1, source: input.source, metric: "pageviews", projectId: reachProjectId,
       provenance: "owner-approved-aggregate", publicDisplayApproved: true, routeScope: "public-allowlist-v1",
       periodStart: input.periodStart as string, periodEnd: input.periodEnd as string, retrievedAt: input.retrievedAt as string,
       geography: input.geography as "complete" | "partial", countries },

@@ -8,6 +8,8 @@ import { NavigationFeedback } from "@/components/navigation/navigation-feedback"
 import { CanonicalSiteUrlProvider } from "@/components/site/canonical-site-url-context";
 import { createDiscoveryItemsWithWriting } from "@/data/discovery-index";
 import { PublishedWritingDiscovery } from "@/components/writing/published-writing-discovery";
+import { ReachPageView } from "@/components/community/reach-page-view";
+import { firstPartyReachEnabled } from "@/lib/analytics/first-party-config";
 import { getAccountState } from "@/lib/account/state";
 import { getLocale } from "@/lib/i18n/server";
 import { createLocalizedMetadata } from "@/lib/i18n/metadata";
@@ -63,6 +65,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={localeDetails[locale].htmlLang} data-scroll-behavior="adaptive">
       <body className="min-h-full">
         <NavigationFeedback />
+        {firstPartyReachEnabled() && <Suspense fallback={null}><ReachPageView /></Suspense>}
         <LocaleProvider locale={locale}>
           <CanonicalSiteUrlProvider canonicalSiteUrl={siteUrl.origin}>
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</gu, "\\u003c") }} />
