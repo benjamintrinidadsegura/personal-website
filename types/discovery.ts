@@ -23,6 +23,7 @@ export interface DiscoveryItem {
   category: string;
   tags: string[];
   keywords: string[];
+  productAliases?: string[];
   status: DiscoveryStatus;
   /** Only set when the destination is known to exist. */
   href?: string;

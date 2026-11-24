@@ -1,6 +1,7 @@
 import { getLocalizedProjects } from "@/data/i18n/projects";
 import { getLocalizedPublishedSpotlights } from "@/data/i18n/people";
 import { getHqPulseCopy } from "@/data/i18n/hq-pulse";
+import { communityProductAliases } from "./community-search";
 import { communityCopy } from "@/data/i18n/community";
 import { reachCopy } from "@/data/i18n/reach-dashboard";
 import { getWorldMapDictionary } from "@/data/i18n/world-map";
@@ -274,7 +275,7 @@ export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: 
     }
     if (item.id === "page-global-reach") {
       const copy = reachCopy[locale];
-      localized = { ...localized, title: communityCopy[locale].reach, description: copy[0], tags: [copy[3], copy[4]] };
+      localized = { ...localized, href: "/community#global-reach", title: communityCopy[locale].reach, description: copy[0], tags: [copy[3], copy[4]] };
     }
     if (item.id === "page-world-map") {
       const mapCopy = getWorldMapDictionary(locale);
@@ -306,6 +307,7 @@ export function localizeDiscoveryItems(items: readonly DiscoveryItem[], locale: 
     if (item.id === "page-about" && item.keywords.includes("AI-assisted reflection")) {
       localized = {...localized, keywords: [...new Set([...localized.keywords, "AI-assisted reflection"])]};
     }
-    return { ...localized, href: localized.href ? localizeHref(localized.href, item.contentLanguage ?? locale) : undefined };
+    const aliases = communityProductAliases(item.id, locale);
+    return { ...localized, ...(aliases ? { productAliases: aliases } : {}), href: localized.href ? localizeHref(localized.href, item.contentLanguage ?? locale) : undefined };
   });
 }

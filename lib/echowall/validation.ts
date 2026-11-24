@@ -107,7 +107,7 @@ export function validateEchoSubmission(
     }
   }
 
-  if (raw.countryCode != null && raw.countryCode !== "" && !countryCode) {
+  if (!countryCode && ((raw.countryCode != null && raw.countryCode !== "") || raw.displayCountry === "true")) {
     fieldErrors.countryCode = livingWorldCopy[locale].countryInvalid;
   }
 
@@ -130,7 +130,7 @@ export function validateEchoSubmission(
       message,
       category,
       email: email || null,
-      ...(countryCode ? { countryCode, includeInCommunityMap: raw.includeInCommunityMap === "true" } : {}),
+      ...(countryCode ? { countryCode, includeInCommunityMap: raw.includeInCommunityMap === "true", ...(raw.displayCountry === "true" ? { displayCountry: true } : {}) } : {}),
     },
     formToken: formTokenValue ?? "",
   };

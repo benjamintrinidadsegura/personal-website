@@ -19,7 +19,7 @@ export function reviewReach(state?: string): ReachDataset {
     provenance: "owner-approved-aggregate", publicDisplayApproved: true, routeScope: "public-allowlist-v1",
     periodEnd: "2026-11-24T00:00:00.000Z", retrievedAt: "2026-11-24T10:00:00.000Z",
     geography: state === "partial" ? "partial" : "complete" };
-  const subset = state === "small" ? countries.slice(0, 2) : state === "growing" ? countries.slice(0, 12) : countries;
+  const subset = state === "one" ? countries.slice(0, 1) : state === "small" ? countries.slice(0, 2) : state === "growing" ? countries.slice(0, 12) : countries;
   const since = prepareReachPeriod({ ...source, periodStart: "2026-10-01T00:00:00.000Z",
     countries: subset.map(([countryCode, pageViews]) => ({ countryCode, pageViews })) }, "since", now);
   const recent = prepareReachPeriod({ ...source, periodStart: "2026-10-25T00:00:00.000Z",
@@ -27,7 +27,7 @@ export function reviewReach(state?: string): ReachDataset {
   const points = [42, 55, 53, 117, 101, 190, 156, 207, 284, 335, 391];
   for (const [result, factor] of [[since, 1], [recent, .62]] as const) {
     if (result.status === "available") result.growth = points.map((value, i) => ({
-      day: new Date(Date.parse("2026-11-01T00:00:00.000Z") + i * 86400000 * 2).toISOString(),
+      day: new Date(Date.parse("2026-11-01T00:00:00.000Z") + (i + (i > 6 ? 1 : 0)) * 86400000).toISOString(),
       pageViews: Math.round(value * factor),
     }));
   }

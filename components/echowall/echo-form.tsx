@@ -3,6 +3,9 @@
 import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 
 import { issueEchoFormToken, submitEchoAction } from "@/app/echowall/actions";
+import { CountryFlag } from "@/components/community/country-flag";
+import { normalizeSearchText } from "@/lib/discovery";
+import type { echoCountryDisplayCopy } from "@/data/i18n/echo-country-display";
 import { EchoAvatar } from "./echo-avatar";
 import { echoMessageLimit, echoTextLength } from "@/lib/echowall/limits";
 import { useLocalizedHref } from "@/components/i18n/locale-context";
@@ -18,9 +21,13 @@ type EchoFormProps = {
   copy: EchoDictionary["form"];
   countryOptions?: { code: string; label: string }[];
   countryCopy?: (typeof livingWorldCopy)["en"];
+  countryDisplayCopy?: (typeof echoCountryDisplayCopy)["en"];
+  showPublicCountry?: boolean;
+  showAggregateCountry?: boolean;
+  submissionsDisabled?: boolean;
 };
 
-export function EchoForm({ formToken, copy, countryOptions, countryCopy, optionalLabel }: EchoFormProps) {
+export function EchoForm({ formToken, copy, countryOptions, countryCopy, countryDisplayCopy, showPublicCountry, showAggregateCountry, submissionsDisabled, optionalLabel }: EchoFormProps) {
   const href = useLocalizedHref();
   const [currentFormToken, setCurrentFormToken] = useState(formToken);
   const [state, formAction, isPending] = useActionState<EchoActionState, FormData>(
@@ -49,6 +56,12 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy, optiona
   const [category, setCategory] = useState("");
   const [consent, setConsent] = useState(false);
   const [countryCode, setCountryCode] = useState("");
+  const [countrySearch, setCountrySearch] = useState("");
+  const [displayCountry, setDisplayCountry] = useState(false);
+  const selectedCountry = countryOptions?.find(({ code }) => code === countryCode);
+  const normalizedCountrySearch = normalizeSearchText(countrySearch);
+  const visibleCountries = countryOptions?.filter(({ code, label }) => code === countryCode
+    || normalizeSearchText(label).includes(normalizedCountrySearch) || code.toLowerCase() === normalizedCountrySearch);
   const [includeInCommunityMap, setIncludeInCommunityMap] = useState(false);
   const successRef = useRef<HTMLHeadingElement>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
@@ -69,9 +82,9 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy, optiona
   if (!formToken) {
     return (
       <div className="border-l-2 border-[#9bdff1] bg-[#9bdff1]/[0.045] p-6 sm:p-8" role="status">
-        <h3 className="text-2xl font-black text-white">{copy.unavailableTitle}</h3>
+        <h3 className="text-2xl font-black text-white">{submissionsDisabled ? countryDisplayCopy?.[2] : copy.unavailableTitle}</h3>
         <p className="mt-3 max-w-2xl leading-7 text-slate-300">
-          {copy.unavailableBody}
+          {submissionsDisabled ? countryDisplayCopy?.[3] : copy.unavailableBody}
         </p>
       </div>
     );
@@ -142,7 +155,7 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy, optiona
     state && !state.ok ? state.fieldErrors?.[field] : undefined;
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={submit} noValidate className="living-echo-form space-y-4">
+    <form ref={formRef} action={formAction} onSubmit={submit} noValidate className="living-echo-form space-y-3">
       <input type="hidden" name="formToken" value={currentFormToken ?? ""} />
 
       <div
@@ -159,7 +172,7 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy, optiona
           <label htmlFor="echo-display-name" className="block font-bold text-white">
             {copy.displayName} <span className="text-[#9bdff1]">({copy.required})</span>
           </label>
-          <p id="display-name-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.displayHelp}</p>
+          <p id="display-name-help" className="mt-1 text-sm leading-5 text-slate-400">{copy.displayHelp}</p>
           <div className="mt-2 flex items-center gap-2"><EchoAvatar name={displayName} /><input
             id="echo-display-name"
             name="displayName"
@@ -182,24 +195,58 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy, optiona
       <div>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <label htmlFor="echo-message" className="font-bold text-white">{copy.message} <span className="text-[#9bdff1]">({copy.required})</span></label>
-          <span id="message-counter" className="font-mono text-xs text-slate-300" aria-live="off">{echoTextLength(message)} / {echoMessageLimit}</span>
         </div>
-        <p id="message-help" className="mt-2 text-sm leading-6 text-slate-400">{copy.messageHelp}</p>
+        <p id="message-help" className="mt-1 text-sm leading-5 text-slate-400">{copy.messageHelp}</p>
         <textarea
           id="echo-message"
           name="message"
           required
-          rows={4}
+          rows={3}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           aria-describedby={`message-help message-counter${fieldError("message") ? " message-error" : ""}`}
           aria-invalid={fieldError("message") ? true : undefined}
-          className="mt-3 w-full resize-y border border-white/15 bg-[#07192b] px-4 py-3 leading-7 text-white outline-none transition placeholder:text-slate-600 focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
+          className="mt-2 w-full resize-y border border-white/15 bg-[#07192b] px-4 py-3 leading-7 text-white outline-none transition placeholder:text-slate-600 focus-visible:border-[#35d0e5] focus-visible:ring-2 focus-visible:ring-[#35d0e5]/30"
         />
         {fieldError("message") && <p id="message-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("message")}</p>}
       </div>
 
-      <details className="rounded-lg border border-[#355568] p-3" open={fieldError("email") || fieldError("category") || fieldError("countryCode") ? true : undefined}>
+      {visibleCountries && countryCopy && countryDisplayCopy && <fieldset className="echo-country-field grid gap-2 rounded-lg border border-[#355568] p-3">
+        <legend className="px-1 font-bold">{countryCopy.country} ({copy.optional})</legend>
+        <div className="grid gap-2 sm:grid-cols-2 sm:items-end">
+          <div className="grid min-w-0 gap-1">
+            <label htmlFor="echo-country-search" className="text-sm">{countryDisplayCopy[0]}</label>
+            <input id="echo-country-search" type="search" autoComplete="off" className="community-input"
+              value={countrySearch} onChange={(event) => setCountrySearch(event.target.value)} />
+          </div>
+          <label htmlFor="echo-country" className="sr-only">{countryCopy.country}</label>
+          <div className="flex min-w-0 items-center gap-2">
+            {selectedCountry && <CountryFlag code={selectedCountry.code} label={selectedCountry.label} />}
+            <select id="echo-country" name="countryCode" value={countryCode} onChange={(event) => {
+              setCountryCode(event.target.value);
+              setDisplayCountry(false);
+              setIncludeInCommunityMap(false);
+            }} className="community-input w-full" aria-invalid={Boolean(fieldError("countryCode"))}
+              aria-describedby={fieldError("countryCode") ? "echo-country-error" : undefined}>
+              <option value="">{countryCopy.countryOmit}</option>
+              {visibleCountries.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}
+            </select>
+          </div>
+        </div>
+        {fieldError("countryCode") && <p id="echo-country-error" className="text-sm text-[#ffad63]">{fieldError("countryCode")}</p>}
+        {showPublicCountry && <label className="flex min-h-11 items-center gap-3 text-sm text-slate-200">
+          <input type="checkbox" name="displayCountry" value="true" checked={displayCountry} disabled={!countryCode}
+            onChange={(event) => setDisplayCountry(event.target.checked)} className="size-5 shrink-0 accent-[#9bdff1]" />
+          {countryDisplayCopy[1]}
+        </label>}
+        {showAggregateCountry && <label className="flex min-h-11 items-center gap-3 text-sm text-slate-200">
+          <input type="checkbox" name="includeInCommunityMap" value="true" checked={includeInCommunityMap} disabled={!countryCode}
+            onChange={(event) => setIncludeInCommunityMap(event.target.checked)} className="size-5 shrink-0 accent-[#9bdff1]" />
+          {countryCopy.countryConsent}
+        </label>}
+      </fieldset>}
+
+      <details className="rounded-lg border border-[#355568] p-3" open={fieldError("email") || fieldError("category") ? true : undefined}>
         <summary className="cursor-pointer font-bold">{optionalLabel ?? copy.category}</summary>
         <div className="mt-3 space-y-4">
       <div>
@@ -220,32 +267,7 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy, optiona
         {fieldError("email") && <p id="email-error" className="mt-2 text-sm text-[#ffad63]">{fieldError("email")}</p>}
       </div>
 
-      {countryOptions && countryCopy ? (
-        <div className="living-panel space-y-3 p-4 sm:p-6">
-          <label htmlFor="echo-country" className="block font-bold text-white">
-            {countryCopy.country} <span className="font-normal text-slate-300">({copy.optional})</span>
-          </label>
-          <p id="echo-country-help" className="text-sm leading-6 text-slate-300">{countryCopy.countryHelp}</p>
-          <select id="echo-country" name="countryCode" value={countryCode}
-            onChange={(event) => {
-              setCountryCode(event.target.value);
-              if (!event.target.value) setIncludeInCommunityMap(false);
-            }}
-            aria-describedby={fieldError("countryCode") ? "echo-country-help echo-country-error" : "echo-country-help"}
-            aria-invalid={fieldError("countryCode") ? true : undefined}
-            className="min-h-12 w-full rounded-lg border border-white/25 bg-[#081b2d] px-3 text-white">
-            <option value="">{countryCopy.countryOmit}</option>
-            {countryOptions.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}
-          </select>
-          {fieldError("countryCode") ? <p id="echo-country-error" className="text-sm text-[#ffad63]">{fieldError("countryCode")}</p> : null}
-          <label className="flex min-h-11 items-center gap-3 text-sm text-slate-200 has-[:disabled]:text-slate-400">
-            <input type="checkbox" name="includeInCommunityMap" value="true" checked={includeInCommunityMap}
-              disabled={!countryCode} onChange={(event) => setIncludeInCommunityMap(event.target.checked)}
-              className="size-5 shrink-0 accent-[#9bdff1]" />
-            {countryCopy.countryConsent}
-          </label>
-        </div>
-      ) : null}
+
 
         <div>
           <label htmlFor="echo-category" className="block font-bold text-white">{copy.category} <span className="font-normal text-slate-400">({copy.optional})</span></label>
@@ -274,7 +296,7 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy, optiona
         <input id="echo-website" name="website" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" />
       </div>
 
-      <div className="border-y border-white/10 py-6">
+      <div className="border-y border-white/10 py-3">
         <div className="flex items-start gap-4">
           <input
             id="echo-consent"
@@ -298,13 +320,16 @@ export function EchoForm({ formToken, copy, countryOptions, countryCopy, optiona
         {fieldError("consent") && <p id="consent-error" className="ml-9 mt-2 text-sm text-[#ffad63]">{fieldError("consent")}</p>}
       </div>
 
+      <div className="echo-submit-row">
+        <span id="message-counter" className="font-mono text-xs text-slate-300" aria-live="off">{echoTextLength(message)} / {echoMessageLimit}</span>
       <button
         type="submit"
         disabled={isPending}
-        className="living-action inline-flex min-h-12 items-center rounded-full bg-[#35d0e5] px-7 py-3 font-black text-[#041018] transition hover:-translate-y-0.5 hover:bg-[#73e3f1] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#35d0e5] disabled:cursor-wait disabled:opacity-60 motion-reduce:transform-none"
+        className="community-action disabled:cursor-wait disabled:opacity-60"
       >
         {isPending ? copy.submitting : copy.submit}
       </button>
+      </div>
     </form>
   );
 }

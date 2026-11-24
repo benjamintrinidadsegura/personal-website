@@ -42,3 +42,6 @@
 @media (min-width: 52rem) { .living-echo-list { grid-template-columns: repeat(2,minmax(0,1fr)); } .living-echo-list > li:first-child { grid-column: 1 / -1; } .living-echo-list > li:first-child .living-echo-message { max-width: 54ch; } }
 @media (min-width: 1024px) { .living-map .world-map-detail { max-height: none; } }
 @media (prefers-reduced-motion: reduce) { .living-map .world-map-pin-tooltip { transition: none; } }
+.living-map .world-map-filter-bar { padding: .65rem .85rem; }
+.living-map .world-map-pin { box-shadow: 0 0 0 2px #092030, 0 0 .75rem #65d9ed70; }
+.living-map .world-map-pin[aria-pressed=true] { box-shadow: 0 0 0 2px #092030, 0 0 0 4px #a4edf6, 0 0 1rem #65d9ed8c; }

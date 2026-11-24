@@ -26,6 +26,8 @@ for (const locale of locales) for (const failure of ["transport", "expired"] as 
   let release: (() => void) | undefined;
   let pending: Promise<void> | undefined;
   const api = loadSource<{ EchoForm: typeof EchoForm }>("components/echowall/echo-form.tsx", {
+    "@/components/community/country-flag": { CountryFlag: () => null },
+    "@/lib/discovery": { normalizeSearchText: (value: string) => value },
     react: { ...h.hooks, startTransition: (fn: () => void) => fn(),
       useActionState(reducer: (state: EchoActionState, data: FormData) => Promise<EchoActionState>, initial: EchoActionState) {
         const [state, setState] = h.hooks.useState(initial);

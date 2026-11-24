@@ -19,3 +19,14 @@ export const reachContinentNames = {
   el: ["Ευρώπη", "Βόρεια Αμερική", "Ασία", "Νότια Αμερική", "Αφρική", "Ωκεανία"],
   ru: ["Европа", "Северная Америка", "Азия", "Южная Америка", "Африка", "Океания"],
 } satisfies Record<Locale, readonly string[]>;
+
+
+export const reachChartCopy = {
+  de: ["Gemessene Seitenaufrufe pro Tag", "Für einige Tage liegen keine veröffentlichbaren Werte vor.", "Anzahl der Länder mit veröffentlichbaren Messwerten je Kontinent. Die Balken sind relativ zum höchsten angezeigten Wert."],
+  en: ["Measured page views per day", "Some days have no publishable values.", "Countries per continent with publishable data. Bars are relative to the highest displayed count."],
+  es: ["Vistas de página medidas por día", "Algunos días no tienen datos publicables.", "Países por continente con datos publicables. Las barras se comparan con el mayor valor mostrado."],
+  tr: ["Günlük ölçülen sayfa görüntülemeleri", "Bazı günlerde yayımlanabilir değer yok.", "Kıta başına yayımlanabilir verisi olan ülke sayısı. Çubuklar en yüksek gösterilen değere göredir."],
+  pl: ["Zmierzona liczba odsłon dziennie", "Dla niektórych dni brak danych do publikacji.", "Kraje z danymi do publikacji według kontynentu. Słupki odnoszą się do najwyższej wyświetlanej wartości."],
+  el: ["Μετρημένες προβολές σελίδων ανά ημέρα", "Για ορισμένες ημέρες δεν υπάρχουν δημοσιεύσιμες τιμές.", "Χώρες με δημοσιεύσιμα δεδομένα ανά ήπειρο. Οι ράβδοι είναι σχετικές με τη μεγαλύτερη εμφανιζόμενη τιμή."],
+  ru: ["Измеренные просмотры страниц за день", "За некоторые дни нет данных для публикации.", "Число стран с публикуемыми данными по континентам. Длина полос зависит от наибольшего показанного значения."],
+} satisfies Record<Locale, readonly [string, string, string]>;

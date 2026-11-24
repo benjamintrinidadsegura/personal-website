@@ -414,16 +414,16 @@ export function WorldMapExperience({ geometry, children }: { geometry: WorldMapG
       <div className="relative mx-auto max-w-[90rem]">
         <nav aria-label={copy.breadcrumb} className="font-mono text-xs text-slate-400"><ol className="flex items-center gap-2"><li><Link href={href("/")} className="inline-flex min-h-11 items-center hover:text-white">Digital HQ</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="text-[#35d0e5]">{copy.breadcrumb}</li></ol></nav>
 
-        <CommunityNav locale={locale} current="/world" /><header className="grid min-w-0 gap-4 border-b border-white/15 py-4 lg:grid-cols-[1fr_0.8fr] lg:items-end">
-          <div><p className="font-mono text-xs font-black uppercase tracking-[0.28em] text-[#35d0e5]">Connection Map · {copy.eyebrow}</p><h1 className="living-title mt-2 max-w-5xl text-[clamp(2.5rem,5vw,4.5rem)] tracking-[-0.055em]">{copy.title}</h1></div>
-          <div className="border-l-2 border-[#9bdff1] pl-6 sm:pl-8"><p className="text-xl font-black leading-8 text-white sm:text-2xl">{copy.subtitle}</p><p className="mt-2 text-sm leading-6 living-muted">{copy.privacyNote}</p></div>
+        <CommunityNav locale={locale} current="/world" /><header className="grid min-w-0 gap-3 border-b border-white/15 py-2 lg:grid-cols-[1fr_0.8fr] lg:items-end">
+          <div><p className="font-mono text-xs font-black uppercase tracking-[0.28em] text-[#35d0e5]">Connection Map · {copy.eyebrow}</p><h1 className="living-title mt-2 max-w-5xl text-[clamp(2rem,4vw,3.55rem)] tracking-[-0.055em]">{copy.title}</h1></div>
+          <div className="border-l-2 border-[#9bdff1] pl-6 sm:pl-8"><p className="text-base font-bold leading-6 text-white sm:text-lg">{copy.subtitle}</p><p className="mt-2 text-sm leading-6 living-muted">{copy.privacyNote}</p></div>
         </header>
 
-        <section aria-labelledby="map-title" className="pb-14 pt-5 sm:pb-20">
+        <section aria-labelledby="map-title" className="pb-14 pt-3 sm:pb-20">
           <div className="min-w-0">
             <div className="min-w-0">
-              <div className="flex flex-col gap-6 border-b border-white/10 pb-7 xl:flex-row xl:items-end xl:justify-between">
-                <div><h2 id="map-title" className="mt-3 text-3xl font-black text-white sm:text-5xl">{copy.mapTitle}</h2><p id="map-instructions" className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">{copy.mapInstructions}</p><p role="status" className="mt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#35d0e5]">{copy.semantic.view}: {semanticTrail}</p></div>
+              <div className="flex flex-col gap-3 border-b border-white/10 pb-3 xl:flex-row xl:items-end xl:justify-between">
+                <div><h2 id="map-title" className="text-xl font-black text-white sm:text-2xl">{copy.mapTitle}</h2><p id="map-instructions" className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">{copy.mapInstructions}</p><p role="status" className="mt-3 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#35d0e5]">{copy.semantic.view}: {semanticTrail}</p></div>
                 <div className="flex flex-wrap gap-2" aria-label={copy.mapTitle}>
                   <button type="button" onClick={() => { setMapInteractionActive(true); setMapZoom(zoom + 0.5); }} disabled={zoom >= WORLD_MAP_MAX_ZOOM} aria-label={copy.zoomIn} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/15 text-xl font-black text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] disabled:opacity-30">+</button>
                   <button type="button" onClick={() => setMapZoom(zoom - 0.5)} disabled={zoom <= 1} aria-label={copy.zoomOut} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/15 text-xl font-black text-white hover:border-[#35d0e5] focus-visible:outline-2 focus-visible:outline-[#35d0e5] disabled:opacity-30">−</button>
@@ -431,10 +431,10 @@ export function WorldMapExperience({ geometry, children }: { geometry: WorldMapG
                 </div>
               </div>
 
-              <section aria-labelledby="filter-title" className="living-panel world-map-filter-bar mt-5">
+              <section aria-labelledby="filter-title" className="living-panel world-map-filter-bar mt-3">
                 <h3 id="filter-title" className="text-xl text-white">{copy.filtersTitle}</h3>
                 <p className="mt-1 text-sm leading-5 text-slate-300">{copy.filtersDescription}</p>
-                {availableRelationshipFilters.length > 0 ? <><p id="map-filter-help" className="mt-2 text-sm living-muted">{journeyCopy.filtersHelp}</p><label className="mt-3 grid max-w-sm gap-2 text-sm text-slate-200">{copy.categorySelect}<select aria-describedby="map-filter-help" value={filters.length === 1 ? filters[0] : filters.length ? "combined" : "all"} onChange={(event) => { setFilters(event.target.value === "all" ? [] : [event.target.value as WorldMapRelationshipKind]); setSelectedId(null); }} className="min-h-12 min-w-0 rounded-xl border border-white/25 bg-[#081b2d] px-3 text-white"><option value="all">{copy.all}</option>{filters.length > 1 ? <option value="combined" disabled>{journeyCopy.combinedFilters}</option> : null}{availableRelationshipFilters.map((kind) => <option key={kind} value={kind}>{copy.categories[kind].label}</option>)}</select></label></> : null}
+                {availableRelationshipFilters.length > 0 ? <><p id="map-filter-help" className="mt-2 text-sm living-muted">{journeyCopy.filtersHelp}</p><label className="mt-2 flex max-w-sm flex-wrap items-center gap-2 text-sm text-slate-200">{copy.categorySelect}<select aria-describedby="map-filter-help" value={filters.length === 1 ? filters[0] : filters.length ? "combined" : "all"} onChange={(event) => { setFilters(event.target.value === "all" ? [] : [event.target.value as WorldMapRelationshipKind]); setSelectedId(null); }} className="min-h-12 min-w-0 rounded-xl border border-white/25 bg-[#081b2d] px-3 text-white"><option value="all">{copy.all}</option>{filters.length > 1 ? <option value="combined" disabled>{journeyCopy.combinedFilters}</option> : null}{availableRelationshipFilters.map((kind) => <option key={kind} value={kind}>{copy.categories[kind].label}</option>)}</select></label></> : null}
                 <div className="mt-3 flex flex-wrap gap-2">
                   {quickFilters.map((item) => (
                     <button key={item} type="button" aria-pressed={item === "all" ? filters.length === 0 : filters.includes(item)} onClick={() => chooseFilter(item)}
@@ -512,12 +512,12 @@ export function WorldMapExperience({ geometry, children }: { geometry: WorldMapG
                     <div className="world-map-plane" style={{ "--map-ratio": geometry.width / geometry.height } as CSSProperties}>
                       <svg viewBox={`0 0 ${geometry.width} ${geometry.height}`} role="img" aria-label={copy.mapAria} className="absolute inset-0 h-full w-full">
                         <path d={geometry.spherePath} fill="#061923" stroke="rgba(148,163,184,.16)" strokeWidth="1" />
-                        <path d={geometry.landPath} fill="#0c2a35" stroke="rgba(53,208,229,.16)" strokeWidth="1" />
+                        <path d={geometry.landPath} fill="#15374a" stroke="rgba(89,201,220,.45)" strokeWidth="1" />
                         {geometry.countries.map((country) => {
                           const summary = countryProgress.find(({ id }) => id === country.id);
                           return <path key={country.id} d={country.path} fill={stageFill(summary?.stage)} stroke={summary ? "rgba(142,234,245,.9)" : "rgba(148,163,184,.18)"} strokeWidth={summary ? 1.8 : 0.8} vectorEffect="non-scaling-stroke" className="transition-colors motion-reduce:transition-none" />;
                         })}
-                        <path d={geometry.borderPath} fill="none" stroke="rgba(148,163,184,.18)" strokeWidth=".65" vectorEffect="non-scaling-stroke" />
+                        <path d={geometry.borderPath} fill="none" stroke="#5c859c" strokeWidth=".85" vectorEffect="non-scaling-stroke" />
                       </svg>
 
                       <div aria-hidden="true" data-map-country-labels className="absolute inset-0 z-[8]">

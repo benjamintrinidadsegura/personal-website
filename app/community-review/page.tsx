@@ -23,7 +23,7 @@ export default async function CommunityReview({ searchParams }: { searchParams: 
   const dataset = reviewReach(typeof values.state === "string" ? values.state : undefined);
   const query = parseEchoFeed(values, !!reactionSecret());
   if (view === "reach") return <article className="community-page min-h-svh px-4 pb-20 pt-24 sm:px-7 sm:pt-28">
-    <div className="community-wrap"><CommunityNav locale={locale} current="/global-reach" />
+    <div className="community-wrap"><CommunityNav locale={locale} current="/community" />
       <ReachDashboard locale={locale} shapes={getReachShapes()} dataset={dataset} demo />
     </div>
   </article>;
@@ -33,5 +33,5 @@ export default async function CommunityReview({ searchParams }: { searchParams: 
       pathname={localizeHref("/community-review", locale)} />;
   }
   const feed = await readPublicEchoFeed(parseEchoFeed({}, false), 2, false);
-  return <CommunityOverview locale={locale} feed={feed} dataset={dataset} demo />;
+  return <CommunityOverview locale={locale} feed={feed} dataset={dataset} demo participation />;
 }

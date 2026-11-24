@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { ReachGrowthChart } from "./reach-growth-chart";
 import Link from "next/link";
+import { CountryFlag } from "./country-flag";
 import { communityCopy } from "@/data/i18n/community";
-import { reachContinentNames, reachCopy } from "@/data/i18n/reach-dashboard";
+import { reachChartCopy, reachContinentNames, reachCopy } from "@/data/i18n/reach-dashboard";
 import { regionByCountryCode } from "@/data/reach-country-codes";
 import type { ReachShape } from "@/lib/analytics/reach-geometry";
 import { reachColorIndex, reachColors, reachPeriods, reachThresholds, type ReachDataset, type ReachPeriod } from "@/lib/analytics/reach-periods";
@@ -12,14 +14,8 @@ import { localizeHref } from "@/lib/i18n/routing";
 
 const continents = ["150", "021", "142", "005", "002", "009"];
 
-function CountryFlag({ code }: { code: string }) {
-  return <svg className="reach-flag" viewBox="0 0 4 3" aria-hidden="true">
-    <use href={`/images/community/country-flags.svg#${code}`} />
-  </svg>;
-}
-
-export function ReachDashboard({ locale, shapes, dataset, preview = false, demo = false }: {
-  locale: Locale; shapes: ReachShape[]; dataset: ReachDataset; preview?: boolean; demo?: boolean;
+export function ReachDashboard({ locale, shapes, dataset, preview = false, demo = false, embedded = false, children }: {
+  locale: Locale; shapes: ReachShape[]; dataset: ReachDataset; preview?: boolean; demo?: boolean; embedded?: boolean; children?: ReactNode;
 }) {
   const [period, setPeriod] = useState<ReachPeriod>("since");
   const [selected, setSelected] = useState<string>();
@@ -45,9 +41,6 @@ export function ReachDashboard({ locale, shapes, dataset, preview = false, demo 
     code, count: rows.filter((row) => regionByCountryCode[row.countryCode] === code).length,
   }));
   const maxProgress = Math.max(1, ...perContinent.map(({ count }) => count));
-  const series = data?.growth ?? [];
-  const maxSeries = Math.max(1, ...series.map((point) => point.pageViews));
-  const chartLine = series.map(({ pageViews }, i) => `${8 + i / Math.max(1, series.length - 1) * 584},${108 - pageViews / maxSeries * 96}`).join(" ");
   const metrics = [[views, data?.displayedViews], [countries, data?.countries.length], [regions, data && perContinent.filter(({ count }) => count).length]];
   const rank = (limit?: number) => <ol className={limit ? "reach-ranking reach-ranking-bars" : "reach-ranking"}>
     {rows.slice(0, limit).map(({ countryCode, pageViews }) => <li key={countryCode}>
@@ -57,10 +50,10 @@ export function ReachDashboard({ locale, shapes, dataset, preview = false, demo 
       </button>
     </li>)}
   </ol>;
-  return <div data-reach-dashboard data-period={period} data-reach-preview={preview}>
+  return <div id="global-reach" className="scroll-mt-24" data-reach-dashboard data-period={period} data-reach-preview={preview}>
     {demo && <p className="community-kicker mb-4">{sample}</p>}
     {!preview && <>
-      <h1 className="community-heading mb-4">{title}</h1>
+      {!embedded && <h1 className="community-heading mb-4">{title}</h1>}
       <div className="flex flex-wrap gap-2" role="group" aria-label={communityCopy[locale].reach}>
         {reachPeriods.map((key) => <button key={key} type="button" className="reach-period" aria-pressed={key === period} onClick={() => {
           setPeriod(key);
@@ -122,23 +115,17 @@ export function ReachDashboard({ locale, shapes, dataset, preview = false, demo 
       </section>
       {!preview && data && <section className="community-panel p-4 sm:p-5"><h2 className="text-xl font-bold">{top}</h2>{rank(5)}</section>}
     </div>
+    {children}
     {!preview && data && <>
       <div className="reach-secondary">
         <section className="community-panel p-4 sm:p-5">
           <h2 className="text-xl font-bold">{growth}</h2>
-          {data.growth.length ? <>
-            <div className="reach-chart" aria-hidden="true">
-              <svg viewBox="0 0 600 120" preserveAspectRatio="none">
-                <path d="M8 36H592 M8 72H592 M8 108H592" stroke="#375569" strokeDasharray="4 6" />
-                <polygon points={`8,108 ${chartLine} 592,108`} fill="#215066" fillOpacity=".55" />
-                <polyline points={chartLine} fill="none" stroke="#8bd9e9" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
-              </svg>
-            </div>
-            <details className="mt-3"><summary>{daily}</summary><dl>{data.growth.map(({ day, pageViews }) => <div className="flex justify-between gap-3" key={day}><dt>{formatDate(day)}</dt><dd>{number.format(pageViews)}</dd></div>)}</dl></details>
-          </> : <p className="mt-3 text-slate-300">{unavailable}</p>}
+          {data.growth.length ? <ReachGrowthChart data={data} locale={locale} daily={daily} />
+            : <p className="mt-3 text-slate-300">{unavailable}</p>}
         </section>
         <section className="community-panel p-4 sm:p-5">
           <h2 className="text-xl font-bold">{progress}</h2>
+          <p className="mt-2 text-sm text-slate-300">{reachChartCopy[locale][2]}</p>
           <dl className="mt-3 grid gap-2">{perContinent.filter(({ count }) => count > 0).map(({ code, count, label }) => <div key={code} className="reach-progress">
             <dt>{label}</dt><dd><span aria-hidden="true" style={{ inlineSize: `${100 * count / maxProgress}%` }} /><strong>{number.format(count)}</strong></dd>
           </div>)}</dl>

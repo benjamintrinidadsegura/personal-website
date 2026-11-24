@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CommunityNav } from "@/components/community/community-nav";
 import { communityCopy } from "@/data/i18n/community";
 import { getEchoDictionary } from "@/data/i18n/echowall";
+import { echoCountryDisplayCopy } from "@/data/i18n/echo-country-display";
 import { livingWorldCopy } from "@/data/i18n/living-world";
 import { echoCountryOptions } from "@/lib/echowall/countries";
 
@@ -12,12 +13,13 @@ import { localizeHref } from "@/lib/i18n/routing";
 import { EchoForm } from "./echo-form";
 import { EchoCards } from "./echo-cards";
 
-export function EchoWall({ locale, feed, query, formToken, countryReady = false, demo = false, pathname }: {
+export function EchoWall({ locale, feed, query, formToken, countryReady = false, submissionsDisabled = false, demo = false, pathname }: {
   locale: Locale; feed: EchoFeed; query: ReturnType<typeof parseEchoFeed>; formToken: string | null;
-  demo?: boolean; pathname?: string; countryReady?: boolean;
+  demo?: boolean; pathname?: string; countryReady?: boolean; submissionsDisabled?: boolean;
 }) {
   const copy = communityCopy[locale];
   const echoCopy = getEchoDictionary(locale);
+  const countryDisplay = feed.status === "ready" && feed.publicCountryAvailable === true;
   const href = pathname ?? localizeHref("/echowall", locale);
   const fmt = new Intl.NumberFormat(locale);
   const url = (patch: Partial<typeof query>) => {
@@ -29,14 +31,15 @@ export function EchoWall({ locale, feed, query, formToken, countryReady = false,
       <CommunityNav locale={locale} current="/echowall" />
       {demo && <p className="community-kicker mb-3">{copy.demo}</p>}
       <header className="mb-5">
-        <h1 className="community-heading">{copy.contribute}</h1>
+        <h1 className="community-heading">{submissionsDisabled ? "EchoWall" : copy.contribute}</h1>
         <p className="mt-2 text-base text-slate-300">{echoCopy.page.intro}</p>
       </header>
       <section id="leave-an-echo" aria-label={copy.contribute} className="community-panel echo-composer scroll-mt-24 p-4 sm:p-5">
         <p className="mb-4 text-sm text-slate-200">{echoCopy.page.moderationBody}</p>
         <EchoForm formToken={formToken} copy={echoCopy.form} optionalLabel={copy.details}
-          countryOptions={formToken && countryReady ? echoCountryOptions(locale) : undefined}
-          countryCopy={livingWorldCopy[locale]} />
+          countryOptions={formToken && (countryReady || countryDisplay) ? echoCountryOptions(locale) : undefined}
+          countryCopy={livingWorldCopy[locale]} showPublicCountry={countryDisplay} showAggregateCountry={countryReady}
+          countryDisplayCopy={echoCountryDisplayCopy[locale]} submissionsDisabled={submissionsDisabled} />
       </section>
       <section id="public-wall" aria-labelledby="public-wall-title" className="mt-7">
         <div className="flex flex-wrap items-baseline justify-between gap-3">

@@ -15,7 +15,7 @@ export function universeItem(item:DiscoveryItem, locale:Locale): UniverseItem | 
   if (!item.href || /[?%\\\s]/u.test(item.href)) return null;
   const path = stripLocalePrefix(item.href.split("#")[0]);
   // Explicit public navigation families, never authentication, invitation or session paths.
-  if (!/^\/(?:$|writing(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?$|projects\/[a-z0-9-]+$|people(?:\/[a-z0-9-]+)?$|world$|echowall$|about(?:\/(?:nerd-corner|how-my-brain-works))?$|find-your-next-step(?:\/(?:self|career|problem|idea))?$|life-alignment(?:\/(?:self|partner|life-vision|family|friendship|career|team|founder))?$|tools\/(?:personal-advantage|money-profile)$)/u.test(path)) return null;
+  if (!/^\/(?:$|writing(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?$|projects\/[a-z0-9-]+$|people(?:\/[a-z0-9-]+)?$|world$|community$|echowall$|about(?:\/(?:nerd-corner|how-my-brain-works))?$|find-your-next-step(?:\/(?:self|career|problem|idea))?$|life-alignment(?:\/(?:self|partner|life-vision|family|friendship|career|team|founder))?$|tools\/(?:personal-advantage|money-profile)$)/u.test(path)) return null;
   // A public project description may exist before its product launches.
   // This exception never applies to unpublished articles or unavailable tools.
   if (item.status !== "Live" && item.status !== "Beta" && !path.startsWith("/projects/")) return null;

@@ -17,7 +17,6 @@ export const publicStaticRoutes = [
   "/people",
   "/world",
   "/community",
-  "/global-reach",
   "/tools/personal-advantage",
   "/tools/money-profile",
 ] as const;

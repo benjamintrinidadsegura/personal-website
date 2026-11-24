@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.igdb.com", pathname: "/igdb/image/upload/t_cover_big/**", search: "" },
     ],
   },
+  redirects: async () => locales.map((locale) => {
+    const prefix = locale === defaultLocale ? "" : `/${locale}`;
+    return { source: prefix + "/global-reach", destination: prefix + "/community#global-reach", permanent: true };
+  }),
   headers: async () => [
     {
       source: "/sitemap.xml",

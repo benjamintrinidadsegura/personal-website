@@ -323,6 +323,11 @@ function createReason(signal: MatchSignal): DiscoveryMatchReason | null {
 }
 
 function getMatch(item: DiscoveryItem, analysis: DiscoveryQueryAnalysis): DiscoveryMatch | null {
+  const alias = item.productAliases?.find((value) => normalizeSearchText(value) === analysis.normalizedQuery);
+  if (alias) return {
+    item, score: TITLE_EXACT_SCORE + MAX_COVERAGE_BONUS + 1, presentation: "match",
+    reasons: [{ source: "keyword", value: alias, matchedTerm: alias, kind: "direct", label: "Gefunden über", displayValue: alias }],
+  };
   const signals = collectSignals(item, analysis);
   if (signals.length === 0) return null;
 

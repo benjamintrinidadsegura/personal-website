@@ -5,6 +5,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import world from "world-atlas/countries-50m.json";
+import { publicUniverse, universeMatches } from "../lib/discovery-universe/content";
+import { discoverItems } from "../lib/discovery";
+import { communityProductAliases } from "../data/i18n/community-search";
 import { discoveryIndex } from "../data/discovery-index";
 import { localizeDiscoveryItems } from "../data/i18n/discovery";
 import { communityCopy } from "../data/i18n/community";
@@ -66,10 +69,36 @@ test("wall pagination and search encode public input with deterministic bounds a
 
 for (const locale of locales) test(`${locale}: all public paths appear once in the localized search index`, () => {
   const items = localizeDiscoveryItems(discoveryIndex, locale);
-  for (const route of ["/world", "/global-reach", "/community", "/echowall"]) {
+  for (const route of ["/world", "/community#global-reach", "/community", "/echowall"]) {
     assert.equal(items.filter(({ href }) => href === localizeHref(route, locale)).length, 1);
   }
   assert.equal(items.find(({ href }) => href === localizeHref("/community", locale))?.title, communityCopy[locale].community);
+});
+
+for (const locale of locales) test(`${locale}: exact Community product aliases outrank incidental matches`, () => {
+  const items = localizeDiscoveryItems(discoveryIndex, locale);
+  for (const [id, route] of [["page-community", "/community"], ["page-global-reach", "/community#global-reach"], ["page-world-map", "/world"], ["tool-echowall", "/echowall"]]) {
+    const item = items.find((entry) => entry.id === id);
+    assert.ok(item);
+    const phrases = [...new Set([item.title, ...(communityProductAliases(id, locale) ?? [])])];
+    for (const phrase of phrases) {
+      const match = discoverItems(items, phrase)[0];
+      assert.equal(match?.item.href, localizeHref(route, locale), phrase);
+      assert.equal(match?.presentation, "match", phrase);
+      assert.equal(universeMatches(publicUniverse(items, locale), discoverItems(items, phrase), phrase)[0]?.item.href,
+        localizeHref(route, locale), phrase);
+    }
+  }
+});
+
+test("community navigation has three entries and the alias resolves to its canonical anchor", () => {
+  const source = (path: string) => readFileSync(path, "utf8");
+  const nav = source("components/community/community-nav.tsx");
+  assert.deepEqual([...nav.matchAll(/href: "([^"]+)"/gu)].map((match) => match[1]), ["/community", "/echowall", "/world"]);
+  assert.match(source("app/global-reach/page.tsx"), /permanentRedirect\(localizeHref\("\/community#global-reach"/u);
+  const reach = source("components/community/reach-dashboard.tsx");
+  assert.ok(reach.indexOf('{top}</h2>') < reach.indexOf('{children}'));
+  assert.ok(reach.indexOf('{children}') < reach.indexOf('{growth}</h2>'));
 });
 
 test("local review is environment and loopback gated, excluded from indexing, and echo writes default off", () => {

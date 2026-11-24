@@ -1,3 +1,5 @@
+import { CountryFlag } from "@/components/community/country-flag";
+import { echoCountryName } from "@/lib/echowall/countries";
 import { communityCopy } from "@/data/i18n/community";
 import type { Locale } from "@/lib/i18n/config";
 import type { PublicEcho } from "@/types/echowall";
@@ -12,6 +14,7 @@ export function EchoCards({ echoes, locale, interactive = false }: { echoes: Pub
       <article className="flex h-full flex-col" data-echo-card>
         <header className="flex flex-wrap items-center gap-2">
           <EchoAvatar name={echo.displayName} /><h3 className="font-bold [overflow-wrap:anywhere]">{echo.displayName}</h3>
+          {echo.publicCountryCode && <CountryFlag code={echo.publicCountryCode} label={echoCountryName(echo.publicCountryCode, locale)} />}
           <time dateTime={echo.publishedAt} className="ml-auto text-sm text-slate-300">{date.format(new Date(echo.publishedAt))}</time>
           {echo.language && <abbr title={localeNames.of(echo.language)}>{echo.language.toUpperCase()}</abbr>}
         </header>

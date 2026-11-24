@@ -212,3 +212,5 @@ export const communityCopy = {
     "removeReply": "Удалить ответ"
   }
 } satisfies Record<Locale, Record<"community" | "title" | "intro" | "reach" | "voices" | "relationships" | "fullReach" | "openWall" | "openMap" | "contribute" | "emptyEcho" | "connections" | "previous" | "next" | "newest" | "popular" | "searchName" | "search" | "reset" | "published" | "results" | "details" | "founder" | "like" | "demo" | "join" | "save" | "removeReply", string>>;
+
+export const connectionMapLabel = { de: "Karte der Verbindungen", en: "Connection Map", es: "Mapa de conexiones", tr: "Bağlantı haritası", pl: "Mapa połączeń", el: "Χάρτης συνδέσεων", ru: "Карта связей" } satisfies Record<Locale, string>;

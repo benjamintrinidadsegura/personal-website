@@ -32,6 +32,7 @@ export type EchoSubmission = {
   email: string | null;
   countryCode?: string;
   includeInCommunityMap?: boolean;
+  displayCountry?: boolean;
 };
 
 export type PublicEcho = {
@@ -44,6 +45,7 @@ export type PublicEcho = {
   likes?: number;
   liked?: boolean;
   language?: string;
+  publicCountryCode?: string;
   countryCode?: string;
   includeInCommunityMap?: boolean;
 };
@@ -83,6 +85,7 @@ export type RawEchoSubmission = {
   email: unknown;
   countryCode?: unknown;
   includeInCommunityMap?: unknown;
+  displayCountry?: unknown;
   consent: unknown;
   website: unknown;
   formToken: unknown;

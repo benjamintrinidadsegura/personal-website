@@ -39,6 +39,7 @@ type DatabaseSubmission = {
   email: string | null;
   countryCode?: string;
   includeInCommunityMap?: boolean;
+  displayCountry?: boolean;
   networkHash: string;
   emailHash: string | null;
   messageHash: string;
@@ -173,8 +174,12 @@ export async function submitEchoAction(
     requestHeaders.get("x-real-ip")?.trim() || forwardedFor || null;
 
   const countryContextEnabled = process.env.ECHOWALL_COUNTRY_CONTEXT_ENABLED === "true";
+  const publicCountryEnabled = process.env.ECHOWALL_PUBLIC_COUNTRY_ENABLED === "true";
   const countryCode = formData.get("countryCode");
-  if (!countryContextEnabled && countryCode !== null && countryCode !== "") {
+  const displayCountry = formData.get("displayCountry") === "true";
+  const aggregate = formData.get("includeInCommunityMap") === "true";
+  if ((displayCountry && !publicCountryEnabled) || (aggregate && !countryContextEnabled)
+    || (!publicCountryEnabled && !countryContextEnabled && countryCode !== null && countryCode !== "")) {
     return { ok: false, code: "SERVICE_UNAVAILABLE" };
   }
 
@@ -183,9 +188,10 @@ export async function submitEchoAction(
     message: formData.get("message"),
     category: formData.get("category"),
     email: formData.get("email"),
-    ...(countryContextEnabled ? {
+    ...((publicCountryEnabled || countryContextEnabled) ? {
       countryCode,
-      includeInCommunityMap: formData.get("includeInCommunityMap"),
+      displayCountry: displayCountry ? "true" : undefined,
+      includeInCommunityMap: aggregate ? "true" : undefined,
     } : {}),
     consent: formData.get("consent"),
     website: formData.get("website"),
@@ -214,8 +220,14 @@ export async function submitEchoAction(
         p_form_token_hash: submission.formTokenHash,
         p_deletion_token_hash: submission.deletionTokenHash,
       };
-      const { data, error } = submission.countryCode
-        ? await supabase.rpc("submit_echo_with_country", {
+      const { data, error } = submission.countryCode && submission.displayCountry
+        ? await supabase.rpc("submit_echo_with_public_country", {
+          ...payload,
+          p_public_country_code: submission.countryCode,
+          p_aggregate: submission.includeInCommunityMap ?? false,
+        })
+        : submission.countryCode && submission.includeInCommunityMap
+          ? await supabase.rpc("submit_echo_with_country", {
           ...payload,
           p_country_code: submission.countryCode,
           p_include_in_community_map: submission.includeInCommunityMap ?? false,

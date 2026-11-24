@@ -1,6 +1,6 @@
 import "server-only";
 import { minimumPublicCountryViews } from "./country-reach";
-import { prepareReachPeriod, type ReachDataset, type ReachPeriod } from "./reach-periods";
+import { prepareReachPeriod, type PublicReachPeriod, type ReachDataset, type ReachPeriod } from "./reach-periods";
 
 type AggregateBatch = {
   source: "vercel-web-analytics";
@@ -24,6 +24,21 @@ function normalizeSnapshot(input: unknown): unknown {
   return { ...input, countries, ...(unknownCountry ? { geography: "partial" } : {}) };
 }
 
+function publishableDays(value: unknown, from: string, to: string): Extract<PublicReachPeriod, { status: "available" }>["growth"] | null {
+  if (!value || typeof value !== "object" || !("daily" in value)) return [];
+  if (!Array.isArray(value.daily) || value.daily.length > 370) return null;
+  const seen = new Set<number>();
+  const points: { day: string; pageViews: number }[] = [];
+  for (const point of value.daily) {
+    const day = typeof point?.day === "string" ? Date.parse(point.day) : NaN;
+    if (!Number.isFinite(day) || day % 86400000 !== 0 || day < Date.parse(from) || day >= Date.parse(to)
+      || seen.has(day) || !Number.isSafeInteger(point.pageViews) || point.pageViews < 0) return null;
+    seen.add(day);
+    if (point.pageViews >= minimumPublicCountryViews) points.push({ day: new Date(day).toISOString(), pageViews: point.pageViews });
+  }
+  return points.sort((a, b) => a.day.localeCompare(b.day));
+}
+
 /** Inject a verified, read-only provider adapter. This never provisions collection or schedules work. */
 export async function refreshVerifiedReach(
   load: () => Promise<AggregateBatch>,
@@ -43,7 +58,13 @@ export async function refreshVerifiedReach(
       const total = totals.get(countryCode);
       return total === undefined || total < pageViews || (total > pageViews && total - pageViews < minimumPublicCountryViews);
     })) return false;
-    await publish({ since, recent });
+    const sinceDays = publishableDays(batch.periods.since, since.from, since.to);
+    const recentDays = publishableDays(batch.periods.recent, recent.from, recent.to);
+    if (!sinceDays || !recentDays) return false;
+    const overlapping = sinceDays.filter(({ day }) => day >= recent.from);
+    if (overlapping.length !== recentDays.length || overlapping.some((point, index) =>
+      point.day !== recentDays[index].day || point.pageViews !== recentDays[index].pageViews)) return false;
+    await publish({ since: { ...since, growth: sinceDays }, recent: { ...recent, growth: recentDays } });
     return true;
   } catch {
     return false;

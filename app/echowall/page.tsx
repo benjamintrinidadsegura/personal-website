@@ -25,5 +25,5 @@ export default async function EchoWallPage({ searchParams }: { searchParams: Pro
     readPublicEchoFeed(query),
     formToken && isEchoCountryContextEnabled() ? getApprovedEchoes(1, true) : null,
   ]);
-  return <EchoWall locale={locale} feed={feed} query={query} formToken={formToken} countryReady={!!country?.countryContextAvailable} />;
+  return <EchoWall locale={locale} feed={feed} query={query} formToken={formToken} countryReady={!!country?.countryContextAvailable} submissionsDisabled={process.env.ECHOWALL_SUBMISSIONS_ENABLED !== "true"} />;
 }

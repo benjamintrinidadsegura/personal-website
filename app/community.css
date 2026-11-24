@@ -3,7 +3,7 @@
 .community-wrap { max-width: 77rem; margin-inline: auto; }
 .community-panel { background: #102638; border: 1px solid #335164; border-radius: 1rem; min-width: 0; }
 .community-nav { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%, 9rem),1fr)); gap: .45rem; margin-block: 1.15rem; }
-.community-nav a { display: grid; place-items: center; min-height: 2.75rem; padding: .4rem; border: 1px solid #355165; border-radius: .55rem; text-align:center; font-weight: 650; overflow-wrap: anywhere; }
+.community-nav a { display: grid; place-items: center; min-height: 44px; padding: .4rem; border: 1px solid #355165; border-radius: .55rem; text-align:center; font-weight: 650; overflow-wrap: anywhere; }
 .community-nav a:hover,.community-nav a[aria-current=page] { background: #1b3c50; color: #b6edf7; }
 .community-page :focus-visible,.community-nav a:focus-visible { outline: 2px solid #9de4f4; outline-offset: 3px; }
 .community-kicker { color: #a4dbe8; font-size: .79rem; letter-spacing: .12em; font-weight: 700; }
@@ -63,3 +63,19 @@
 .reach-rank-track i { display:block; height:100%; background:#81d1de; border-radius:1rem; }
 [data-reach-preview=true] .reach-map-stage > svg { max-height:26rem; }
 .community-overview-heading { font-size:clamp(2rem,4vw,3.4rem); }
+
+
+.community-nav { grid-template-columns: repeat(3,minmax(0,1fr)); }
+@media (max-width: 420px) { .community-nav a { font-size: .83rem; padding-inline: .22rem; } }
+.reach-map-stage path { stroke: #426883; stroke-width: .68; }
+.reach-secondary { align-items: start; }
+.reach-chart { height:auto; display:grid; grid-template-columns:auto minmax(0,1fr); align-items:stretch; column-gap:.5rem; border:0; }
+.reach-chart-y { display:flex; flex-direction:column; justify-content:space-between; color:#c0d8e6; font-size:.75rem; padding:.08rem 0; text-align:end; }
+.reach-chart svg { display:block; height:clamp(9rem,18vw,13rem); }
+.reach-chart-dates { grid-column:2; display:flex; flex-wrap:wrap; justify-content:space-between; gap:.3rem; color:#c0d8e6; font-size:.78rem; }
+.community-connection-preview { width:100%; min-width:0; border-radius:.8rem; background:radial-gradient(ellipse at 60% 48%,#13374a,#071c30 72%); }
+.community-connection-land { fill:#1f4861; }
+.community-connection-borders { fill:none; stroke:#739bb1; stroke-width:1; }
+.echo-country-field .reach-flag { flex:none; }
+.echo-submit-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.65rem; }
+@media (max-width: 420px) { .echo-submit-row .community-action { width:100%; } }
