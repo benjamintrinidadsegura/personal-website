@@ -79,8 +79,8 @@ export default async function WritingPage() {
         {latest.length ? (
           <section aria-labelledby="latest-writing-title" className="py-20 sm:py-28">
             <div className="writing-editorial-section-heading"><h2 id="latest-writing-title" className="text-4xl font-black sm:text-6xl">{copy.latest}</h2><span aria-hidden="true" /></div>
-            <ol data-writing-index-mosaic className="writing-index-list mt-12 grid gap-4 lg:grid-cols-2">
-              {latest.map((article, index) => (
+            <ol data-writing-index-mosaic className="writing-index-list mt-12 grid gap-4">
+              {latest.map((article) => (
                 <li key={article.id}>
                   <Link href={localizeHref(`/writing/${article.slug}`, locale)} className="writing-index-row group flex h-full flex-col p-6 sm:p-8">
                     <div className="writing-editorial-taxonomy">
@@ -88,7 +88,7 @@ export default async function WritingPage() {
                       <span className="writing-editorial-language">{article.language.toUpperCase()}</span>
                       <span className="writing-editorial-topics">{article.topics.map((topic) => localizeWritingTopic(topic, locale)).join(" · ")}</span>
                     </div>
-                    <div lang={sourceLang(article.language)} className="writing-editorial-card-copy"><h3 className={`break-words font-bold ${index % 3 === 0 ? "text-3xl sm:text-5xl" : "text-3xl sm:text-4xl"}`}>{article.title}</h3><p>{article.excerpt}</p></div>
+                    <div lang={sourceLang(article.language)} className="writing-editorial-card-copy"><h3 className="writing-editorial-card-title break-words font-bold">{article.title}</h3><p>{article.excerpt}</p></div>
                     <div className="writing-editorial-card-footer"><div className="writing-editorial-meta"><time dateTime={article.publishedAt}>{dateFormatter.format(new Date(article.publishedAt))}</time><p>{article.readingMinutes} {copy.readingTime}</p></div><p className="writing-editorial-cta">{copy.readArticle} <span aria-hidden="true">↗</span></p></div>
                   </Link>
                 </li>

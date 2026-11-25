@@ -109,6 +109,22 @@ test("Writing index with one article displays only the newest hero", async () =>
   }
 });
 
+test("Writing mosaic keeps every article once in chronological DOM order for odd and even listing counts", async () => {
+  for (const locale of locales) {
+    for (let count = 1; count <= 10; count++) {
+      const data = Array.from({ length: count }, (_, index) => ({
+        ...articles[0], id: `fixture-${index}`, slug: `fixture-${index}`,
+        title: `Fixture article ${index}`, publishedAt: new Date(Date.UTC(2026, 9, 20 - index)).toISOString(),
+      }));
+      const html = renderToStaticMarkup(await loadIndex(locale, { status: "data", data }).default());
+      const links = [...html.matchAll(/<a href="([^"]+)"[^>]*class="writing-index-(?:featured|row)\b/gu)].map((match) => match[1]);
+      assert.deepEqual(links, data.map((article) => localizeHref(`/writing/${article.slug}`, locale)), `${locale}, ${count} articles`);
+      assert.equal([...html.matchAll(/class="writing-index-row\b/gu)].length, count - 1);
+      assert.equal([...html.matchAll(/<time /gu)].length, count);
+    }
+  }
+});
+
 test("Writing index with no published articles retains its localized empty state", async () => {
   for (const locale of locales) {
     const html = renderToStaticMarkup(await loadIndex(locale, { status: "data", data: [] }).default());
