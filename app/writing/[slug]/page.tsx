@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { InsightView } from "@/components/insights/collector";
+import { insightsCollectionEnabled } from "@/lib/insights/config";
 import { ContentContinuation } from "@/components/content/content-continuation";
 
 import { ArticleBody } from "@/components/writing/article-body";
@@ -115,6 +117,7 @@ export default async function WritingArticlePage({ params, searchParams }: { par
 
   return (
     <article className="relative overflow-hidden px-5 pb-24 pt-28 sm:px-8 sm:pt-36">
+      {insightsCollectionEnabled() && <Suspense fallback={null}><InsightView enabled name="article_view" contentId={"article:" + article.id} /></Suspense>}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</gu, "\\u003c") }} />
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[58rem] bg-[radial-gradient(circle_at_72%_15%,rgba(53,208,229,0.16),transparent_30rem),radial-gradient(circle_at_18%_42%,rgba(255,122,0,0.07),transparent_22rem)]" />
       <div className="relative mx-auto max-w-[90rem]">

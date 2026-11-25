@@ -19,6 +19,7 @@ test("daily refresh requires exact constant-time checked secret and fails closed
   const { GET } = loadSource<typeof import("../app/api/reach/refresh/route")>("app/api/reach/refresh/route.ts", {
     "node:crypto": crypto,
     "@/lib/analytics/first-party-config": { firstPartyReachRuntime: () => enabled },
+    "@/lib/insights/config": { insightsMaintenanceEnabled: () => false },
     "@/lib/supabase/server": { getSupabaseServerClient: () => ({ rpc: async () => { calls++; return { error: failure ? {} : null }; } }) },
   }, { process: { env: { CRON_SECRET: "local-fixture-cron-secret-0000000000" } }, Buffer });
   const url = "https://btshq.online/api/reach/refresh";

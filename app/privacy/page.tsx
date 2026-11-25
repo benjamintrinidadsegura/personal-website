@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ReachPrivacyChoice } from "@/components/community/reach-privacy-choice";
+import { InsightsPrivacyChoice } from "@/components/insights/privacy-choice";
+import { insightsCollectionEnabled } from "@/lib/insights/config";
 
 import { getGlobalDictionary } from "@/data/i18n/global";
 import { getPrivacyDictionary, lifeAlignmentHistoryPrivacyCopy, lifeAlignmentLocalPrivacyCopy, relationshipAlignmentPrivacyCopy, writingTranslationPrivacyCopy } from "@/data/i18n/privacy";
@@ -133,6 +135,7 @@ export default async function PrivacyPage() {
 
         <PrivacySections sections={sections.slice(3, 7)} />
         {firstPartyReachEnabled() && <ReachPrivacyChoice locale={locale} />}
+        {insightsCollectionEnabled() && <InsightsPrivacyChoice locale={locale} />}
 
         <section id="feedback" aria-labelledby="feedback-privacy-title" className="scroll-mt-28 border-b border-white/15 py-14">
           <h2 id="feedback-privacy-title" className="text-3xl font-black text-white">{copy.feedback.title}</h2>

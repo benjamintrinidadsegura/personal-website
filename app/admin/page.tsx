@@ -6,6 +6,7 @@ export const metadata = { title: "BTS Studio | btshq.online", robots: { index: f
 export const dynamic = "force-dynamic";
 
 const areas = [
+  { href: "/admin/insights", label: "Private measurement", title: "Insights", copy: "Consented content interest and supported tool lifecycles.", accent: "text-[#a8dce8] hover:border-[#a8dce8]/60" },
   { href: "/admin/writing", label: "Publishing", title: "Writing", copy: "Create, review and publish Writing.", accent: "text-[#35d0e5] hover:border-[#35d0e5]/60" },
   { href: "/admin/newsletter", label: "Delivery", title: "Newsletter", copy: "Published Writing thoughtfully delivered.", accent: "text-[#35d0e5] hover:border-[#35d0e5]/60" },
   { href: "/admin/echowall", label: "Moderation", title: "EchoWall", copy: "Moderate community submissions.", accent: "text-[#ff9a3d] hover:border-[#ff9a3d]/60" },

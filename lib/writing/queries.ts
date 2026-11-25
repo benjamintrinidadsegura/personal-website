@@ -111,6 +111,23 @@ export async function getPublishedWriting(locale: WritingLanguage = "de", contex
   return (await getPublishedWritingResult(locale, context)).data;
 }
 
+/** Optional analytics validation by stable public record ID; no listing limit or stale publication snapshot. */
+export async function getPublishedWritingInsightTarget(id: string): Promise<
+  { status: "data"; article: PublicWritingSummary } | { status: "missing" | "unavailable"; article: null }
+> {
+  const unavailable = { status: "unavailable" as const, article: null };
+  if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u.test(id)) return { status: "missing", article: null };
+  return withPublicWritingReadDeadline(async (signal) => {
+    const { getSupabaseServerClient } = await import("@/lib/supabase/server");
+    const { data, error } = await getSupabaseServerClient({ fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }) })
+      .from("writing_articles").select(PUBLIC_WRITING_SELECT).eq("id", id).eq("status", "published")
+      .not("published_at", "is", null).not("slug", "is", null).abortSignal(signal).maybeSingle();
+    if (error) return unavailable;
+    const article = data ? mapPublicWritingSummary(data as UnknownRow, "de") : null;
+    return article && isPublicWritingReady(article) ? { status: "data" as const, article } : { status: "missing" as const, article: null };
+  }, unavailable);
+}
+
 export async function getPublishedWritingResult(locale: WritingLanguage = "de", context: WritingReadContext = { consumer: "unspecified" }): Promise<PublishedWritingReadResult> {
   return deliverPublishedWritingResult(() => queryPublishedWriting(locale), locale, context);
 }
