@@ -105,8 +105,12 @@ URL without its own authorization. Do not bypass hosted network restrictions.
 After approved installation/deploy, verify role denial, real schedule/auth, opt-in
 request boundaries, genuine counts/UTC publication and privacy disclosures.
 Use a minimal Founder browser test if automation is blocked; do not seed synthetic
-Production traffic to make the map look populated. Rollback disables BTS_REACH_ENABLED
-and redeploys the previous reviewed code; no table/record deletion or DROP.
+Production traffic to make the map look populated. Rollback first disables BTS_REACH_ENABLED and keeps the authenticated maintenance
+route/job available independently of collection. Wait until the replay ledger has
+drained through the normal expiry job before reverting to code without that
+endpoint. An urgent full-code rollback before draining needs an explicitly approved
+final maintenance operation to avoid leaving identifiers behind. No table DROP or
+unscoped record deletion is part of rollback.
 
 ## Insights later
 

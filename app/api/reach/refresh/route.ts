@@ -1,9 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
-import { firstPartyReachEnabled } from "@/lib/analytics/first-party-config";
+import { firstPartyReachRuntime } from "@/lib/analytics/first-party-config";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
-  if (!firstPartyReachEnabled()) return new Response(null, { status: 404 });
+  if (!firstPartyReachRuntime()) return new Response(null, { status: 404 });
   const secret = process.env.CRON_SECRET;
   const header = request.headers.get("authorization");
   const expected = secret && secret.length >= 32 ? `Bearer ${secret}` : null;

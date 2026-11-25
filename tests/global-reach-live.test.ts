@@ -5,11 +5,20 @@ import { loadSource } from "./helpers/load-source";
 import { locales } from "../lib/i18n/config";
 import { readFileSync } from "node:fs";
 
+test("stopping collection preserves expiry maintenance on the authorized Production runtime", () => {
+  const config = loadSource<typeof import("../lib/analytics/first-party-config")>("lib/analytics/first-party-config.ts", { "server-only": {} });
+  const environment = { VERCEL: "1", VERCEL_ENV: "production", NODE_ENV: "production" as const, SITE_URL: "https://btshq.online", BTS_REACH_ENABLED: "false" };
+  assert.equal(config.firstPartyReachEnabled(environment), false);
+  assert.equal(config.firstPartyReachRuntime(environment), true);
+  assert.equal(config.firstPartyReachRuntime({ ...environment, VERCEL_ENV: "preview" }), false);
+  assert.equal(config.firstPartyReachRuntime({ ...environment, SITE_URL: "http://localhost:3314" }), false);
+});
+
 test("daily refresh requires exact constant-time checked secret and fails closed", async () => {
   let enabled = true; let calls = 0; let failure = false;
   const { GET } = loadSource<typeof import("../app/api/reach/refresh/route")>("app/api/reach/refresh/route.ts", {
     "node:crypto": crypto,
-    "@/lib/analytics/first-party-config": { firstPartyReachEnabled: () => enabled },
+    "@/lib/analytics/first-party-config": { firstPartyReachRuntime: () => enabled },
     "@/lib/supabase/server": { getSupabaseServerClient: () => ({ rpc: async () => { calls++; return { error: failure ? {} : null }; } }) },
   }, { process: { env: { CRON_SECRET: "local-fixture-cron-secret-0000000000" } }, Buffer });
   const url = "https://btshq.online/api/reach/refresh";
