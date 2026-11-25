@@ -32,7 +32,7 @@ test("daily refresh requires exact constant-time checked secret and fails closed
   assert.equal(calls, 2);
 });
 
-test("opt-in, privacy signals, query/fragment exclusions and retry identity hold in the actual collector effect", async () => {
+test("opt-in, privacy signals, query exclusion, fragment minimization and retry identity hold", async () => {
   let optIn = false; let path = "/writing"; let search = ""; let hash = "";
   let dnt = "0"; let gpc = false; let effect: (() => (() => void)) | undefined;
   const ref = { current: null as unknown };
@@ -41,7 +41,8 @@ test("opt-in, privacy signals, query/fragment exclusions and retry identity hold
   const document = Object.assign(new EventTarget(), { visibilityState: "visible" });
   const dependencies = {
     react: { useRef: () => ref, useEffect: (callback: () => (() => void)) => { effect = callback; } },
-    "next/navigation": { usePathname: () => path },
+    "next/navigation": { usePathname: () => path, useSearchParams: () => new URLSearchParams(search) },
+    "@/lib/analytics/reach-diagnostics": { reachDiagnostic: () => {} },
     "@/lib/analytics/public-page-view": { createPublicPageViewAllowlist: () => new Set(["/writing", "/community"]) },
   };
   const api = loadSource<typeof import("../components/community/reach-page-view")>("components/community/reach-page-view.tsx", dependencies, {
@@ -59,10 +60,11 @@ test("opt-in, privacy signals, query/fragment exclusions and retry identity hold
   assert.equal(requests[0].credentials, "omit"); assert.equal(requests[0].referrerPolicy, "origin");
   document.dispatchEvent(new Event("visibilitychange")); await settle(); assert.equal(requests.length, 2);
   cleanup(); path = "/community"; search = "?token=fixture"; api.ReachPageView(); cleanup = effect!(); await settle(); assert.equal(requests.length, 2);
-  cleanup(); search = ""; hash = "#private"; api.ReachPageView(); cleanup = effect!(); await settle(); assert.equal(requests.length, 2);
-  cleanup(); hash = ""; dnt = "1"; api.ReachPageView(); cleanup = effect!(); await settle(); assert.equal(requests.length, 2);
-  cleanup(); dnt = "0"; gpc = true; api.ReachPageView(); cleanup = effect!(); await settle(); assert.equal(requests.length, 2);
-  cleanup(); gpc = false; api.setReachOptIn(false); api.ReachPageView(); cleanup = effect!(); await settle(); assert.equal(requests.length, 2);
+  cleanup(); search = ""; hash = "#private"; api.ReachPageView(); cleanup = effect!(); await settle(); assert.equal(requests.length, 3);
+  assert.doesNotMatch(requests[2].body, /#|private/u);
+  cleanup(); hash = ""; dnt = "1"; api.ReachPageView(); cleanup = effect!(); await settle(); assert.equal(requests.length, 3);
+  cleanup(); dnt = "0"; gpc = true; api.ReachPageView(); cleanup = effect!(); await settle(); assert.equal(requests.length, 3);
+  cleanup(); gpc = false; api.setReachOptIn(false); api.ReachPageView(); cleanup = effect!(); await settle(); assert.equal(requests.length, 3);
   api.setReachOptIn(true); await settle(); assert.equal(requests.length, 3);
   assert.notEqual(JSON.parse(requests[2].body).eventId, JSON.parse(requests[0].body).eventId);
   cleanup();

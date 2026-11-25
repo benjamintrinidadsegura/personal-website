@@ -17,6 +17,7 @@ test("reach accepts a bounded same-origin public pathname and sends only the pla
     "@/lib/analytics/first-party-config": { firstPartyReachEnabled: () => active },
     "@/lib/analytics/country-reach": countries,
     "@/lib/analytics/public-page-view": publicPageViews,
+    "@/lib/analytics/reach-diagnostics": { reachDiagnostic: () => {} },
   }, { URL, Response, TextDecoder });
   const request = (body: string, additions = {}, url = origin + "/api/reach/view") => new Request(url, {
     method: "POST", body: body.startsWith("/") ? JSON.stringify({ pathname: body, eventId: "11111111-1111-4111-8111-111111111111", at: new Date().toISOString() }) : body,
@@ -36,8 +37,8 @@ test("reach accepts a bounded same-origin public pathname and sends only the pla
   }
   assert.equal((await POST(request("/writing", {}, origin + "/api/reach/view?test=1"))).status, 403);
   assert.equal((await POST(request("x".repeat(257)))).status, 413);
-  assert.equal((await POST(request("/writing", { "x-vercel-ip-country": "ZZ" }))).status, 204);
-  assert.equal((await POST(request("/writing", { "user-agent": "TestCrawler" }))).status, 204);
+  assert.equal((await POST(request("/writing", { "x-vercel-ip-country": "ZZ" }))).status, 503);
+  assert.equal((await POST(request("/writing", { "user-agent": "TestCrawler" }))).status, 202);
   assert.deepEqual(calls, []);
   assert.equal((await POST(request("/en/writing"))).status, 204);
   assert.equal(calls.length, 1);
