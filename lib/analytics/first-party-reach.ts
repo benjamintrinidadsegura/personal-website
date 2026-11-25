@@ -25,8 +25,12 @@ export function prepareFirstPartyReach(input: unknown, now = Date.now()): ReachD
   const sinceStart = utcDay(input.sinceStart);
   const recentStart = utcDay(input.recentStart);
   const end = utcDay(input.end);
+  const refreshed = typeof input.updated === "string" ? Date.parse(input.updated) : NaN;
+  if (!Number.isFinite(refreshed) || refreshed > now || now - refreshed >= 2 * dayMs) return providerUnavailable;
+  if (input.sinceStart === null && Number.isFinite(refreshed)) return { since: { status: "unavailable", reason: "suppressed" }, recent: { status: "unavailable", reason: "suppressed" } };
+  if (sinceStart === end && recentStart === end) return { since: { status: "unavailable", reason: "suppressed" }, recent: { status: "unavailable", reason: "suppressed" } };
   if (!Number.isFinite(sinceStart) || !Number.isFinite(recentStart) || !Number.isFinite(end)
-    || end > now || now - end >= dayMs || sinceStart > recentStart || recentStart >= end
+    || end > now || now - end >= 2 * dayMs || sinceStart > recentStart || recentStart >= end
     || recentStart !== Math.max(sinceStart, end - 30 * dayMs)) return providerUnavailable;
 
   function period(name: ReachPeriod, from: number) {
@@ -47,7 +51,7 @@ export function prepareFirstPartyReach(input: unknown, now = Date.now()): ReachD
       version: 1, source: "btshq-first-party", metric: "pageviews", projectId: reachProjectId,
       provenance: "owner-approved-aggregate", publicDisplayApproved: true, routeScope: "public-allowlist-v1",
       periodStart: new Date(from).toISOString(), periodEnd: new Date(end).toISOString(),
-      retrievedAt: new Date(now).toISOString(), geography: "partial", countries: data[name],
+      retrievedAt: new Date(refreshed).toISOString(), geography: "partial", countries: data[name],
     }, name, now);
     if (prepared.status === "unavailable") return prepared;
     const growth = [...days].filter(([date]) => date >= from).sort(([a], [b]) => a - b)

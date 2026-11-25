@@ -1,7 +1,7 @@
 import { locales } from "@/lib/i18n/config";
 import { localizeHref } from "@/lib/i18n/routing";
 
-const editorialPages = ["/", "/about", "/people", "/world", "/writing", "/echowall"] as const;
+const editorialPages = ["/", "/about", "/people", "/world", "/writing", "/echowall", "/community", "/projects"] as const;
 
 /** Dynamic destinations must come from already validated public records, never URL input. */
 export function createPublicPageViewAllowlist(records: {

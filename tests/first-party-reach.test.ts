@@ -19,9 +19,9 @@ test("reach accepts a bounded same-origin public pathname and sends only the pla
     "@/lib/analytics/public-page-view": publicPageViews,
   }, { URL, Response, TextDecoder });
   const request = (body: string, additions = {}, url = origin + "/api/reach/view") => new Request(url, {
-    method: "POST", body,
+    method: "POST", body: body.startsWith("/") ? JSON.stringify({ pathname: body, eventId: "11111111-1111-4111-8111-111111111111", at: new Date().toISOString() }) : body,
     headers: {
-      origin, "sec-fetch-site": "same-origin", "x-vercel-ip-country": "DE", referer: origin + "/", ...additions,
+      origin, "x-btshq-reach-consent": "v1", "sec-fetch-site": "same-origin", "x-vercel-ip-country": "DE", referer: origin + "/", ...additions,
     },
   });
   active = false;
@@ -30,17 +30,19 @@ test("reach accepts a bounded same-origin public pathname and sends only the pla
   for (const path of ["/admin", "/life-alignment/team", "/private", "/writing?token=redacted", "/en/writing#answer"]) {
     assert.equal((await POST(request(path))).status, 400);
   }
-  for (const headers of [{ "sec-gpc": "1" }, { dnt: "1" }, { origin: "https://other.invalid" },
+  for (const headers of [{ "x-btshq-reach-consent": "" }, { "x-btshq-test": "synthetic" }, { "sec-gpc": "1" }, { dnt: "1" }, { origin: "https://other.invalid" },
     { cookie: "synthetic=1" }, { authorization: "synthetic" }, { referer: origin + "/tools/example" }]) {
     assert.equal((await POST(request("/writing", headers))).status, 403);
   }
   assert.equal((await POST(request("/writing", {}, origin + "/api/reach/view?test=1"))).status, 403);
-  assert.equal((await POST(request("x".repeat(97)))).status, 413);
+  assert.equal((await POST(request("x".repeat(257)))).status, 413);
   assert.equal((await POST(request("/writing", { "x-vercel-ip-country": "ZZ" }))).status, 204);
   assert.equal((await POST(request("/writing", { "user-agent": "TestCrawler" }))).status, 204);
   assert.deepEqual(calls, []);
   assert.equal((await POST(request("/en/writing"))).status, 204);
-  assert.deepEqual(calls, [["record_reach_pageview", { p_country: "DE" }]]);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(Object.keys((calls[0] as [string, object])[1]).sort(), ["p_country", "p_event_id", "p_issued_at"]);
+  assert.equal((calls[0] as [string, { p_country: string }])[1].p_country, "DE");
 });
 
 test("reach publishes closed, paired periods and rejects low positive differences", () => {
@@ -53,7 +55,7 @@ test("reach publishes closed, paired periods and rejects low positive difference
   });
   const now = Date.parse("2026-11-24T11:00:00Z");
   const batch = {
-    sinceStart: "2026-10-01", recentStart: "2026-10-25", end: "2026-11-24",
+    updated: new Date(now).toISOString(), sinceStart: "2026-10-01", recentStart: "2026-10-25", end: "2026-11-24",
     since: [{ countryCode: "DE", pageViews: 20 }], recent: [{ countryCode: "DE", pageViews: 5 }],
     daily: [{ day: "2026-10-01", pageViews: 15 }, { day: "2026-11-23", pageViews: 5 }],
   };

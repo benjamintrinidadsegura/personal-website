@@ -4,7 +4,7 @@ import { firstPartyReachEnabled } from "@/lib/analytics/first-party-config";
 import { createPublicPageViewAllowlist } from "@/lib/analytics/public-page-view";
 
 const paths = createPublicPageViewAllowlist();
-const maxBytes = 96;
+const maxBytes = 256;
 
 function response(status: number) {
   return new Response(null, { status, headers: { "Cache-Control": "no-store" } });
@@ -18,6 +18,8 @@ export async function POST(request: Request) {
   if (url.hostname !== "btshq.online" || url.search
     || headers.get("origin") !== "https://btshq.online"
     || headers.get("sec-fetch-site") !== "same-origin"
+    || headers.get("x-btshq-reach-consent") !== "v1"
+    || headers.has("x-btshq-test")
     || headers.get("sec-gpc") === "1" || headers.get("dnt") === "1"
     || headers.has("cookie") || headers.has("authorization")
     || (referrer && referrer !== "https://btshq.online/")) return response(403);
@@ -45,11 +47,18 @@ export async function POST(request: Request) {
   } finally {
     body.releaseLock();
   }
-  if (!paths.has(pathname)) return response(400);
+  let event: { pathname?: unknown; eventId?: unknown; at?: unknown };
+  try { event = JSON.parse(pathname); } catch { return response(400); }
+  if (!event || Object.keys(event).sort().join(",") !== "at,eventId,pathname"
+    || typeof event.pathname !== "string" || !paths.has(event.pathname)
+    || typeof event.eventId !== "string" || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u.test(event.eventId)
+    || typeof event.at !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(event.at)
+    || !Number.isFinite(Date.parse(event.at)) || Date.parse(event.at) > Date.now() + 60000
+    || Date.now() - Date.parse(event.at) >= 86400000) return response(400);
 
   try {
     const client = getSupabaseServerClient({ fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(2000) }) });
-    const { error } = await client.rpc("record_reach_pageview", { p_country: country });
+    const { error } = await client.rpc("record_reach_pageview", { p_country: country, p_event_id: event.eventId, p_issued_at: event.at });
     return response(error ? 503 : 204);
   } catch {
     return response(503);

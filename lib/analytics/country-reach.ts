@@ -51,7 +51,7 @@ export function validateCountryReach(input: unknown, now: number = Date.now()): 
   const end = Date.parse(input.periodEnd as string);
   const retrieved = Date.parse(input.retrievedAt as string);
   if (start >= end || end > retrieved || retrieved > now) return invalid;
-  if (now - retrieved > reachFreshnessMs) return { status: "unavailable", reason: "stale" };
+  if (now - retrieved > (input.source === "btshq-first-party" ? 2 * reachFreshnessMs : reachFreshnessMs)) return { status: "unavailable", reason: "stale" };
   if (!Array.isArray(input.countries) || input.countries.length > 249) return invalid;
   const seen = new Set<string>();
   const countries: { countryCode: string; pageViews: number }[] = [];
