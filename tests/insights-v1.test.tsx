@@ -83,14 +83,14 @@ test("missing current publication labels are honest without discarding genuine a
     asOf: "2026-11-25T12:00:00Z", periodStart: "2026-11-19T00:00:00Z", periodEnd: "2026-11-26T00:00:00Z",
     metrics: [{ name: "article_view", contentId: "article:11111111-1111-4111-8111-111111111111", count: 2 }], daily: [{ day: "2026-11-25", count: 2 }],
   }} />);
-  assert.match(markup, /Content label unavailable/); assert.doesNotMatch(markup, /Archived content/); assert.match(markup, />2</);
+  assert.match(markup, /Inhaltstitel nicht verfügbar/); assert.doesNotMatch(markup, /Archived content/); assert.match(markup, />2</);
 });
 for (const state of ["disabled", "unavailable", "empty"] as const) test("dashboard honest " + state + " state", () => {
   const markup = renderToStaticMarkup(<InsightsDashboard period="7d" collecting={false} catalog={targets} state={state === "empty" ? {
     status: "available", startedAt: null, lastEventAt: null, maintainedAt: null, asOf: "2026-11-25T12:00:00Z", periodStart: "2026-11-19T00:00:00Z", periodEnd: "2026-11-26T00:00:00Z", metrics: [], daily: [],
   } : { status: state }} />);
-  assert.match(markup, /Founder only/); assert.doesNotMatch(markup, /12[,.]846/);
-  assert.match(markup, state === "empty" ? /No measured events yet/ : state === "disabled" ? /Measurement is disabled/ : /temporarily unavailable/);
+  assert.match(markup, /Dein privater Blick/); assert.doesNotMatch(markup, /12[,.]846/);
+  assert.match(markup, state === "empty" ? /Noch keine Messwerte/ : state === "disabled" ? /Messung deaktiviert/ : /Messwerte nicht verfügbar/);
 });
 test("seven separate notices exist and unchanged product emitters do not carry answers", () => {
   const privacy = readFileSync("components/insights/privacy-choice.tsx", "utf8");
