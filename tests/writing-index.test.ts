@@ -44,6 +44,7 @@ function loadIndex(locale: Locale, result: PublishedWritingReadResult) {
   const exports = {};
   const dependencies: Record<string, unknown> = {
     "react/jsx-runtime": jsxRuntime,
+    "./editorial.css": {},
     "next/link": { __esModule: true, default: "a" },
     "@/components/newsletter/newsletter-cta": { NewsletterCta: () => null },
     "@/components/writing/share/share-format-signal": { ShareFormatSignal },
