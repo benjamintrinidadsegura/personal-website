@@ -1,3 +1,5 @@
+import { publicViewSource } from "@/lib/analytics/public-view-source";
+import { ServerDocumentNotice } from "@/components/community/server-document-notice";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ReachPrivacyChoice } from "@/components/community/reach-privacy-choice";
@@ -134,8 +136,8 @@ export default async function PrivacyPage() {
         </section>
 
         <PrivacySections sections={sections.slice(3, 7)} />
-        {firstPartyReachEnabled() && <ReachPrivacyChoice locale={locale} />}
-        {insightsCollectionEnabled() && <InsightsPrivacyChoice locale={locale} />}
+        {publicViewSource() === "server-document" ? <ServerDocumentNotice locale={locale} /> : firstPartyReachEnabled() && publicViewSource() === "legacy" ? <ReachPrivacyChoice locale={locale} /> : null}
+        {insightsCollectionEnabled() && <InsightsPrivacyChoice locale={locale} lifecycleOnly={publicViewSource() !== "legacy"} />}
 
         <section id="feedback" aria-labelledby="feedback-privacy-title" className="scroll-mt-28 border-b border-white/15 py-14">
           <h2 id="feedback-privacy-title" className="text-3xl font-black text-white">{copy.feedback.title}</h2>

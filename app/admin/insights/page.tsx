@@ -1,3 +1,4 @@
+import { publicViewSource } from "@/lib/analytics/public-view-source";
 import { requireAdminPage } from "@/lib/admin/authorization";
 import { InsightsDashboard } from "@/components/admin/insights-dashboard";
 import { staticInsightsCatalog } from "@/lib/insights/catalog";
@@ -21,5 +22,5 @@ export default async function InsightsPage({ searchParams }: { searchParams: Pro
     const writing = await getPublishedWritingResult("de");
     if (writing.status === "data") catalog.push(...writing.data.map((article) => ({ id: "article:" + article.id, title: article.title, href: "/writing/" + article.slug, event: "article_view" as const, area: "Writing" as const, lifecycle: false })));
   }
-  return <InsightsDashboard state={state} catalog={catalog} period={period} collecting={insightsCollectionEnabled()} />;
+  return <InsightsDashboard serverDocuments={publicViewSource() === "server-document"} state={state} catalog={catalog} period={period} collecting={insightsCollectionEnabled()} />;
 }

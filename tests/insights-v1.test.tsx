@@ -41,6 +41,7 @@ test("API enforces separate consent, minimized payload, current published IDs an
   let enabled = false, publication = "data", failure = false, calls = 0;
   const publishedId = "11111111-1111-4111-8111-111111111111";
   const api = loadSource<typeof import("../app/api/insights/event/route")>("app/api/insights/event/route.ts", {
+    "@/lib/analytics/public-view-source": { publicViewSource: () => "legacy" },
     "@/lib/insights/config": { insightsCollectionEnabled: () => enabled }, "@/lib/insights/catalog": catalog,
     "@/lib/insights/contract": contract, "@/lib/writing/queries": { getPublishedWritingInsightTarget: async (id: string) => ({ status: id === publishedId ? publication : "missing" }) },
     "@/lib/insights/diagnostics": { insightsDiagnostic: () => {} },
@@ -102,6 +103,7 @@ test("seven separate notices exist and unchanged product emitters do not carry a
 test("Founder page authorizes AAL2 before any metrics request", async () => {
   let permitted = false, reads = 0;
   const page = loadSource<typeof import("../app/admin/insights/page")>("app/admin/insights/page.tsx", {
+    "@/lib/analytics/public-view-source": { publicViewSource: () => "legacy" },
     "react/jsx-runtime": runtime,
     "@/lib/admin/authorization": { requireAdminPage: async (aal2: boolean) => { assert.equal(aal2, true); if (!permitted) throw new Error("DENIED"); return { supabase: {} }; } },
     "@/components/admin/insights-dashboard": { InsightsDashboard }, "@/lib/insights/catalog": catalog,

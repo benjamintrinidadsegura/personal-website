@@ -1,3 +1,4 @@
+import { publicViewSource } from "@/lib/analytics/public-view-source";
 import { insightsCollectionEnabled } from "@/lib/insights/config";
 import { staticInsightsCatalog } from "@/lib/insights/catalog";
 import { isInsightEvent } from "@/lib/insights/contract";
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     || typeof event.at !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u.test(event.at)
     || !Number.isFinite(Date.parse(event.at)) || Date.parse(event.at) > Date.now() + 60000
     || Date.now() - Date.parse(event.at) >= 86400000 || event.at.slice(0, 10) !== new Date().toISOString().slice(0, 10)) return respond(400);
+  if (publicViewSource() !== "legacy" && !["tool_start", "tool_complete"].includes(event.name)) return respond(404);
   try {
     if (event.name === "article_view") {
       // Fresh published-only evidence: no stale catalog can expose/count a draft or withdrawal.

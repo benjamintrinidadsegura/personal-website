@@ -1,3 +1,4 @@
+import { publicViewSource } from "@/lib/analytics/public-view-source";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { isReachCountry } from "@/lib/analytics/country-reach";
 import { firstPartyReachEnabled } from "@/lib/analytics/first-party-config";
@@ -13,7 +14,7 @@ function response(status: number, outcome: ReachOutcome) {
 }
 
 export async function POST(request: Request) {
-  if (!firstPartyReachEnabled()) return response(404, "disabled");
+  if (publicViewSource() !== "legacy" || !firstPartyReachEnabled()) return response(404, "disabled");
   const { headers } = request;
   const url = new URL(request.url);
   const referrer = headers.get("referer");

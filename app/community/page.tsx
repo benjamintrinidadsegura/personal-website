@@ -1,3 +1,4 @@
+import { publicViewSource } from "@/lib/analytics/public-view-source";
 import type { Metadata } from "next";
 import "@/app/community.css";
 import { CommunityOverview } from "@/components/community/community-overview";
@@ -17,5 +18,5 @@ export async function generateMetadata(): Promise<Metadata> {
 export const dynamic = "force-dynamic";
 export default async function CommunityPage() {
   const [locale, feed, dataset] = await Promise.all([getLocale(), readPublicEchoFeed(parseEchoFeed({}, false), 2, false), readFirstPartyReach()]);
-  return <CommunityOverview locale={locale} feed={feed} dataset={dataset} participation={echoSubmissionsConfigured() && feed.status !== "unavailable"} />;
+  return <CommunityOverview locale={locale} feed={feed} dataset={dataset} serverDocuments={publicViewSource() === "server-document"} participation={echoSubmissionsConfigured() && feed.status !== "unavailable"} />;
 }

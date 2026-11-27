@@ -11,6 +11,7 @@ test("reach accepts a bounded same-origin public pathname and sends only the pla
   let active = true;
   const calls: unknown[] = [];
   const { POST } = loadSource<typeof import("../app/api/reach/view/route")>("app/api/reach/view/route.ts", {
+    "@/lib/analytics/public-view-source": { publicViewSource: () => "legacy" },
     "@/lib/supabase/server": { getSupabaseServerClient: () => ({
       rpc: async (name: string, args: unknown) => { calls.push([name, args]); return { error: null }; },
     }) },

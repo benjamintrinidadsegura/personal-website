@@ -1,6 +1,7 @@
 import { canOpenCommunityReview } from "@/lib/community/review-boundary";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { eligibleServerDocument, recordServerDocument } from "@/lib/analytics/server-documents";
+import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server";
 
 import {
   accountAuthStorageKey,
@@ -37,7 +38,7 @@ function applyResponseHeaders(response: NextResponse, headers: Record<string, st
   for (const [name, value] of Object.entries(headers)) response.headers.set(name, value);
 }
 
-export async function proxy(request: NextRequest) {
+async function routeRequest(request: NextRequest) {
   const pathnameRouting = getRequestLocaleRouting(request.nextUrl.pathname);
   const propagatedLocale = request.headers.get(internalLocaleHeaderName);
   const isInternalLocaleRewrite = pathnameRouting.locale === defaultLocale
@@ -159,6 +160,13 @@ export async function proxy(request: NextRequest) {
     return redirectResponse;
   }
 
+  return response;
+}
+
+export async function proxy(request: NextRequest, event?: Pick<NextFetchEvent, "waitUntil">) {
+  const response = await routeRequest(request);
+  const view = event ? eligibleServerDocument(request, response.status) : null;
+  if (view && event) event.waitUntil(recordServerDocument(view));
   return response;
 }
 

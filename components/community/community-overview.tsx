@@ -1,3 +1,4 @@
+import { serverCoverageCopy } from "./server-document-notice";
 import Link from "next/link";
 import { CommunityNav } from "./community-nav";
 import { ReachDashboard } from "./reach-dashboard";
@@ -14,8 +15,8 @@ import type { Locale } from "@/lib/i18n/config";
 import { localizeHref } from "@/lib/i18n/routing";
 import { createWorldMapGeometry } from "@/lib/world-map-geometry";
 
-export function CommunityOverview({ locale, feed, dataset, demo = false, participation = false }: {
-  locale: Locale; feed: EchoFeed; dataset: ReachDataset; demo?: boolean; participation?: boolean;
+export function CommunityOverview({ locale, feed, dataset, demo = false, participation = false, serverDocuments = false }: {
+  locale: Locale; feed: EchoFeed; dataset: ReachDataset; demo?: boolean; participation?: boolean; serverDocuments?: boolean;
 }) {
   const copy = communityCopy[locale];
   const connections = createWorldMapConnections(getLocalizedPublishedSpotlights(locale));
@@ -28,6 +29,7 @@ export function CommunityOverview({ locale, feed, dataset, demo = false, partici
         <p className="community-kicker">BTSHQ / {copy.community}</p>
         <h1 className="community-heading community-overview-heading mt-2">{reachCopy[locale][0]}</h1>
         <p className="mt-2 text-base text-slate-300">{copy.intro}</p>
+        {serverDocuments && <p className="mt-3 text-sm leading-6 text-slate-300">{serverCoverageCopy[locale]}</p>}
       </header>
       <CommunityNav locale={locale} current="/community" />
       <ReachDashboard locale={locale} shapes={getReachShapes(Object.values(dataset).some((period) => period.status === "available"))} dataset={dataset} embedded demo={demo}>

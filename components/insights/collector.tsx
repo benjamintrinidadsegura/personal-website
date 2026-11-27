@@ -59,7 +59,7 @@ export function InsightView({ enabled, name, contentId }: { enabled: boolean; na
   return null;
 }
 
-export function InsightsCollector({ targets }: { targets: InsightTarget[] }) {
+export function InsightsCollector({ targets, lifecycleOnly = false }: { targets: InsightTarget[]; lifecycleOnly?: boolean }) {
   const path = usePathname(), search = useSearchParams().toString();
   const target = targets.find((item) => item.href === path);
   const section = useRef<{ key: string; event: Pending } | null>(null);
@@ -84,7 +84,7 @@ export function InsightsCollector({ targets }: { targets: InsightTarget[] }) {
       void send(request, () => alive).finally(() => inFlight.delete(request));
     };
     const opened = () => {
-      if (!eligible() || location.pathname !== path) return;
+      if (lifecycleOnly || !eligible() || location.pathname !== path) return;
       const current = targets.find((item) => item.href === path + location.hash);
       if (!current || !location.hash) return;
       const key = path + location.hash;
@@ -95,6 +95,6 @@ export function InsightsCollector({ targets }: { targets: InsightTarget[] }) {
     opened();
     window.addEventListener("hashchange", opened); window.addEventListener(insightsChoiceEvent, opened); window.addEventListener("bts:product-event", product);
     return () => { alive = false; window.removeEventListener("hashchange", opened); window.removeEventListener(insightsChoiceEvent, opened); window.removeEventListener("bts:product-event", product); };
-  }, [path, search, target, targets]);
-  return target ? <InsightView enabled name={target.event} contentId={target.id} /> : null;
+  }, [path, search, target, targets, lifecycleOnly]);
+  return target && !lifecycleOnly ? <InsightView enabled name={target.event} contentId={target.id} /> : null;
 }
