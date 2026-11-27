@@ -9,11 +9,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE ?? "playwright");
 const { InsightsDashboard } = require("../components/admin/insights-dashboard.tsx");
-const { empty, populated, catalog } = require("../tests/fixtures/insights-founder.ts");
+const { empty, populated, catalog: originalCatalog } = require("../tests/fixtures/insights-founder.ts");
+const catalog = originalCatalog.map((item) => item.id === "tool:pa" ? { ...item, title: "Personal Advantage – ein sehr langer synthetischer Werkzeugname für schmale Bildschirme" } : item);
 const out = resolve(process.argv[2] ?? "../evidence"); mkdirSync(out, { recursive: true });
 const files = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? files(resolve(dir, e.name)) : [resolve(dir, e.name)]);
 const css = files(resolve(".next/static")).filter((p) => p.endsWith(".css")).map((p) => readFileSync(p, "utf8")).join("\n");
-const states = { empty, populated, disabled: { status: "disabled" }, unavailable: { status: "unavailable" }, zero: { ...empty, startedAt: populated.startedAt }, paused: populated };
+const states = { empty, populated, disabled: { status: "disabled" }, unavailable: { status: "unavailable" }, zero: { ...empty, startedAt: populated.startedAt }, paused: populated, toolZero: { ...populated, metrics: populated.metrics.filter((m) => !["tool_start", "tool_complete"].includes(m.name)) } };
 const server = createServer((req, res) => {
   const url = new URL(req.url, "http://localhost"), name = url.pathname.slice(1), state = states[name] ?? empty;
   const period = ["7d", "30d", "all"].includes(url.searchParams.get("period")) ? url.searchParams.get("period") : "7d";
@@ -33,14 +34,24 @@ try {
     await page.setViewportSize({ width, height: 900 }); await page.goto(origin + "/" + name);
     check(`${name} ${width}: document containment`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     check(`${name} ${width}: complete product structure`, await page.locator('section[aria-labelledby^="ranking-"]').count() === 5 && await page.locator('section[aria-label="Kennzahlen"] dt').count() === 4);
-    check(`${name} ${width}: tables fit without hidden columns`, await page.locator("table").evaluateAll((tables) => tables.every((t) => t.getBoundingClientRect().right <= innerWidth && t.scrollWidth <= t.clientWidth + 1)));
+    check(`${name} ${width}: tables fit without hidden columns`, await page.locator("table").evaluateAll((tables) => tables.every((t) => !t.getBoundingClientRect().width || (t.getBoundingClientRect().right <= innerWidth && t.scrollWidth <= t.clientWidth + 1))));
+    if (name === "toolZero" && width < 640) check(`genuine lifecycle zero at ${width}`, (await page.getByRole("list", { name: "Tool-Messwerte" }).locator("li").first().locator("dd").allTextContents()).join() === "9,0,0");
+    if (name === "populated") {
+      check(`Tool layout at ${width}`, width < 640 ? await page.getByRole("list", { name: "Tool-Messwerte" }).isVisible() : await page.locator("#ranking-Tools").locator("..").locator("..").getByRole("table").isVisible());
+      if (width < 640) {
+        const items = page.getByRole("list", { name: "Tool-Messwerte" }).locator("li");
+        check(`separate labelled metrics at ${width}`, await items.first().locator("dt").allTextContents().then((labels) => labels.join() === "Aufrufe,Starts,Abschlüsse"));
+        check(`actual mobile counts at ${width}`, (await items.first().locator("dd").allTextContents()).join() === "9,4,2");
+        check(`unsupported mobile lifecycle at ${width}`, (await items.nth(1).locator("dd").allTextContents()).join() === "7,Nicht verfügbar,Nicht verfügbar");
+      }
+    }
     check(`${name} ${width}: no decorative motion`, await page.evaluate(() => document.getAnimations().every((a) => a.playState !== "running")));
     if (["empty", "populated"].includes(name) && [390, 1440].includes(width)) await page.screenshot({ path: resolve(out, `${name}-${width}.png`), fullPage: true });
   }
   for (const period of ["30d", "all"]) { await page.goto(origin + "/populated?period=" + period); check("selected period " + period, await page.locator("a[aria-current=page]").getAttribute("href") === "/admin/insights?period=" + period); }
   await page.goto(origin + "/populated");
   check("long published title fully available", await page.getByRole("link", { name: catalog[0].title }).isVisible());
-  check("unsupported lifecycle is unavailable", await page.getByText("Nicht verfügbar", { exact: true }).count() === 2);
+  check("unsupported lifecycle is unavailable", (await page.getByText("Nicht verfügbar", { exact: true }).all()).length === 4);
   await page.keyboard.press("Tab"); await page.keyboard.press("Tab");
   check("keyboard period focus", await page.evaluate(() => document.activeElement?.getAttribute("aria-current") === "page"));
   const details = page.locator("details"); check("metadata initially collapsed", !(await details.getAttribute("open")) && !await details.evaluate((e) => e.open));

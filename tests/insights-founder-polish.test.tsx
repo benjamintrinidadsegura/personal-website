@@ -40,3 +40,24 @@ test("period selection remains native navigation with German labels", () => {
   const html = render(empty); assert.match(html.match(/<a[^>]*href="\/admin\/insights\?period=7d"[^>]*>/)![0], /aria-current="page"/);
   for (const label of ["Letzte 7 Tage", "Letzte 30 Tage", "Seit Messbeginn"]) assert.match(html, new RegExp(label));
 });
+
+test("empty sections share one explanation and retain compact meaningful labels", () => {
+  const html = render(empty);
+  assert.equal((html.match(/Noch keine freigegebenen Ereignisse erfasst/g) ?? []).length, 1);
+  assert.equal((html.match(/aria-labelledby="ranking-/g) ?? []).length, 5);
+  assert.match(html, /Keine Antworten, Ergebnisse oder persönlichen Profile/);
+});
+test("mobile tool cards preserve named values, order and unsupported lifecycle labels", () => {
+  const html = render(populated);
+  const list = html.slice(html.indexOf('<ol aria-label="Tool-Messwerte"'), html.indexOf('</ol>'));
+  assert.match(list, /sm:hidden/);
+  assert.ok(list.indexOf('Personal Advantage') < list.indexOf('Weiteres Tool'));
+  for (const label of ['Aufrufe', 'Starts', 'Abschlüsse', 'Nicht verfügbar']) assert.ok(list.includes(label));
+  for (const value of [9, 4, 2, 7]) assert.match(list, new RegExp('>' + value + '</dd>'));
+  assert.match(html, /hidden sm:block/);
+});
+test("supported lifecycle zeros remain zero in mobile cards", () => {
+  const html = render({ ...populated, metrics: populated.metrics.filter((m) => !['tool_start', 'tool_complete'].includes(m.name)) });
+  const list = html.slice(html.indexOf('<ol aria-label="Tool-Messwerte"'), html.indexOf('</li>'));
+  assert.equal((list.match(/>0<\/dd>/g) ?? []).length, 2);
+});
